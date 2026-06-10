@@ -354,21 +354,20 @@ tr:hover td{background:#f7fafc}
   border:1px solid var(--border);border-left:4px solid var(--c,var(--primary));
   border-radius:var(--radius);box-shadow:0 1px 0 var(--edge) inset,var(--shadow-sm);
   padding:13px 14px;margin-bottom:10px;
-  display:grid;grid-template-columns:52px 1fr;grid-template-rows:auto auto auto auto;
+  display:grid;grid-template-columns:52px 1fr;grid-template-rows:auto auto auto;
   column-gap:13px;cursor:pointer;transition:box-shadow .16s,transform .12s;
 }
 .atelier-card-v2:hover{box-shadow:0 1px 0 var(--edge) inset,0 4px 18px rgba(12,36,48,.14);transform:translateY(-1px)}
-.ac-v2-date{grid-column:1;grid-row:1/5;display:flex;flex-direction:column;align-items:center;padding-top:2px;gap:4px}
+.ac-v2-date{grid-column:1;grid-row:1/4;display:flex;flex-direction:column;align-items:center;padding-top:2px;gap:4px}
 .ac-v2-datebox{width:48px;text-align:center;padding:5px 0;border-radius:11px;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);box-shadow:0 1px 0 var(--edge) inset,0 2px 8px rgba(12,36,48,.09)}
 .ac-v2-datebox b{display:block;font-size:18px;font-weight:800;line-height:1.1;color:var(--text)}
 .ac-v2-datebox small{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--text-3)}
 .ac-v2-time{font-size:13px;font-weight:700;color:var(--text-2);text-align:center}
 .ac-v2-day{font-size:10px;color:var(--text-3);text-align:center}
 .ac-v2-top{grid-column:2;grid-row:1;display:flex;align-items:center;gap:5px;padding-bottom:3px;flex-wrap:wrap}
-.ac-v2-conseiller{grid-column:2;grid-row:2;font-size:13px;font-weight:700;padding-bottom:2px}
-.ac-v2-title{grid-column:2;grid-row:3;font-size:15px;font-weight:700;line-height:1.3;color:var(--text)}
-.ac-v2-sub{grid-column:2;grid-row:4;font-size:12px;color:var(--text-3);padding-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ac-v2-foot{grid-column:1/-1;grid-row:5;display:flex;align-items:center;gap:8px;padding-top:9px;margin-top:8px;border-top:1px solid var(--border);flex-wrap:wrap}
+.ac-v2-title{grid-column:2;grid-row:2;font-size:15px;font-weight:700;line-height:1.3;color:var(--text);padding-bottom:2px}
+.ac-v2-sub{grid-column:2;grid-row:3;font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-v2-foot{grid-column:1/-1;display:flex;align-items:center;gap:8px;padding-top:9px;margin-top:8px;border-top:1px solid var(--border);flex-wrap:wrap}
 .ac-v2-presence{margin-left:auto;font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:4px}
 .ac-v2-presence strong{color:var(--text-2)}
 /* Badges maquette v2 */
@@ -1602,16 +1601,20 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
         )
       )
     ),
-    // ── Barre résultats ───────────────────────────────────────
     CE('div',{className:'result-info-v2'},
       CE('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
         CE('circle',{cx:11,cy:11,r:8}),CE('path',{d:'M21 21l-4.35-4.35'})),
-      CE('strong',null,filtered.length),CE('span',null,' atelier(s) affiché(s) sur '+entries.length),
-      CE('button',{className:'btn-sync-v2 result-info-v2',style:{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:'#4e6270'},onClick:()=>setSortDir(d=>-d)},sortDir===1?'↑ Date':'↓ Date'),
-      CE('button',{className:'btn-xlsx-v2',onClick:exportXLSX},'📥 XLSX'),
-      CE('button',{className:'btn-sync-v2',style:{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:'#4e6270'},onClick:onRefresh},'🔄 Sync')
+      CE('strong',null,filtered.length),CE('span',null,' ateliers'),CE('span',{style:{color:'var(--text-3)'}},' affichés'),
+      CE('button',{onClick:()=>setSortDir(d=>-d),style:{background:'none',border:'none',cursor:'pointer',fontSize:12,fontWeight:700,color:'var(--text-2)',padding:'0 4px'}},sortDir===1?'↑ Date':'↓ Date'),
+      CE('button',{className:'btn-xlsx-v2',onClick:exportXLSX},
+        CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3'})),
+        'XLSX'
+      ),
+      CE('button',{onClick:onRefresh,style:{background:'none',border:'none',cursor:'pointer',fontSize:12,fontWeight:700,color:'var(--text-2)',padding:'0 4px',display:'flex',alignItems:'center',gap:4}},
+        CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15'})),
+        'Sync'
+      )
     ),
-    // Liste des ateliers
     CE('div',{className:'atelier-list'},filtered.map((e,ei)=>{
       const d=fmtCardDate(e.date);const retard=isRetard(e);const cColor=conseillerColor(e.conseiller);
       const badgeCls=retard?'badge-v2 bv2-retard':e.statut==='Réalisé'?'badge-v2 bv2-ok':e.statut==='Annulé'?'badge-v2 bv2-err':e.statut==='Reporté'?'badge-v2 bv2-warn':e.statut==='Non réalisé'?'badge-v2 bv2-neutral':'badge-v2 bv2-info';
@@ -1623,23 +1626,26 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
             CE('div',{className:'ac-v2-time'},e.horaire),
             CE('div',{className:'ac-v2-day'},d.jour)
           ),
-          // Badges statut + public
+          // Ligne 1 : badges statut + public
           CE('div',{className:'ac-v2-top'},
             CE('span',{className:badgeCls},retard?'⚠️ Retard':e.statut),
             e.orienteur&&CE('span',{className:'tag-v2'},e.orienteur),
             CE('span',{className:'tag-v2'},e.public||'Tous publics')
           ),
-          // Conseiller
-          CE('div',{className:'ac-v2-conseiller',style:{color:cColor}},e.conseiller),
-          // Titre
+          // Ligne 2 : titre
           CE('div',{className:'ac-v2-title'},e.thematique),
-          // Sous-titre
-          CE('div',{className:'ac-v2-sub'},e.commune,' — ',e.lieu),
-          // Pied présence
+          // Ligne 3 : commune · lieu
+          CE('div',{className:'ac-v2-sub'},e.commune,(e.lieu?' · '+e.lieu:'')),
+          // Pied : dot conseiller | thématique | présences
           CE('div',{className:'ac-v2-foot'},
-            CE('span',{className:'tag-v2'},e.lieu||'—'),
+            CE('span',{style:{display:'inline-flex',alignItems:'center',gap:6,fontSize:13,fontWeight:700,color:cColor}},
+              CE('span',{style:{width:8,height:8,borderRadius:'50%',background:cColor,boxShadow:`0 0 0 3px ${hexToRgba(cColor,0.2)}`,display:'inline-block',flexShrink:0}}),
+              e.conseiller
+            ),
+            e.thematique&&CE('span',{className:'tag-v2',style:{maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},e.thematique),
             CE('div',{className:'ac-v2-presence'},
-              CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2},CE('path',{d:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'}),CE('circle',{cx:9,cy:7,r:4})),
+              CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2},
+                CE('path',{d:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'}),CE('circle',{cx:9,cy:7,r:4})),
               CE('strong',null,e.presents||0),'/',(e.inscrits||0)
             )
           )
