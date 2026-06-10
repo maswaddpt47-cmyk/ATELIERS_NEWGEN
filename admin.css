@@ -658,3 +658,10 @@
 
 /* Filtre banner */
 [data-theme="dark"] .filtre-banner              { background: #0c1a2e; border-color: #1d4ed8; color: #93c5fd; }
+
+/* ── Fix position bottom nav ─────────────────────────────── */
+.bottom-nav-v2 {
+  top: auto !important;
+  bottom: 0 !important;
+  position: fixed !important;
+}
