@@ -318,6 +318,53 @@ tr:hover td{background:#f7fafc}
 .sp-info-row span:last-child{font-weight:600;color:#1a202c;text-align:right;max-width:60%}
 .mat-chip{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;background:#e2e8f0;color:#4a5568;margin:2px}
 .chip-bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+/* ── Nouveau panneau filtres v2 ─────────────────────────── */
+.search-always{display:flex;align-items:center;gap:9px;background:#fff;border:1.5px solid #d4dfe6;border-radius:10px;padding:10px 14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(12,36,48,.07),0 3px 8px rgba(12,36,48,.07);transition:border .18s,box-shadow .18s}
+.search-always:focus-within{border-color:#0f6e7a;box-shadow:0 1px 2px rgba(12,36,48,.07),0 3px 8px rgba(12,36,48,.07),0 0 0 3px rgba(15,110,122,.12)}
+.search-always input{border:none;background:none;font:inherit;font-size:15px;color:#13202a;width:100%;outline:none}
+.search-always input::placeholder{color:#7a8e98}
+.filter-panel-v2{background:linear-gradient(180deg,#fff,#f3f7f9);border:1px solid #d4dfe6;border-radius:14px;box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(12,36,48,.06),0 10px 28px rgba(12,36,48,.11);overflow:hidden;margin-bottom:14px}
+.filter-head-v2{display:flex;align-items:center;gap:9px;padding:12px 14px;cursor:pointer;background:#fff;border-bottom:1px solid transparent;transition:border-color .22s;user-select:none}
+.filter-panel-v2.open .filter-head-v2{border-bottom-color:#d4dfe6}
+.filter-head-v2-label{font-size:15px;font-weight:700;flex:1;color:#13202a}
+.filter-active-count{font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#0f6e7a;color:#fff;box-shadow:0 2px 6px rgba(15,110,122,.4)}
+.filter-btn-reset{font-size:12px;font-weight:600;color:#7a8e98;background:none;border:1px solid #d4dfe6;border-radius:8px;padding:4px 10px;transition:.15s;cursor:pointer}
+.filter-btn-reset:hover{color:#b82b20;border-color:#b82b20}
+.filter-expand-ico{color:#7a8e98;transition:transform .24s cubic-bezier(.4,0,.2,1);flex-shrink:0;font-size:14px}
+.filter-panel-v2.open .filter-expand-ico{transform:rotate(180deg)}
+.filter-body-v2{max-height:0;overflow:hidden;transition:max-height .3s cubic-bezier(.4,0,.2,1)}
+.filter-panel-v2.open .filter-body-v2{max-height:1200px}
+.filter-active-tags{display:flex;flex-wrap:wrap;gap:5px;padding:10px 14px 4px}
+.filter-tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:12px;background:#e0f0f3;color:#0f6e7a;border:1px solid rgba(15,110,122,.22)}
+.filter-tag button{background:none;border:none;color:inherit;font-size:13px;line-height:1;padding:0;opacity:.6;cursor:pointer;transition:opacity .12s}
+.filter-tag button:hover{opacity:1}
+.filter-section-v2{border-bottom:1px solid #d4dfe6}
+.filter-section-v2:last-child{border-bottom:none}
+.fs-head-v2{display:flex;align-items:center;gap:9px;padding:11px 14px;cursor:pointer;font-size:13px;font-weight:700;color:#4e6270;user-select:none;transition:background .14s}
+.fs-head-v2:hover{background:#f3f7f9}
+.fs-head-v2 .fs-chev{margin-left:auto;color:#7a8e98;transition:transform .22s;flex-shrink:0;font-size:12px}
+.fs-head-v2.open .fs-chev{transform:rotate(180deg)}
+.fs-badge-v2{font-size:10px;font-weight:800;padding:1px 7px;border-radius:10px;background:#0f6e7a;color:#fff}
+.fs-body-v2{display:none;padding:4px 14px 14px;flex-direction:column;gap:10px}
+.fs-body-v2.open{display:flex}
+.pill-group-v2{display:flex;flex-wrap:wrap;gap:6px}
+.pill-v2{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:20px;font-size:13px;font-weight:600;border:1.5px solid #d4dfe6;background:#fff;color:#4e6270;transition:.15s;cursor:pointer;box-shadow:0 1px 2px rgba(12,36,48,.07),0 3px 8px rgba(12,36,48,.07)}
+.pill-v2:hover{border-color:#0f6e7a;color:#0f6e7a}
+.pill-v2.active{border-color:transparent;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.pill-v2-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.f-sel-wrap-v2{position:relative}
+.f-sel-wrap-v2 .f-sel-ico{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:#7a8e98;font-size:11px}
+.f-select-v2{width:100%;font:inherit;font-size:14px;color:#13202a;background:#f3f7f9;border:1.5px solid #d4dfe6;border-radius:10px;padding:9px 34px 9px 12px;cursor:pointer;-webkit-appearance:none;box-shadow:0 1px 2px rgba(12,36,48,.07);transition:border .18s}
+.f-select-v2:focus{outline:none;border-color:#0f6e7a;box-shadow:0 1px 2px rgba(12,36,48,.07),0 0 0 3px rgba(15,110,122,.12)}
+.date-row-v2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.date-field-v2{display:flex;flex-direction:column;gap:4px}
+.date-field-v2 label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7a8e98;margin:0}
+.date-field-v2 input{font:inherit;font-size:14px;color:#13202a;background:#f3f7f9;border:1.5px solid #d4dfe6;border-radius:10px;padding:8px 10px;transition:border .18s;box-shadow:0 1px 2px rgba(12,36,48,.07);width:100%}
+.date-field-v2 input:focus{outline:none;border-color:#0f6e7a}
+.result-info-v2{font-size:13px;color:#4e6270;padding:5px 2px 10px;display:flex;align-items:center;gap:7px}
+.result-info-v2 strong{color:#13202a;font-weight:800}
+.result-info-v2 .btn-xlsx-v2{display:flex;align-items:center;gap:5px;margin-left:auto;font-size:12px;font-weight:700;color:#0f6e7a;background:none;border:none;cursor:pointer;padding:0}
+.result-info-v2 .btn-sync-v2{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#4e6270;background:none;border:none;cursor:pointer;padding:0}
 .chip{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid transparent;cursor:pointer;background:#f0f4f8;color:#4a5568;transition:all .15s}
 .chip.active{border-color:currentColor}
 .chip-all.active{background:#1e3a8a22;color:#1e3a8a}
@@ -1240,6 +1287,21 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
   const[confirmDel,setConfirmDel]=React.useState(null);
   const[newIdsFilter,setNewIdsFilter]=React.useState(null);
   const[filtresOpen,setFiltresOpen]=React.useState(false);
+  const[secStatutOpen,setSecStatutOpen]=React.useState(true);
+  const[secConsOpen,setSecConsOpen]=React.useState(false);
+  const[secDateOpen,setSecDateOpen]=React.useState(false);
+  const[secPublicOpen,setSecPublicOpen]=React.useState(false);
+
+  const activeFilterCount=React.useMemo(()=>{
+    let n=0;
+    if(filtStatut!=='Tous')n++;
+    if(filtConseiller!=='Tous')n++;
+    if(filtMois!=='Tous')n++;
+    if(filtCommune!=='Toutes')n++;
+    if(filtPublic!=='Tous')n++;
+    if(dateFrom||dateTo)n++;
+    return n;
+  },[filtStatut,filtConseiller,filtMois,filtCommune,filtPublic,dateFrom,dateTo]);
 
   React.useEffect(()=>{if(initConseiller)setFiltConseiller(initConseiller);},[initConseiller]);
   React.useEffect(()=>{const t=setTimeout(()=>setDSearch(search),300);return()=>clearTimeout(t);},[search]);
@@ -1350,56 +1412,136 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
       CE('span',null,'👤 Affichage filtré : ',CE('strong',null,initConseiller)),
       CE('button',{onClick:resetFiltres},'Voir tous')
     ),
-    // Filtres — collapsible
-    CE('div',{className:'card',style:{marginBottom:10,padding:0,overflow:'hidden'}},
-      // ── Barre de résumé / toggle ──────────────────────────────
-      CE('div',{
-        onClick:()=>setFiltresOpen(o=>!o),
-        style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',cursor:'pointer',userSelect:'none',gap:8}
-      },
-        CE('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',flex:1,minWidth:0}},
-          CE('span',{style:{fontSize:12,fontWeight:700,color:'#4a5568'}},'🔍 Filtres'),
-          // chips statut toujours visibles (résumé actif)
-          CE('div',{className:'chip-bar',style:{marginBottom:0,flexWrap:'wrap'}},
-            CHIP_STATUTS.map(c=>CE('button',{key:c.key,className:`chip ${c.cls}${filtStatut===c.key?' active':''}`,
-              onClick:ev=>{ev.stopPropagation();setFiltStatut(c.key);}},
-              c.dot&&CE('span',{className:'chip-dot',style:{background:c.dot}}),
-              c.label,' ',CE('span',{style:{opacity:.7,fontSize:11}},'('+counts[c.key]+')')))
-          ),
-          CE('span',{style:{fontSize:11,color:'#9ca3af',whiteSpace:'nowrap'}},`${filtered.length} / ${entries.length}`)
-        ),
-        CE('span',{style:{fontSize:14,color:'#9ca3af',transition:'transform .2s',transform:filtresOpen?'rotate(180deg)':'rotate(0deg)',flexShrink:0}},'▾')
+    // ── Recherche toujours visible ────────────────────────────
+    CE('label',{className:'search-always'},
+      CE('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+        CE('circle',{cx:11,cy:11,r:8}),CE('path',{d:'M21 21l-4.35-4.35'})),
+      CE('input',{type:'search',value:search,placeholder:'Titre, commune, remarque, orienteur…',onChange:e=>setSearch(e.target.value)})
+    ),
+    // ── Panneau filtres v2 ────────────────────────────────────
+    CE('div',{className:'filter-panel-v2'+(filtresOpen?' open':'')},
+      // En-tête toggle
+      CE('div',{className:'filter-head-v2',onClick:()=>setFiltresOpen(o=>!o)},
+        CE('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'#7a8e98',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+          CE('path',{d:'M3 6h18M7 12h10M10 18h4'})),
+        CE('span',{className:'filter-head-v2-label'},'Filtres'),
+        activeFilterCount>0&&CE('span',{className:'filter-active-count'},activeFilterCount+' actif'+(activeFilterCount>1?'s':'')),
+        CE('button',{className:'filter-btn-reset',onClick:e=>{e.stopPropagation();resetFiltres();}},'Effacer'),
+        CE('span',{className:'filter-expand-ico'},'▾')
       ),
-      // ── Contenu collapsible ───────────────────────────────────
-      filtresOpen&&CE('div',{style:{borderTop:'1px solid #f0f4f8',padding:'12px 14px'}},
-        CE('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:8}},
-          CE('input',{type:'text',value:search,placeholder:'🔍 Recherche…',style:{flex:'1 1 160px',padding:'6px 10px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:13},onChange:e=>setSearch(e.target.value)}),
-          CE('select',{style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12},value:filtMois,onChange:e=>setFiltMois(e.target.value)},
-            CE('option',{value:'Tous'},'Tous les mois'),moisDispo.map(m=>CE('option',{key:m,value:m},m))),
-          CE('select',{style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12},value:filtCommune,onChange:e=>setFiltCommune(e.target.value)},
-            CE('option',{value:'Toutes'},'Toutes communes'),
-            [...new Set(entries.map(e=>e.commune).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(c=>CE('option',{key:c,value:c},c))),
-          CE('div',{className:'chip-bar',style:{marginBottom:0}},
-            CE('span',{className:'chip chip-all'+(filtConseiller==='Tous'?' active':''),onClick:()=>{setFiltConseiller('Tous');if(onChangeConseiller)onChangeConseiller('Tous');}},
-              CE('span',{className:'chip-dot'}),'Tous'),
-            conseillersHist.map(c=>CE('span',{key:c,className:'chip'+(filtConseiller===c?' active':''),style:{color:conseillerColor(c)},onClick:()=>{const nv=filtConseiller===c?'Tous':c;setFiltConseiller(nv);if(onChangeConseiller)onChangeConseiller(nv);}},
-              CE('span',{className:'chip-dot',style:{background:conseillerColor(c)}}),c))),
-          CE('select',{style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12},value:filtPublic,onChange:e=>setFiltPublic(e.target.value)},
-            CE('option',{value:'Tous'},'— Type de public —'),PUBLICS.map(p=>CE('option',{key:p,value:p},p)))
+      // Corps pliable
+      CE('div',{className:'filter-body-v2'},
+        // Tags actifs
+        activeFilterCount>0&&CE('div',{className:'filter-active-tags'},
+          filtStatut!=='Tous'&&CE('span',{className:'filter-tag'},filtStatut,CE('button',{onClick:()=>setFiltStatut('Tous')},'✕')),
+          filtConseiller!=='Tous'&&CE('span',{className:'filter-tag'},filtConseiller,CE('button',{onClick:()=>{setFiltConseiller('Tous');if(onChangeConseiller)onChangeConseiller('Tous');}},'✕')),
+          filtMois!=='Tous'&&CE('span',{className:'filter-tag'},filtMois,CE('button',{onClick:()=>setFiltMois('Tous')},'✕')),
+          filtCommune!=='Toutes'&&CE('span',{className:'filter-tag'},filtCommune,CE('button',{onClick:()=>setFiltCommune('Toutes')},'✕')),
+          filtPublic!=='Tous'&&CE('span',{className:'filter-tag'},filtPublic,CE('button',{onClick:()=>setFiltPublic('Tous')},'✕')),
+          (dateFrom||dateTo)&&CE('span',{className:'filter-tag'},(dateFrom||'…')+' → '+(dateTo||'…'),CE('button',{onClick:()=>{setDateFrom('');setDateTo('');}},'✕'))
         ),
-        CE('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}},
-          CE('div',{style:{display:'flex',alignItems:'center',gap:4}},
-            CE('span',{style:{fontSize:11,fontWeight:700,color:'#718096',whiteSpace:'nowrap'}},'Du'),
-            CE('input',{type:'date',value:dateFrom,onChange:e=>setDateFrom(e.target.value),style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12}}),
-            CE('span',{style:{fontSize:11,fontWeight:700,color:'#718096',whiteSpace:'nowrap'}},'Au'),
-            CE('input',{type:'date',value:dateTo,onChange:e=>setDateTo(e.target.value),style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12}})
+        // Section Statut
+        CE('div',{className:'filter-section-v2'},
+          CE('div',{className:'fs-head-v2'+(secStatutOpen?' open':''),onClick:()=>setSecStatutOpen(o=>!o)},
+            CE('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+              CE('circle',{cx:12,cy:12,r:10}),CE('path',{d:'M12 8v4l3 3'})),
+            'Statut',
+            filtStatut!=='Tous'&&CE('span',{className:'fs-badge-v2'},filtStatut),
+            CE('span',{className:'fs-chev'},'▾')
           ),
-          CE('button',{className:'btn btn-secondary btn-sm',onClick:()=>setSortDir(d=>-d)},sortDir===1?'↑ Date':'↓ Date'),
-          CE('button',{className:'btn btn-secondary btn-sm',onClick:exportXLSX},'📥 XLSX'),
-          CE('button',{className:'btn btn-secondary btn-sm',onClick:onRefresh},'🔄 Sync'),
-          CE('button',{className:'btn btn-secondary btn-sm',onClick:resetFiltres},'✖ Réinitialiser')
+          CE('div',{className:'fs-body-v2'+(secStatutOpen?' open':'')},
+            CE('div',{className:'pill-group-v2'},
+              CHIP_STATUTS.map(c=>CE('button',{key:c.key,
+                className:'pill-v2'+(filtStatut===c.key?' active':''),
+                style:filtStatut===c.key&&c.dot?{background:c.dot}:{},
+                onClick:()=>setFiltStatut(c.key)},
+                c.dot&&CE('span',{className:'pill-v2-dot',style:{background:filtStatut===c.key?'rgba(255,255,255,.7)':c.dot}}),
+                c.label,' ',CE('small',{style:{opacity:.7,fontSize:11}},'('+counts[c.key]+')')
+              ))
+            )
+          )
+        ),
+        // Section Conseiller
+        CE('div',{className:'filter-section-v2'},
+          CE('div',{className:'fs-head-v2'+(secConsOpen?' open':''),onClick:()=>setSecConsOpen(o=>!o)},
+            CE('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+              CE('circle',{cx:9,cy:7,r:4}),CE('path',{d:'M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2'}),CE('path',{d:'M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87'})),
+            'Conseiller',
+            filtConseiller!=='Tous'&&CE('span',{className:'fs-badge-v2'},filtConseiller.split(' ')[0]),
+            CE('span',{className:'fs-chev'},'▾')
+          ),
+          CE('div',{className:'fs-body-v2'+(secConsOpen?' open':'')},
+            CE('div',{className:'pill-group-v2'},
+              CE('button',{className:'pill-v2'+(filtConseiller==='Tous'?' active':''),
+                style:filtConseiller==='Tous'?{background:'#13202a'}:{},
+                onClick:()=>{setFiltConseiller('Tous');if(onChangeConseiller)onChangeConseiller('Tous');}},
+                'Tous'),
+              conseillersHist.map(c=>CE('button',{key:c,
+                className:'pill-v2'+(filtConseiller===c?' active':''),
+                style:filtConseiller===c?{background:conseillerColor(c)}:{color:conseillerColor(c)},
+                onClick:()=>{const nv=filtConseiller===c?'Tous':c;setFiltConseiller(nv);if(onChangeConseiller)onChangeConseiller(nv);}},
+                CE('span',{className:'pill-v2-dot',style:{background:conseillerColor(c)}}),c))
+            )
+          )
+        ),
+        // Section Période
+        CE('div',{className:'filter-section-v2'},
+          CE('div',{className:'fs-head-v2'+(secDateOpen?' open':''),onClick:()=>setSecDateOpen(o=>!o)},
+            CE('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+              CE('rect',{x:3,y:4,width:18,height:18,rx:2}),CE('path',{d:'M16 2v4M8 2v4M3 10h18'})),
+            'Période',
+            (filtMois!=='Tous'||dateFrom||dateTo)&&CE('span',{className:'fs-badge-v2'},'actif'),
+            CE('span',{className:'fs-chev'},'▾')
+          ),
+          CE('div',{className:'fs-body-v2'+(secDateOpen?' open':'')},
+            CE('div',{className:'f-sel-wrap-v2'},
+              CE('select',{className:'f-select-v2',value:filtMois,onChange:e=>setFiltMois(e.target.value)},
+                CE('option',{value:'Tous'},'Tous les mois'),moisDispo.map(m=>CE('option',{key:m,value:m},m))),
+              CE('span',{className:'f-sel-ico'},'▾')
+            ),
+            CE('div',{className:'date-row-v2'},
+              CE('div',{className:'date-field-v2'},
+                CE('label',null,'Du'),
+                CE('input',{type:'date',value:dateFrom,onChange:e=>setDateFrom(e.target.value)})),
+              CE('div',{className:'date-field-v2'},
+                CE('label',null,'Au'),
+                CE('input',{type:'date',value:dateTo,onChange:e=>setDateTo(e.target.value)}))
+            )
+          )
+        ),
+        // Section Public & commune
+        CE('div',{className:'filter-section-v2'},
+          CE('div',{className:'fs-head-v2'+(secPublicOpen?' open':''),onClick:()=>setSecPublicOpen(o=>!o)},
+            CE('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+              CE('path',{d:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'}),CE('circle',{cx:9,cy:7,r:4}),CE('path',{d:'M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'})),
+            'Public & commune',
+            (filtPublic!=='Tous'||filtCommune!=='Toutes')&&CE('span',{className:'fs-badge-v2'},'actif'),
+            CE('span',{className:'fs-chev'},'▾')
+          ),
+          CE('div',{className:'fs-body-v2'+(secPublicOpen?' open':'')},
+            CE('div',{className:'f-sel-wrap-v2'},
+              CE('select',{className:'f-select-v2',value:filtPublic,onChange:e=>setFiltPublic(e.target.value)},
+                CE('option',{value:'Tous'},'Tous les publics'),PUBLICS.map(p=>CE('option',{key:p,value:p},p))),
+              CE('span',{className:'f-sel-ico'},'▾')
+            ),
+            CE('div',{className:'f-sel-wrap-v2'},
+              CE('select',{className:'f-select-v2',value:filtCommune,onChange:e=>setFiltCommune(e.target.value)},
+                CE('option',{value:'Toutes'},'Toutes communes'),
+                [...new Set(entries.map(e=>e.commune).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(c=>CE('option',{key:c,value:c},c))),
+              CE('span',{className:'f-sel-ico'},'▾')
+            )
+          )
         )
       )
+    ),
+    // ── Barre résultats ───────────────────────────────────────
+    CE('div',{className:'result-info-v2'},
+      CE('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+        CE('circle',{cx:11,cy:11,r:8}),CE('path',{d:'M21 21l-4.35-4.35'})),
+      CE('strong',null,filtered.length),CE('span',null,' atelier(s) affiché(s) sur '+entries.length),
+      CE('button',{className:'btn-sync-v2 result-info-v2',style:{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:'#4e6270'},onClick:()=>setSortDir(d=>-d)},sortDir===1?'↑ Date':'↓ Date'),
+      CE('button',{className:'btn-xlsx-v2',onClick:exportXLSX},'📥 XLSX'),
+      CE('button',{className:'btn-sync-v2',style:{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:'#4e6270'},onClick:onRefresh},'🔄 Sync')
     ),
     // Liste des ateliers
     CE('div',{className:'atelier-list'},filtered.map((e,ei)=>{
