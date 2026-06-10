@@ -471,3 +471,11 @@
   border: none;
   cursor: pointer;
 }
+
+/* ── Fix scroll nav départ gauche ───────────────────────── */
+.bottom-nav-scroll {
+  scroll-padding-left: 0;
+}
+.bottom-nav-scroll .bnav-btn:first-child {
+  scroll-snap-align: start;
+}

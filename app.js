@@ -381,7 +381,7 @@ function App(){
           'Stats', visibility.dashboard),
         navBtn('bingo',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('circle',{cx:12,cy:12,r:10}),CE('circle',{cx:12,cy:12,r:6}),CE('circle',{cx:12,cy:12,r:2})),
-          'Objectifs', visibility.bingo)
+          'Bingo', visibility.bingo)
       )
     ),
 
