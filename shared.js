@@ -583,27 +583,27 @@ window.onLogout = function(){
   sessionStorage.removeItem('gs_conseiller');
 };
 
-// ── API v11.0 — AbortController + token auth + doPost pour écritures ──
+// ── API v11.0 — AbortController + token auth (GET uniquement — GAS ne supporte pas CORS preflight POST) ──
 (function(){
   const MAX_RETRY   = 1;
   const RETRY_DELAY = 3000;
   const isMobile    = /Android|iPhone|iPad/i.test(navigator.userAgent);
   const TIMEOUT_MS  = isMobile ? 20000 : 12000;
 
-  // Actions qui nécessitent un POST (avec token)
+  // Actions d'écriture qui exigent un token
   const WRITE_ACTIONS = new Set([
     'saveEntry','saveMany','delete',
     'saveLists','saveConfig','setConfig',
     'saveVisibility','saveColors','saveEmails',
     'saveCompte','resetPassword','setPassword',
-    'logAccesIndex','checkPassword'
+    'logAccesIndex'
   ]);
 
   // ── Gestion du token en sessionStorage ──────────────────────
   window.authToken = {
     get()  { return sessionStorage.getItem('gs_token') || null; },
     set(t) { sessionStorage.setItem('gs_token', t); },
-    clear(){ sessionStorage.removeItem('gs_token'); sessionStorage.removeItem('gs_role'); },
+    clear(){ sessionStorage.removeItem('gs_token'); sessionStorage.removeItem('gs_role'); sessionStorage.removeItem('gs_conseiller'); },
     getRole()   { return sessionStorage.getItem('gs_role') || 'user'; },
     setRole(r)  { sessionStorage.setItem('gs_role', r); }
   };
@@ -612,52 +612,35 @@ window.onLogout = function(){
     const isWrite = WRITE_ACTIONS.has(action);
     const isAdmin = window.location.pathname.indexOf('admin.html') > -1;
 
+    const params = new URLSearchParams({action});
+    if(isAdmin) params.set('source', 'admin');
+
+    // Injecter le token sur les écritures
+    if(isWrite){
+      const token = window.authToken.get();
+      if(token) params.set('token', token);
+      const conseiller = sessionStorage.getItem('gs_conseiller') || '';
+      if(conseiller) params.set('conseiller', conseiller);
+    }
+
+    if(body && Object.keys(body).length){
+      Object.entries(body).forEach(([k,v])=>{
+        params.set(k, typeof v==='object' ? JSON.stringify(v) : v);
+      });
+    }
+
     const controller = new AbortController();
     const timeoutId  = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
     try{
-      let res;
-
-      if(isWrite){
-        // ── POST avec token ──────────────────────────────────
-        const payload = { action, ...body };
-        // Injecter le token sur toutes les écritures sauf checkPassword
-        if(action !== 'checkPassword'){
-          const token = window.authToken.get();
-          if(token) payload.token = token;
-          // Ajouter le conseiller pour vérification côté GAS
-          const role = window.authToken.getRole();
-          if(!payload.conseiller && role) payload.conseiller = sessionStorage.getItem('gs_conseiller') || '';
-        }
-        if(isAdmin) payload.source = 'admin';
-
-        res = await fetch(GS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        });
-      } else {
-        // ── GET pour les lectures seules ─────────────────────
-        const params = new URLSearchParams({action});
-        if(isAdmin) params.set('source', 'admin');
-        if(body && Object.keys(body).length){
-          Object.entries(body).forEach(([k,v])=>{
-            params.set(k, typeof v==='object' ? JSON.stringify(v) : v);
-          });
-        }
-        res = await fetch(`${GS_URL}?${params.toString()}`, { signal: controller.signal });
-      }
-
+      const res = await fetch(`${GS_URL}?${params.toString()}`, { signal: controller.signal });
       clearTimeout(timeoutId);
 
       // ── Vérifier res.ok + content-type ───────────────────
-      if(!res.ok){
-        throw new Error(`Erreur serveur HTTP ${res.status}`);
-      }
+      if(!res.ok) throw new Error(`Erreur serveur HTTP ${res.status}`);
       const ct = res.headers.get('content-type') || '';
       if(!ct.includes('application/json') && !ct.includes('text/plain')){
-        throw new Error('Réponse inattendue du serveur (pas du JSON). GAS a peut-être renvoyé une page d\'erreur HTML.');
+        throw new Error('Réponse inattendue du serveur (pas du JSON).');
       }
       return res.json();
 

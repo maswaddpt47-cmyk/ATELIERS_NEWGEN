@@ -147,8 +147,6 @@ function App(){
     }
   }
 
-  const isFirstLoad=React.useRef(true);
-
   React.useEffect(()=>{
     const on=()=>setOnline(true);
     const off=()=>setOnline(false);
