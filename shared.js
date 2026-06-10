@@ -318,6 +318,73 @@ tr:hover td{background:#f7fafc}
 .sp-info-row span:last-child{font-weight:600;color:#1a202c;text-align:right;max-width:60%}
 .mat-chip{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;background:#e2e8f0;color:#4a5568;margin:2px}
 .chip-bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+/* ══ Variables CSS maquette v2 ══════════════════════════════ */
+:root{
+  --primary:#0f6e7a;--primary-soft:#e0f0f3;--primary-dim:rgba(15,110,122,.12);
+  --bg:#e8edf1;--surface:#ffffff;--surface-2:#f3f7f9;--border:#d4dfe6;
+  --edge:rgba(255,255,255,.95);--text:#13202a;--text-2:#4e6270;--text-3:#7a8e98;
+  --shadow-kpi:0 1px 0 var(--edge) inset,0 1px 3px rgba(12,36,48,.09),0 4px 14px rgba(12,36,48,.10);
+  --shadow-panel:0 1px 0 var(--edge) inset,0 2px 4px rgba(12,36,48,.06),0 10px 28px rgba(12,36,48,.11);
+  --shadow-sm:0 1px 2px rgba(12,36,48,.07),0 3px 8px rgba(12,36,48,.07);
+  --ok:#15803d;--ok-bg:#d4f0e0;--info:#1b4fd6;--info-bg:#dce8fc;
+  --warn:#9e4408;--warn-bg:#fce8d4;--err:#b82b20;--err-bg:#fce0dd;
+  --neutral:#506470;--neutral-bg:#e4ecf0;--radius:14px;--radius-sm:10px;
+}
+/* ══ KPI strip maquette v2 ══════════════════════════════════ */
+.kpi-strip-v2{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:12px}
+.kpi-mini-v2{
+  background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%);
+  border:1px solid var(--border);border-radius:12px;padding:9px 5px 8px;
+  text-align:center;box-shadow:var(--shadow-kpi);position:relative;overflow:hidden;
+  transition:transform .16s,box-shadow .16s;cursor:default;
+}
+.kpi-mini-v2::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:2px;border-radius:2px;background:var(--kc,var(--primary));opacity:.35}
+.kpi-mini-v2:hover{transform:translateY(-2px);box-shadow:var(--shadow-kpi),0 8px 24px rgba(12,36,48,.13)}
+.kpi-mini-v2 b{display:block;font-size:17px;font-weight:800;line-height:1.1;color:var(--kc,var(--primary))}
+.kpi-mini-v2 span{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);display:block;margin-top:1px}
+.kpi-mini-v2 small{display:block;font-size:9.6px;font-weight:800;color:var(--kc,var(--primary));margin-top:1px;opacity:.85}
+/* ══ Barre conseiller v2 ════════════════════════════════════ */
+.conseiller-bar-v2{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--info) 8%,var(--surface)),var(--surface));border:1px solid color-mix(in srgb,var(--info) 18%,var(--border));border-radius:var(--radius-sm);padding:9px 13px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+.conseiller-bar-v2 span{font-size:14px;font-weight:700;color:var(--info);flex:1}
+.conseiller-bar-v2 button{font-size:12px;font-weight:700;color:var(--info);background:var(--surface);border:1.5px solid var(--info);border-radius:8px;padding:4px 12px;cursor:pointer;transition:.15s}
+.conseiller-bar-v2 button:hover{background:var(--info);color:#fff}
+/* ══ Carte atelier maquette v2 ══════════════════════════════ */
+.atelier-card-v2{
+  background:linear-gradient(180deg,var(--surface),var(--surface-2));
+  border:1px solid var(--border);border-left:4px solid var(--c,var(--primary));
+  border-radius:var(--radius);box-shadow:0 1px 0 var(--edge) inset,var(--shadow-sm);
+  padding:13px 14px;margin-bottom:10px;
+  display:grid;grid-template-columns:52px 1fr;grid-template-rows:auto auto auto auto;
+  column-gap:13px;cursor:pointer;transition:box-shadow .16s,transform .12s;
+}
+.atelier-card-v2:hover{box-shadow:0 1px 0 var(--edge) inset,0 4px 18px rgba(12,36,48,.14);transform:translateY(-1px)}
+.ac-v2-date{grid-column:1;grid-row:1/5;display:flex;flex-direction:column;align-items:center;padding-top:2px;gap:4px}
+.ac-v2-datebox{width:48px;text-align:center;padding:5px 0;border-radius:11px;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);box-shadow:0 1px 0 var(--edge) inset,0 2px 8px rgba(12,36,48,.09)}
+.ac-v2-datebox b{display:block;font-size:18px;font-weight:800;line-height:1.1;color:var(--text)}
+.ac-v2-datebox small{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--text-3)}
+.ac-v2-time{font-size:13px;font-weight:700;color:var(--text-2);text-align:center}
+.ac-v2-day{font-size:10px;color:var(--text-3);text-align:center}
+.ac-v2-top{grid-column:2;grid-row:1;display:flex;align-items:center;gap:5px;padding-bottom:3px;flex-wrap:wrap}
+.ac-v2-conseiller{grid-column:2;grid-row:2;font-size:13px;font-weight:700;padding-bottom:2px}
+.ac-v2-title{grid-column:2;grid-row:3;font-size:15px;font-weight:700;line-height:1.3;color:var(--text)}
+.ac-v2-sub{grid-column:2;grid-row:4;font-size:12px;color:var(--text-3);padding-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-v2-foot{grid-column:1/-1;grid-row:5;display:flex;align-items:center;gap:8px;padding-top:9px;margin-top:8px;border-top:1px solid var(--border);flex-wrap:wrap}
+.ac-v2-presence{margin-left:auto;font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:4px}
+.ac-v2-presence strong{color:var(--text-2)}
+/* Badges maquette v2 */
+.badge-v2{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:12px;white-space:nowrap}
+.badge-v2::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.bv2-ok{color:var(--ok);background:var(--ok-bg)}
+.bv2-info{color:var(--info);background:var(--info-bg)}
+.bv2-warn{color:var(--warn);background:var(--warn-bg)}
+.bv2-err{color:var(--err);background:var(--err-bg)}
+.bv2-neutral{color:var(--neutral);background:var(--neutral-bg)}
+.bv2-retard{color:var(--err);background:var(--err-bg);border:1px solid var(--err);animation:blink-retard 1.4s ease-in-out infinite}
+.tag-v2{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--surface-2);color:var(--text-3);border:1px solid var(--border)}
+/* Alerte retard v2 */
+.alerte-retard-v2{display:flex;align-items:center;gap:10px;background:var(--warn-bg);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+.alerte-retard-v2 .ar-title{font-weight:700;color:var(--warn);font-size:13px}
+.alerte-retard-v2 .ar-sub{font-size:12px;color:var(--warn);opacity:.8;margin-top:2px}
 /* ── Nouveau panneau filtres v2 ─────────────────────────── */
 .search-always{display:flex;align-items:center;gap:9px;background:#fff;border:1.5px solid #d4dfe6;border-radius:10px;padding:10px 14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(12,36,48,.07),0 3px 8px rgba(12,36,48,.07);transition:border .18s,box-shadow .18s}
 .search-always:focus-within{border-color:#0f6e7a;box-shadow:0 1px 2px rgba(12,36,48,.07),0 3px 8px rgba(12,36,48,.07),0 0 0 3px rgba(15,110,122,.12)}
@@ -1391,25 +1458,26 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
   // CLOTURE_PRESETS — v10.0 : défini globalement dans shared.js
 
   return CE('div',null,
-    // KPIs
-    CE('div',{className:'kpi-row'},
-      CE(FadeItem,{delay:0,style:{flex:'1 1 0',minWidth:0}},CE('div',{className:'kpi-mini',style:{borderLeft:'3px solid #1e3a8a',background:'#f0f4ff'}},CE('div',{className:'v',style:{color:'#1e3a8a'}},kpi.total),CE('div',{className:'l'},'Total'))),
-      CE(FadeItem,{delay:0.08,style:{flex:'1 1 0',minWidth:0}},CE('div',{className:'kpi-mini',style:{borderLeft:'3px solid #16a34a',background:'#f0fdf4'}},CE('div',{className:'v',style:{color:'#166534'}},kpi.realises),CE('div',{className:'l'},'Réalisés'),CE('div',{className:'p',style:{color:'#166534'}},kpi.total?Math.round(kpi.realises/kpi.total*100)+'%':'-'))),
-      CE(FadeItem,{delay:0.16,style:{flex:'1 1 0',minWidth:0}},CE('div',{className:'kpi-mini',style:{borderLeft:'3px solid #dc2626',background:'#fff5f5'}},CE('div',{className:'v',style:{color:'#991b1b'}},kpi.annules),CE('div',{className:'l'},'Annulés'),CE('div',{className:'p',style:{color:'#991b1b'}},kpi.total?Math.round(kpi.annules/kpi.total*100)+'%':'-'))),
-      CE(FadeItem,{delay:0.24,style:{flex:'1 1 0',minWidth:0}},CE('div',{className:'kpi-mini',style:{borderLeft:'3px solid #2563eb',background:'#eff6ff'}},CE('div',{className:'v',style:{color:'#2563eb'}},kpi.inscrits),CE('div',{className:'l'},'Inscrits'))),
-      CE(FadeItem,{delay:0.32,style:{flex:'1 1 0',minWidth:0}},CE('div',{className:'kpi-mini',style:{borderLeft:'3px solid #d97706',background:'#fffbeb'}},CE('div',{className:'v',style:{color:'#d97706'}},kpi.presents),CE('div',{className:'l'},'Présents'),CE('div',{className:'p',style:{color:'#d97706'}},kpi.tx+'%')))
+    // KPI strip v2
+    CE('div',{className:'kpi-strip-v2'},
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--primary)'}},CE('b',null,kpi.total),CE('span',null,'Total')),
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--ok)'}},CE('b',null,kpi.realises),CE('span',null,'Réalisés'),kpi.total?CE('small',null,Math.round(kpi.realises/kpi.total*100)+'%'):null),
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--err)'}},CE('b',null,kpi.annules),CE('span',null,'Annulés'),kpi.total?CE('small',null,Math.round(kpi.annules/kpi.total*100)+'%'):null),
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--info)'}},CE('b',null,kpi.inscrits),CE('span',null,'Inscrits')),
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--warn)'}},CE('b',null,kpi.presents),CE('span',null,'Présents'),kpi.inscrits?CE('small',null,kpi.tx+'%'):null)
     ),
-    // Alerte retards
-    nRetard>0&&CE('div',{style:{background:'#fffbeb',border:'1px solid #fcd34d',borderRadius:10,padding:'10px 14px',marginBottom:10,display:'flex',gap:10,alignItems:'center'}},
-      CE('span',{style:{fontSize:20}},'⚠️'),
+    // Alerte retards v2
+    nRetard>0&&CE('div',{className:'alerte-retard-v2'},
+      CE('span',{style:{fontSize:22}},'⚠️'),
       CE('div',null,
-        CE('div',{style:{fontWeight:700,color:'#92400e',fontSize:13}},`${nRetard} atelier(s) en attente de mise à jour`),
-        CE('div',{style:{fontSize:12,color:'#b45309'}},'Statut "Planifié" mais date déjà passée — cliquez sur un atelier pour le clôturer rapidement')
+        CE('div',{className:'ar-title'},`${nRetard} atelier(s) en attente de mise à jour`),
+        CE('div',{className:'ar-sub'},'Statut "Planifié" mais date déjà passée')
       )
     ),
-    // Filtre conseiller (frontend)
-    initConseiller&&CE('div',{className:'filtre-banner'},
-      CE('span',null,'👤 Affichage filtré : ',CE('strong',null,initConseiller)),
+    // Barre conseiller v2
+    initConseiller&&CE('div',{className:'conseiller-bar-v2'},
+      CE('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('circle',{cx:12,cy:8,r:4}),CE('path',{d:'M4 20c0-4 3.6-7 8-7s8 3 8 7'})),
+      CE('span',null,initConseiller),
       CE('button',{onClick:resetFiltres},'Voir tous')
     ),
     // ── Recherche toujours visible ────────────────────────────
@@ -1429,8 +1497,8 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
         CE('button',{className:'filter-btn-reset',onClick:e=>{e.stopPropagation();resetFiltres();}},'Effacer'),
         CE('span',{className:'filter-expand-ico'},'▾')
       ),
-      // Corps pliable
-      CE('div',{className:'filter-body-v2'},
+      // Corps pliable — toujours dans le DOM, CSS gère max-height
+      CE('div',{className:'filter-body-v2'+(filtresOpen?' open':'')},
         // Tags actifs
         activeFilterCount>0&&CE('div',{className:'filter-active-tags'},
           filtStatut!=='Tous'&&CE('span',{className:'filter-tag'},filtStatut,CE('button',{onClick:()=>setFiltStatut('Tous')},'✕')),
@@ -1546,24 +1614,37 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
     // Liste des ateliers
     CE('div',{className:'atelier-list'},filtered.map((e,ei)=>{
       const d=fmtCardDate(e.date);const retard=isRetard(e);const cColor=conseillerColor(e.conseiller);
-      return CE(FadeItem,{key:e._id,delay:Math.min(ei*0.05,0.5)},CE('div',{className:'atelier-card',style:{background:retard?'#fffbeb':hexToRgba(cColor,0.04),borderLeft:'none'},onClick:()=>openPanel(e)},
-        CE('div',{className:'atelier-card-border',style:{background:cColor}}),
-        CE('div',{className:'atelier-card-date',style:{background:hexToRgba(cColor,0.08),borderRight:`1px solid ${hexToRgba(cColor,0.2)}`}},
-          CE('div',{className:'atelier-card-day'},d.day),CE('div',{className:'atelier-card-month'},d.month),
-          CE('div',{className:'atelier-card-jour'},d.jour),CE('div',{className:'atelier-card-time'},e.horaire)
-        ),
-        CE('div',{className:'atelier-card-body'},
-          CE('div',{className:'atelier-card-badges'},
-            badgePill(e.statut,retard),
-            e.orienteur&&CE('span',{style:{fontSize:11,color:'#718096',fontStyle:'italic',alignSelf:'center'}},e.orienteur),
-            CE('span',{className:'badge-pill bp-public'},e.public||'Tous publics')
+      const badgeCls=retard?'badge-v2 bv2-retard':e.statut==='Réalisé'?'badge-v2 bv2-ok':e.statut==='Annulé'?'badge-v2 bv2-err':e.statut==='Reporté'?'badge-v2 bv2-warn':e.statut==='Non réalisé'?'badge-v2 bv2-neutral':'badge-v2 bv2-info';
+      return CE(FadeItem,{key:e._id,delay:Math.min(ei*0.04,0.4)},
+        CE('div',{className:'atelier-card-v2',style:{'--c':cColor},onClick:()=>openPanel(e)},
+          // Colonne date
+          CE('div',{className:'ac-v2-date'},
+            CE('div',{className:'ac-v2-datebox'},CE('b',null,d.day),CE('small',null,d.month)),
+            CE('div',{className:'ac-v2-time'},e.horaire),
+            CE('div',{className:'ac-v2-day'},d.jour)
           ),
-          CE('div',{className:'atelier-card-conseiller',style:{color:cColor}},e.conseiller),
-          CE('div',{className:'atelier-card-title'},e.thematique),
-          CE('div',{className:'atelier-card-sub'},e.commune,' — ',e.lieu,(e.inscrits||e.presents)?CE('span',null,' · ',e.presents||0,'/',e.inscrits||0,' présents'):null)
-        ),
-        CE('div',{className:'atelier-card-arrow'},'›')
-      ));
+          // Badges statut + public
+          CE('div',{className:'ac-v2-top'},
+            CE('span',{className:badgeCls},retard?'⚠️ Retard':e.statut),
+            e.orienteur&&CE('span',{className:'tag-v2'},e.orienteur),
+            CE('span',{className:'tag-v2'},e.public||'Tous publics')
+          ),
+          // Conseiller
+          CE('div',{className:'ac-v2-conseiller',style:{color:cColor}},e.conseiller),
+          // Titre
+          CE('div',{className:'ac-v2-title'},e.thematique),
+          // Sous-titre
+          CE('div',{className:'ac-v2-sub'},e.commune,' — ',e.lieu),
+          // Pied présence
+          CE('div',{className:'ac-v2-foot'},
+            CE('span',{className:'tag-v2'},e.lieu||'—'),
+            CE('div',{className:'ac-v2-presence'},
+              CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2},CE('path',{d:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'}),CE('circle',{cx:9,cy:7,r:4})),
+              CE('strong',null,e.presents||0),'/',(e.inscrits||0)
+            )
+          )
+        )
+      );
     })),
     // Side panel overlay
     panel&&CE('div',{className:'side-panel-overlay',onClick:closePanel}),
@@ -1738,8 +1819,8 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
           CE('span',{style:{fontSize:11,transition:'transform .2s',transform:filtresOpen?'rotate(180deg)':'rotate(0deg)'}},'▾')
         )
       ),
-      // Chips conseillers + KPIs — collapsibles
-      filtresOpen&&CE('div',{style:{borderTop:'1px solid #f0f4f8',padding:'10px 14px'}},
+      // Chips conseillers + KPIs — collapsibles via CSS
+      CE('div',{style:{borderTop:filtresOpen?'1px solid #f0f4f8':'none',maxHeight:filtresOpen?'500px':'0',overflow:'hidden',transition:'max-height .3s cubic-bezier(.4,0,.2,1)',padding:filtresOpen?'10px 14px':'0 14px'}},
         CE('div',{className:'chip-bar',style:{marginBottom:10}},
           CE('span',{className:'chip chip-all'+(filtConseiller==='Tous'?' active':''),onClick:()=>{setFiltConseiller('Tous');if(onChangeConseiller)onChangeConseiller('Tous');}},
             CE('span',{className:'chip-dot'}),'Tous'),
