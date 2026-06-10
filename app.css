@@ -479,3 +479,14 @@
 .bottom-nav-scroll .bnav-btn:first-child {
   scroll-snap-align: start;
 }
+
+/* ── Fix zone tactile bnav ───────────────────────────────── */
+.bottom-nav-scroll {
+  scroll-snap-type: none;
+}
+.bnav-btn {
+  min-width: 64px;
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  touch-action: manipulation;
+}
