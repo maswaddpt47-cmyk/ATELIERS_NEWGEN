@@ -591,12 +591,12 @@ window.onLogout = function(){
   const TIMEOUT_MS  = isMobile ? 20000 : 12000;
 
   // Actions d'écriture qui exigent un token
+  // logAccesIndex est volontairement exclu — appelé avant auth (choix conseiller)
   const WRITE_ACTIONS = new Set([
     'saveEntry','saveMany','delete',
     'saveLists','saveConfig','setConfig',
     'saveVisibility','saveColors','saveEmails',
-    'saveCompte','resetPassword','setPassword',
-    'logAccesIndex'
+    'saveCompte','resetPassword','setPassword'
   ]);
 
   // ── Gestion du token en sessionStorage ──────────────────────
