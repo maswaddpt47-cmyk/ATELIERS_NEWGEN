@@ -68,7 +68,9 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
       ]);
       if(res.ok){
         setFailCount(0);setLockUntil(0);
-        touchSession();onLogin(res.role||'user',conseiller);
+        touchSession();
+        window.onLoginSuccess(conseiller, res);
+        onLogin(res.role||'user',conseiller);
       }else{
         const nf=failCount+1;
         setFailCount(nf);
