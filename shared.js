@@ -718,13 +718,16 @@ window.onLogout = function(){
   const isMobile    = /Android|iPhone|iPad/i.test(navigator.userAgent);
   const TIMEOUT_MS  = isMobile ? 20000 : 12000;
 
-  // Actions d'écriture qui exigent un token
-  // logAccesIndex est volontairement exclu — appelé avant auth (choix conseiller)
-  const WRITE_ACTIONS = new Set([
-    'saveEntry','saveMany','delete',
+  // Actions d'écriture qui exigent un token (admin uniquement)
+  // saveEntry/saveMany/delete accessibles aux conseillers sans token
+  const ADMIN_ONLY_ACTIONS = new Set([
     'saveLists','saveConfig','setConfig',
     'saveVisibility','saveColors','saveEmails',
     'saveCompte','resetPassword','setPassword'
+  ]);
+  const WRITE_ACTIONS = new Set([
+    'saveEntry','saveMany','delete',
+    ...ADMIN_ONLY_ACTIONS
   ]);
 
   // ── Gestion du token en sessionStorage ──────────────────────
@@ -743,15 +746,18 @@ window.onLogout = function(){
     const params = new URLSearchParams({action});
     if(isAdmin) params.set('source', 'admin');
 
-    // Injecter le token sur les écritures (conseillers)
+    // Injecter le token sur les écritures admin
+    // Les conseillers (sans token) peuvent saveEntry/saveMany/delete
     if(isWrite){
       const token = window.authToken.get();
       if(token){
         params.set('token', token);
         const conseiller = sessionStorage.getItem('gs_conseiller') || '';
         if(conseiller) params.set('conseiller', conseiller);
+      } else if(isAdmin && ADMIN_ONLY_ACTIONS.has(action)){
+        // Admin sans token → erreur normale
       }
-      // Si pas de token mais source=admin déjà dans les params → GAS accepte
+      // Frontend conseiller sans token → GAS accepte saveEntry/saveMany/delete
     }
 
     if(body && Object.keys(body).length){
