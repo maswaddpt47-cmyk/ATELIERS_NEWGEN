@@ -431,7 +431,6 @@ function App(){
             })()
           )
         )
-      )
     ),
 
     // Modale listes
@@ -463,11 +462,10 @@ function App(){
     ),
 
     CE('div',{id:'toast',className:'toast',style:{opacity:0}})
-  );
+  ); // ferme return CE('div',{className:'app-shell-v2',...
 }
 
 // ════════════════════════════════════════════════════════════
-// Pages : Général · Conseillers · Territoire
 // Filtres croisés : mois, conseiller, statut
 // Données réelles issues de Google Sheets
 // ════════════════════════════════════════════════════════════
