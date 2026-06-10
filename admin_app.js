@@ -68,7 +68,6 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
       ]);
       if(res.ok){
         setFailCount(0);setLockUntil(0);
-        window.onLoginSuccess(conseiller, res);
         touchSession();onLogin(res.role||'user',conseiller);
       }else{
         const nf=failCount+1;
@@ -206,7 +205,6 @@ function App(){
   // touchSession() appelé sur chaque interaction clavier/souris.
   function doSessionExpire(){
     clearSession();
-    window.onLogout();
     setAuth(false);
     showToast('⏱️ Session expirée — reconnecte-toi.',false);
     addLog('Session expirée (30 min inactivité)','info');
@@ -326,143 +324,69 @@ function App(){
     )
   );
 
-  const sideBtn=(v,ico,lbl,extraClass)=>CE('button',{
+  const navBtn=(v,ico,lbl,extraClass)=>CE('button',{
     key:v,
-    className:'sidebar-btn'+(view===v?' active':'')+(extraClass?' '+extraClass:''),
-    title:lbl,
-    onClick:()=>setView(v)
+    className:'bnav-btn'+(view===v?' active':'')+(extraClass?' '+extraClass:''),
+    onClick:()=>setView(v),
+    'aria-label':lbl
   },
-    CE('span',{className:'sidebar-btn-ico'},ico),
-    CE('span',{className:'sidebar-btn-lbl'},lbl)
+    CE('span',{className:'bnav-ico'},ico),
+    CE('span',{className:'bnav-lbl'},lbl)
   );
 
   const accentColor = conseillerColor(adminConseiller)||NAV_DEFAULT_COLOR;
   const meta = VIEW_META[view]||{ico:'📄',label:view,group:''};
 
-  return CE('div',{className:'app-shell'},
+  return CE('div',{className:'app-shell-v2'},
 
-    CE('aside',{className:'sidebar'+(pinned?' sidebar--pinned':''),style:{background:accentColor}},
-
-      CE('button',{
-        className:'sidebar-pin-btn'+(pinned?' pinned':''),
-        title:pinned?'Désépingler le menu':'Épingler le menu',
-        onClick:()=>setPinned(p=>{const n=!p;localStorage.setItem('adm_sidebar_pinned',n?'1':'0');return n;})
-      },pinned?'📌':'📍'),
-
-      CE('div',{className:'sidebar-logo'},'🖥️'),
-      CE('span',{className:'sidebar-count'},entries.length),
-      CE('span',{className:'sidebar-admin-badge'},'ADMIN'),
-
-      // Groupe : Action
-      CE('div',{className:'sidebar-sep'}),
-      CE('span',{className:'sidebar-group-label'},'Action'),
-      sideBtn('saisie','✏️','Nouveau'),
-
-      // Groupe : Voir
-      CE('div',{className:'sidebar-sep'}),
-      CE('span',{className:'sidebar-group-label'},'Voir'),
-      sideBtn('historique','📋','Historique'),
-      sideBtn('agenda','🗓️','Agenda'),
-      sideBtn('calendrier','📅','Calendrier'),
-      sideBtn('carte','🗺️','Carte'),
-      sideBtn('roadmap','🛣️','Roadmap'),
-
-      // Groupe : Stats
-      CE('div',{className:'sidebar-sep'}),
-      CE('span',{className:'sidebar-group-label'},'Analyser'),
-      sideBtn('dashboard','📊','Dashboard'),
-      sideBtn('bingo','🎯','Bingo'),
-      sideBtn('anomalies','⚠️','Anomalies'),
-
-      // Groupe : Config — Listes ICI (remonté v9.3b)
-      CE('div',{className:'sidebar-sep'}),
-      CE('span',{className:'sidebar-group-label'},'Config'),
-      CE('button',{
-        className:'sidebar-btn sidebar-btn-listes',
-        title:'Gérer les listes déroulantes',
-        onClick:()=>setShowListes(true)
-      },
-        CE('span',{className:'sidebar-btn-ico'},'📋'),
-        CE('span',{className:'sidebar-btn-lbl'},'Listes')
+    // ── Topbar compacte admin ──────────────────────────────
+    CE('header',{className:'app-topbar-v2',style:{borderBottom:`2px solid ${accentColor}`}},
+      CE('div',{className:'app-topbar-v2-left'},
+        CE('span',{style:{fontSize:16}},meta.ico),
+        CE('span',{className:'app-topbar-v2-title'},meta.label),
+        meta.group&&CE('span',{className:'app-topbar-v2-sub'},'— '+meta.group)
       ),
-      sideBtn('logs','📜','Logs'),
-      role==='admin'&&sideBtn('admin','⚙️','Admin'),
-      role==='admin'&&sideBtn('logs_connexion','🔐','Connexions'),
-
-      // Bas : sélecteur année + notifs
-      CE('div',{className:'sidebar-bottom'},
-        CE('select',{
-          className:'sidebar-year',
-          value:annee,
-          onChange:e=>setAnnee(e.target.value),
-          title:'Année chargée'
-        },
-          [String(new Date().getFullYear()-1),String(new Date().getFullYear()),String(new Date().getFullYear()+1)]
-            .map(y=>CE('option',{key:y,value:y},y))
+      CE('div',{className:'app-topbar-v2-right'},
+        CE('span',{className:'sidebar-admin-badge'},'ADMIN'),
+        entries.length>0&&CE('span',{style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},entries.length),
+        CE('select',{className:'topbar-year-sel',value:annee,onChange:e=>setAnnee(e.target.value)},
+          [String(new Date().getFullYear()-1),String(new Date().getFullYear()),String(new Date().getFullYear()+1)].map(y=>CE('option',{key:y,value:y},y))
         ),
         CE('button',{
-          className:'sidebar-btn',
-          title:darkMode?'Mode clair':'Mode sombre',
           onClick:()=>setDarkMode(d=>!d),
-          style:{width:52,height:44,flexShrink:0}
-        },
-          CE('span',{className:'sidebar-btn-ico'},darkMode?'☀️':'🌙'),
-          CE('span',{className:'sidebar-btn-lbl'},darkMode?'Mode clair':'Mode sombre')
-        ),
+          style:{background:'none',border:'none',cursor:'pointer',fontSize:16,padding:0}
+        }, darkMode?'☀️':'🌙'),
         newEntries.length>0&&CE('button',{
-          className:'sidebar-notif-btn',
-          title:`${newEntries.length} nouveaux ateliers`,
-          onClick:()=>{setView('historique');window._filterNewEntries&&window._filterNewEntries(newEntries.map(e=>e._id));setNewEntries([]);}
-        },
-          CE('span',null,'🔔'),
-          CE('span',null,newEntries.length)
-        )
+          className:'topbar-notif-btn',
+          onClick:()=>{setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);}
+        },'🔔 ',CE('span',{className:'notif-badge'},newEntries.length)),
+        adminConseiller&&adminConseiller!=='admin'&&CE('span',{className:'app-topbar-conseiller',style:{background:accentColor}},adminConseiller),
+        CE('button',{
+          className:'topbar-changer-btn',
+          onClick:()=>{localStorage.removeItem('adm_conseiller');setAdminConseiller('');}
+        },'Changer')
       )
     ),
 
-    CE('div',{className:'app-content'+(pinned?' app-content--pinned':'')},
-
-      CE('div',{className:'app-topbar'},
-        CE('span',{style:{fontSize:16}},meta.ico),
-        CE('span',{className:'app-topbar-title'},meta.label),
-        meta.group&&CE('span',{className:'app-topbar-sub'},'— '+meta.group),
-        CE('div',{className:'app-topbar-right'},
-          syncing&&!loading&&CE('span',{className:'topbar-syncing',title:'Synchronisation en cours'},'🔄 Sync'),
-          lastSync&&!syncing&&CE('span',{
-            className:'topbar-sync-info',
-            title:'Sync auto toutes les 5 min'
-          },'🔄 '+lastSync.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})),
-          adminConseiller&&adminConseiller!=='admin'&&CE('span',{
-            className:'app-topbar-conseiller',
-            style:{background:accentColor}
-          },adminConseiller),
-          CE('button',{
-            onClick:()=>{localStorage.removeItem('adm_conseiller');setAdminConseiller('');},
-            title:'Changer d\'identité',
-            style:{background:'none',border:'1px solid #e2e8f0',borderRadius:6,padding:'3px 8px',fontSize:11,color:'#718096',cursor:'pointer'}
-          },'👤 Changer')
-        )
+    // ── Contenu principal ─────────────────────────────────
+    CE('main',{className:'app-main-v2'},
+      loading&&CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,height:260,color:'#9ca3af'}},
+        CE('span',{className:'spinner',style:{width:32,height:32,borderWidth:3,borderTopColor:accentColor,borderColor:accentColor+'33'}}),
+        CE('span',{style:{fontSize:13,fontWeight:600}},'Chargement des données…')
       ),
-
-      CE('div',{className:'app-main'},
-        loading&&CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,height:260,color:'#9ca3af'}},
-          CE('span',{className:'spinner',style:{width:32,height:32,borderWidth:3,borderTopColor:accentColor,borderColor:accentColor+'33'}}),
-          CE('span',{style:{fontSize:13,fontWeight:600}},'Chargement des données…')
-        ),
-        error&&CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:loadData},'🔄 Réessayer')),
-        !loading&&!error&&CE('div',{key:view,className:'view-anim'},
-          view==='saisie'&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(adminConseiller)}),
-          view==='historique'&&CE(VueHistorique,{key:'hist_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem('adm_conseiller',nom);setAdminConseiller(nom);}}),
-          view==='agenda'&&CE(VueAgendaSemaine,{key:'agenda_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,accentColor}),
-          view==='calendrier'&&CE(VueCalendrier,{key:'cal_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem('adm_conseiller',nom);setAdminConseiller(nom);}}),
-          view==='dashboard'&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
-          view==='carte'&&CE(VueCarte,{entries,active:view==='carte'}),
-          view==='roadmap'&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),
-          view==='bingo'&&CE(VueBingo,{entries}),
-          view==='anomalies'&&CE(VueAnomalies,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');},communes:window.COMMUNES_47_CACHE||[],apiFetch,showToast,addLog}),
-
-          view==='admin'&&role==='admin'&&CE(VueAdmin,{entries,onRefresh:loadData,addLog,conseillersList:lists.conseillers,onSaveColors:(c)=>{applyColors(c);},annee,adminConseiller}),
-          view==='logs_connexion'&&role==='admin'&&CE(VueLogs,null),
+      error&&CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:loadData},'🔄 Réessayer')),
+      !loading&&!error&&CE('div',{key:view,className:'view-anim'},
+        view==='saisie'&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(adminConseiller)}),
+        view==='historique'&&CE(VueHistorique,{key:'hist_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem('adm_conseiller',nom);setAdminConseiller(nom);}}),
+        view==='agenda'&&CE(VueAgendaSemaine,{key:'agenda_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,accentColor}),
+        view==='calendrier'&&CE(VueCalendrier,{key:'cal_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem('adm_conseiller',nom);setAdminConseiller(nom);}}),
+        view==='dashboard'&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
+        view==='carte'&&CE(VueCarte,{entries,active:view==='carte'}),
+        view==='roadmap'&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),
+        view==='bingo'&&CE(VueBingo,{entries}),
+        view==='anomalies'&&CE(VueAnomalies,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');},communes:window.COMMUNES_47_CACHE||[],apiFetch,showToast,addLog}),
+        view==='admin'&&role==='admin'&&CE(VueAdmin,{entries,onRefresh:loadData,addLog,conseillersList:lists.conseillers,onSaveColors:(c)=>{applyColors(c);},annee,adminConseiller}),
+        view==='logs_connexion'&&role==='admin'&&CE(VueLogs,null),
           view==='logs'&&CE('div',{className:'card'},
             CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:8}},
               CE('h2',{style:{margin:0}},'📜 Journal des opérations'),
@@ -510,7 +434,7 @@ function App(){
       )
     ),
 
-    // Modale listes — avec emails v9.3
+    // Modale listes
     showListes&&CE(VueListes,{
       lists,
       onSave:handleSaveLists,
@@ -518,6 +442,25 @@ function App(){
       emails,
       onSaveEmails:handleSaveEmails
     }),
+
+    // ── Bottom nav admin ──────────────────────────────────
+    CE('nav',{className:'bottom-nav-v2','aria-label':'Navigation admin'},
+      navBtn('saisie',
+        CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M12 5v14M5 12h14'})),
+        'Nouveau'),
+      navBtn('historique',
+        CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01'})),
+        'Historique'),
+      navBtn('calendrier',
+        CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:3,y:4,width:18,height:18,rx:2}),CE('path',{d:'M16 2v4M8 2v4M3 10h18'})),
+        'Calendrier'),
+      navBtn('dashboard',
+        CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M3 3v18h18'}),CE('rect',{x:7,y:10,width:3,height:8,rx:1}),CE('rect',{x:13,y:6,width:3,height:12,rx:1})),
+        'Stats'),
+      role==='admin'&&navBtn('admin',
+        CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('circle',{cx:12,cy:12,r:3}),CE('path',{d:'M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14'})),
+        'Config')
+    ),
 
     CE('div',{id:'toast',className:'toast',style:{opacity:0}})
   );

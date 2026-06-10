@@ -319,8 +319,8 @@ tr:hover td{background:#f7fafc}
 .mat-chip{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;background:#e2e8f0;color:#4a5568;margin:2px}
 .chip-bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 /* ══ Layout bottom nav v2 ═══════════════════════════════════ */
-.app-shell-v2{display:flex;flex-direction:column;min-height:100vh;background:var(--bg)}
-.app-topbar-v2{position:sticky;top:0;z-index:100;background:var(--surface);display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:48px;box-shadow:var(--shadow-sm)}
+.app-shell-v2{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;background:var(--bg)}
+.app-topbar-v2{position:sticky;top:0;z-index:100;background:var(--surface);display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:48px;box-shadow:var(--shadow-sm);flex-shrink:0}
 .app-topbar-v2-left{display:flex;align-items:center;gap:7px;min-width:0}
 .app-topbar-v2-title{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap}
 .app-topbar-v2-sub{font-size:12px;color:var(--text-3);white-space:nowrap}
@@ -328,9 +328,8 @@ tr:hover td{background:#f7fafc}
 .topbar-year-sel{font:inherit;font-size:12px;font-weight:700;color:var(--text-2);background:var(--surface-2);border:1.5px solid var(--border);border-radius:8px;padding:3px 8px;cursor:pointer;-webkit-appearance:none;width:auto}
 .topbar-notif-btn{display:flex;align-items:center;gap:4px;background:var(--err-bg);color:var(--err);border:none;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer}
 .topbar-changer-btn{font-size:12px;font-weight:600;color:var(--text-3);background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer}
-.app-main-v2{flex:1;overflow-y:auto;padding:14px 14px 80px;max-width:900px;margin:0 auto;width:100%}
-/* ── Bottom nav ── */
-.bottom-nav-v2{position:fixed;bottom:0;left:0;right:0;height:62px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;box-shadow:0 -4px 20px rgba(12,36,48,.10);z-index:100}
+.app-main-v2{flex:1;overflow-y:auto;padding:14px 14px 14px;max-width:900px;margin:0 auto;width:100%}
+.bottom-nav-v2{flex-shrink:0;height:62px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;box-shadow:0 -4px 20px rgba(12,36,48,.10);position:sticky;bottom:0;z-index:100}
 .bnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:0;border:none;background:none;color:var(--text-3);font-size:10px;font-weight:600;width:66px;height:54px;border-radius:12px;justify-content:center;transition:.15s;cursor:pointer}
 .bnav-btn.active{background:var(--primary-soft);color:var(--primary)}
 .bnav-ico{display:flex;align-items:center;justify-content:center}
