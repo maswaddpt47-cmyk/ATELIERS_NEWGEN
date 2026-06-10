@@ -68,6 +68,7 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
       ]);
       if(res.ok){
         setFailCount(0);setLockUntil(0);
+        window.onLoginSuccess(conseiller, res);
         touchSession();onLogin(res.role||'user',conseiller);
       }else{
         const nf=failCount+1;
@@ -205,6 +206,7 @@ function App(){
   // touchSession() appelé sur chaque interaction clavier/souris.
   function doSessionExpire(){
     clearSession();
+    window.onLogout();
     setAuth(false);
     showToast('⏱️ Session expirée — reconnecte-toi.',false);
     addLog('Session expirée (30 min inactivité)','info');
