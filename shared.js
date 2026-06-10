@@ -461,7 +461,7 @@ function FadeItem({children,delay=0,style={}}){
   return CE('div',{style:{opacity:v?1:0,transition:'opacity .6s ease',...style}},children);
 }
 
-const GS_URL = 'https://script.google.com/macros/s/AKfycbzqArZMN69IVDk8xyT2dTrQ627CCxRbFQkkHqBAbEQfjoKTkLYSmNepviC4uwYcgf2W_A/exec';
+const GS_URL = 'https://script.google.com/macros/s/AKfycbwyFYOFAMDJuEVN0RGkpYkHSxHuX-SXeXa0_gK0elx3WzB5rJRZjBlk-29WzPir0QRZ/exec';
 
 const COMMUNES = [
   'AGEN','ARGENTON','ASTAFFORT','CASSENEUIL','CASTELMORON SUR LOT',
@@ -569,37 +569,106 @@ function showToast(msg,ok=true){
   clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>{t.style.opacity='0';},3500);
 }
 
-// ── API v15.0 — timeout adaptatif mobile/PC + 1 retry auto ──
+// ── Helper login : à appeler après un checkPassword réussi ──────
+// Stocke le token et le rôle en sessionStorage pour apiFetch
+window.onLoginSuccess = function(conseiller, res){
+  if(res && res.token){
+    window.authToken.set(res.token);
+    window.authToken.setRole(res.role || 'user');
+    sessionStorage.setItem('gs_conseiller', conseiller);
+  }
+};
+window.onLogout = function(){
+  window.authToken.clear();
+  sessionStorage.removeItem('gs_conseiller');
+};
+
+// ── API v11.0 — AbortController + token auth + doPost pour écritures ──
 (function(){
   const MAX_RETRY   = 1;
   const RETRY_DELAY = 3000;
   const isMobile    = /Android|iPhone|iPad/i.test(navigator.userAgent);
   const TIMEOUT_MS  = isMobile ? 20000 : 12000;
 
+  // Actions qui nécessitent un POST (avec token)
+  const WRITE_ACTIONS = new Set([
+    'saveEntry','saveMany','delete',
+    'saveLists','saveConfig','setConfig',
+    'saveVisibility','saveColors','saveEmails',
+    'saveCompte','resetPassword','setPassword',
+    'logAccesIndex','checkPassword'
+  ]);
+
+  // ── Gestion du token en sessionStorage ──────────────────────
+  window.authToken = {
+    get()  { return sessionStorage.getItem('gs_token') || null; },
+    set(t) { sessionStorage.setItem('gs_token', t); },
+    clear(){ sessionStorage.removeItem('gs_token'); sessionStorage.removeItem('gs_role'); },
+    getRole()   { return sessionStorage.getItem('gs_role') || 'user'; },
+    setRole(r)  { sessionStorage.setItem('gs_role', r); }
+  };
+
   window.apiFetch = async function apiFetch(action, body={}, _attempt=1){
-    const params = new URLSearchParams({action});
-    // Passe source=admin pour que le GAS ignore le mode maintenance
-    if(window.location.pathname.indexOf('admin.html') > -1){
-      params.set('source', 'admin');
-    }
-    if(body && Object.keys(body).length){
-      Object.entries(body).forEach(([k,v])=>{
-        params.set(k, typeof v==='object' ? JSON.stringify(v) : v);
-      });
-    }
+    const isWrite = WRITE_ACTIONS.has(action);
+    const isAdmin = window.location.pathname.indexOf('admin.html') > -1;
+
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
     try{
-      const res = await Promise.race([
-        fetch(`${GS_URL}?${params.toString()}`),
-        new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')), TIMEOUT_MS))
-      ]);
+      let res;
+
+      if(isWrite){
+        // ── POST avec token ──────────────────────────────────
+        const payload = { action, ...body };
+        // Injecter le token sur toutes les écritures sauf checkPassword
+        if(action !== 'checkPassword'){
+          const token = window.authToken.get();
+          if(token) payload.token = token;
+          // Ajouter le conseiller pour vérification côté GAS
+          const role = window.authToken.getRole();
+          if(!payload.conseiller && role) payload.conseiller = sessionStorage.getItem('gs_conseiller') || '';
+        }
+        if(isAdmin) payload.source = 'admin';
+
+        res = await fetch(GS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+      } else {
+        // ── GET pour les lectures seules ─────────────────────
+        const params = new URLSearchParams({action});
+        if(isAdmin) params.set('source', 'admin');
+        if(body && Object.keys(body).length){
+          Object.entries(body).forEach(([k,v])=>{
+            params.set(k, typeof v==='object' ? JSON.stringify(v) : v);
+          });
+        }
+        res = await fetch(`${GS_URL}?${params.toString()}`, { signal: controller.signal });
+      }
+
+      clearTimeout(timeoutId);
+
+      // ── Vérifier res.ok + content-type ───────────────────
+      if(!res.ok){
+        throw new Error(`Erreur serveur HTTP ${res.status}`);
+      }
+      const ct = res.headers.get('content-type') || '';
+      if(!ct.includes('application/json') && !ct.includes('text/plain')){
+        throw new Error('Réponse inattendue du serveur (pas du JSON). GAS a peut-être renvoyé une page d\'erreur HTML.');
+      }
       return res.json();
+
     }catch(err){
-      if(err.message==='timeout' && _attempt <= MAX_RETRY){
+      clearTimeout(timeoutId);
+      if(err.name === 'AbortError' && _attempt <= MAX_RETRY){
         console.warn(`[apiFetch] Timeout "${action}" — retry ${_attempt}/${MAX_RETRY} dans ${RETRY_DELAY/1000}s`);
         await new Promise(r=>setTimeout(r, RETRY_DELAY));
         return window.apiFetch(action, body, _attempt + 1);
       }
-      if(err.message==='timeout')
+      if(err.name === 'AbortError')
         throw new Error('Le serveur ne répond pas (GAS cold start ?) — réessaie dans quelques secondes.');
       throw err;
     }
@@ -935,7 +1004,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       if(!res.ok)throw new Error(res.error);
       showToast(editId?'✅ Atelier modifié':'✅ Atelier enregistré');
       if(onNewEntry&&!editId)onNewEntry(entry);
-      if(!editId) window._pendingHighlight=[entry._id];
+      if(!editId) document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:[entry._id]}}));
       onSaved();reset();
     }catch(err){showToast('❌ '+err.message,false);}
     finally{setSaving(false);}
@@ -955,7 +1024,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
         createdIds.push(entry._id);ok++;
       }
       showToast(`✅ ${ok} atelier(s) créé(s)`);
-      window._pendingHighlight=createdIds;
+      document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:createdIds}}));
       onSaved();resetLot();
     }catch(err){showToast('❌ '+err.message,false);}
     finally{setSaving(false);}
@@ -1183,24 +1252,34 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
   const[panelNote,setPanelNote]=React.useState('');
   const[saving,setSaving]=React.useState(false);
   const[confirmDel,setConfirmDel]=React.useState(null);
+  const[newIdsFilter,setNewIdsFilter]=React.useState(null);
 
   React.useEffect(()=>{if(initConseiller)setFiltConseiller(initConseiller);},[initConseiller]);
   React.useEffect(()=>{const t=setTimeout(()=>setDSearch(search),300);return()=>clearTimeout(t);},[search]);
   React.useEffect(()=>{
-    window._filterNewEntries=(ids)=>{setFiltStatut('Tous');setFiltMois('Tous');setFiltCommune('Toutes');setFiltConseiller('Tous');setFiltPublic('Tous');setDateFrom('');setDateTo('');setSearch('');setDSearch('');window._newIdsFilter=new Set(ids);};
-    return()=>{window._filterNewEntries=null;};
+    const handler = (e)=>{
+      const ids = e.detail?.ids || [];
+      setFiltStatut('Tous');setFiltMois('Tous');setFiltCommune('Toutes');
+      setFiltConseiller('Tous');setFiltPublic('Tous');setDateFrom('');setDateTo('');
+      setSearch('');setDSearch('');
+      setNewIdsFilter(new Set(ids));
+    };
+    document.addEventListener('ateliers:highlight', handler);
+    return()=>document.removeEventListener('ateliers:highlight', handler);
   },[]);
   // Applique le filtre de mise en évidence après rechargement post-sauvegarde
   React.useEffect(()=>{
-    if(!window._pendingHighlight||!window._pendingHighlight.length||!entries.length)return;
-    const ids=window._pendingHighlight;
-    const found=ids.some(id=>entries.find(e=>e._id===id));
-    if(!found)return;
-    window._pendingHighlight=null;
-    setFiltStatut('Tous');setFiltMois('Tous');setFiltCommune('Toutes');
-    setFiltConseiller('Tous');setFiltPublic('Tous');setDateFrom('');setDateTo('');
-    setSearch('');setDSearch('');
-    window._newIdsFilter=new Set(ids);
+    const handler = (e)=>{
+      const ids = e.detail?.ids || [];
+      const found = ids.some(id=>entries.find(e2=>e2._id===id));
+      if(!found)return;
+      setFiltStatut('Tous');setFiltMois('Tous');setFiltCommune('Toutes');
+      setFiltConseiller('Tous');setFiltPublic('Tous');setDateFrom('');setDateTo('');
+      setSearch('');setDSearch('');
+      setNewIdsFilter(new Set(ids));
+    };
+    document.addEventListener('ateliers:highlight', handler);
+    return()=>document.removeEventListener('ateliers:highlight', handler);
   },[entries]);
 
   const moisDispo=React.useMemo(()=>{const s=new Set(entries.map(e=>e.date?e.date.slice(0,7):'').filter(Boolean));return[...s].sort();},[entries]);
@@ -1217,7 +1296,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
     if(dateFrom)r=r.filter(e=>e.date>=dateFrom);
     if(dateTo)r=r.filter(e=>e.date<=dateTo);
     if(dSearch){const q=stripAccents(dSearch);r=r.filter(e=>[e.lieu,e.thematique,e.orienteur,e.commune,e.public,e.remarques].some(v=>stripAccents(String(v||'')).includes(q)));}
-    if(window._newIdsFilter&&window._newIdsFilter.size>0)r=r.filter(e=>window._newIdsFilter.has(e._id));
+    if(newIdsFilter&&newIdsFilter.size>0)r=r.filter(e=>newIdsFilter.has(e._id));
     return[...r].sort((a,b)=>{const va=a.date||'',vb=b.date||'';return va<vb?-sortDir:va>vb?sortDir:0;});
   },[entries,filtStatut,filtMois,filtCommune,filtConseiller,filtPublic,dSearch,sortDir,dateFrom,dateTo]);
 
@@ -1238,9 +1317,18 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
     finally{setSaving(false);}
   }
 
-  function resetFiltres(){setSearch('');setDSearch('');setFiltStatut('Planifié');setFiltMois('Tous');setFiltCommune('Toutes');setFiltConseiller('Tous');setFiltPublic('Tous');setDateFrom('');setDateTo('');window._newIdsFilter=null;if(onResetConseiller)onResetConseiller();}
+  function resetFiltres(){setSearch('');setDSearch('');setFiltStatut('Planifié');setFiltMois('Tous');setFiltCommune('Toutes');setFiltConseiller('Tous');setFiltPublic('Tous');setDateFrom('');setDateTo('');setNewIdsFilter(null);if(onResetConseiller)onResetConseiller();}
 
-  function exportXLSX(){
+  async function exportXLSX(){
+    // Chargement différé — ne bloque plus le démarrage (~800 Ko)
+    if(!window.XLSX){
+      await new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload=resolve; s.onerror=reject;
+        document.head.appendChild(s);
+      });
+    }
     const rows=[['N°','Statut','Date','Horaire','Commune','Lieu','Thématique','Inscrits','Présents','Public','Conseiller','Orienteur','Matériel','Résidence','Remarques']];
     filtered.forEach(e=>rows.push([e._n,e.statut,fmtDate(e.date),e.horaire,normCommune(e.commune),e.lieu,e.thematique,e.inscrits,e.presents,e.public,e.conseiller,e.orienteur,(e.materiel||[]).join(', '),e.residence,e.remarques]));
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Ateliers');
@@ -2605,7 +2693,9 @@ function VueAdmin({entries,onRefresh,addLog,conseillersList,onSaveColors}){
       const BATCH=5;let done=0;
       for(let i=0;i<entries_raw.length;i+=BATCH){
         if(cancelRef.current){showToast(`⛔ Annulé — ${done} lignes importées`,false);addLog(`Import CSV annulé à ${done}/${entries_raw.length}`,'info');return;}
-        const batch=entries_raw.slice(i,i+BATCH);const params=new URLSearchParams({action:'saveMany',entries:JSON.stringify(batch)});const res=await Promise.race([fetch(`${GS_URL}?${params.toString()}`),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),45000))]);const data=await res.json();if(!data.ok)throw new Error(data.error);done+=batch.length;setImportProgress(Math.round(done/entries_raw.length*100));setImportMsg(`${done}/${entries_raw.length} lignes importées…`);}
+        const batch=entries_raw.slice(i,i+BATCH);
+        const data=await apiFetch('saveMany',{entries:batch});
+        if(!data.ok)throw new Error(data.error);done+=batch.length;setImportProgress(Math.round(done/entries_raw.length*100));setImportMsg(`${done}/${entries_raw.length} lignes importées…`);}
       addLog(`Import CSV : ${entries_raw.length} ateliers`,'ok');showToast(`✅ ${entries_raw.length} ateliers importés`);onRefresh();
     }catch(err){showToast('❌ '+err.message,false);addLog('Erreur import CSV : '+err.message,'err');}
     finally{setImporting(false);setImportProgress(0);setImportMsg('');cancelRef.current=false;}
@@ -2614,8 +2704,18 @@ function VueAdmin({entries,onRefresh,addLog,conseillersList,onSaveColors}){
   async function handleImportXLSX(e){
     const file=e.target.files[0];if(!file)return;e.target.value='';
     cancelRef.current=false;
-    setImporting(true);setImportMsg('Lecture XLSX…');
+    setImporting(true);setImportMsg('Chargement bibliothèque XLSX…');
     try{
+      // Chargement différé
+      if(!window.XLSX){
+        await new Promise((resolve,reject)=>{
+          const s=document.createElement('script');
+          s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+          s.onload=resolve; s.onerror=reject;
+          document.head.appendChild(s);
+        });
+      }
+      setImportMsg('Lecture XLSX…');
       const ab=await file.arrayBuffer();const wb=XLSX.read(ab);const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
       const g=(r,...keys)=>{for(const k of keys){if(r[k]!==undefined&&r[k]!=='')return r[k];}return '';};
       const entries_raw=rows.map(r=>({

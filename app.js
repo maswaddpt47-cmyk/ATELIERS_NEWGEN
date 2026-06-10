@@ -66,49 +66,50 @@ function App(){
   React.useEffect(()=>{apiFetch('getComptes').then(res=>{if(res.ok&&res.comptes){setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));}}).catch(()=>{});},[]);
   const[sidebarPinned,setSidebarPinned] = React.useState(()=>localStorage.getItem('sidebar_pinned')==='1');
 
-  // Ref pour l'event delegation sur les vues avec filtre conseiller
-  const viewRef = React.useRef(null);
-
   // ── Helpers ───────────────────────────────────────────────────
   function setAnnee(v){ localStorage.setItem('f_annee',v); setAnneeState(v); }
   function resetConseiller(){ setFiltreConseiller(null); }
   function togglePin(){ setSidebarPinned(p=>{ const n=!p; localStorage.setItem('sidebar_pinned',n?'1':'0'); return n; }); }
 
-  // ── Sync couleur depuis les selects internes (shared.js) ──────
-  // VueHistorique/VueCalendrier gèrent leur propre state interne.
-  // On écoute les change events via event delegation : quand la valeur
-  // d'un select correspond à un conseiller connu, on met à jour l'identité.
-  React.useEffect(()=>{
-    if(!viewRef.current) return;
-    const handler = e => {
-      if(e.target.tagName !== 'SELECT') return;
-      // Ne pas intercepter les selects du formulaire de saisie
-      if(e.target.closest&&e.target.closest('.sf-wrap, .sf-section, [data-saisie]')) return;
-      const val = e.target.value;
-      if(lists.conseillers.includes(val)){
-        setFiltreConseiller(val);
-      }
-    };
-    const el = viewRef.current;
-    el.addEventListener('change', handler);
-    return ()=> el.removeEventListener('change', handler);
-  }, [view, lists.conseillers]);
+  const isFirstLoad=React.useRef(true);
 
-  // ── Chargement v10.0 — timeout adaptatif mobile/desktop ─────
+  // ── Chargement v11.0 — AbortController + cache localStorage ─
+  const loadAbortRef = React.useRef(null);
+
   async function loadData(attempt=1, silent=false){
+    // Annuler toute requête précédente encore en cours
+    if(loadAbortRef.current) loadAbortRef.current.abort();
+    const controller = new AbortController();
+    loadAbortRef.current = controller;
+
     if(!silent) setLoading(true);
     setError(null);
+
+    // ── Cache localStorage : afficher les données précédentes immédiatement ──
+    if(!silent && attempt === 1){
+      const cacheKey = `ateliers_cache_${annee}`;
+      try{
+        const cached = localStorage.getItem(cacheKey);
+        if(cached){
+          const {entries:cachedEntries, lists:cachedLists} = JSON.parse(cached);
+          if(cachedEntries) setEntries(cachedEntries);
+          if(cachedLists){ setLists(cachedLists);STATUTS=[...cachedLists.statuts];CONSEILLERS=[...cachedLists.conseillers];PUBLICS=[...cachedLists.publics];MATERIELS=[...cachedLists.materiels]; }
+        }
+      }catch(_){}
+    }
+
     try{
       const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
-      const timeouts=isMobile?[20000,25000,30000]:[8000,10000,12000];
-      const timeoutMs=timeouts[attempt-1]||timeouts[timeouts.length-1];
-      const res=await Promise.race([
-        fetch(`${GS_URL}?action=getAll&year=${annee}`),
-        new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),timeoutMs))
-      ]);
-      const data=await res.json();
-      if(!data.ok)throw new Error(data.error||'Erreur serveur');
-      const incoming=data.entries||[];
+      const timeoutMs=(isMobile?[20000,25000,30000]:[8000,10000,12000])[attempt-1]||12000;
+      const timeoutId = setTimeout(()=>controller.abort(), timeoutMs);
+
+      const res = await fetch(`${GS_URL}?action=getAll&year=${annee}`, {signal: controller.signal});
+      clearTimeout(timeoutId);
+
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if(!data.ok) throw new Error(data.error||'Erreur serveur');
+      const incoming = data.entries||[];
       setEntries(incoming);
       if(data.lists){
         const l=data.lists;
@@ -119,23 +120,28 @@ function App(){
           materiels:(Array.isArray(l.materiels)&&l.materiels.length)?l.materiels:[...MATERIELS_DEFAULT]
         };
         setLists(nl);STATUTS=[...nl.statuts];CONSEILLERS=[...nl.conseillers];PUBLICS=[...nl.publics];MATERIELS=[...nl.materiels];
+        // Mettre à jour le cache
+        try{ localStorage.setItem(`ateliers_cache_${annee}`, JSON.stringify({entries:incoming,lists:nl})); }catch(_){}
       }
-      if(data.visibility)setVisibility(v=>({...v,...data.visibility}));
-      if(data.conseiller_colors)applyColors(data.conseiller_colors);
+      if(data.visibility) setVisibility(v=>({...v,...data.visibility}));
+      if(data.conseiller_colors) applyColors(data.conseiller_colors);
       setLastSync(new Date());
       setSeenIds(prev=>{
-        if(prev.size===0)return new Set(incoming.map(e=>e._id));
+        if(prev.size===0) return new Set(incoming.map(e=>e._id));
         const nouvs=incoming.filter(e=>!prev.has(e._id));
-        if(nouvs.length>0)setNewEntries(n=>[...nouvs,...n]);
+        if(nouvs.length>0) setNewEntries(n=>[...nouvs,...n]);
         return new Set(incoming.map(e=>e._id));
       });
       setLoading(false);
     }catch(err){
-      if(err.message==='timeout'&&attempt<3){
+      if(err.name==='AbortError' && attempt<3){
         const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
-        setTimeout(()=>loadData(attempt+1,silent),isMobile?[3000,6000][attempt-1]:2000);
-      }else{
-        setError(attempt>1?'Google Sheets ne répond pas après 3 tentatives.':'Impossible de charger : '+err.message);
+        setTimeout(()=>loadData(attempt+1,silent),isMobile?[3000,6000][attempt-1]||6000:2000);
+      } else if(err.name==='AbortError'){
+        setError('Google Sheets ne répond pas après 3 tentatives.');
+        setLoading(false);
+      } else {
+        setError('Impossible de charger : '+err.message);
         setLoading(false);
       }
     }
@@ -331,7 +337,7 @@ function App(){
         newEntries.length>0&&CE('button',{
           className:'sidebar-notif-btn',
           title:`${newEntries.length} nouveaux ateliers`,
-          onClick:()=>{setView('historique');window._filterNewEntries&&window._filterNewEntries(newEntries.map(e=>e._id));setNewEntries([]);}
+          onClick:()=>{setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);}
         }, CE('span',null,'🔔'), CE('span',null,newEntries.length)),
         CE('button',{
           className:'sidebar-accueil-btn', title:'Retour accueil',
@@ -383,12 +389,12 @@ function App(){
         loading&&!error&&CE('div',null,
           [1,2,3].map(i=>CE('div',{key:i,className:'skeleton skeleton-card'}))
         ),
-        // viewRef sur le wrapper — capte les change events des selects internes
-        !loading&&!error&&CE('div',{ref:viewRef,className:'view-anim',key:view+'_'+(filtreConseiller||'all')},
+        // callback explicite onChangeConseiller — remplace l'event delegation sur les selects
+        !loading&&!error&&CE('div',{className:'view-anim',key:view+'_'+(filtreConseiller||'all')},
           view==='saisie'&&visibility.saisie&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
-          view==='historique'&&visibility.historique&&CE(VueHistorique,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true}),
+          view==='historique'&&visibility.historique&&CE(VueHistorique,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
           view==='agenda'&&visibility.agenda&&CE(VueAgendaSemaine,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:filtreConseiller,accentColor}),
-          view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true}),
+          view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
           view==='dashboard'&&visibility.dashboard&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
           view==='carte'&&visibility.carte&&CE(VueCarte,{entries,active:view==='carte'}),
           view==='roadmap'&&visibility.roadmap&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),
