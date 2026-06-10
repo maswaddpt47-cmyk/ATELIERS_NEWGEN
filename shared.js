@@ -318,7 +318,23 @@ tr:hover td{background:#f7fafc}
 .sp-info-row span:last-child{font-weight:600;color:#1a202c;text-align:right;max-width:60%}
 .mat-chip{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;background:#e2e8f0;color:#4a5568;margin:2px}
 .chip-bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-/* ══ Variables CSS maquette v2 ══════════════════════════════ */
+/* ══ Layout bottom nav v2 ═══════════════════════════════════ */
+.app-shell-v2{display:flex;flex-direction:column;min-height:100vh;background:var(--bg)}
+.app-topbar-v2{position:sticky;top:0;z-index:100;background:var(--surface);display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:48px;box-shadow:var(--shadow-sm)}
+.app-topbar-v2-left{display:flex;align-items:center;gap:7px;min-width:0}
+.app-topbar-v2-title{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap}
+.app-topbar-v2-sub{font-size:12px;color:var(--text-3);white-space:nowrap}
+.app-topbar-v2-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.topbar-year-sel{font:inherit;font-size:12px;font-weight:700;color:var(--text-2);background:var(--surface-2);border:1.5px solid var(--border);border-radius:8px;padding:3px 8px;cursor:pointer;-webkit-appearance:none;width:auto}
+.topbar-notif-btn{display:flex;align-items:center;gap:4px;background:var(--err-bg);color:var(--err);border:none;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer}
+.topbar-changer-btn{font-size:12px;font-weight:600;color:var(--text-3);background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer}
+.app-main-v2{flex:1;overflow-y:auto;padding:14px 14px 80px;max-width:900px;margin:0 auto;width:100%}
+/* ── Bottom nav ── */
+.bottom-nav-v2{position:fixed;bottom:0;left:0;right:0;height:62px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;box-shadow:0 -4px 20px rgba(12,36,48,.10);z-index:100}
+.bnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:0;border:none;background:none;color:var(--text-3);font-size:10px;font-weight:600;width:66px;height:54px;border-radius:12px;justify-content:center;transition:.15s;cursor:pointer}
+.bnav-btn.active{background:var(--primary-soft);color:var(--primary)}
+.bnav-ico{display:flex;align-items:center;justify-content:center}
+.bnav-lbl{font-size:10px;font-weight:600}
 :root{
   --primary:#0f6e7a;--primary-soft:#e0f0f3;--primary-dim:rgba(15,110,122,.12);
   --bg:#e8edf1;--surface:#ffffff;--surface-2:#f3f7f9;--border:#d4dfe6;
@@ -354,19 +370,19 @@ tr:hover td{background:#f7fafc}
   border:1px solid var(--border);border-left:4px solid var(--c,var(--primary));
   border-radius:var(--radius);box-shadow:0 1px 0 var(--edge) inset,var(--shadow-sm);
   padding:13px 14px;margin-bottom:10px;
-  display:grid;grid-template-columns:52px 1fr;grid-template-rows:auto auto auto;
+  display:grid;grid-template-columns:52px 1fr;grid-template-rows:auto;
   column-gap:13px;cursor:pointer;transition:box-shadow .16s,transform .12s;
 }
 .atelier-card-v2:hover{box-shadow:0 1px 0 var(--edge) inset,0 4px 18px rgba(12,36,48,.14);transform:translateY(-1px)}
-.ac-v2-date{grid-column:1;grid-row:1/4;display:flex;flex-direction:column;align-items:center;padding-top:2px;gap:4px}
+.ac-v2-date{grid-column:1;grid-row:1/6;display:flex;flex-direction:column;align-items:center;padding-top:2px;gap:4px}
 .ac-v2-datebox{width:48px;text-align:center;padding:5px 0;border-radius:11px;background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--border);box-shadow:0 1px 0 var(--edge) inset,0 2px 8px rgba(12,36,48,.09)}
 .ac-v2-datebox b{display:block;font-size:18px;font-weight:800;line-height:1.1;color:var(--text)}
 .ac-v2-datebox small{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--text-3)}
 .ac-v2-time{font-size:13px;font-weight:700;color:var(--text-2);text-align:center}
 .ac-v2-day{font-size:10px;color:var(--text-3);text-align:center}
-.ac-v2-top{grid-column:2;grid-row:1;display:flex;align-items:center;gap:5px;padding-bottom:3px;flex-wrap:wrap}
-.ac-v2-title{grid-column:2;grid-row:2;font-size:15px;font-weight:700;line-height:1.3;color:var(--text);padding-bottom:2px}
-.ac-v2-sub{grid-column:2;grid-row:3;font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-v2-top{grid-column:2;display:flex;align-items:center;gap:5px;padding-bottom:3px}
+.ac-v2-title{grid-column:2;font-size:15px;font-weight:700;line-height:1.3;color:var(--text);padding-bottom:2px}
+.ac-v2-sub{grid-column:2;font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ac-v2-foot{grid-column:1/-1;display:flex;align-items:center;gap:8px;padding-top:9px;margin-top:8px;border-top:1px solid var(--border);flex-wrap:wrap}
 .ac-v2-presence{margin-left:auto;font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:4px}
 .ac-v2-presence strong{color:var(--text-2)}
@@ -1626,23 +1642,24 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
             CE('div',{className:'ac-v2-time'},e.horaire),
             CE('div',{className:'ac-v2-day'},d.jour)
           ),
-          // Ligne 1 : badges statut + public
+          // Ligne 1 : badge statut + tag public (une seule ligne, pas d'orienteur)
           CE('div',{className:'ac-v2-top'},
             CE('span',{className:badgeCls},retard?'⚠️ Retard':e.statut),
-            e.orienteur&&CE('span',{className:'tag-v2'},e.orienteur),
             CE('span',{className:'tag-v2'},e.public||'Tous publics')
           ),
-          // Ligne 2 : titre
+          // Ligne 2 : orienteur en italique petit si présent
+          e.orienteur&&CE('div',{style:{fontSize:11,color:'var(--text-3)',fontStyle:'italic',gridColumn:2,paddingBottom:2}},e.orienteur),
+          // Ligne 3 : titre
           CE('div',{className:'ac-v2-title'},e.thematique),
-          // Ligne 3 : commune · lieu
+          // Ligne 4 : commune · lieu
           CE('div',{className:'ac-v2-sub'},e.commune,(e.lieu?' · '+e.lieu:'')),
-          // Pied : dot conseiller | thématique | présences
+          // Pied : dot conseiller | lieu (court) | présences
           CE('div',{className:'ac-v2-foot'},
             CE('span',{style:{display:'inline-flex',alignItems:'center',gap:6,fontSize:13,fontWeight:700,color:cColor}},
               CE('span',{style:{width:8,height:8,borderRadius:'50%',background:cColor,boxShadow:`0 0 0 3px ${hexToRgba(cColor,0.2)}`,display:'inline-block',flexShrink:0}}),
               e.conseiller
             ),
-            e.thematique&&CE('span',{className:'tag-v2',style:{maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},e.thematique),
+            e.lieu&&CE('span',{className:'tag-v2',style:{maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},e.lieu),
             CE('div',{className:'ac-v2-presence'},
               CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2},
                 CE('path',{d:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'}),CE('circle',{cx:9,cy:7,r:4})),

@@ -273,132 +273,105 @@ function App(){
     );
   }
 
-  // ── Vue principale avec sidebar ───────────────────────────────
+  // ── Vue principale avec bottom nav ────────────────────────────
   const accentColor = filtreConseiller ? conseillerColor(filtreConseiller) : NAV_DEFAULT_COLOR;
-
   const meta = VIEW_META_F[view]||{ico:'📄',label:view,group:''};
-
-  // Date courante pour la topbar
   const dateLabel = new Date().toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'long'});
 
-  // Keyboard nav helper
-  const sideBtn=(v,ico,lbl,visible=true)=>visible&&CE('button',{
+  // Bouton bottom nav
+  const navBtn=(v,ico,lbl,visible=true)=>visible&&CE('button',{
     key:v,
-    className:'sidebar-btn'+(view===v?' active':''),
-    title:lbl,
+    className:'bnav-btn'+(view===v?' active':''),
     onClick:()=>setView(v),
-    tabIndex:0,
-    onKeyDown:e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); setView(v); } },
     'aria-label':lbl,
     'aria-current':view===v?'page':undefined
-  }, CE('span',{className:'sidebar-btn-ico','aria-hidden':'true'},ico), CE('span',{className:'sidebar-btn-lbl'},lbl));
+  },
+    CE('span',{className:'bnav-ico','aria-hidden':'true'},ico),
+    CE('span',{className:'bnav-lbl'},lbl)
+  );
 
-  return CE('div',{className:'app-shell'},
+  return CE('div',{className:'app-shell-v2'},
 
-    CE('aside',{
-      className:'sidebar'+(sidebarPinned?' pinned':''),
-      style:{background:accentColor},
-      role:'navigation',
-      'aria-label':'Menu principal'
-    },
-      CE('button',{
-        className:'sidebar-pin-btn',
-        title:sidebarPinned?'Désépingler la sidebar':'Épingler la sidebar',
-        onClick:togglePin,
-        'aria-pressed':sidebarPinned,
-        'aria-label':sidebarPinned?'Désépingler':'Épingler'
-      }, sidebarPinned?'📌':'📍'),
-      CE('div',{className:'sidebar-logo','aria-hidden':'true'},'🖥️'),
-      entries.length>0&&CE('span',{className:'sidebar-count'},entries.length),
-
-      CE('div',{className:'sidebar-sep'}),
-      CE('span',{className:'sidebar-group-label'},'Action'),
-      sideBtn('saisie','✏️','Nouveau',visibility.saisie),
-
-      CE('div',{className:'sidebar-sep'}),
-      CE('span',{className:'sidebar-group-label'},'Voir'),
-      sideBtn('historique','📋','Historique',visibility.historique),
-      sideBtn('agenda','🗓️','Agenda',visibility.agenda),
-      sideBtn('calendrier','📅','Calendrier',visibility.calendrier),
-      sideBtn('carte','🗺️','Carte',visibility.carte),
-      sideBtn('roadmap','🛣️','Roadmap',visibility.roadmap),
-
-      CE('div',{className:'sidebar-sep'}),
-      CE('span',{className:'sidebar-group-label'},'Stats'),
-      sideBtn('dashboard','📊','Dashboard',visibility.dashboard),
-      sideBtn('bingo','🎯','Bingo',visibility.bingo),
-
-      CE('div',{className:'sidebar-bottom'},
-        CE('select',{className:'sidebar-year',value:annee,onChange:e=>setAnnee(e.target.value),title:'Année chargée'},
+    // ── Topbar compacte ──────────────────────────────────────
+    CE('header',{className:'app-topbar-v2',style:{borderBottom:`2px solid ${accentColor}`}},
+      CE('div',{className:'app-topbar-v2-left'},
+        CE('span',{style:{fontSize:16},'aria-hidden':'true'},meta.ico),
+        CE('span',{className:'app-topbar-v2-title'},meta.label),
+        meta.group&&CE('span',{className:'app-topbar-v2-sub'},'— '+meta.group)
+      ),
+      CE('div',{className:'app-topbar-v2-right'},
+        !online&&CE('span',{className:'offline-badge'},'📡'),
+        loading&&CE('span',{className:'spinner',style:{borderTopColor:accentColor,borderColor:'#e2e8f0'}}),
+        !loading&&lastSync&&CE('span',{className:'topbar-sync-info'},
+          lastSync.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
+        ),
+        CE('select',{className:'topbar-year-sel',value:annee,onChange:e=>setAnnee(e.target.value),title:'Année'},
           [String(new Date().getFullYear()-1),String(new Date().getFullYear()),String(new Date().getFullYear()+1)].map(y=>CE('option',{key:y,value:y},y))
         ),
         newEntries.length>0&&CE('button',{
-          className:'sidebar-notif-btn',
-          title:`${newEntries.length} nouveaux ateliers`,
+          className:'topbar-notif-btn',
           onClick:()=>{setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);}
-        }, CE('span',null,'🔔'), CE('span',null,newEntries.length)),
-        CE('button',{
-          className:'sidebar-accueil-btn', title:'Retour accueil',
+        },'🔔 ',CE('span',{className:'notif-badge'},newEntries.length)),
+        filtreConseiller&&CE('div',{style:{position:'relative'},onMouseDown:e=>e.stopPropagation()},
+          CE('button',{
+            className:'app-topbar-conseiller',
+            style:{background:accentColor},
+            onClick:()=>setShowPicker(p=>!p)
+          }, filtreConseiller, CE('span',{style:{fontSize:10,opacity:.75}},' ▾')),
+          showPicker&&CE('div',{className:'conseiller-picker'},
+            conseillerActifs.map(c=>CE('div',{
+              key:c,
+              className:'conseiller-picker-item'+(c===filtreConseiller?' active':''),
+              onClick:()=>handleChoixConseiller(c)
+            },
+              CE('span',{className:'conseiller-picker-dot',style:{background:conseillerColor(c)}}),
+              c,
+              c===filtreConseiller&&CE('span',{style:{marginLeft:'auto',fontSize:11,color:'#9ca3af'}},'✓')
+            ))
+          )
+        ),
+        !filtreConseiller&&CE('button',{
+          className:'topbar-changer-btn',
           onClick:()=>{ resetConseiller(); setView('accueil'); }
-        }, CE('span',null,'↩'), CE('span',{className:'sidebar-accueil-lbl'},'Accueil'))
+        },'Changer')
       )
     ),
 
-    CE('div',{className:'app-content'},
-      CE('div',{className:'app-topbar'},
-        CE('span',{style:{fontSize:16},'aria-hidden':'true'},meta.ico),
-        CE('span',{className:'app-topbar-title'},meta.label),
-        meta.group&&CE('span',{className:'app-topbar-sub'},'— '+meta.group),
-        CE('span',{className:'app-topbar-date','aria-label':'Date du jour'},'📅 '+dateLabel),
-        CE('div',{className:'app-topbar-right'},
-          !online&&CE('span',{className:'offline-badge'},'📡 Hors ligne'),
-          !loading&&lastSync&&CE('span',{className:'topbar-sync-info',title:'Sync auto toutes les 5 min'},
-            '🔄 ',lastSync.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
-          ),
-          loading&&CE('span',{style:{fontSize:11,color:'#9ca3af',display:'flex',alignItems:'center',gap:4}},
-            CE('span',{className:'spinner',style:{borderTopColor:'#1e3a8a',borderColor:'#e2e8f0'}}), 'Chargement…'),
-          filtreConseiller&&CE('div',{style:{position:'relative'},onMouseDown:e=>e.stopPropagation()},
-            CE('button',{
-              className:'app-topbar-conseiller',
-              style:{background:accentColor},
-              onClick:()=>setShowPicker(p=>!p),
-              title:'Changer de conseiller'
-            },
-              filtreConseiller,
-              CE('span',{style:{fontSize:10,opacity:.75}},' ▾')
-            ),
-            showPicker&&CE('div',{className:'conseiller-picker'},
-              conseillerActifs.map(c=>CE('div',{
-                key:c,
-                className:'conseiller-picker-item'+(c===filtreConseiller?' active':''),
-                onClick:()=>handleChoixConseiller(c)
-              },
-                CE('span',{className:'conseiller-picker-dot',style:{background:conseillerColor(c)}}),
-                c,
-                c===filtreConseiller&&CE('span',{style:{marginLeft:'auto',fontSize:11,color:'#9ca3af'}},'✓')
-              ))
-            )
-          )
-        )
+    // ── Contenu principal ────────────────────────────────────
+    CE('main',{className:'app-main-v2'},
+      error&&CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:loadData},'🔄 Réessayer')),
+      loading&&!error&&CE('div',null,
+        [1,2,3].map(i=>CE('div',{key:i,className:'skeleton skeleton-card'}))
       ),
-
-      CE('div',{className:'app-main'},
-        error&&CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:loadData},'🔄 Réessayer')),
-        loading&&!error&&CE('div',null,
-          [1,2,3].map(i=>CE('div',{key:i,className:'skeleton skeleton-card'}))
-        ),
-        // callback explicite onChangeConseiller — remplace l'event delegation sur les selects
-        !loading&&!error&&CE('div',{className:'view-anim',key:view+'_'+(filtreConseiller||'all')},
-          view==='saisie'&&visibility.saisie&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
-          view==='historique'&&visibility.historique&&CE(VueHistorique,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
-          view==='agenda'&&visibility.agenda&&CE(VueAgendaSemaine,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:filtreConseiller,accentColor}),
-          view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
-          view==='dashboard'&&visibility.dashboard&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
-          view==='carte'&&visibility.carte&&CE(VueCarte,{entries,active:view==='carte'}),
-          view==='roadmap'&&visibility.roadmap&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),
-          view==='bingo'&&visibility.bingo&&CE(VueBingo,{entries})
-        )
+      !loading&&!error&&CE('div',{className:'view-anim',key:view+'_'+(filtreConseiller||'all')},
+        view==='saisie'&&visibility.saisie&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
+        view==='historique'&&visibility.historique&&CE(VueHistorique,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
+        view==='agenda'&&visibility.agenda&&CE(VueAgendaSemaine,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:filtreConseiller,accentColor}),
+        view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
+        view==='dashboard'&&visibility.dashboard&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
+        view==='carte'&&visibility.carte&&CE(VueCarte,{entries,active:view==='carte'}),
+        view==='roadmap'&&visibility.roadmap&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),
+        view==='bingo'&&visibility.bingo&&CE(VueBingo,{entries})
       )
+    ),
+
+    // ── Bottom nav maquette v2 ───────────────────────────────
+    CE('nav',{className:'bottom-nav-v2','aria-label':'Navigation principale'},
+      navBtn('saisie',
+        CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M12 5v14M5 12h14'})),
+        'Nouveau', visibility.saisie),
+      navBtn('historique',
+        CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01'})),
+        'Historique', visibility.historique),
+      navBtn('calendrier',
+        CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:3,y:4,width:18,height:18,rx:2}),CE('path',{d:'M16 2v4M8 2v4M3 10h18'})),
+        'Calendrier', visibility.calendrier),
+      navBtn('dashboard',
+        CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M3 3v18h18'}),CE('rect',{x:7,y:10,width:3,height:8,rx:1}),CE('rect',{x:13,y:6,width:3,height:12,rx:1})),
+        'Stats', visibility.dashboard),
+      navBtn('bingo',
+        CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('circle',{cx:12,cy:12,r:10}),CE('circle',{cx:12,cy:12,r:6}),CE('circle',{cx:12,cy:12,r:2})),
+        'Objectifs', visibility.bingo)
     ),
 
     CE('div',{id:'toast',className:'toast',style:{opacity:0}})
