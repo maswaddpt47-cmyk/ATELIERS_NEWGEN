@@ -615,12 +615,15 @@ window.onLogout = function(){
     const params = new URLSearchParams({action});
     if(isAdmin) params.set('source', 'admin');
 
-    // Injecter le token sur les écritures
+    // Injecter le token sur les écritures (conseillers)
     if(isWrite){
       const token = window.authToken.get();
-      if(token) params.set('token', token);
-      const conseiller = sessionStorage.getItem('gs_conseiller') || '';
-      if(conseiller) params.set('conseiller', conseiller);
+      if(token){
+        params.set('token', token);
+        const conseiller = sessionStorage.getItem('gs_conseiller') || '';
+        if(conseiller) params.set('conseiller', conseiller);
+      }
+      // Si pas de token mais source=admin déjà dans les params → GAS accepte
     }
 
     if(body && Object.keys(body).length){
@@ -1236,6 +1239,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
   const[saving,setSaving]=React.useState(false);
   const[confirmDel,setConfirmDel]=React.useState(null);
   const[newIdsFilter,setNewIdsFilter]=React.useState(null);
+  const[filtresOpen,setFiltresOpen]=React.useState(false);
 
   React.useEffect(()=>{if(initConseiller)setFiltConseiller(initConseiller);},[initConseiller]);
   React.useEffect(()=>{const t=setTimeout(()=>setDSearch(search),300);return()=>clearTimeout(t);},[search]);
@@ -1346,42 +1350,56 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
       CE('span',null,'👤 Affichage filtré : ',CE('strong',null,initConseiller)),
       CE('button',{onClick:resetFiltres},'Voir tous')
     ),
-    // Filtres
-    CE('div',{className:'card',style:{marginBottom:10}},
-      CE('div',{style:{fontSize:11,fontWeight:700,color:'#718096',letterSpacing:'.06em',marginBottom:6}},'STATUT'),
-      CE('div',{className:'chip-bar'},
-        CHIP_STATUTS.map(c=>CE('button',{key:c.key,className:`chip ${c.cls}${filtStatut===c.key?' active':''}`,onClick:()=>setFiltStatut(c.key)},
-          c.dot&&CE('span',{className:'chip-dot',style:{background:c.dot}}),c.label,' ',CE('span',{style:{opacity:.7,fontSize:11}},'('+counts[c.key]+')')))
-      ),
-      CE('hr',{style:{border:'none',borderTop:'1px solid #f0f4f8',margin:'10px 0'}}),
-      CE('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}},
-        CE('input',{type:'text',value:search,placeholder:'🔍 Recherche…',style:{flex:'1 1 160px',padding:'6px 10px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:13},onChange:e=>setSearch(e.target.value)}),
-        CE('select',{style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12},value:filtMois,onChange:e=>setFiltMois(e.target.value)},
-          CE('option',{value:'Tous'},'Tous les mois'),moisDispo.map(m=>CE('option',{key:m,value:m},m))),
-        CE('select',{style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12},value:filtCommune,onChange:e=>setFiltCommune(e.target.value)},
-          CE('option',{value:'Toutes'},'Toutes communes'),
-          [...new Set(entries.map(e=>e.commune).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(c=>CE('option',{key:c,value:c},c))),
-        CE('div',{className:'chip-bar',style:{marginBottom:0}},
-          CE('span',{className:'chip chip-all'+(filtConseiller==='Tous'?' active':''),onClick:()=>{setFiltConseiller('Tous');if(onChangeConseiller)onChangeConseiller('Tous');}},
-            CE('span',{className:'chip-dot'}),'Tous'),
-          conseillersHist.map(c=>CE('span',{key:c,className:'chip'+(filtConseiller===c?' active':''),style:{color:conseillerColor(c)},onClick:()=>{const nv=filtConseiller===c?'Tous':c;setFiltConseiller(nv);if(onChangeConseiller)onChangeConseiller(nv);}},
-            CE('span',{className:'chip-dot',style:{background:conseillerColor(c)}}),c))),
-        CE('select',{style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12},value:filtPublic,onChange:e=>setFiltPublic(e.target.value)},
-          CE('option',{value:'Tous'},'— Type de public —'),PUBLICS.map(p=>CE('option',{key:p,value:p},p)))
-      ),
-      CE('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginTop:8}},
-        CE('div',{style:{display:'flex',alignItems:'center',gap:4}},
-          CE('span',{style:{fontSize:11,fontWeight:700,color:'#718096',whiteSpace:'nowrap'}},'Du'),
-          CE('input',{type:'date',value:dateFrom,onChange:e=>setDateFrom(e.target.value),style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12}}),
-          CE('span',{style:{fontSize:11,fontWeight:700,color:'#718096',whiteSpace:'nowrap'}},'Au'),
-          CE('input',{type:'date',value:dateTo,onChange:e=>setDateTo(e.target.value),style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12}})
+    // Filtres — collapsible
+    CE('div',{className:'card',style:{marginBottom:10,padding:0,overflow:'hidden'}},
+      // ── Barre de résumé / toggle ──────────────────────────────
+      CE('div',{
+        onClick:()=>setFiltresOpen(o=>!o),
+        style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',cursor:'pointer',userSelect:'none',gap:8}
+      },
+        CE('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',flex:1,minWidth:0}},
+          CE('span',{style:{fontSize:12,fontWeight:700,color:'#4a5568'}},'🔍 Filtres'),
+          // chips statut toujours visibles (résumé actif)
+          CE('div',{className:'chip-bar',style:{marginBottom:0,flexWrap:'wrap'}},
+            CHIP_STATUTS.map(c=>CE('button',{key:c.key,className:`chip ${c.cls}${filtStatut===c.key?' active':''}`,
+              onClick:ev=>{ev.stopPropagation();setFiltStatut(c.key);}},
+              c.dot&&CE('span',{className:'chip-dot',style:{background:c.dot}}),
+              c.label,' ',CE('span',{style:{opacity:.7,fontSize:11}},'('+counts[c.key]+')')))
+          ),
+          CE('span',{style:{fontSize:11,color:'#9ca3af',whiteSpace:'nowrap'}},`${filtered.length} / ${entries.length}`)
         ),
-        CE('button',{className:'btn btn-secondary btn-sm',onClick:()=>setSortDir(d=>-d)},sortDir===1?'↑ Date':'↓ Date'),
-        CE('button',{className:'btn btn-secondary btn-sm',onClick:exportXLSX},'📥 XLSX'),
-        CE('button',{className:'btn btn-secondary btn-sm',onClick:onRefresh},'🔄 Sync'),
-        CE('button',{className:'btn btn-secondary btn-sm',onClick:resetFiltres},'✖ Réinitialiser')
+        CE('span',{style:{fontSize:14,color:'#9ca3af',transition:'transform .2s',transform:filtresOpen?'rotate(180deg)':'rotate(0deg)',flexShrink:0}},'▾')
       ),
-      CE('div',{style:{fontSize:11,color:'#718096',marginTop:8}},`${filtered.length} atelier(s) affiché(s) sur ${entries.length}`)
+      // ── Contenu collapsible ───────────────────────────────────
+      filtresOpen&&CE('div',{style:{borderTop:'1px solid #f0f4f8',padding:'12px 14px'}},
+        CE('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:8}},
+          CE('input',{type:'text',value:search,placeholder:'🔍 Recherche…',style:{flex:'1 1 160px',padding:'6px 10px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:13},onChange:e=>setSearch(e.target.value)}),
+          CE('select',{style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12},value:filtMois,onChange:e=>setFiltMois(e.target.value)},
+            CE('option',{value:'Tous'},'Tous les mois'),moisDispo.map(m=>CE('option',{key:m,value:m},m))),
+          CE('select',{style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12},value:filtCommune,onChange:e=>setFiltCommune(e.target.value)},
+            CE('option',{value:'Toutes'},'Toutes communes'),
+            [...new Set(entries.map(e=>e.commune).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(c=>CE('option',{key:c,value:c},c))),
+          CE('div',{className:'chip-bar',style:{marginBottom:0}},
+            CE('span',{className:'chip chip-all'+(filtConseiller==='Tous'?' active':''),onClick:()=>{setFiltConseiller('Tous');if(onChangeConseiller)onChangeConseiller('Tous');}},
+              CE('span',{className:'chip-dot'}),'Tous'),
+            conseillersHist.map(c=>CE('span',{key:c,className:'chip'+(filtConseiller===c?' active':''),style:{color:conseillerColor(c)},onClick:()=>{const nv=filtConseiller===c?'Tous':c;setFiltConseiller(nv);if(onChangeConseiller)onChangeConseiller(nv);}},
+              CE('span',{className:'chip-dot',style:{background:conseillerColor(c)}}),c))),
+          CE('select',{style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12},value:filtPublic,onChange:e=>setFiltPublic(e.target.value)},
+            CE('option',{value:'Tous'},'— Type de public —'),PUBLICS.map(p=>CE('option',{key:p,value:p},p)))
+        ),
+        CE('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}},
+          CE('div',{style:{display:'flex',alignItems:'center',gap:4}},
+            CE('span',{style:{fontSize:11,fontWeight:700,color:'#718096',whiteSpace:'nowrap'}},'Du'),
+            CE('input',{type:'date',value:dateFrom,onChange:e=>setDateFrom(e.target.value),style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12}}),
+            CE('span',{style:{fontSize:11,fontWeight:700,color:'#718096',whiteSpace:'nowrap'}},'Au'),
+            CE('input',{type:'date',value:dateTo,onChange:e=>setDateTo(e.target.value),style:{padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:12}})
+          ),
+          CE('button',{className:'btn btn-secondary btn-sm',onClick:()=>setSortDir(d=>-d)},sortDir===1?'↑ Date':'↓ Date'),
+          CE('button',{className:'btn btn-secondary btn-sm',onClick:exportXLSX},'📥 XLSX'),
+          CE('button',{className:'btn btn-secondary btn-sm',onClick:onRefresh},'🔄 Sync'),
+          CE('button',{className:'btn btn-secondary btn-sm',onClick:resetFiltres},'✖ Réinitialiser')
+        )
+      )
     ),
     // Liste des ateliers
     CE('div',{className:'atelier-list'},filtered.map((e,ei)=>{
@@ -1479,8 +1497,8 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
   const[calDate,setCalDate]=React.useState(new Date(today.getFullYear(),today.getMonth(),1));
   const[filtConseiller,setFiltConseiller]=React.useState(initConseiller||'Tous');
   const[filtPublic,setFiltPublic]=React.useState('Tous');
+  const[filtresOpen,setFiltresOpen]=React.useState(false);
   const[panel,setPanel]=React.useState(null);
-  const[panelStatut,setPanelStatut]=React.useState('');
   const[panelInscrits,setPanelInscrits]=React.useState('');
   const[panelPresents,setPanelPresents]=React.useState('');
   const[panelThematique,setPanelThematique]=React.useState('');
@@ -1561,27 +1579,38 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
 
   return CE('div',null,
     // ── Header ──
-    CE('div',{className:'card',style:{marginBottom:12}},
-      CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10,marginBottom:12}},
+    CE('div',{className:'card',style:{marginBottom:12,padding:0,overflow:'hidden'}},
+      // Navigation mois + toggle filtres
+      CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8,padding:'10px 14px'}},
         CE('div',{style:{display:'flex',alignItems:'center',gap:8}},
           CE('button',{className:'btn btn-secondary btn-sm',onClick:prevMonth},'‹'),
           CE('div',{style:{fontSize:18,fontWeight:800,color:'#1e3a8a',minWidth:170,textAlign:'center'}},`${MOIS_LONG[mo]} ${yr}`),
           CE('button',{className:'btn btn-secondary btn-sm',onClick:nextMonth},'›'),
           CE('button',{className:'btn btn-secondary btn-sm',style:{marginLeft:4,fontSize:12},onClick:goToday},'Aujourd\'hui')
+        ),
+        CE('button',{
+          onClick:()=>setFiltresOpen(o=>!o),
+          style:{display:'flex',alignItems:'center',gap:5,background:'none',border:'1.5px solid #e2e8f0',borderRadius:6,padding:'4px 10px',cursor:'pointer',fontSize:12,color:'#718096',fontWeight:600}
+        },
+          '🔍 Filtres',
+          CE('span',{style:{fontSize:11,transition:'transform .2s',transform:filtresOpen?'rotate(180deg)':'rotate(0deg)'}},'▾')
         )
       ),
-      CE('div',{className:'chip-bar',style:{marginBottom:8}},
-        CE('span',{className:'chip chip-all'+(filtConseiller==='Tous'?' active':''),onClick:()=>{setFiltConseiller('Tous');if(onChangeConseiller)onChangeConseiller('Tous');}},
-          CE('span',{className:'chip-dot'}),'Tous'),
-        conseillersCal.map(c=>CE('span',{key:c,className:'chip'+(filtConseiller===c?' active':''),style:{color:conseillerColor(c)},onClick:()=>{setFiltConseiller(f=>f===c?'Tous':c);if(onChangeConseiller)onChangeConseiller(filtConseiller===c?'Tous':c);}},
-          CE('span',{className:'chip-dot',style:{background:conseillerColor(c)}}),c))
-      ),
-      CE('div',{key:monthStr,style:{display:'flex',gap:8,flexWrap:'wrap'}},
-        CE('div',{className:'kpi-mini',style:{flex:'1 1 70px',borderLeft:'3px solid #1e3a8a',background:'#f0f4ff',animationDelay:'.00s'}},CE('div',{className:'v',style:{color:'#1e3a8a',fontSize:20}},kpi.total),CE('div',{className:'l'},'Ateliers')),
-        CE('div',{className:'kpi-mini',style:{flex:'1 1 70px',borderLeft:'3px solid #16a34a',background:'#f0fdf4',animationDelay:'.07s'}},CE('div',{className:'v',style:{color:'#166534',fontSize:20}},kpi.realises),CE('div',{className:'l'},'Réalisés')),
-        CE('div',{className:'kpi-mini',style:{flex:'1 1 70px',borderLeft:'3px solid #2563eb',background:'#eff6ff',animationDelay:'.14s'}},CE('div',{className:'v',style:{color:'#2563eb',fontSize:20}},kpi.planifies),CE('div',{className:'l'},'Planifiés')),
-        CE('div',{className:'kpi-mini',style:{flex:'1 1 70px',borderLeft:'3px solid #7c3aed',background:'#faf5ff',animationDelay:'.21s'}},CE('div',{className:'v',style:{color:'#7c3aed',fontSize:20}},kpi.inscrits),CE('div',{className:'l'},'Inscrits')),
-        CE('div',{className:'kpi-mini',style:{flex:'1 1 70px',borderLeft:'3px solid #0891b2',background:'#ecfeff',animationDelay:'.28s'}},CE('div',{className:'v',style:{color:'#0891b2',fontSize:20}},kpi.presents),CE('div',{className:'l'},'Présents'))
+      // Chips conseillers + KPIs — collapsibles
+      filtresOpen&&CE('div',{style:{borderTop:'1px solid #f0f4f8',padding:'10px 14px'}},
+        CE('div',{className:'chip-bar',style:{marginBottom:10}},
+          CE('span',{className:'chip chip-all'+(filtConseiller==='Tous'?' active':''),onClick:()=>{setFiltConseiller('Tous');if(onChangeConseiller)onChangeConseiller('Tous');}},
+            CE('span',{className:'chip-dot'}),'Tous'),
+          conseillersCal.map(c=>CE('span',{key:c,className:'chip'+(filtConseiller===c?' active':''),style:{color:conseillerColor(c)},onClick:()=>{setFiltConseiller(f=>f===c?'Tous':c);if(onChangeConseiller)onChangeConseiller(filtConseiller===c?'Tous':c);}},
+            CE('span',{className:'chip-dot',style:{background:conseillerColor(c)}}),c))
+        ),
+        CE('div',{key:monthStr,style:{display:'flex',gap:8,flexWrap:'wrap'}},
+          CE('div',{className:'kpi-mini',style:{flex:'1 1 70px',borderLeft:'3px solid #1e3a8a',background:'#f0f4ff',animationDelay:'.00s'}},CE('div',{className:'v',style:{color:'#1e3a8a',fontSize:20}},kpi.total),CE('div',{className:'l'},'Ateliers')),
+          CE('div',{className:'kpi-mini',style:{flex:'1 1 70px',borderLeft:'3px solid #16a34a',background:'#f0fdf4',animationDelay:'.07s'}},CE('div',{className:'v',style:{color:'#166534',fontSize:20}},kpi.realises),CE('div',{className:'l'},'Réalisés')),
+          CE('div',{className:'kpi-mini',style:{flex:'1 1 70px',borderLeft:'3px solid #2563eb',background:'#eff6ff',animationDelay:'.14s'}},CE('div',{className:'v',style:{color:'#2563eb',fontSize:20}},kpi.planifies),CE('div',{className:'l'},'Planifiés')),
+          CE('div',{className:'kpi-mini',style:{flex:'1 1 70px',borderLeft:'3px solid #7c3aed',background:'#faf5ff',animationDelay:'.21s'}},CE('div',{className:'v',style:{color:'#7c3aed',fontSize:20}},kpi.inscrits),CE('div',{className:'l'},'Inscrits')),
+          CE('div',{className:'kpi-mini',style:{flex:'1 1 70px',borderLeft:'3px solid #0891b2',background:'#ecfeff',animationDelay:'.28s'}},CE('div',{className:'v',style:{color:'#0891b2',fontSize:20}},kpi.presents),CE('div',{className:'l'},'Présents'))
+        )
       )
     ),
     // ── Grille ──
