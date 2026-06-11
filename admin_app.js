@@ -480,6 +480,19 @@ function App(){
         role==='admin'&&navBtn('admin',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('circle',{cx:12,cy:12,r:3}),CE('path',{d:'M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14'})),
           'Admin'),
+        CE('button',{
+          className:'bnav-btn'+(showListes?' active':''),
+          onClick:()=>setShowListes(true),
+          'aria-label':'Listes'
+        },
+          CE('span',{className:'bnav-ico'},
+            CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+              CE('line',{x1:8,y1:6,x2:21,y2:6}),CE('line',{x1:8,y1:12,x2:21,y2:12}),CE('line',{x1:8,y1:18,x2:21,y2:18}),
+              CE('line',{x1:3,y1:6,x2:'3.01',y2:6}),CE('line',{x1:3,y1:12,x2:'3.01',y2:12}),CE('line',{x1:3,y1:18,x2:'3.01',y2:18})
+            )
+          ),
+          CE('span',{className:'bnav-lbl'},'Listes')
+        ),
         role==='admin'&&navBtn('logs_connexion',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:3,y:11,width:18,height:11,rx:2}),CE('path',{d:'M7 11V7a5 5 0 0 1 10 0v4'})),
           'Connexions')
