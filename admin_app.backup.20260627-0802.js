@@ -1,0 +1,1133 @@
+// ════════════════════════════════════════════════════════════
+// Stocke le timestamp du dernier geste utilisateur.
+// Vérifié à chaque reprise du focus + toutes les minutes.
+// Sur expiration : déconnexion propre + toast informatif.
+// ════════════════════════════════════════════════════════════
+const SESSION_KEY        = 'adm_last_activity';
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
+
+function touchSession(){
+  localStorage.setItem(SESSION_KEY, String(Date.now()));
+}
+function isSessionExpired(){
+  const last = parseInt(localStorage.getItem(SESSION_KEY) || '0', 10);
+  return last > 0 && (Date.now() - last) > SESSION_TIMEOUT_MS;
+}
+function clearSession(){
+  localStorage.removeItem(SESSION_KEY);
+}
+
+// ════════════════════════════════════════════════════════════
+// 3 échecs → blocage 5 min, countdown visible, reset auto.
+// ════════════════════════════════════════════════════════════
+function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp}){
+  const MAX_FAILS=3, LOCK_MS=5*60*1000;
+
+  const[pwd,setPwd]=React.useState('');
+  const[err,setErr]=React.useState('');
+  const[loading,setLoading]=React.useState(false);
+  const[hint,setHint]=React.useState('');
+  const[show,setShow]=React.useState(false);
+  const[failCount,setFailCount]=React.useState(0);
+  const[lockUntil,setLockUntil]=React.useState(0);
+  const[countdown,setCountdown]=React.useState(0);
+  const base=conseillersProp&&conseillersProp.length?conseillersProp:CONSEILLERS_DEFAULT;
+  const[conseiller,setConseiller]=React.useState(()=>savedName&&savedName!=='admin'&&base.includes(savedName)?savedName:(base[0]||''));
+  // Resync quand la liste arrive depuis App (fetch async)
+  React.useEffect(()=>{
+    if(!base.length)return;
+    setConseiller(c=>base.includes(c)?c:base[0]);
+  },[base.join(',')]);
+
+  // Tick du countdown
+  React.useEffect(()=>{
+    if(!lockUntil||lockUntil<=Date.now()) return;
+    const tick=()=>{
+      const left=lockUntil-Date.now();
+      if(left<=0){setCountdown(0);setLockUntil(0);setFailCount(0);}
+      else setCountdown(Math.ceil(left/1000));
+    };
+    tick();
+    const id=setInterval(tick,1000);
+    return()=>clearInterval(id);
+  },[lockUntil]);
+
+  const isLocked=lockUntil>Date.now()||countdown>0;
+
+  async function handleSubmit(){
+    if(!pwd.trim()||isLocked) return;
+    setLoading(true);setErr('');setHint('');
+    const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
+    const t1=setTimeout(()=>setHint('Connexion au serveur…'),2000);
+    const t2=setTimeout(()=>setHint('Démarrage de Google Apps Script…'),6000);
+    const t3=isMobile?setTimeout(()=>setHint('Réseau mobile détecté, patience…'),12000):null;
+    try{
+      const res=await Promise.race([
+        apiFetch('checkPassword',{conseiller,password:pwd,userAgent:navigator.userAgent}),
+        new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),isMobile?25000:10000))
+      ]);
+      if(res.ok){
+        setFailCount(0);setLockUntil(0);
+        touchSession();
+        window.onLoginSuccess(conseiller, res);
+        onLogin(res.role||'user',conseiller);
+      }else{
+        const nf=failCount+1;
+        setFailCount(nf);
+        if(nf>=MAX_FAILS){
+          const until=Date.now()+LOCK_MS;
+          setLockUntil(until);
+          setErr('🔒 Trop de tentatives — accès bloqué 5 minutes.');
+        }else{
+          setErr(`Mot de passe incorrect (${nf}/${MAX_FAILS} tentative${nf>1?'s':''})`);
+        }
+      }
+    }catch(e){setErr('Erreur réseau : '+e.message);}
+    finally{setLoading(false);setHint('');clearTimeout(t1);clearTimeout(t2);if(t3)clearTimeout(t3);}
+  }
+
+  const mins=Math.floor(countdown/60), secs=String(countdown%60).padStart(2,'0');
+
+  return CE('div',{className:'login-wrap'},
+    CE('div',{className:'login-card'},
+      CE('h2',null,'🔐 Accès Admin'),
+      savedName&&savedName!=='admin'&&CE('div',{style:{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:8,padding:'8px 12px',marginBottom:12,display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:12}},
+        CE('span',{style:{color:'#1e3a8a',fontWeight:700}},'👤 Connecté en tant que : '+savedName),
+        CE('button',{onClick:onResetProfil,style:{background:'none',border:'none',color:'#9ca3af',cursor:'pointer',fontSize:11,textDecoration:'underline'}},'Changer')
+      ),
+      isLocked
+        ? CE('div',{style:{textAlign:'center',padding:'28px 0'}},
+            CE('div',{style:{fontSize:44,marginBottom:10}},'🔒'),
+            CE('div',{style:{fontSize:15,fontWeight:700,color:'#c53030',marginBottom:6}},'Accès temporairement bloqué'),
+            CE('div',{style:{fontSize:28,fontWeight:800,color:'#1a202c',fontVariantNumeric:'tabular-nums'}},mins+'m'+secs+'s'),
+            CE('div',{style:{fontSize:12,color:'#9ca3af',marginTop:4}},'Trop de tentatives incorrectes')
+          )
+        : CE(React.Fragment,null,
+            CE('div',{style:{marginBottom:10}},
+              CE('label',{style:{fontSize:12,fontWeight:600,color:'#4a5568',display:'block',marginBottom:4}},'Conseiller'),
+              CE('select',{value:conseiller,onChange:e=>setConseiller(e.target.value),style:{width:'100%',padding:'10px 14px',border:'1px solid #e2e8f0',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'#fff'}},
+                base.map(c=>CE('option',{key:c,value:c},c))
+              )
+            ),
+            CE('div',{style:{position:'relative',marginBottom:10}},
+              CE('input',{
+                type:show?'text':'password',placeholder:'Mot de passe',value:pwd,
+                onChange:e=>setPwd(e.target.value),
+                onKeyDown:e=>e.key==='Enter'&&handleSubmit(),
+                style:{width:'100%',padding:'10px 40px 10px 14px',border:'1px solid #e2e8f0',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box'}
+              }),
+              CE('button',{onClick:()=>setShow(s=>!s),style:{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#718096',padding:0}},show?'🙈':'👁️')
+            ),
+            err&&CE('p',{style:{color:'#c53030',fontSize:13,marginBottom:8}},err),
+            hint&&!err&&CE('p',{style:{color:'#718096',fontSize:12,marginBottom:8,display:'flex',alignItems:'center',gap:6}},CE('span',{className:'spinner',style:{width:12,height:12,borderWidth:2}}),hint),
+            CE('button',{onClick:handleSubmit,disabled:loading||!pwd.trim(),style:{width:'100%',padding:'11px',background:'#1e3a8a',color:'#fff',border:'none',borderRadius:8,fontSize:14,fontWeight:700,cursor:'pointer'}},loading?'Vérification…':'Connexion')
+          )
+    )
+  );
+}
+
+var VIEW_META = {
+  saisie:     { ico: '✏️',  label: 'Nouveau',        group: 'Action' },
+  historique: { ico: '📋',  label: 'Historique',     group: 'Consulter' },
+  agenda:     { ico: '🗓️', label: 'Agenda',          group: 'Consulter' },
+  calendrier: { ico: '📅',  label: 'Calendrier',     group: 'Consulter' },
+  carte:      { ico: '🗺️', label: 'Carte',          group: 'Consulter' },
+  roadmap:    { ico: '🛣️', label: 'Roadmap',         group: 'Consulter' },
+  dashboard:  { ico: '🚀',  label: 'Dashboard',      group: 'Analyser' },
+  graphiques: { ico: '📊',  label: 'Statistiques',   group: 'Analyser' },
+  bingo:      { ico: '🎯',  label: 'Bingo',          group: 'Analyser' },
+  anomalies:  { ico: '⚠️',  label: 'Anomalies',      group: 'Analyser' },
+  powerbi:    { ico: '📈',  label: 'Power BI',       group: 'Analyser' },
+  admin:      { ico: '⚙️', label: 'Admin',          group: 'Config' },
+  logs:       { ico: '📜',  label: 'Logs',           group: 'Config' },
+};
+
+// ── App Admin ──────────────────────────────────────────────
+function App(){
+  const[auth,setAuth]           = React.useState(false);
+  const[adminConseiller,setAdminConseiller]= React.useState(()=>localStorage.getItem('adm_conseiller')||'');
+  const[view,setView]           = React.useState('historique');
+  const[entries,setEntries]= React.useState([]);
+  const[loading,setLoading]= React.useState(true);
+  const[error,setError]    = React.useState(null);
+  const[newEntries,setNewEntries]= React.useState([]);
+  const[seenIds,setSeenIds]= React.useState(new Set());
+  const[showListes,setShowListes]= React.useState(false);
+  const[editingId,setEditingId]  = React.useState(null);
+  const[prefillData,setPrefillData]= React.useState(null);
+  const[annee,setAnnee]    = React.useState(String(new Date().getFullYear()));
+  const[lists,setLists]    = React.useState({
+    statuts:[...STATUTS_DEFAULT],conseillers:[...CONSEILLERS_DEFAULT],
+    publics:[...PUBLICS_DEFAULT],materiels:[...MATERIELS_DEFAULT]
+  });
+  // Chargé avant l'auth pour alimenter le dropdown de login
+  const[loginConseillers,setLoginConseillers]=React.useState(CONSEILLERS_DEFAULT);
+  React.useEffect(()=>{
+    const year=new Date().getFullYear();
+    Promise.all([
+      fetch(`${GS_URL}?action=getAll&year=${year}&source=admin`).then(r=>r.json()).catch(()=>null),
+      apiFetch('getComptes').catch(()=>null)
+    ]).then(([dataRes,comptesRes])=>{
+      const base=dataRes?.lists?.conseillers?.length?dataRes.lists.conseillers:null;
+      if(!base)return; // si getAll échoue on garde CONSEILLERS_DEFAULT
+      const inactifs=new Set(comptesRes?.ok&&comptesRes.comptes?comptesRes.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller):[]);
+      setLoginConseillers(base.filter(c=>!inactifs.has(c)));
+    });
+  },[]);
+  const[emails,setEmails]  = React.useState({});
+  const[lastSync,setLastSync]= React.useState(null);
+  const[syncing,setSyncing]= React.useState(false);
+  const[logFilter,setLogFilter]= React.useState('all');
+  const[pinned,setPinned]= React.useState(()=>localStorage.getItem('adm_sidebar_pinned')==='1'); // épingle sidebar
+  const[darkMode,setDarkMode]=React.useState(()=>localStorage.getItem('adm_dark')==='1');
+  React.useEffect(()=>{
+    document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
+    localStorage.setItem('adm_dark',darkMode?'1':'0');
+  },[darkMode]);
+  const LOGS_PURGE_MS=30*24*60*60*1000;
+  const[logs,setLogs]=React.useState(()=>{
+    try{
+      const raw=JSON.parse(localStorage.getItem('adm_logs')||'[]');
+      const cutoff=Date.now()-30*24*60*60*1000;
+      return raw.filter(e=>!e.ts||e.ts>=cutoff);
+    }catch{return[];}
+  });
+  function addLog(msg,type='info'){
+    const entry={msg,type,t:new Date().toLocaleTimeString('fr-FR'),ts:Date.now()};
+    setLogs(l=>{const nl=[entry,...l].slice(0,200);try{localStorage.setItem('adm_logs',JSON.stringify(nl));}catch{}return nl;});
+  }
+  function clearLogs(){setLogs([]);try{localStorage.removeItem('adm_logs');}catch{}}
+  function purgeLogs(){
+    const cutoff=Date.now()-LOGS_PURGE_MS;
+    setLogs(l=>{const nl=l.filter(e=>!e.ts||e.ts>=cutoff);try{localStorage.setItem('adm_logs',JSON.stringify(nl));}catch{}return nl;});
+  }
+
+  // ── v10.0 : Session expirante ──────────────────────────────
+  // Déconnexion automatique après 30 min d'inactivité.
+  // touchSession() appelé sur chaque interaction clavier/souris.
+  function doSessionExpire(){
+    clearSession();
+    setAuth(false);
+    showToast('⏱️ Session expirée — reconnecte-toi.',false);
+    addLog('Session expirée (30 min inactivité)','info');
+  }
+  React.useEffect(()=>{
+    if(!auth) return;
+    touchSession();
+    // Vérification toutes les 60s
+    const interval = setInterval(()=>{
+      if(isSessionExpired()) doSessionExpire();
+    }, 60*1000);
+    // Vérification au retour sur l'onglet
+    function onFocus(){ if(isSessionExpired()) doSessionExpire(); else touchSession(); }
+    window.addEventListener('focus', onFocus);
+    // Touch sur toute interaction utilisateur
+    function onActivity(){ touchSession(); }
+    window.addEventListener('keydown', onActivity, {passive:true});
+    window.addEventListener('mousedown', onActivity, {passive:true});
+    window.addEventListener('touchstart', onActivity, {passive:true});
+    return ()=>{
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('keydown', onActivity);
+      window.removeEventListener('mousedown', onActivity);
+      window.removeEventListener('touchstart', onActivity);
+    };
+  },[auth]);
+
+  async function loadData(attempt=1, silent=false){
+    setSyncing(true);
+    if(!silent) setLoading(true);setError(null);
+    try{
+      // Timeout adaptatif : court sur PC/fibre, long sur mobile/4G
+      const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
+      const timeouts=isMobile?[20000,25000,30000]:[8000,10000,12000];
+      const timeoutMs=timeouts[attempt-1]||timeouts[timeouts.length-1];
+      const res=await Promise.race([fetch(`${GS_URL}?action=getAll&year=${annee}&source=admin`),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),timeoutMs))]);
+      const data=await res.json();
+      if(!data.ok)throw new Error(data.error||'Erreur serveur');
+      const incoming=data.entries||[];
+      setEntries(incoming);
+      if(data.lists){
+        const l=data.lists;
+        const nl={statuts:Array.isArray(l.statuts)?l.statuts:[...STATUTS_DEFAULT],conseillers:Array.isArray(l.conseillers)?l.conseillers:[...CONSEILLERS_DEFAULT],publics:Array.isArray(l.publics)?l.publics:[...PUBLICS_DEFAULT],materiels:Array.isArray(l.materiels)?l.materiels:[...MATERIELS_DEFAULT]};
+        setLists(nl);STATUTS=[...nl.statuts];CONSEILLERS=[...nl.conseillers];PUBLICS=[...nl.publics];MATERIELS=[...nl.materiels];
+        addLog('Listes synchronisées','ok');
+      }
+      if(data.conseiller_colors){applyColors(data.conseiller_colors);}
+      if(data.emails){setEmails(data.emails);addLog('Emails chargés','ok');}
+      addLog(`${incoming.length} ateliers chargés (${annee})`,'ok');
+      setLastSync(new Date());
+      setSeenIds(prev=>{if(prev.size===0)return new Set(incoming.map(e=>e._id));const nouvs=incoming.filter(e=>!prev.has(e._id));if(nouvs.length>0)setNewEntries(n=>[...nouvs,...n]);return new Set(incoming.map(e=>e._id));});
+      setLoading(false);setSyncing(false);
+    }catch(err){
+      if(err.message==='timeout'&&attempt<3){addLog(`Tentative ${attempt}/3…`,'info');const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);setTimeout(()=>loadData(attempt+1,silent),isMobile?[3000,6000][attempt-1]:2000);}
+      else{setError(attempt>1?'Google Sheets ne répond pas après 3 tentatives.':'Impossible de charger : '+err.message);addLog('Erreur : '+err.message,'err');setLoading(false);setSyncing(false);}
+    }
+  }
+
+  const isFirstLoad=React.useRef(true);
+  React.useEffect(()=>{loadCommunes47().catch(()=>{});},[]);
+  React.useEffect(()=>{
+    if(isFirstLoad.current){isFirstLoad.current=false;loadData();}
+    else{setSeenIds(new Set());loadData();}
+  },[annee]);
+  React.useEffect(()=>{
+    const id=setInterval(()=>loadData(1,true),5*60*1000);
+    return()=>clearInterval(id);
+  },[annee]);
+  async function handleDelete(id){
+    try{const res=await apiFetch('delete',{_id:id});if(!res.ok)throw new Error(res.error);showToast('✅ Atelier supprimé');addLog('Suppression '+id,'ok');loadData();}
+    catch(err){showToast('❌ '+err.message,false);}
+  }
+
+  function handleEdit(id){setEditingId(id);setPrefillData(null);setView('saisie');}
+  function handleSaved(){loadData();setView('historique');}
+
+  function handleDuplicate(entry){
+    const{_id,_n,date,horaire,ampm,inscrits,presents,remarques,...rest}=entry;
+    setPrefillData({...rest});setEditingId(null);setView('saisie');
+  }
+
+  function handleSaveLists(newLists){
+    setLists(newLists);STATUTS=[...newLists.statuts];CONSEILLERS=[...newLists.conseillers];PUBLICS=[...newLists.publics];MATERIELS=[...newLists.materiels];
+  }
+
+  function handleSaveEmails(newEmails){
+    setEmails(newEmails);
+  }
+  const STATUS_PALETTE={'Planifié':'#9683EC','Réalisé':'#70AD47','Annulé':'#FF5050','Non réalisé':'#FFC000','Reporté':'#ED7D31'};
+  const statusCounts=React.useMemo(()=>{
+    const c={};
+    entries.forEach(e=>{const s=e.statut||'?';c[s]=(c[s]||0)+1;});
+    return Object.entries(STATUS_PALETTE).filter(([s])=>c[s]>0).map(([s,color])=>({s,v:c[s],color}));
+  },[entries]);
+
+  const[role,setRole]=React.useState('');
+  if(!auth)return CE(AdminLogin,{onLogin:(r,nom)=>{setAuth(true);setRole(r||'user');if(nom){localStorage.setItem('adm_conseiller',nom);setAdminConseiller(nom);}},savedName:adminConseiller,onResetProfil:()=>{localStorage.removeItem('adm_conseiller');setAdminConseiller('');},conseillers:loginConseillers})
+
+  if(!adminConseiller)return CE('div',{className:'login-wrap'},
+    CE('div',{className:'login-card'},
+      CE('h2',null,'👤 Qui êtes-vous ?'),
+      loading
+        ? CE('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',gap:12,padding:'24px 0',color:'#9ca3af'}},
+            CE('span',{className:'spinner',style:{width:24,height:24,borderWidth:3}}),
+            CE('span',{style:{fontSize:13}},'Chargement en cours…')
+          )
+        : CE(React.Fragment,null,
+            CE('p',{style:{fontSize:13,color:'#718096',margin:'8px 0 20px'}},'Pour personnaliser votre interface'),
+            (lists.conseillers||CONSEILLERS_DEFAULT).map(c=>
+              CE('button',{key:c,onClick:()=>{localStorage.setItem('adm_conseiller',c);setAdminConseiller(c);},
+                style:{display:'block',width:'100%',marginBottom:10,padding:'11px 16px',border:`2px solid ${conseillerColor(c)}22`,borderRadius:10,background:`${conseillerColor(c)}11`,color:conseillerColor(c),fontSize:14,fontWeight:700,cursor:'pointer',textAlign:'left',transition:'all .15s'}},
+                CE('span',{style:{display:'inline-block',width:10,height:10,borderRadius:'50%',background:conseillerColor(c),marginRight:8}}),c)
+            ),
+            CE('button',{onClick:()=>{localStorage.setItem('adm_conseiller','admin');setAdminConseiller('admin');},style:{display:'block',width:'100%',padding:'11px 16px',border:'2px solid #e2e8f0',borderRadius:10,background:'#f8fafc',color:'#718096',fontSize:13,cursor:'pointer',marginTop:4}},'Continuer sans personnalisation')
+          )
+    )
+  );
+
+  const navBtn=(v,ico,lbl,extraClass)=>CE('button',{
+    key:v,
+    className:'bnav-btn'+(view===v?' active':'')+(extraClass?' '+extraClass:''),
+    onClick:()=>setView(v),
+    'aria-label':lbl
+  },
+    CE('span',{className:'bnav-ico'},ico),
+    CE('span',{className:'bnav-lbl'},lbl)
+  );
+
+  const accentColor = conseillerColor(adminConseiller)||NAV_DEFAULT_COLOR;
+  const meta = VIEW_META[view]||{ico:'📄',label:view,group:''};
+
+  return CE('div',{className:'app-shell-v2'},
+
+    // ── Topbar compacte admin ──────────────────────────────
+    CE('header',{className:'app-topbar-v2',style:{borderBottom:`2px solid ${accentColor}`}},
+      CE('div',{className:'app-topbar-v2-left'},
+        CE('span',{style:{fontSize:16}},meta.ico),
+        CE('span',{className:'app-topbar-v2-title'},meta.label),
+        meta.group&&CE('span',{className:'app-topbar-v2-sub'},'— '+meta.group)
+      ),
+      CE('div',{className:'app-topbar-v2-right'},
+        CE('span',{className:'sidebar-admin-badge'},'ADMIN'),
+        entries.length>0&&CE('span',{style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},entries.length),
+        CE('select',{className:'topbar-year-sel',value:annee,onChange:e=>setAnnee(e.target.value)},
+          [String(new Date().getFullYear()-1),String(new Date().getFullYear()),String(new Date().getFullYear()+1)].map(y=>CE('option',{key:y,value:y},y))
+        ),
+        CE('button',{
+          onClick:()=>setDarkMode(d=>!d),
+          style:{background:'none',border:'none',cursor:'pointer',fontSize:16,padding:0}
+        }, darkMode?'☀️':'🌙'),
+        newEntries.length>0&&CE('button',{
+          className:'topbar-notif-btn',
+          onClick:()=>{setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);}
+        },'🔔 ',CE('span',{className:'notif-badge'},newEntries.length)),
+        adminConseiller&&adminConseiller!=='admin'&&CE('span',{className:'app-topbar-conseiller',style:{background:accentColor}},adminConseiller),
+        CE('button',{
+          className:'topbar-changer-btn',
+          onClick:()=>{localStorage.removeItem('adm_conseiller');setAdminConseiller('');}
+        },'Changer')
+      )
+    ),
+
+    // ── Contenu principal ─────────────────────────────────
+    CE('main',{className:'app-main-v2'},
+      loading&&CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16,height:260,color:'#9ca3af'}},
+        CE('span',{className:'spinner',style:{width:32,height:32,borderWidth:3,borderTopColor:accentColor,borderColor:accentColor+'33'}}),
+        CE('span',{style:{fontSize:13,fontWeight:600}},'Chargement des données…')
+      ),
+      error&&CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:loadData},'🔄 Réessayer')),
+      !loading&&!error&&CE('div',{key:view,className:'view-anim'},
+        view==='saisie'&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(adminConseiller)}),
+        view==='historique'&&CE(VueHistorique,{key:'hist_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem('adm_conseiller',nom);setAdminConseiller(nom);}}),
+        view==='agenda'&&CE(VueAgendaSemaine,{key:'agenda_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,accentColor}),
+        view==='calendrier'&&CE(VueCalendrier,{key:'cal_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem('adm_conseiller',nom);setAdminConseiller(nom);}}),
+        view==='dashboard'&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
+        view==='carte'&&CE(VueCarte,{entries,active:view==='carte'}),
+        view==='roadmap'&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),
+        view==='bingo'&&CE(VueBingo,{entries}),
+        view==='anomalies'&&CE(VueAnomalies,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');},communes:window.COMMUNES_47_CACHE||[],apiFetch,showToast,addLog}),
+        view==='admin'&&role==='admin'&&CE(VueAdmin,{entries,onRefresh:loadData,addLog,conseillersList:lists.conseillers,onSaveColors:(c)=>{applyColors(c);},annee,adminConseiller}),
+        view==='logs_connexion'&&role==='admin'&&CE(VueLogs,null),
+          view==='logs'&&CE('div',{className:'card'},
+            CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:8}},
+              CE('h2',{style:{margin:0}},'📜 Journal des opérations'),
+              CE('div',{style:{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}},
+                CE('div',{style:{display:'flex',gap:4}},
+                  ['all','ok','err','info'].map(f=>CE('button',{key:f,
+                    onClick:()=>setLogFilter(f),
+                    style:{fontSize:11,padding:'3px 9px',borderRadius:6,cursor:'pointer',fontWeight:logFilter===f?700:400,
+                      border:logFilter===f?'1.5px solid #1e3a8a':'1px solid #e2e8f0',
+                      background:logFilter===f?'#eff6ff':'#f8fafc',
+                      color:logFilter===f?'#1e3a8a':f==='ok'?'#16a34a':f==='err'?'#dc2626':'#718096'}
+                  },{all:'Tous',ok:'✅ OK',err:'❌ Erreurs',info:'ℹ️ Info'}[f]))
+                ),
+                CE('span',{style:{fontSize:11,color:'#9ca3af'}},
+                  (logFilter==='all'?logs:logs.filter(l=>l.type===logFilter)).length+' / '+logs.length
+                ),
+                (()=>{
+                  const cutoff=Date.now()-30*24*60*60*1000;
+                  const old30=logs.filter(e=>!e.ts||e.ts<cutoff).length;
+                  return old30>0&&CE('button',{
+                    onClick:purgeLogs,
+                    title:'Supprimer les '+old30+' entrée'+(old30>1?'s':'')+' de plus de 30 jours',
+                    style:{fontSize:11,padding:'3px 10px',border:'1px solid #fbd38d',borderRadius:6,background:'#fffbeb',cursor:'pointer',color:'#b45309'}
+                  },'🕐 +30j ('+old30+')');
+                })(),
+                logs.length>0&&CE('button',{
+                  onClick:()=>{clearLogs();setLogFilter('all');},
+                  style:{fontSize:11,padding:'3px 10px',border:'1px solid #e2e8f0',borderRadius:6,background:'#f8fafc',cursor:'pointer',color:'#718096'}
+                },'🗑️ Tout effacer')
+              )
+            ),
+            (()=>{
+              const filtered=logFilter==='all'?logs:logs.filter(l=>l.type===logFilter);
+              return filtered.length===0
+                ?CE('p',{style:{color:'#718096',fontSize:13}},logFilter==='all'?'Aucune opération enregistrée.':'Aucune entrée de ce type.')
+                :filtered.map((l,i)=>{
+                  const dateStr=l.ts?new Date(l.ts).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}):'';
+                  return CE('div',{key:i,className:'log-entry log-'+l.type},
+                    CE('span',{className:'log-time'},dateStr&&(dateStr+' '),l.t),
+                    CE('span',null,l.msg));
+                });
+            })()
+          )
+        )
+    ),
+
+    // Modale listes
+    showListes&&CE(VueListes,{
+      lists,
+      onSave:handleSaveLists,
+      onClose:()=>setShowListes(false),
+      emails,
+      onSaveEmails:handleSaveEmails
+    }),
+
+    // ── Bottom nav admin (scrollable gauche-droite) ───────
+    CE('nav',{className:'bottom-nav-v2','aria-label':'Navigation admin'},
+      CE('div',{className:'bottom-nav-scroll'},
+        navBtn('saisie',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M12 5v14M5 12h14'})),
+          'Nouveau'),
+        navBtn('historique',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01'})),
+          'Historique'),
+        navBtn('agenda',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:3,y:4,width:18,height:18,rx:2}),CE('path',{d:'M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01'})),
+          'Agenda'),
+        navBtn('calendrier',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:3,y:4,width:18,height:18,rx:2}),CE('path',{d:'M16 2v4M8 2v4M3 10h18'})),
+          'Calendrier'),
+        navBtn('carte',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('polygon',{points:'1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6'}),CE('line',{x1:8,y1:2,x2:8,y2:18}),CE('line',{x1:16,y1:6,x2:16,y2:22})),
+          'Carte'),
+        navBtn('roadmap',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M3 17l4-8 4 4 4-6 4 4'})),
+          'Roadmap'),
+        navBtn('dashboard',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M3 3v18h18'}),CE('rect',{x:7,y:10,width:3,height:8,rx:1}),CE('rect',{x:13,y:6,width:3,height:12,rx:1})),
+          'Dashboard'),
+        navBtn('bingo',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('circle',{cx:12,cy:12,r:10}),CE('circle',{cx:12,cy:12,r:3}),CE('line',{x1:12,y1:2,x2:12,y2:5}),CE('line',{x1:12,y1:19,x2:12,y2:22}),CE('line',{x1:2,y1:12,x2:5,y2:12}),CE('line',{x1:19,y1:12,x2:22,y2:12})),
+          'Bingo'),
+        navBtn('anomalies',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'}),CE('line',{x1:12,y1:9,x2:12,y2:13}),CE('line',{x1:12,y1:17,x2:'12.01',y2:17})),
+          'Anomalies'),
+        navBtn('logs',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'}),CE('polyline',{points:'14 2 14 8 20 8'}),CE('line',{x1:16,y1:13,x2:8,y2:13}),CE('line',{x1:16,y1:17,x2:8,y2:17})),
+          'Logs'),
+        role==='admin'&&navBtn('admin',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('circle',{cx:12,cy:12,r:3}),CE('path',{d:'M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14'})),
+          'Admin'),
+        CE('button',{
+          className:'bnav-btn'+(showListes?' active':''),
+          onClick:()=>setShowListes(true),
+          'aria-label':'Listes'
+        },
+          CE('span',{className:'bnav-ico'},
+            CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+              CE('line',{x1:8,y1:6,x2:21,y2:6}),CE('line',{x1:8,y1:12,x2:21,y2:12}),CE('line',{x1:8,y1:18,x2:21,y2:18}),
+              CE('line',{x1:3,y1:6,x2:'3.01',y2:6}),CE('line',{x1:3,y1:12,x2:'3.01',y2:12}),CE('line',{x1:3,y1:18,x2:'3.01',y2:18})
+            )
+          ),
+          CE('span',{className:'bnav-lbl'},'Listes')
+        ),
+        role==='admin'&&navBtn('logs_connexion',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:3,y:11,width:18,height:11,rx:2}),CE('path',{d:'M7 11V7a5 5 0 0 1 10 0v4'})),
+          'Connexions')
+      )
+    ),
+
+    CE('div',{id:'toast',className:'toast',style:{opacity:0}})
+  ); // ferme return CE('div',{className:'app-shell-v2',...
+}
+
+// ════════════════════════════════════════════════════════════
+// Filtres croisés : mois, conseiller, statut
+// Données réelles issues de Google Sheets
+// ════════════════════════════════════════════════════════════
+// ── TableCommunes : tri par colonne ────────────────────────
+function TableCommunes({fd}){
+  const[sortKey,setSortKey]=React.useState('ateliers');
+  const[sortDir,setSortDir]=React.useState(-1); // -1 desc, 1 asc
+
+  function handleSort(key){
+    if(sortKey===key) setSortDir(d=>d*-1);
+    else{setSortKey(key);setSortDir(-1);}
+  }
+
+  const communes=[...new Set(fd.map(d=>d.commune).filter(Boolean))].map(c=>{
+    const r=fd.filter(d=>d.commune===c);
+    const rl=r.filter(d=>d.statut==='Réalisé').length;
+    const ins=r.reduce((s,d)=>s+(parseInt(d.inscrits)||0),0);
+    const pre=r.reduce((s,d)=>s+(parseInt(d.presents)||0),0);
+    const tp=ins?Math.round(pre/ins*100):0;
+    return{name:c,ateliers:r.length,realises:rl,inscrits:ins,presents:pre,presence:tp};
+  }).sort((a,b)=>sortDir*(a[sortKey]>b[sortKey]?1:a[sortKey]<b[sortKey]?-1:0));
+
+  const COLS=[
+    {key:'name',     label:'Commune'},
+    {key:'ateliers', label:'Atl.'},
+    {key:'realises', label:'Réal.'},
+    {key:'inscrits', label:'Inscrits'},
+    {key:'presents', label:'Présents'},
+    {key:'presence', label:'Présence'},
+  ];
+
+  function ThSort({col}){
+    const active=sortKey===col.key;
+    const arrow=active?(sortDir===-1?'↓':'↑'):'↕';
+    return CE('th',{
+      onClick:()=>handleSort(col.key),
+      style:{padding:'7px 8px',textAlign:'left',fontWeight:700,
+        color:active?'#2563EB':'#6b7280',borderBottom:'2px solid '+(active?'#2563EB':'#e5e7eb'),
+        fontSize:10,whiteSpace:'nowrap',cursor:'pointer',userSelect:'none',
+        background:active?'#eff6ff':'#f9fafb',transition:'all .15s'}
+    },
+      CE('span',null,col.label),
+      CE('span',{style:{marginLeft:4,opacity:active?1:.4,fontSize:9}},arrow)
+    );
+  }
+
+  return CE('div',{style:{overflowX:'auto'}},
+    CE('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:11}},
+      CE('thead',null,CE('tr',null,COLS.map(col=>CE(ThSort,{key:col.key,col})))),
+      CE('tbody',null,communes.map((c,i)=>{
+        const tpColor=c.presence>70?'#16a34a':c.presence>40?'#d97706':'#ef4444';
+        return CE('tr',{key:c.name,style:{background:i%2?'#f9fafb':'#fff'}},
+          CE('td',{style:{padding:'6px 8px',fontWeight:600,fontSize:10}},c.name.slice(0,18)),
+          CE('td',{style:{padding:'6px 8px'}},c.ateliers),
+          CE('td',{style:{padding:'6px 8px',color:'#16a34a',fontWeight:600}},c.realises),
+          CE('td',{style:{padding:'6px 8px'}},c.inscrits),
+          CE('td',{style:{padding:'6px 8px'}},c.presents),
+          CE('td',{style:{padding:'6px 8px'}},
+            CE('div',{style:{display:'flex',alignItems:'center',gap:5}},
+              CE('div',{style:{height:5,width:36,background:'#f3f4f6',borderRadius:3}},
+                CE('div',{style:{height:5,borderRadius:3,width:c.presence+'%',background:tpColor}})
+              ),
+              CE('span',{style:{fontSize:10,fontWeight:700,color:tpColor}},c.presence+'%')
+            )
+          )
+        );
+      }))
+    )
+  );
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   • KPIs enrichis (4 indicateurs + taux + mois)
+//   • Validation pré-import CSV & XLSX (modal aperçu)
+// ════════════════════════════════════════════════════════════
+
+// ── Modale aperçu import ───────────────────────────────────
+function ImportPreviewModal({preview, onConfirm, onCancel}){
+  if(!preview) return null;
+  const {rows, errors, type} = preview;
+  const COLS=['statut','date','horaire','conseiller','commune','thematique','orienteur'];
+  return CE('div',{className:'confirm-overlay',onClick:onCancel},
+    CE('div',{onClick:e=>e.stopPropagation(),style:{
+      background:'#fff',borderRadius:14,padding:'24px',maxWidth:760,width:'95%',
+      maxHeight:'85vh',overflowY:'auto',boxShadow:'0 16px 64px rgba(0,0,0,.25)',
+      animation:'slideUp .18s ease'
+    }},
+      CE('h3',{style:{margin:'0 0 4px',fontSize:16,color:'#1a202c'}},'📋 Aperçu — Import '+type),
+      CE('p',{style:{margin:'0 0 16px',fontSize:13,color:'#4a5568'}},
+        rows.length+' ligne'+(rows.length>1?'s':'')+' détectée'+(rows.length>1?'s':'')+
+        (errors.length>0?' · '+errors.length+' anomalie'+(errors.length>1?'s':'')+' détectée'+(errors.length>1?'s':'') : '')),
+
+      // Bandeau erreurs
+      errors.length>0&&CE('div',{style:{background:'#fff5f5',border:'1px solid #fed7d7',borderRadius:8,padding:'10px 14px',marginBottom:14}},
+        CE('div',{style:{fontWeight:700,fontSize:13,color:'#c53030',marginBottom:6}},'⚠️ '+errors.length+' anomalie'+(errors.length>1?'s':'')+' détectée'+(errors.length>1?'s':'')+' :'),
+        errors.slice(0,8).map((e,i)=>CE('div',{key:i,style:{fontSize:12,color:'#c53030',marginBottom:2}},'• '+e)),
+        errors.length>8&&CE('div',{style:{fontSize:11,color:'#9ca3af',marginTop:4}},'… et '+(errors.length-8)+' autre'+(errors.length-8>1?'s':''))
+      ),
+
+      // Tableau aperçu (5 premières lignes)
+      CE('div',{style:{overflowX:'auto',marginBottom:16}},
+        CE('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:11,minWidth:500}},
+          CE('thead',null,CE('tr',null,
+            COLS.map(c=>CE('th',{key:c,style:{background:'#f1f5f9',padding:'6px 8px',textAlign:'left',fontSize:11,fontWeight:700,color:'#4a5568',borderBottom:'2px solid #e2e8f0',whiteSpace:'nowrap'}},c))
+          )),
+          CE('tbody',null,
+            rows.slice(0,5).map((r,i)=>CE('tr',{key:i,style:{background:i%2?'#f8fafc':'#fff'}},
+              COLS.map(c=>CE('td',{key:c,style:{padding:'5px 8px',borderBottom:'1px solid #f0f0f0',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:!r[c]&&['statut','date','conseiller'].includes(c)?'#fc8181':'#1a202c'}},
+                String(r[c]||'—')
+              ))
+            ))
+          )
+        )
+      ),
+      rows.length>5&&CE('p',{style:{fontSize:11,color:'#9ca3af',margin:'-10px 0 14px',textAlign:'right'}},
+        '… '+( rows.length-5)+' ligne'+(rows.length-5>1?'s':'')+' supplémentaire'+(rows.length-5>1?'s':'')+' non affichée'+(rows.length-5>1?'s':'')),
+
+      CE('div',{style:{display:'flex',gap:10,justifyContent:'flex-end'}},
+        CE('button',{onClick:onCancel,style:{padding:'9px 20px',border:'1px solid #e2e8f0',borderRadius:8,background:'#f8fafc',cursor:'pointer',fontSize:13,fontWeight:600,color:'#4a5568'}},'Annuler'),
+        CE('button',{onClick:onConfirm,autoFocus:true,style:{padding:'9px 20px',border:'none',borderRadius:8,background:errors.length>0?'#dd6b20':'#1e3a8a',cursor:'pointer',fontSize:13,fontWeight:700,color:'#fff'}},
+          errors.length>0?'⚠️ Importer quand même':'✅ Confirmer l\'import'
+        )
+      )
+    )
+  );
+}
+
+function ImportRapportModal({rapport,onClose}){
+  if(!rapport) return null;
+  const {total,envoyes,batchErrors,anomaliesPre,annule,ts}=rapport;
+  const ok=envoyes===total&&!annule&&batchErrors.length===0;
+  const partial=envoyes>0&&(annule||batchErrors.length>0);
+  const couleur=ok?'#276749':partial?'#92400e':'#9b2335';
+  const bg=ok?'#f0fff4':partial?'#fffbeb':'#fff5f5';
+  const border=ok?'#9ae6b4':partial?'#fbd38d':'#fed7d7';
+  return CE('div',{className:'confirm-overlay',onClick:onClose},
+    CE('div',{onClick:e=>e.stopPropagation(),style:{background:'#fff',borderRadius:14,padding:'28px',maxWidth:460,width:'92%',boxShadow:'0 16px 64px rgba(0,0,0,.25)',animation:'slideUp .18s ease'}},
+      CE('h3',{style:{margin:'0 0 16px',fontSize:16,color:'#1a202c'}},'📊 Rapport d\'import'),
+      CE('div',{style:{background:bg,border:'1px solid '+border,borderRadius:10,padding:'14px 18px',marginBottom:16}},
+        CE('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:anomaliesPre>0||batchErrors.length>0?12:0}},
+          CE('div',{style:{textAlign:'center'}},CE('div',{style:{fontSize:28,fontWeight:800,color:'#1a202c'}},total),CE('div',{style:{fontSize:11,color:'#718096'}},'Lignes détectées')),
+          CE('div',{style:{textAlign:'center'}},CE('div',{style:{fontSize:28,fontWeight:800,color:envoyes===total?'#276749':'#dd6b20'}},envoyes),CE('div',{style:{fontSize:11,color:'#718096'}},'Envoyées ✓'))
+        ),
+        anomaliesPre>0&&CE('div',{style:{fontSize:12,color:'#92400e',marginBottom:4}},'⚠️ '+anomaliesPre+' anomalie'+(anomaliesPre>1?'s':'')+' détectée'+(anomaliesPre>1?'s':'')+' avant envoi'),
+        annule&&CE('div',{style:{fontSize:12,color:'#c53030',marginBottom:4}},'⛔ Import annulé manuellement'),
+        batchErrors.length>0&&CE('div',null,
+          CE('div',{style:{fontSize:12,color:'#c53030',fontWeight:700,marginBottom:4}},batchErrors.length+' lot'+(batchErrors.length>1?'s':'')+' en erreur :'),
+          batchErrors.map((e,i)=>CE('div',{key:i,style:{fontSize:11,color:'#c53030',marginBottom:2}},'• Lignes '+e.from+'–'+e.to+' : '+e.msg))
+        )
+      ),
+      CE('div',{style:{fontSize:11,color:'#9ca3af',marginBottom:16}},'Import du '+ts),
+      CE('button',{onClick:onClose,style:{width:'100%',padding:'10px',border:'none',borderRadius:8,background:'#1e3a8a',color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer'}},'Fermer')
+    )
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+
+function ChangerMotDePasse({adminConseiller}){
+  const[currentPwd,setCurrentPwd]=React.useState('');
+  const[pwd,setPwd]=React.useState('');
+  const[pwd2,setPwd2]=React.useState('');
+  const[show,setShow]=React.useState(false);
+  const[saving,setSaving]=React.useState(false);
+  const[msg,setMsg]=React.useState(null);
+
+  async function handleSave(){
+    if(!currentPwd){setMsg({ok:false,txt:'Mot de passe actuel requis'});return;}
+    if(pwd.length<4){setMsg({ok:false,txt:'4 caractères minimum'});return;}
+    if(pwd!==pwd2){setMsg({ok:false,txt:'Les mots de passe ne correspondent pas'});return;}
+    setSaving(true);setMsg(null);
+    try{
+      const res=await apiFetch('setPassword',{conseiller:adminConseiller,currentPwd,pwd});
+      if(res.ok){setMsg({ok:true,txt:'✅ Mot de passe mis à jour'});setCurrentPwd('');setPwd('');setPwd2('');}
+      else setMsg({ok:false,txt:res.error||'Erreur'});
+    }catch(e){setMsg({ok:false,txt:'Erreur réseau'});}
+    finally{setSaving(false);}
+  }
+
+  const inputStyle={marginTop:4,display:'block',padding:'8px 36px 8px 12px',border:'1px solid #e2e8f0',borderRadius:6,fontSize:13,boxSizing:'border-box',width:'100%'};
+  const eyeStyle={position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:14,color:'#718096',padding:0};
+
+  return CE('div',{className:'admin-section'},
+    CE('h3',null,'🔑 Changer le mot de passe'),
+    CE('div',{style:{display:'flex',gap:10,flexWrap:'wrap',alignItems:'flex-end'}},
+      CE('div',null,
+        CE('label',null,'Mot de passe actuel'),
+        CE('div',{style:{position:'relative'}},
+          CE('input',{type:show?'text':'password',value:currentPwd,onChange:e=>setCurrentPwd(e.target.value),placeholder:'Mot de passe actuel',style:inputStyle}),
+          CE('button',{onClick:()=>setShow(s=>!s),style:eyeStyle},show?'🙈':'👁️')
+        )
+      ),
+      CE('div',null,
+        CE('label',null,'Nouveau mot de passe'),
+        CE('div',{style:{position:'relative'}},
+          CE('input',{type:show?'text':'password',value:pwd,onChange:e=>setPwd(e.target.value),placeholder:'Min. 4 caractères',style:inputStyle}),
+          CE('button',{onClick:()=>setShow(s=>!s),style:eyeStyle},show?'🙈':'👁️')
+        )
+      ),
+      CE('div',null,
+        CE('label',null,'Confirmer'),
+        CE('div',{style:{position:'relative'}},
+          CE('input',{type:show?'text':'password',value:pwd2,onChange:e=>setPwd2(e.target.value),placeholder:'Répéter',style:inputStyle}),
+          CE('button',{onClick:()=>setShow(s=>!s),style:eyeStyle},show?'🙈':'👁️')
+        )
+      ),
+      CE('button',{className:'btn btn-primary',disabled:saving||!currentPwd||!pwd||!pwd2,onClick:handleSave,style:{alignSelf:'flex-end'}},saving?'Sauvegarde…':'💾 Sauvegarder')
+    ),
+    msg&&CE('p',{style:{marginTop:8,fontSize:13,color:msg.ok?'#276749':'#c53030'}},msg.txt)
+  );
+}
+
+// ── VueLogs : audit des connexions (admin seulement) ─────────
+function VueLogs(){
+  const[logs,setLogs]=React.useState([]);
+  const[loading,setLoading]=React.useState(true);
+  const[err,setErr]=React.useState('');
+  const[filter,setFilter]=React.useState('all');
+  React.useEffect(()=>{
+    apiFetch('getLogs',{n:100})
+      .then(res=>{if(res.ok)setLogs(res.logs||[]);else setErr(res.error||'Erreur');})
+      .catch(e=>setErr('Erreur réseau : '+e.message))
+      .finally(()=>setLoading(false));
+  },[]);
+  const filtered=filter==='all'?logs:filter==='ok'?logs.filter(l=>l.success):logs.filter(l=>!l.success);
+  function formatTs(ts){if(!ts)return'—';try{return new Date(ts).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return ts;}}
+  return CE('div',{className:'card'},
+    CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:8}},
+      CE('h2',{style:{margin:0}},'🔐 Logs de connexion'),
+      CE('div',{style:{display:'flex',gap:6}},
+        ['all','ok','err'].map(f=>CE('button',{key:f,onClick:()=>setFilter(f),style:{fontSize:11,padding:'3px 10px',borderRadius:6,cursor:'pointer',fontWeight:filter===f?700:400,border:filter===f?'1.5px solid #1e3a8a':'1px solid #e2e8f0',background:filter===f?'#eff6ff':'#f8fafc',color:filter===f?'#1e3a8a':f==='ok'?'#16a34a':f==='err'?'#dc2626':'#718096'}},{all:'Tous',ok:'✅ Succès',err:'❌ Échecs'}[f]))
+      )
+    ),
+    loading&&CE('div',{style:{color:'#9ca3af',padding:'20px 0',display:'flex',gap:10,alignItems:'center'}},CE('span',{className:'spinner',style:{width:18,height:18,borderWidth:2}}),'Chargement…'),
+    err&&CE('p',{style:{color:'#dc2626',fontSize:13}},err),
+    !loading&&!err&&CE(React.Fragment,null,
+      CE('p',{style:{fontSize:12,color:'#9ca3af',marginBottom:12}},filtered.length+' entrée'+(filtered.length>1?'s':'')),
+      filtered.length===0
+        ?CE('p',{style:{color:'#718096',fontSize:13}},'Aucune entrée.')
+        :CE('div',{style:{overflowX:'auto'}},
+          CE('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
+            CE('thead',null,CE('tr',null,['Horodatage','Conseiller','Rôle','Résultat','Tentatives','Appareil'].map(h=>CE('th',{key:h,style:{padding:'8px 10px',textAlign:'left',fontWeight:700,color:'#4a5568',borderBottom:'2px solid #e2e8f0',background:'#f7fafc',whiteSpace:'nowrap'}},h)))),
+            CE('tbody',null,filtered.map((l,i)=>CE('tr',{key:i,style:{background:l.success?(i%2===0?'#f0fdf4':'#fff'):(i%2===0?'#fff5f5':'#fff')}},
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',whiteSpace:'nowrap',color:'#4a5568'}},formatTs(l.timestamp)),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',fontWeight:600}},l.conseiller||'—'),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:700,background:l.role==='admin'?'#ede9fe':'#dbeafe',color:l.role==='admin'?'#6d28d9':'#1d4ed8'}},l.role||'—')),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:700,background:l.success?'#dcfce7':'#fee2e2',color:l.success?'#166534':'#991b1b'}},l.success?'✅ Succès':'❌ Échec')),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',textAlign:'center',color:l.tentatives>0?'#dc2626':'#9ca3af',fontWeight:l.tentatives>0?700:400}},l.tentatives||0),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',fontSize:10,color:'#9ca3af',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},l.user_agent||'—')
+            )))
+          )
+        )
+    )
+  );
+}
+
+// ── VueAdmin override ──────────────────────────────────────
+function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,annee,adminConseiller}){
+  const adminRef=React.useRef(null);
+  React.useEffect(()=>{
+    if(!adminRef.current)return;
+    const sections=adminRef.current.querySelectorAll('.admin-section');
+    sections.forEach((el,i)=>{
+      el.style.opacity='0';el.style.transform='translateY(12px)';el.style.transition='opacity .5s ease,transform .5s ease';
+      setTimeout(()=>{el.style.opacity='1';el.style.transform='translateY(0)';},i*100+30);
+    });
+  },[]);
+  const[resetStep,setResetStep]=React.useState(0);
+  const[visibility,setVisibility]=React.useState(null);
+  const[visSaving,setVisSaving]=React.useState(false);
+  const[importing,setImporting]=React.useState(false);
+  const[colorDraft,setColorDraft]=React.useState({...CONSEILLER_COLORS});
+  const[colorSaving,setColorSaving]=React.useState(false);
+  const[importProgress,setImportProgress]=React.useState(0);
+  const[importMsg,setImportMsg]=React.useState('');
+  const[importPreview,setImportPreview]=React.useState(null); // v10 : aperçu avant envoi
+  const[importRapport,setImportRapport]=React.useState(null); // v10 : rapport post-import
+  const cancelRef=React.useRef(false);
+  const pendingRowsRef=React.useRef([]);
+  const preErrorCountRef=React.useRef(0);
+  const MOIS_CAL=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const MOIS_SHORT_CAL=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const[moisDeb,setMoisDeb]=React.useState(()=>parseInt(localStorage.getItem('cal_moisDeb')||'1'));
+  const[moisFin,setMoisFin]=React.useState(()=>parseInt(localStorage.getItem('cal_moisFin')||'12'));
+  const[tlRunning,setTlRunning]=React.useState(false);
+  const[tlLogs,setTlLogs]=React.useState([]);
+  const[lastExport,setLastExport]=React.useState(null);
+  function addTlLog(msg,type='info'){setTlLogs(l=>[...l,{msg,type,t:new Date().toLocaleTimeString('fr-FR')}]);}
+  function changeMoisDeb(v){localStorage.setItem('cal_moisDeb',v);setMoisDeb(v);setLastExport(null);}
+  function changeMoisFin(v){localStorage.setItem('cal_moisFin',v);setMoisFin(v);setLastExport(null);}
+  const VIS_ITEMS=[{key:'saisie',label:'✏️ Saisie',sub:'Formulaire de saisie'},{key:'historique',label:'📋 Historique',sub:'Liste des ateliers'},{key:'agenda',label:'🗓️ Agenda',sub:'Planning hebdo AM/PM'},{key:'calendrier',label:'📅 Calendrier',sub:'Vue calendrier mensuelle'},{key:'dashboard',label:'📊 Dashboard',sub:'Synthèse · Graphiques · Territoire'},{key:'carte',label:'🗺️ Carte',sub:'Carte des communes'},{key:'bingo',label:'🎯 Bingo',sub:'Vue par commune'},{key:'roadmap',label:'🛣️ Roadmap',sub:'Timeline & densité'},{key:'anomalies',label:'⚠️ Anomalies',sub:'Champs manquants & communes invalides'}];
+
+  React.useEffect(()=>{apiFetch('getVisibility').then(res=>{if(res.ok)setVisibility(res.visibility);}).catch(()=>{});},[]);
+  React.useEffect(()=>{setColorDraft(d=>{const draft={...CONSEILLER_COLORS,...d};(conseillersList||[]).forEach(c=>{if(!draft[c])draft[c]='#6B7280';});return draft;});},[conseillersList]);
+
+  // ── v10.0 : KPIs enrichis ─────────────────────────────────
+  const kpis=React.useMemo(()=>{
+    const now=new Date();
+    const moisActuel=now.getMonth(), anneeActuelle=now.getFullYear();
+    const total=entries.length;
+    const realises=entries.filter(e=>e.statut==='Réalisé').length;
+    const annules=entries.filter(e=>e.statut==='Annulé').length;
+    const base=total-annules;
+    const taux=base>0?Math.round(realises/base*100):0;
+    const ceMois=entries.filter(e=>{
+      if(!e.date)return false;
+      const d=new Date(e.date);
+      return d.getFullYear()===anneeActuelle&&d.getMonth()===moisActuel;
+    }).length;
+    const parConseiller={};
+    entries.forEach(e=>{if(e.conseiller){parConseiller[e.conseiller]=(parConseiller[e.conseiller]||0)+1;}});
+    const topConseiller=Object.entries(parConseiller).sort((a,b)=>b[1]-a[1])[0];
+    return{total,realises,taux,ceMois,topConseiller,annules};
+  },[entries,annee]);
+
+  async function handleSaveColors(){
+    setColorSaving(true);
+    try{const res=await apiFetch('saveColors',{colors:JSON.stringify(colorDraft)});if(!res.ok)throw new Error(res.error);applyColors(colorDraft);if(onSaveColors)onSaveColors(colorDraft);showToast('✅ Couleurs sauvegardées');addLog('Couleurs conseillers mises à jour','ok');}
+    catch(err){showToast('❌ '+err.message,false);}
+    finally{setColorSaving(false);}
+  }
+
+  async function handleSaveVisibility(){
+    setVisSaving(true);
+    try{const res=await apiFetch('saveVisibility',{visibility:JSON.stringify(visibility)});if(res.ok){showToast('✅ Visibilité sauvegardée');addLog('Visibilité frontend mise à jour','ok');}else throw new Error(res.error);}
+    catch(err){showToast('❌ '+err.message,false);}
+    finally{setVisSaving(false);}
+  }
+
+  function handleReset(){if(resetStep===0){setResetStep(1);return;}if(resetStep===1){setResetStep(2);return;}addLog('Réinitialisation BDD locale','info');showToast('✅ BDD locale vidée (Google Sheet intact)');setResetStep(0);onRefresh();}
+
+  // ── v10.0 : Export Timeline ────────────────────────────────
+  async function handleExport(){
+    setTlRunning(true);setTlLogs([]);setLastExport(null);
+    try{
+      const yr=parseInt(annee||new Date().getFullYear());
+      if(moisDeb>moisFin)throw new Error('Mois de début postérieur au mois de fin.');
+      const months=[];for(let m=moisDeb;m<=moisFin;m++)months.push(m);
+      addTlLog(`Traitement de ${entries.length} ateliers pour ${yr}…`);
+      const df=[];
+      for(const e of entries){
+        if(!e.date||!e.conseiller)continue;
+        const s=String(e.date).trim();let d=null;
+        const mFr=s.match(/^(?:\w+\s+)?(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if(mFr)d=new Date(Date.UTC(parseInt(mFr[3]),parseInt(mFr[2])-1,parseInt(mFr[1])));
+        if(!d){const mIso=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(mIso)d=new Date(Date.UTC(+mIso[1],+mIso[2]-1,+mIso[3]));}
+        if(!d||isNaN(d.getTime()))continue;
+        if(d.getUTCFullYear()!==yr)continue;
+        if(!months.includes(d.getUTCMonth()+1))continue;
+        df.push({date:d,horaire:e.horaire||'9H00',ampm:'',conseiller:String(e.conseiller).trim(),orienteur:String(e.orienteur||'').trim()||'—',statut:String(e.statut||'').trim()});
+      }
+      addTlLog(`✓ ${df.length} ateliers valides`,'ok');
+      const cons=conseillersList||[];
+      addTlLog(`→ ${cons.length} conseillers : ${cons.join(', ')}`);
+      if(df.length===0)throw new Error('Aucun atelier trouvé pour cette période. Vérifiez l\'année et les mois sélectionnés.');
+      const wb=window.generateCalendrier(df,yr,months,cons,addTlLog);
+      const outData=XLSX.write(wb,{type:'base64',bookType:'xlsx'});
+      const fileName=`Calendrier_ateliers_${yr}.xlsx`;
+      const dataUrl='data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,'+outData;
+      setLastExport({url:dataUrl,name:fileName});
+      const a=document.createElement('a');a.href=dataUrl;a.download=fileName;document.body.appendChild(a);a.click();document.body.removeChild(a);
+      addTlLog(`✓ "${fileName}" téléchargé`,'ok');
+    }catch(err){addTlLog('✗ '+err.message,'err');console.error(err);}
+    finally{setTlRunning(false);}
+  }
+
+  // ── v10.0 : Validation pré-import ─────────────────────────
+  function detectErrors(rows){
+    const errs=[];
+    rows.forEach((r,i)=>{
+      const ln='Ligne '+(i+2);
+      if(!r.statut)errs.push(ln+' : statut vide');
+      if(!r.date||r.date==='Invalid Date'||r.date==='NaN-NaN-NaN')errs.push(ln+' : date invalide ('+JSON.stringify(r.date)+')');
+      if(!r.conseiller)errs.push(ln+' : conseiller vide');
+      if(!r.commune)errs.push(ln+' : commune vide');
+    });
+    return errs;
+  }
+
+  async function doUpload(rows_raw){
+    setImportPreview(null);setImporting(true);setImportProgress(0);
+    const BATCH=5;let done=0;const batchErrors=[];let annule=false;
+    try{
+      setImportMsg(`${rows_raw.length} lignes — envoi vers Google Sheets…`);
+      for(let i=0;i<rows_raw.length;i+=BATCH){
+        if(cancelRef.current){annule=true;break;}
+        const batch=rows_raw.slice(i,i+BATCH);
+        const params=new URLSearchParams({action:'saveMany',source:'admin',entries:JSON.stringify(batch)});
+        try{
+          const res=await Promise.race([fetch(`${GS_URL}?${params.toString()}`),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),45000))]);
+          const data=await res.json();
+          if(!data.ok)throw new Error(data.error||'Erreur batch');
+          done+=batch.length;
+        }catch(be){batchErrors.push({from:i+1,to:Math.min(i+BATCH,rows_raw.length),msg:be.message});}
+        setImportProgress(Math.round(Math.min(done+(batchErrors.length*BATCH),rows_raw.length)/rows_raw.length*100));
+        setImportMsg(`${done}/${rows_raw.length} lignes importées…`);
+      }
+      const rapport={total:rows_raw.length,envoyes:done,batchErrors,anomaliesPre:preErrorCountRef.current,annule,ts:new Date().toLocaleString('fr-FR')};
+      setImportRapport(rapport);
+      const logMsg=`Import : ${done}/${rows_raw.length} envoyés`+(batchErrors.length>0?` · ${batchErrors.length} erreur(s) batch`:'')+(annule?' · annulé':'');
+      addLog(logMsg,batchErrors.length>0||annule?'err':'ok');
+      if(!annule&&batchErrors.length===0)showToast(`✅ ${done} ateliers importés`);
+      onRefresh();
+    }catch(err){showToast('❌ '+err.message,false);addLog('Erreur import : '+err.message,'err');}
+    finally{setImporting(false);setImportProgress(0);setImportMsg('');cancelRef.current=false;}
+  }
+
+  async function handleImportCSV(e){
+    const file=e.target.files[0];if(!file)return;e.target.value='';
+    try{
+      const text=await file.text();const lines=text.split('\n').filter(l=>l.trim());
+      if(lines.length<2)throw new Error('Fichier vide ou invalide');
+      const sep=(lines[0].split(';').length>lines[0].split(',').length)?';':',';
+      function parseCSVLine(line){const res=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"')inQ=!inQ;else if(c===sep&&!inQ){res.push(cur.trim());cur='';}else cur+=c;}res.push(cur.trim());return res;}
+      const headers=parseCSVLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
+      const rows_raw=[];
+      for(let i=1;i<lines.length;i++){const vals=parseCSVLine(lines[i]);if(vals.length<3)continue;const row={};headers.forEach((h,idx)=>{row[h]=vals[idx]?vals[idx].replace(/^"|"$/g,'').trim():'';});if(!row._id&&!row.statut&&!row['Statut'])continue;
+        const g=(...keys)=>{for(const k of keys){if(row[k]!==undefined&&row[k]!=='')return row[k];}return '';};
+        rows_raw.push({_id:g('_id')||genId(),_n:parseInt(g('_n','N°'))||0,statut:g('statut','Statut')||'Planifié',date:normalizeDate(g('date','Date')),horaire:normalizeHoraire(g('horaire','Horaire')),ampm:g('ampm','AM/PM')||'AM',orienteur:g('orienteur','Orienteur'),commune:normalizeCommune(g('commune','Commune')),lieu:g('lieu','Lieu',"Lieu de l'atelier"),thematique:g('thematique','Thématique','Thematique'),inscrits:g('inscrits','Inscrits')===''?'':parseInt(g('inscrits','Inscrits'))||0,presents:g('presents','Présents')===''?'':parseInt(g('presents','Présents'))||0,public:g('pub','public','Public')||'Tous publics',conseiller:g('conseiller','Conseiller','Conseiller numérique'),materiel:MATERIELS.filter(m=>String(g(m)).trim().toUpperCase()==='OUI'),residence:g('residence','Résidence','Résidence des participants'),remarques:g('remarques','Remarques')});
+      }
+      pendingRowsRef.current=rows_raw;
+      setImportPreview({rows:rows_raw,errors:detectErrors(rows_raw),type:'CSV'});
+    }catch(err){showToast('❌ '+err.message,false);addLog('Erreur lecture CSV : '+err.message,'err');}
+  }
+
+  async function handleImportXLSX(e){
+    const file=e.target.files[0];if(!file)return;e.target.value='';
+    try{
+      const ab=await file.arrayBuffer();const wb=XLSX.read(ab);const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      const g=(r,...keys)=>{for(const k of keys){if(r[k]!==undefined&&r[k]!=='')return r[k];}return '';};
+      const rows_raw=rows.map(r=>({
+        _id:g(r,'_id')||genId(),_n:parseInt(g(r,'_n','N°','n'))||0,
+        statut:g(r,'statut','Statut')||'Planifié',date:normalizeDate(g(r,'date','Date')),
+        horaire:normalizeHoraire(g(r,'horaire','Horaire')),ampm:g(r,'ampm','AM/PM')||'AM',
+        orienteur:g(r,'orienteur','Orienteur'),commune:normalizeCommune(g(r,'commune','Commune')),
+        lieu:g(r,'lieu','Lieu',"Lieu de l'atelier"),thematique:g(r,'thematique','Thématique','Thematique'),
+        inscrits:g(r,'inscrits','Inscrits')===''?'':parseInt(g(r,'inscrits','Inscrits'))||0,
+        presents:g(r,'presents','Présents','Presents')===''?'':parseInt(g(r,'presents','Présents','Presents'))||0,
+        public:g(r,'public','Public')||'Tous publics',conseiller:g(r,'conseiller','Conseiller','Conseiller numérique'),
+        materiel:MATERIELS.filter(m=>String(g(r,m)).trim().toUpperCase()==='OUI'),
+        residence:g(r,'residence','Résidence','Résidence des participants'),remarques:g(r,'remarques','Remarques'),
+      })).filter(r=>r.statut);
+      pendingRowsRef.current=rows_raw;
+      setImportPreview({rows:rows_raw,errors:detectErrors(rows_raw),type:'XLSX'});
+    }catch(err){showToast('❌ '+err.message,false);addLog('Erreur lecture XLSX : '+err.message,'err');}
+  }
+
+  const[maintenanceOn,setMaintenanceOn]=React.useState(false);
+  const[maintenanceMsg,setMaintenanceMsg]=React.useState('');
+  const[maintenanceSaving,setMaintenanceSaving]=React.useState(false);
+  const[maintenanceLoaded,setMaintenanceLoaded]=React.useState(false);
+  React.useEffect(()=>{
+    apiFetch('getConfig').then(res=>{
+      if(res.ok&&res.config){setMaintenanceOn(res.config['maintenance']==='true');setMaintenanceMsg(res.config['maintenance_msg']||'');}
+      setMaintenanceLoaded(true);
+    }).catch(()=>setMaintenanceLoaded(true));
+  },[]);
+  async function handleSaveMaintenance(newState){
+    setMaintenanceSaving(true);
+    try{
+      await apiFetch('setConfig',{key:'maintenance',value:String(newState)});
+      await apiFetch('setConfig',{key:'maintenance_msg',value:maintenanceMsg});
+      setMaintenanceOn(newState);
+      showToast(newState?'🔧 Maintenance activée':'✅ Application remise en ligne');
+      addLog('Maintenance '+(newState?'activée':'désactivée'),'ok');
+    }catch(err){showToast('❌ '+err.message,false);}
+    finally{setMaintenanceSaving(false);}
+  }
+  const resetLabels=['🗑️ Réinitialiser la BDD locale','⚠️ Confirmer (1/2)','🚨 Confirmer définitivement (2/2)'];
+  const STATUT_COLOR={'Planifié':'#9683EC','Réalisé':'#70AD47','Annulé':'#FF5050','Non réalisé':'#FFC000','Reporté':'#ED7D31'};
+
+  return CE(React.Fragment,null,
+    CE(ImportPreviewModal,{preview:importPreview,onCancel:()=>{setImportPreview(null);pendingRowsRef.current=[];},onConfirm:()=>{preErrorCountRef.current=importPreview.errors.length;doUpload(pendingRowsRef.current);}}),
+    CE(ImportRapportModal,{rapport:importRapport,onClose:()=>setImportRapport(null)}),
+    CE('div',{ref:adminRef},
+
+      // ── v10.0 : KPIs enrichis ──
+      CE('div',{className:'card'},
+        CE('h2',{style:{marginBottom:14}},'⚙️ Panneau Administrateur'),
+        CE('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))',gap:12,marginBottom:4}},
+          CE(FadeItem,{delay:0},CE('div',{className:'kpi',style:{borderLeft:'4px solid #1e3a8a',background:'#f0f4ff',textAlign:'left'}},CE('div',{className:'val',style:{color:'#1e3a8a'}},kpis.total),CE('div',{className:'lbl'},'Total ateliers'))),
+          CE(FadeItem,{delay:0.08},CE('div',{className:'kpi',style:{borderLeft:'4px solid #16a34a',background:'#f0fdf4',textAlign:'left'}},CE('div',{className:'val',style:{color:'#16a34a'}},kpis.realises),CE('div',{className:'lbl'},'Réalisés'))),
+          CE(FadeItem,{delay:0.16},CE('div',{className:'kpi',style:{borderLeft:'4px solid '+(kpis.taux>=75?'#16a34a':kpis.taux>=50?'#d97706':'#dc2626'),background:kpis.taux>=75?'#f0fdf4':kpis.taux>=50?'#fffbeb':'#fff5f5',textAlign:'left'}},CE('div',{className:'val',style:{color:kpis.taux>=75?'#16a34a':kpis.taux>=50?'#d97706':'#dc2626'}},kpis.taux+'%'),CE('div',{className:'lbl'},'Taux réalisation'))),
+          CE(FadeItem,{delay:0.24},CE('div',{className:'kpi',style:{borderLeft:'4px solid #9683EC',background:'#f5f3ff',textAlign:'left'}},CE('div',{className:'val',style:{color:'#9683EC'}},kpis.ceMois),CE('div',{className:'lbl'},'Ce mois-ci')))
+        ),
+        kpis.topConseiller&&CE('p',{style:{fontSize:11,color:'#9ca3af',marginTop:6,marginBottom:0}},
+          '🏆 Top conseiller : '+kpis.topConseiller[0]+' ('+kpis.topConseiller[1]+' atelier'+(kpis.topConseiller[1]>1?'s':'')+')'
+        )
+      ),
+
+      CE('div',{className:'admin-section'},
+        CE('h3',null,'🎨 Couleurs des conseillers'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:16}},"Personnalisez la couleur de chaque conseiller numérique. S'applique au bandeau, au formulaire et aux cartes."),
+        CE('div',{style:{display:'flex',flexDirection:'column',gap:10}},
+          (conseillersList||Object.keys(CONSEILLER_COLORS)).map(c=>{
+            const hexVal=(colorDraft[c]||'#6B7280').toUpperCase();
+            return CE('div',{key:c,style:{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',background:'#f8fafc',borderRadius:10,border:'1.5px solid #e2e8f0'}},
+              CE('input',{type:'color',value:(colorDraft[c]||'#6B7280').toLowerCase(),onChange:e=>setColorDraft(d=>({...d,[c]:e.target.value.toUpperCase()})),style:{width:44,height:44,borderRadius:8,border:'none',cursor:'pointer',padding:2,background:'none',flexShrink:0}}),
+              CE('div',{style:{width:36,height:36,borderRadius:8,background:colorDraft[c]||'#6B7280',flexShrink:0,boxShadow:'0 2px 6px rgba(0,0,0,.15)'}}),
+              CE('span',{style:{flex:1,fontWeight:700,fontSize:14,color:'#1a202c'}},c),
+              CE('input',{type:'text',value:hexVal,maxLength:7,onChange:e=>setColorDraft(d=>({...d,[c]:e.target.value.toUpperCase()})),onBlur:e=>{const v=e.target.value;if(/^#[0-9A-Fa-f]{6}$/.test(v))setColorDraft(d=>({...d,[c]:v.toUpperCase()}));else setColorDraft(d=>({...d,[c]:colorDraft[c]||'#6B7280'}));},style:{width:88,fontFamily:'monospace',fontSize:13,fontWeight:700,color:'#1a202c',padding:'6px 10px',border:'1.5px solid #e2e8f0',borderRadius:8,background:'#fff',textAlign:'center'}}),
+              CE('button',{onClick:()=>{const orig=CONSEILLER_COLORS[c]||'#6B7280';setColorDraft(d=>({...d,[c]:orig}));},style:{padding:'4px 10px',border:'1px solid #e2e8f0',borderRadius:6,fontSize:11,color:'#718096',cursor:'pointer',background:'#fff',flexShrink:0}},'↩ Reset')
+            );
+          })
+        ),
+        CE('button',{className:'btn btn-primary',style:{marginTop:16},onClick:handleSaveColors,disabled:colorSaving},colorSaving?'…':'💾 Sauvegarder les couleurs')
+      ),
+
+      visibility&&CE('div',{className:'admin-section'},
+        CE('h3',null,'👁️ Visibilité — Frontend conseillers'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:12}},"Choisissez les onglets visibles dans l'interface conseiller."),
+        VIS_ITEMS.map(item=>CE('div',{key:item.key,className:'toggle-row'},
+          CE('div',null,CE('div',{className:'toggle-label'},item.label),CE('div',{className:'toggle-sub'},item.sub)),
+          CE('label',{className:'tgl'},CE('input',{type:'checkbox',checked:!!visibility[item.key],onChange:()=>setVisibility(v=>({...v,[item.key]:!v[item.key]}))}),CE('span',{className:'tgl-track'}))
+        )),
+        CE('button',{className:'btn btn-primary',style:{marginTop:16},onClick:handleSaveVisibility,disabled:visSaving},visSaving?'…':'💾 Enregistrer la visibilité')
+      ),
+
+      CE('div',{className:'admin-section'},
+        CE('h3',null,'📥 Import CSV'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:12}},'Importe un fichier CSV compatible. Les entrées existantes sont fusionnées.'),
+        importing?CE('div',null,CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:6}},importMsg),CE('div',{className:'progress-bar'},CE('div',{className:'progress-fill',style:{width:importProgress+'%'}})),CE('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}},CE('p',{style:{fontSize:11,color:'#718096'}},importProgress+'%'),CE('button',{className:'btn btn-danger btn-sm',onClick:()=>cancelRef.current=true},'⛔ Annuler'))):
+          CE('label',{style:{display:'inline-block',cursor:'pointer'}},CE('span',{className:'btn btn-primary'},'📂 Choisir un fichier CSV'),CE('input',{type:'file',accept:'.csv',style:{display:'none'},onChange:handleImportCSV}))
+      ),
+
+      CE('div',{className:'admin-section'},
+        CE('h3',null,'📊 Import XLSX'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:12}},'Réimporte un fichier .xlsx précédemment exporté.'),
+        importing?CE('div',null,CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:6}},importMsg||'Import en cours…'),CE('div',{className:'progress-bar'},CE('div',{className:'progress-fill',style:{width:importProgress+'%'}})),CE('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}},CE('p',{style:{fontSize:11,color:'#718096'}},importProgress+'%'),CE('button',{className:'btn btn-danger btn-sm',onClick:()=>cancelRef.current=true},'⛔ Annuler'))):
+          CE('label',{style:{display:'inline-block',cursor:'pointer'}},CE('span',{className:'btn btn-warn'},'📂 Choisir un fichier XLSX'),CE('input',{type:'file',accept:'.xlsx',style:{display:'none'},onChange:handleImportXLSX}))
+      ),
+
+      CE('div',{className:'admin-section'},
+        CE('h3',null,'🔍 Vérification cohérence'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:12}},'Analyse les données chargées pour détecter les anomalies.'),
+        CE('button',{className:'btn btn-primary',onClick:()=>{
+          const now=new Date();
+          const anomalies=[];
+          // Doublons _id
+          const ids=entries.map(e=>e._id);
+          const dupIds=ids.filter((id,i)=>ids.indexOf(id)!==i);
+          if(dupIds.length>0) anomalies.push('⚠️ '+dupIds.length+' doublon'+(dupIds.length>1?'s':'')+' d\'identifiant détecté'+(dupIds.length>1?'s':''));
+          // Dates dans le futur (> aujourd'hui + 30j)
+          const futurLimit=new Date(now.getTime()+30*24*60*60*1000);
+          const futurEntries=entries.filter(e=>{if(!e.date)return false;const d=new Date(e.date);return d>futurLimit;});
+          if(futurEntries.length>0) anomalies.push('📅 '+futurEntries.length+' atelier'+(futurEntries.length>1?'s':'')+' planifié'+(futurEntries.length>1?'s':'')+' à plus de 30j dans le futur');
+          // Ateliers sans conseiller
+          const sansConseiller=entries.filter(e=>!e.conseiller);
+          if(sansConseiller.length>0) anomalies.push('👤 '+sansConseiller.length+' atelier'+(sansConseiller.length>1?'s':'')+' sans conseiller');
+          // Ateliers sans date
+          const sansDate=entries.filter(e=>!e.date||e.date==='Invalid Date');
+          if(sansDate.length>0) anomalies.push('📅 '+sansDate.length+' atelier'+(sansDate.length>1?'s':'')+' sans date valide');
+          // Présents > inscrits
+          const presentsAberrants=entries.filter(e=>e.presents&&e.inscrits&&parseInt(e.presents)>parseInt(e.inscrits));
+          if(presentsAberrants.length>0) anomalies.push('📊 '+presentsAberrants.length+' atelier'+(presentsAberrants.length>1?'s':'')+' avec présents > inscrits');
+          const msg=anomalies.length===0?'OK : aucune anomalie ('+entries.length+' ateliers)':anomalies.join(' — ');
+          addLog('Vérification cohérence : '+(anomalies.length===0?'OK':anomalies.length+' anomalie'+(anomalies.length>1?'s':'')),anomalies.length===0?'ok':'err');
+          alert(msg);
+        }},'🔍 Analyser ('+entries.length+' ateliers)')
+      ),
+
+      CE('div',{className:'admin-section',style:{border:'2px solid '+(maintenanceOn?'#dc2626':'#e2e8f0'),background:maintenanceOn?'#fff5f5':'#fff'}},
+        CE('h3',null,'🔧 Mode Maintenance'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:16}},"Activez pour bloquer l'accès à l'interface conseiller."),
+        maintenanceLoaded&&CE('div',null,
+          CE('div',{style:{display:'flex',alignItems:'center',gap:16,marginBottom:14,padding:'12px 16px',background:maintenanceOn?'#fef2f2':'#f0fdf4',borderRadius:10,border:'1px solid '+(maintenanceOn?'#fca5a5':'#86efac')}},
+            CE('div',{style:{flex:1}},
+              CE('div',{style:{fontWeight:700,fontSize:14,color:maintenanceOn?'#dc2626':'#16a34a'}},maintenanceOn?'🔴 Maintenance ACTIVE':'🟢 Application en ligne'),
+              CE('div',{style:{fontSize:12,color:'#718096',marginTop:2}},maintenanceOn?'Les conseillers voient l\'écran de maintenance.':'Les conseillers ont accès normalement.')
+            ),
+            CE('label',{className:'tgl',style:{flexShrink:0}},
+              CE('input',{type:'checkbox',checked:maintenanceOn,disabled:maintenanceSaving,onChange:e=>handleSaveMaintenance(e.target.checked)}),
+              CE('span',{className:'tgl-track'})
+            )
+          ),
+          CE('div',null,
+            CE('label',{style:{fontSize:12,fontWeight:600,color:'#4a5568',display:'block',marginBottom:6}},'Message (optionnel)'),
+            CE('input',{type:'text',value:maintenanceMsg,onChange:e=>setMaintenanceMsg(e.target.value),placeholder:'Ex: Retour dans 10 minutes.',style:{width:'100%',padding:'8px 12px',border:'1.5px solid #e2e8f0',borderRadius:8,fontSize:13,boxSizing:'border-box'}}),
+            CE('button',{onClick:()=>handleSaveMaintenance(maintenanceOn),disabled:maintenanceSaving,style:{marginTop:8,padding:'6px 16px',background:'#1e3a8a',color:'#fff',border:'none',borderRadius:6,fontSize:12,fontWeight:600,cursor:'pointer'}},maintenanceSaving?'…':'💾 Sauver le message')
+          )
+        )
+      ),
+            CE('div',{className:'admin-section'},
+        CE('h3',null,'🗑️ Réinitialiser la base de données'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:12}},'Vide uniquement le cache local. Le Google Sheet reste intact.'),
+        resetStep>0&&CE('div',{className:'confirm-box'},CE('p',null,resetStep===1?'Êtes-vous sûr ? Cette action vide le cache local.':'Dernière confirmation — cliquez pour confirmer.')),
+        CE('div',{style:{display:'flex',gap:10}},
+          CE('button',{className:'btn btn-danger',onClick:handleReset},resetLabels[resetStep]),
+          resetStep>0&&CE('button',{className:'btn btn-secondary',onClick:()=>setResetStep(0)},'Annuler')
+        )
+      ),
+      CE('div',{className:'admin-section'},
+        CE('h3',null,'📅 Export Timeline Ateliers'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:14}},'Génère le planning timeline directement depuis les données chargées. Année et conseillers pris depuis la sidebar.'),
+        CE('div',{style:{display:'flex',gap:12,alignItems:'flex-end',flexWrap:'wrap',marginBottom:moisDeb>moisFin?6:10}},
+          CE('div',null,CE('label',null,'Mois début'),CE('select',{value:moisDeb,onChange:e=>changeMoisDeb(+e.target.value),style:{marginTop:4}},MOIS_CAL.map((m,i)=>CE('option',{key:i,value:i+1},m)))),
+          CE('div',null,CE('label',null,'Mois fin'),CE('select',{value:moisFin,onChange:e=>changeMoisFin(+e.target.value),style:{marginTop:4}},MOIS_CAL.map((m,i)=>CE('option',{key:i,value:i+1},m)))),
+          CE('button',{className:'btn btn-success',style:{alignSelf:'flex-end'},disabled:tlRunning||moisDeb>moisFin||entries.filter(e=>e.date&&e.conseiller).length===0,onClick:handleExport},
+            tlRunning?CE('span',null,CE('span',{className:'spinner'}),'Génération…'):'📥 Générer & Télécharger')
+        ),
+        moisDeb>moisFin&&CE('p',{style:{fontSize:12,color:'#c53030',marginBottom:10}},'⚠️ Le mois de début doit être antérieur ou égal au mois de fin.'),
+        !( moisDeb>moisFin)&&CE('div',{style:{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap'}},
+          CE('span',{style:{fontSize:12,background:'#ebf8ff',border:'1px solid #bee3f8',color:'#2b6cb0',borderRadius:6,padding:'3px 10px'}},
+            `📊 ${entries.filter(e=>{if(!e.date||!e.conseiller)return false;const m=String(e.date).match(/^(\d{4})-(\d{2})/);return m&&parseInt(m[1])===parseInt(annee)&&parseInt(m[2])>=moisDeb&&parseInt(m[2])<=moisFin;}).length} ateliers · ${conseillersList?conseillersList.length:0} conseillers`),
+          CE('span',{style:{fontSize:12,background:'#f0fff4',border:'1px solid #9ae6b4',color:'#276749',borderRadius:6,padding:'3px 10px'}},
+            `📅 ${MOIS_SHORT_CAL[moisDeb-1]} → ${MOIS_SHORT_CAL[moisFin-1]} ${annee}`)
+        ),
+        tlLogs.length>0&&CE('div',{style:{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:8,padding:'10px 14px',maxHeight:160,overflowY:'auto',fontSize:12}},
+          tlLogs.map((l,i)=>CE('div',{key:i,className:'log-entry log-'+l.type,style:{marginBottom:4}},CE('span',{className:'log-time'},l.t+' '),CE('span',null,l.msg)))
+        ),
+        lastExport&&CE('div',{style:{marginTop:10,padding:'10px 14px',background:'#f0fff4',border:'1px solid #9ae6b4',borderRadius:8,display:'flex',alignItems:'center',gap:10,fontSize:13}},
+          CE('span',null,'📎 Si le téléchargement ne s\'est pas lancé :'),
+          CE('a',{href:lastExport.url,download:lastExport.name,style:{color:'#276749',fontWeight:700,textDecoration:'underline'}},lastExport.name)
+        )
+      ),
+      CE(ChangerMotDePasse,{adminConseiller})
+    )
+  );
+}
+
+
+// (évite les conflits de hoisting inter-scripts)
+window.VueAdmin = VueAdminV10;
+
+ReactDOM.createRoot(document.getElementById('root')).render(CE(App));
