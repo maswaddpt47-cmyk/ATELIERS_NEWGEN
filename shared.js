@@ -599,6 +599,42 @@ const COMMUNES = [
 ];
 // Normalise un nom de commune : retire le code postal, uniformise la casse
 function normCommune(s){if(!s)return'';return s.replace(/\s*\(\d+\)\s*/g,'').trim();}
+
+// ── Helpers export ICS (partagés admin + conseiller) ──────
+function escapeICS(s){return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');}
+function foldICSLine(line){if(line.length<=75)return line;const c=[];c.push(line.slice(0,75));let i=75;while(i<line.length){c.push(' '+line.slice(i,i+74));i+=74;}return c.join('\r\n');}
+function parseHoraireICS(h){const s=String(h||'09H00').toUpperCase().replace('H',':');const p=s.split(':');return{hh:String(parseInt(p[0]||9,10)).padStart(2,'0'),mm:String(parseInt(p[1]||0,10)).padStart(2,'0')};}
+function parseDateICS(d){const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?{y:m[1],mo:m[2],j:m[3]}:null;}
+function buildICS(evts){
+  const out=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Ateliers Numerique 47//FR','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  for(const e of evts){
+    const pd=parseDateICS(e.date);if(!pd)continue;
+    const{hh,mm}=parseHoraireICS(e.horaire);
+    const endHH=String(parseInt(hh,10)+1).padStart(2,'0');
+    const dts=`${pd.y}${pd.mo}${pd.j}T${hh}${mm}00`;
+    const dte=`${pd.y}${pd.mo}${pd.j}T${endHH}${mm}00`;
+    const summary=escapeICS([e.thematique,e.commune].filter(Boolean).join(' | '));
+    const location=escapeICS([e.lieu,e.commune].filter(Boolean).join(', '));
+    const descParts=[
+      e.conseiller&&'Conseiller : '+e.conseiller,
+      e.orienteur&&'Orienteur : '+e.orienteur,
+      e.statut&&'Statut : '+e.statut,
+      e.public&&'Public : '+e.public,
+      (e.inscrits!==''&&e.inscrits!=null)&&'Inscrits : '+e.inscrits,
+      (e.presents!==''&&e.presents!=null)&&'Présents : '+e.presents,
+      e.remarques&&'Remarques : '+e.remarques,
+    ].filter(Boolean);
+    out.push('BEGIN:VEVENT','DTSTART:'+dts,'DTEND:'+dte,'SUMMARY:'+summary);
+    if(location)out.push('LOCATION:'+location);
+    if(descParts.length)out.push('DESCRIPTION:'+escapeICS(descParts.join('\n')));
+    out.push('UID:'+e._id+'@ateliers-newgen','END:VEVENT');
+  }
+  out.push('END:VCALENDAR');
+  return out.map(foldICSLine).join('\r\n');
+}
+// Helper HTML escaping pour export PDF
+function htmlEsc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+// ──────────────────────────────────────────────────────────
 const COMMUNES_GPS = {
   // ── Communes du CD47 ──
   'AGEN':{lat:44.2004,lng:0.6213},
@@ -1471,6 +1507,26 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
     XLSX.writeFile(wb,`ateliers_cd47_${new Date().toISOString().slice(0,10)}.xlsx`);
   }
 
+  function exportICS(){
+    const evts=filtered.filter(e=>e.date).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    if(!evts.length){showToast&&showToast('Aucun atelier à exporter',false);return;}
+    const blob=new Blob([buildICS(evts)],{type:'text/calendar;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const oris=[...new Set(evts.map(e=>(e.orienteur||'').trim()).filter(Boolean))];
+    const safeName=(oris.length===1?oris[0]:'ateliers').replace(/[^a-zA-Z0-9_\-]/g,'_');
+    const a=document.createElement('a');a.href=url;a.download=safeName+'.ics';document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function printPDF(){
+    if(!filtered.length)return;
+    const oris=[...new Set(filtered.map(e=>(e.orienteur||'').trim()).filter(Boolean))];
+    const title=oris.length===1?'Ateliers — '+oris[0]:'Ateliers numériques';
+    const rows=filtered.map(e=>`<tr><td>${htmlEsc(fmtDate(e.date))}</td><td>${htmlEsc(e.horaire)}</td><td>${htmlEsc(e.statut)}</td><td>${htmlEsc(e.thematique)}</td><td>${htmlEsc(e.commune)}</td><td>${htmlEsc(e.lieu)}</td><td>${htmlEsc(e.orienteur)}</td><td>${htmlEsc(e.conseiller)}</td><td>${htmlEsc(String(e.inscrits??''))}</td><td>${htmlEsc(String(e.presents??''))}</td></tr>`).join('');
+    const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>${htmlEsc(title)}</title><style>body{font-family:Arial,sans-serif;font-size:10px;margin:20px;}h2{font-size:14px;color:#1e3a8a;margin-bottom:4px;}p.sub{color:#718096;font-size:9px;margin-bottom:12px;}table{width:100%;border-collapse:collapse;}th{background:#1e3a8a;color:#fff;padding:5px 7px;text-align:left;font-size:9px;}td{border:1px solid #e2e8f0;padding:4px 7px;vertical-align:top;}tr:nth-child(even) td{background:#f7fafc;}@page{margin:15mm;}</style></head><body><h2>${htmlEsc(title)}</h2><p class="sub">${filtered.length} ateliers — Imprimé le ${new Date().toLocaleDateString('fr-FR')}</p><table><thead><tr><th>Date</th><th>Horaire</th><th>Statut</th><th>Thématique</th><th>Commune</th><th>Lieu</th><th>Orienteur</th><th>Conseiller</th><th>Inscrits</th><th>Présents</th></tr></thead><tbody>${rows}</tbody></table><script>window.print();<\/script></body></html>`;
+    const w=window.open('','_blank');if(!w)return;w.document.write(html);w.document.close();
+  }
+
   const hexToRgba=(hex,a)=>{const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return`rgba(${r},${g},${b},${a})`;};
   const BORDER_COLOR={'Planifié':'#3b82f6','Réalisé':'#22c55e','Annulé':'#ef4444','Reporté':'#f59e0b','Non réalisé':'#94a3b8'};
 
@@ -1630,6 +1686,14 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
       CE('button',{className:'btn-xlsx-v2',onClick:exportXLSX},
         CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3'})),
         'XLSX'
+      ),
+      CE('button',{className:'btn-xlsx-v2',onClick:exportICS,title:'Exporter le calendrier (.ics) — compatible Google Calendar, Outlook, Apple Calendar',style:{background:'#3b82f6',color:'#fff',border:'none'}},
+        CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:3,y:4,width:18,height:18,rx:2}),CE('path',{d:'M16 2v4M8 2v4M3 10h18'})),
+        'ICS'
+      ),
+      CE('button',{className:'btn-xlsx-v2',onClick:printPDF,title:'Imprimer / Exporter en PDF',style:{background:'#e53e3e',color:'#fff',border:'none'}},
+        CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z'})),
+        'PDF'
       ),
       CE('button',{onClick:onRefresh,style:{background:'none',border:'none',cursor:'pointer',fontSize:12,fontWeight:700,color:'var(--text-2)',padding:'0 4px',display:'flex',alignItems:'center',gap:4}},
         CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15'})),
