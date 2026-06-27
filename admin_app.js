@@ -762,6 +762,43 @@ function VueLogs(){
   );
 }
 
+// ── Helpers export ICS partenaire ─────────────────────────
+function escapeICS(s){return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');}
+function foldICSLine(line){if(line.length<=75)return line;const c=[];c.push(line.slice(0,75));let i=75;while(i<line.length){c.push(' '+line.slice(i,i+74));i+=74;}return c.join('\r\n');}
+function parseHoraireICS(h){const s=String(h||'09H00').toUpperCase().replace('H',':');const p=s.split(':');return{hh:String(parseInt(p[0]||9,10)).padStart(2,'0'),mm:String(parseInt(p[1]||0,10)).padStart(2,'0')};}
+function parseDateICS(d){const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?{y:m[1],mo:m[2],j:m[3]}:null;}
+function buildICS(evts){
+  const out=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Ateliers Numerique 47//FR','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  for(const e of evts){
+    const pd=parseDateICS(e.date);if(!pd)continue;
+    const{hh,mm}=parseHoraireICS(e.horaire);
+    const endHH=String(parseInt(hh,10)+1).padStart(2,'0');
+    const dts=`${pd.y}${pd.mo}${pd.j}T${hh}${mm}00`;
+    const dte=`${pd.y}${pd.mo}${pd.j}T${endHH}${mm}00`;
+    const summary=escapeICS([e.thematique,e.commune].filter(Boolean).join(' | '));
+    const location=escapeICS([e.lieu,e.commune].filter(Boolean).join(', '));
+    const descParts=[
+      e.conseiller&&'Conseiller : '+e.conseiller,
+      e.orienteur&&'Orienteur : '+e.orienteur,
+      e.statut&&'Statut : '+e.statut,
+      e.public&&'Public : '+e.public,
+      (e.inscrits!==''&&e.inscrits!=null)&&'Inscrits : '+e.inscrits,
+      (e.presents!==''&&e.presents!=null)&&'Présents : '+e.presents,
+      e.remarques&&'Remarques : '+e.remarques,
+    ].filter(Boolean);
+    out.push('BEGIN:VEVENT');
+    out.push('DTSTART:'+dts);
+    out.push('DTEND:'+dte);
+    out.push('SUMMARY:'+summary);
+    if(location)out.push('LOCATION:'+location);
+    if(descParts.length)out.push('DESCRIPTION:'+escapeICS(descParts.join('\n')));
+    out.push('UID:'+e._id+'@ateliers-newgen');
+    out.push('END:VEVENT');
+  }
+  out.push('END:VCALENDAR');
+  return out.map(foldICSLine).join('\r\n');
+}
+
 // ── VueAdmin override ──────────────────────────────────────
 function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,annee,adminConseiller}){
   const adminRef=React.useRef(null);
@@ -793,6 +830,7 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
   const[tlRunning,setTlRunning]=React.useState(false);
   const[tlLogs,setTlLogs]=React.useState([]);
   const[lastExport,setLastExport]=React.useState(null);
+  const[icsOrienteur,setIcsOrienteur]=React.useState('');
   function addTlLog(msg,type='info'){setTlLogs(l=>[...l,{msg,type,t:new Date().toLocaleTimeString('fr-FR')}]);}
   function changeMoisDeb(v){localStorage.setItem('cal_moisDeb',v);setMoisDeb(v);setLastExport(null);}
   function changeMoisFin(v){localStorage.setItem('cal_moisFin',v);setMoisFin(v);setLastExport(null);}
@@ -870,6 +908,22 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
       addTlLog(`✓ "${fileName}" téléchargé`,'ok');
     }catch(err){addTlLog('✗ '+err.message,'err');console.error(err);}
     finally{setTlRunning(false);}
+  }
+
+  // ── Export ICS partenaire ─────────────────────────────────
+  const allOrienteurs=React.useMemo(()=>[...new Set(entries.map(e=>(e.orienteur||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b)),[entries]);
+
+  function handleExportICS(){
+    const filtered=(icsOrienteur?entries.filter(e=>(e.orienteur||'').trim()===icsOrienteur):entries).filter(e=>e.date).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    if(!filtered.length){showToast('Aucun atelier trouvé pour ce partenaire',false);return;}
+    const icsContent=buildICS(filtered);
+    const blob=new Blob([icsContent],{type:'text/calendar;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const safeName=(icsOrienteur||'Tous_partenaires').replace(/[^a-zA-Z0-9_\-]/g,'_');
+    const a=document.createElement('a');a.href=url;a.download='Ateliers_'+safeName+'.ics';document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('✅ Calendrier "'+(icsOrienteur||'tous partenaires')+'" téléchargé ('+filtered.length+' ateliers)');
+    addLog('Export ICS partenaire "'+(icsOrienteur||'Tous')+'" — '+filtered.length+' ateliers','ok');
   }
 
   // ── v10.0 : Validation pré-import ─────────────────────────
@@ -1119,6 +1173,24 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
         lastExport&&CE('div',{style:{marginTop:10,padding:'10px 14px',background:'#f0fff4',border:'1px solid #9ae6b4',borderRadius:8,display:'flex',alignItems:'center',gap:10,fontSize:13}},
           CE('span',null,'📎 Si le téléchargement ne s\'est pas lancé :'),
           CE('a',{href:lastExport.url,download:lastExport.name,style:{color:'#276749',fontWeight:700,textDecoration:'underline'}},lastExport.name)
+        )
+      ),
+      CE('div',{className:'admin-section'},
+        CE('h3',null,'📆 Export Partenaire (.ics)'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:14}},'Génère un fichier calendrier (.ics) importable dans Google Calendar, Outlook ou Apple Calendar.'),
+        CE('div',{style:{display:'flex',gap:12,alignItems:'flex-end',flexWrap:'wrap',marginBottom:12}},
+          CE('div',{style:{flex:1,minWidth:200}},
+            CE('label',{style:{display:'block',fontSize:12,fontWeight:600,color:'#4a5568',marginBottom:4}},'Partenaire (orienteur)'),
+            CE('select',{value:icsOrienteur,onChange:e=>setIcsOrienteur(e.target.value),style:{width:'100%',padding:'8px 10px',border:'1.5px solid #e2e8f0',borderRadius:8,fontSize:13}},
+              CE('option',{value:''},'— Tous les partenaires —'),
+              allOrienteurs.map(o=>CE('option',{key:o,value:o},o))
+            )
+          ),
+          CE('button',{className:'btn btn-primary',onClick:handleExportICS,disabled:!entries.filter(e=>e.date).length,style:{whiteSpace:'nowrap'}},'📥 Télécharger .ics')
+        ),
+        CE('div',{style:{fontSize:12,color:'#718096',background:'#f7fafc',border:'1px solid #e2e8f0',borderRadius:8,padding:'8px 12px'}},
+          CE('span',{style:{fontWeight:600}},'Comment utiliser : '),
+          'Google Calendar → Autres agendas → Importer. Outlook → Fichier → Ouvrir. Apple Calendar → double-clic sur le fichier.'
         )
       ),
       CE(ChangerMotDePasse,{adminConseiller})
