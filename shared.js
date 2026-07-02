@@ -610,9 +610,11 @@ function buildICS(evts){
   for(const e of evts){
     const pd=parseDateICS(e.date);if(!pd)continue;
     const{hh,mm}=parseHoraireICS(e.horaire);
-    const endHH=String(parseInt(hh,10)+1).padStart(2,'0');
+    const startH=parseInt(hh,10);
     const dts=`${pd.y}${pd.mo}${pd.j}T${hh}${mm}00`;
-    const dte=`${pd.y}${pd.mo}${pd.j}T${endHH}${mm}00`;
+    let dte;
+    if(startH<23){dte=`${pd.y}${pd.mo}${pd.j}T${String(startH+1).padStart(2,'0')}${mm}00`;}
+    else{const next=new Date(parseInt(pd.y,10),parseInt(pd.mo,10)-1,parseInt(pd.j,10)+1);dte=`${next.getFullYear()}${String(next.getMonth()+1).padStart(2,'0')}${String(next.getDate()).padStart(2,'0')}T000000`;}
     const summary=escapeICS([e.thematique,e.commune].filter(Boolean).join(' | '));
     const location=escapeICS([e.lieu,e.commune].filter(Boolean).join(', '));
     const descParts=[

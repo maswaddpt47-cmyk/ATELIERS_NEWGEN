@@ -249,4 +249,14 @@ describe('buildICS', () => {
     const ics = buildICS([evt]);
     assert.ok(ics.includes('\r\n'));
   });
+  it('DTEND valide pour un atelier à 23H00 — rollover minuit J+1', () => {
+    const ics = buildICS([{...evt, date:'2026-06-16', horaire:'23H00'}]);
+    assert.ok(ics.includes('DTSTART:20260616T230000'), 'DTSTART doit être 23H00');
+    assert.ok(ics.includes('DTEND:20260617T000000'), 'DTEND doit être minuit J+1');
+    assert.ok(!ics.includes('T240000'), 'T240000 est invalide RFC 5545 — ne doit pas apparaître');
+  });
+  it('DTEND valide pour un atelier à 23H00 en fin de mois — rollover 1er du mois suivant', () => {
+    const ics = buildICS([{...evt, date:'2026-06-30', horaire:'23H00'}]);
+    assert.ok(ics.includes('DTEND:20260701T000000'), 'DTEND doit basculer au 1er juillet');
+  });
 });
