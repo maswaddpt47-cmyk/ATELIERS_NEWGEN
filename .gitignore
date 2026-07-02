@@ -1,0 +1,16 @@
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Éditeurs
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Logs & temporaires
+*.log
+*.tmp
+
+# Node (si jamais un package.json est ajouté)
+node_modules/
