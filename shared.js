@@ -1518,6 +1518,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
     const safeName=(oris.length===1?oris[0]:'ateliers').replace(/[^a-zA-Z0-9_\-]/g,'_');
     const a=document.createElement('a');a.href=url;a.download=safeName+'.ics';document.body.appendChild(a);a.click();document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    showToast('✅ Calendrier téléchargé ('+evts.length+' atelier'+(evts.length>1?'s':'')+')');
   }
 
   function printPDF(){
