@@ -392,7 +392,7 @@ tr:hover td{background:#f7fafc}
 .bv2-info{color:var(--info);background:var(--info-bg)}
 .bv2-warn{color:var(--warn);background:var(--warn-bg)}
 .bv2-err{color:var(--err);background:var(--err-bg)}
-.bv2-neutral{color:var(--neutral);background:var(--neutral-bg)}
+.bv2-neutral{color:var(--err);background:var(--err-bg)}
 .bv2-retard{color:var(--err);background:var(--err-bg);border:1px solid var(--err);animation:blink-retard 1.4s ease-in-out infinite}
 .tag-v2{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--surface-2);color:var(--text-3);border:1px solid var(--border)}
 /* Alerte retard v2 */
