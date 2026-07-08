@@ -1060,7 +1060,7 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
 // ═══════════════════════════════════════════════════════════
 // VUE SAISIE — v9.1 : mode unique + mode lot (cycle)
 // ═══════════════════════════════════════════════════════════
-const emptyRow=()=>({id:genId(),date:'',horaire:'',ampm:'',thematique:''});
+const emptyRow=()=>({id:genId(),date:'',horaire:'',ampm:'',thematique:'',inscrits:'',presents:''});
 
 function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefillData,onClearPrefill,accentColor}){
   const statuts    = lists?.statuts     || STATUTS_DEFAULT;
@@ -1175,7 +1175,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     try{
       let ok=0; const createdIds=[];
       for(const row of lotRows){
-        const entry={_id:genId(),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:'',presents:''};
+        const entry={_id:genId(),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0};
         const res=await apiFetch('saveEntry',{entry});
         if(!res.ok)throw new Error(res.error);
         if(onNewEntry)onNewEntry(entry);
@@ -1348,7 +1348,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     // ══════════════════════════════
     modeLot&&CE('div',null,
       CE('div',{style:{...secStyle,background:acLight,borderTop:`3px solid ${ac}`,display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:700,color:ac}},
-        '🔄 ',lotRows.length,' atelier(s) à créer — tous "Planifié", inscrits/présents à compléter après'
+        '🔄 ',lotRows.length,' atelier(s) à créer — tous "Planifié"'
       ),
       // Champs communs
       CE('div',{style:secStyle},champsCommuns(lotForm,setLot,lotErrors,entries)),
@@ -1367,13 +1367,25 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
           const hasErr=Object.keys(rErr).length>0;
           const brd=(err)=>`2px solid ${err?'#e53e3e':'#e2e8f0'}`;
           const inp=(type,val,key,err,ph)=>CE('input',{type,value:val,placeholder:ph||'',onChange:e=>setRow(row.id,key,e.target.value),style:{width:'100%',padding:'8px 10px',border:brd(err),borderRadius:8,fontSize:12,background:err?'#fff5f5':'#f8fafc',outline:'none',boxSizing:'border-box'}});
-          return CE('div',{key:row.id,style:{display:'grid',gridTemplateColumns:'140px 100px 64px 1fr 32px',gap:8,alignItems:'start',padding:'9px 10px',borderRadius:10,border:`1.5px solid ${hasErr?'#fc8181':acLight}`,marginBottom:6,background:hasErr?'#fff5f5':acLight}},
-            inp('date',row.date,'date',rErr.date),
-            inp('time',row.horaire,'horaire',rErr.horaire),
-            CE('select',{value:row.ampm,onChange:e=>setRow(row.id,'ampm',e.target.value),style:{width:'100%',padding:'8px 4px',border:brd(rErr.ampm),borderRadius:8,fontSize:12,background:'#f8fafc'}},
-              CE('option',{value:'',disabled:true},'—'),CE('option',{value:'AM'},'AM'),CE('option',{value:'PM'},'PM')),
-            inp('text',row.thematique,'thematique',rErr.thematique,"Thème de la séance"),
-            CE('button',{onClick:()=>removeRow(row.id),disabled:lotRows.length===1,style:{background:'none',border:`1px solid ${acLight}`,borderRadius:6,color:'#9b2c2c',cursor:'pointer',fontSize:15,height:32,width:32,display:'flex',alignItems:'center',justifyContent:'center'}},'×')
+          return CE('div',{key:row.id,style:{borderRadius:10,border:`1.5px solid ${hasErr?'#fc8181':acLight}`,marginBottom:6,background:hasErr?'#fff5f5':acLight,overflow:'hidden'}},
+            CE('div',{style:{display:'grid',gridTemplateColumns:'140px 100px 64px 1fr 32px',gap:8,alignItems:'start',padding:'9px 10px'}},
+              inp('date',row.date,'date',rErr.date),
+              inp('time',row.horaire,'horaire',rErr.horaire),
+              CE('select',{value:row.ampm,onChange:e=>setRow(row.id,'ampm',e.target.value),style:{width:'100%',padding:'8px 4px',border:brd(rErr.ampm),borderRadius:8,fontSize:12,background:'#f8fafc'}},
+                CE('option',{value:'',disabled:true},'—'),CE('option',{value:'AM'},'AM'),CE('option',{value:'PM'},'PM')),
+              inp('text',row.thematique,'thematique',rErr.thematique,"Thème de la séance"),
+              CE('button',{onClick:()=>removeRow(row.id),disabled:lotRows.length===1,style:{background:'none',border:`1px solid ${acLight}`,borderRadius:6,color:'#9b2c2c',cursor:'pointer',fontSize:15,height:32,width:32,display:'flex',alignItems:'center',justifyContent:'center'}},'×')
+            ),
+            CE('div',{style:{display:'flex',gap:8,padding:'0 10px 9px',borderTop:`1px solid ${acLight}`}},
+              CE('div',{style:{flex:1}},
+                CE('span',{style:{fontSize:10,fontWeight:700,color:'#718096',textTransform:'uppercase',letterSpacing:'.06em',display:'block',marginBottom:4}},'Inscrits'),
+                CE('input',{type:'number',min:0,value:row.inscrits,placeholder:'—',onChange:e=>setRow(row.id,'inscrits',e.target.value),style:{width:'100%',padding:'7px 10px',border:brd(false),borderRadius:8,fontSize:13,fontWeight:700,textAlign:'center',background:'#f8fafc',outline:'none',boxSizing:'border-box'}})
+              ),
+              CE('div',{style:{flex:1}},
+                CE('span',{style:{fontSize:10,fontWeight:700,color:'#718096',textTransform:'uppercase',letterSpacing:'.06em',display:'block',marginBottom:4}},'Présents'),
+                CE('input',{type:'number',min:0,value:row.presents,placeholder:'—',onChange:e=>setRow(row.id,'presents',e.target.value),style:{width:'100%',padding:'7px 10px',border:brd(false),borderRadius:8,fontSize:13,fontWeight:700,textAlign:'center',background:'#f8fafc',outline:'none',boxSizing:'border-box'}})
+              )
+            )
           );
         }),
         CE('button',{onClick:addRow,style:{display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:10,background:'#fff',border:`2px dashed ${ac}`,borderRadius:10,cursor:'pointer',fontSize:13,color:ac,fontWeight:700,width:'100%',marginTop:6}},'＋ Ajouter une date')
