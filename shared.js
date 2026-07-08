@@ -1218,7 +1218,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
 
   // ── submit mode unique ──
   async function handleSubmit(){
-    if(!validate())return;
+    if(!validate()){showToast('⚠️ Champs obligatoires manquants',false);return;}
     setSaving(true);
     try{
       const entry={...form,_id:form._id||genId(),inscrits:form.inscrits===''?'':parseInt(form.inscrits)||0,presents:form.presents===''?'':parseInt(form.presents)||0,materiel:(form.materiel||[]).join('|')};
@@ -1235,9 +1235,9 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   // ── submit mode lot ──
   async function handleSubmitLot(){
     const rowsFilled=lotRows.filter(r=>r.date||r.horaire||r.thematique.trim());
-    if(rowsFilled.length===0){setFormError('Ajoutez au moins une date dans le tableau.');return;}
+    if(rowsFilled.length===0){setFormError('Ajoutez au moins une date dans le tableau.');showToast('⚠️ Ajoutez au moins une date dans le tableau.',false);return;}
     if(rowsFilled.length<lotRows.length)setLotRows(rowsFilled);
-    if(!validateLot())return;
+    if(!validateLot()){showToast('⚠️ Champs obligatoires manquants',false);return;}
     setSaving(true);
     try{
       let ok=0; const createdIds=[];
