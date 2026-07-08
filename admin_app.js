@@ -95,9 +95,9 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
   return CE('div',{className:'login-wrap'},
     CE('div',{className:'login-card'},
       CE('h2',null,'🔐 Accès Admin'),
-      savedName&&savedName!=='admin'&&CE('div',{style:{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:8,padding:'8px 12px',marginBottom:12,display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:12}},
-        CE('span',{style:{color:'#1e3a8a',fontWeight:700}},'👤 Connecté en tant que : '+savedName),
-        CE('button',{onClick:onResetProfil,style:{background:'none',border:'none',color:'#9ca3af',cursor:'pointer',fontSize:11,textDecoration:'underline'}},'Changer')
+      savedName&&savedName!=='admin'&&CE('div',{style:{background:'var(--info-bg)',border:'1px solid rgba(147,197,253,.3)',borderRadius:8,padding:'8px 12px',marginBottom:12,display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:12}},
+        CE('span',{style:{color:'var(--info)',fontWeight:700}},'👤 Connecté en tant que : '+savedName),
+        CE('button',{onClick:onResetProfil,style:{background:'none',border:'none',color:'var(--text-3)',cursor:'pointer',fontSize:11,textDecoration:'underline'}},'Changer')
       ),
       isLocked
         ? CE('div',{style:{textAlign:'center',padding:'28px 0'}},
@@ -108,8 +108,8 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
           )
         : CE(React.Fragment,null,
             CE('div',{style:{marginBottom:10}},
-              CE('label',{style:{fontSize:12,fontWeight:600,color:'#4a5568',display:'block',marginBottom:4}},'Conseiller'),
-              CE('select',{value:conseiller,onChange:e=>setConseiller(e.target.value),style:{width:'100%',padding:'10px 14px',border:'1px solid #e2e8f0',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'#fff'}},
+              CE('label',{style:{fontSize:12,fontWeight:600,color:'var(--text-2)',display:'block',marginBottom:4}},'Conseiller'),
+              CE('select',{value:conseiller,onChange:e=>setConseiller(e.target.value),style:{width:'100%',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)'}},
                 base.map(c=>CE('option',{key:c,value:c},c))
               )
             ),
@@ -118,7 +118,7 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
                 type:show?'text':'password',placeholder:'Mot de passe',value:pwd,
                 onChange:e=>setPwd(e.target.value),
                 onKeyDown:e=>e.key==='Enter'&&handleSubmit(),
-                style:{width:'100%',padding:'10px 40px 10px 14px',border:'1px solid #e2e8f0',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box'}
+                style:{width:'100%',padding:'10px 40px 10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)'}
               }),
               CE('button',{onClick:()=>setShow(s=>!s),style:{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#718096',padding:0}},show?'🙈':'👁️')
             ),
