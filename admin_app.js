@@ -63,7 +63,7 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
     const t3=isMobile?setTimeout(()=>setHint('Réseau mobile détecté, patience…'),12000):null;
     try{
       const res=await Promise.race([
-        apiFetch('checkPassword',{conseiller,password:pwd,userAgent:navigator.userAgent}),
+        apiFetch('checkPassword',{conseiller,password:pwd,userAgent:navigator.userAgent,source:'admin.html'}),
         new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),isMobile?25000:10000))
       ]);
       if(res.ok){
