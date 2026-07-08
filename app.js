@@ -11,13 +11,13 @@ var VIEW_META_F = {
 };
 
 function MaintenanceScreen({msg}){
-  return CE('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#f0f4f8',fontFamily:"'Segoe UI',sans-serif",textAlign:'center',gap:12}},
-    CE('div',{style:{background:'#fff',borderRadius:14,padding:'40px 48px',boxShadow:'0 4px 24px rgba(30,58,138,.10)',maxWidth:420,width:'90%'}},
+  return CE('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'var(--bg)',fontFamily:"'Segoe UI',sans-serif",textAlign:'center',gap:12}},
+    CE('div',{style:{background:'var(--surface)',borderRadius:14,padding:'40px 48px',boxShadow:'var(--shadow-panel)',maxWidth:420,width:'90%'}},
       CE('div',{style:{fontSize:52,marginBottom:12}},'🔧'),
-      CE('div',{style:{fontSize:22,fontWeight:800,color:'#1e3a8a',marginBottom:8}},'Maintenance en cours'),
-      CE('div',{style:{fontSize:13,color:'#718096',lineHeight:1.6,marginBottom:20}},msg||"L'application est temporairement indisponible. Merci de votre patience."),
+      CE('div',{style:{fontSize:22,fontWeight:800,color:'var(--info)',marginBottom:8}},'Maintenance en cours'),
+      CE('div',{style:{fontSize:13,color:'var(--text-2)',lineHeight:1.6,marginBottom:20}},msg||"L'application est temporairement indisponible. Merci de votre patience."),
       CE('div',{style:{display:'inline-block',background:'#fef9c3',color:'#92400e',fontSize:12,fontWeight:700,padding:'4px 14px',borderRadius:20,border:'1px solid #fcd34d'}},'⏳ Mise à jour en cours'),
-      CE('div',{style:{fontSize:12,color:'#a0aec0',marginTop:16}},'Contactez l\'administrateur pour plus d\'infos.')
+      CE('div',{style:{fontSize:12,color:'var(--text-3)',marginTop:16}},'Contactez l\'administrateur pour plus d\'infos.')
     )
   );
 }
@@ -65,6 +65,8 @@ function App(){
   const[inactifsSet,setInactifsSet] = React.useState(new Set());
   React.useEffect(()=>{apiFetch('getComptes').then(res=>{if(res.ok&&res.comptes){setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));}}).catch(()=>{});},[]);
   const[sidebarPinned,setSidebarPinned] = React.useState(()=>localStorage.getItem('sidebar_pinned')==='1');
+  const[darkMode,setDarkMode]=React.useState(()=>localStorage.getItem('f_dark')==='1');
+  React.useEffect(()=>{document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');localStorage.setItem('f_dark',darkMode?'1':'0');},[darkMode]);
 
   // ── Helpers ───────────────────────────────────────────────────
   function setAnnee(v){ localStorage.setItem('f_annee',v); setAnneeState(v); }
@@ -213,7 +215,7 @@ function App(){
   const conseillerActifs = lists.conseillers.filter(c=>!inactifsSet.has(c));
 
   // ── Vue Accueil ───────────────────────────────────────────────
-  if(maintenance===null) return CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'#f0f4f8'}},CE('div',{style:{fontSize:13,color:'#718096'}},'Chargement…'));
+  if(maintenance===null) return CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'var(--bg)'}},CE('div',{style:{fontSize:13,color:'var(--text-3)'}},'Chargement…'));
   if(maintenance!==false) return CE(MaintenanceScreen,{msg:maintenance.msg});
 
   if(view==='accueil'){
@@ -238,7 +240,8 @@ function App(){
         CE('span',{className:'logo'},'🖥️ Ateliers Inclusion Numérique'),
         loading&&CE('span',{style:{fontSize:11,color:'rgba(255,255,255,.6)',marginLeft:8,display:'flex',alignItems:'center',gap:5}},
           CE('span',{className:'spinner',style:{borderTopColor:'rgba(255,255,255,.8)',borderColor:'rgba(255,255,255,.2)'}}),
-          'Chargement…')
+          'Chargement…'),
+        CE('button',{onClick:()=>setDarkMode(d=>!d),style:{background:'none',border:'none',cursor:'pointer',fontSize:18,padding:'2px 6px',lineHeight:1,marginLeft:'auto'},'aria-label':'Mode sombre'},darkMode?'☀️':'🌙')
       ),
       CE('div',{className:'main'},
         error
@@ -260,7 +263,7 @@ function App(){
                   return CE('div',{key:c,className:'accueil-stat-chip',style:{background:color+'12',border:`1px solid ${color}30`,color}},
                     CE('span',{style:{fontWeight:700}},c.split(' ')[0]),
                     CE('span',{className:'accueil-stat-count',style:{background:color}},n),
-                    CE('span',{style:{fontSize:10,color:'#9ca3af'}},'ce mois'),
+                    CE('span',{style:{fontSize:10,color:'var(--text-3)'}},'ce mois'),
                     taux!==null&&CE('span',{style:{fontSize:10,fontWeight:700,color:tauxColor}},taux+'%'),
                     prev>0&&CE('span',{className:'accueil-stat-trend',style:{color:trendColor}},`${trendIco}${Math.abs(diff)}`)
                   );
@@ -301,10 +304,11 @@ function App(){
       ),
       CE('div',{className:'app-topbar-v2-right'},
         !online&&CE('span',{className:'offline-badge'},'📡'),
-        loading&&CE('span',{className:'spinner',style:{borderTopColor:accentColor,borderColor:'#e2e8f0'}}),
+        loading&&CE('span',{className:'spinner',style:{borderTopColor:accentColor,borderColor:'var(--border)'}}),
         !loading&&lastSync&&CE('span',{className:'topbar-sync-info'},
           lastSync.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
         ),
+        CE('button',{onClick:()=>setDarkMode(d=>!d),style:{background:'none',border:'none',cursor:'pointer',fontSize:18,padding:'2px 4px',lineHeight:1},'aria-label':'Mode sombre'},darkMode?'☀️':'🌙'),
         CE('select',{className:'topbar-year-sel',value:annee,onChange:e=>setAnnee(e.target.value),title:'Année'},
           [String(new Date().getFullYear()-1),String(new Date().getFullYear()),String(new Date().getFullYear()+1)].map(y=>CE('option',{key:y,value:y},y))
         ),
@@ -326,7 +330,7 @@ function App(){
             },
               CE('span',{className:'conseiller-picker-dot',style:{background:conseillerColor(c)}}),
               c,
-              c===filtreConseiller&&CE('span',{style:{marginLeft:'auto',fontSize:11,color:'#9ca3af'}},'✓')
+              c===filtreConseiller&&CE('span',{style:{marginLeft:'auto',fontSize:11,color:'var(--text-3)'}},'✓')
             ))
           )
         ),
