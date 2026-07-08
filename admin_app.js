@@ -67,6 +67,10 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
         new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),isMobile?25000:10000))
       ]);
       if(res.ok){
+        if((res.role||'user')!=='admin'&&(res.role||'user')!=='superviseur'){
+          setErr('⛔ Accès refusé — réservé aux administrateurs.');
+          setLoading(false);return;
+        }
         setFailCount(0);setLockUntil(0);
         touchSession();
         window.onLoginSuccess(conseiller, res);
@@ -304,7 +308,7 @@ function App(){
   },[entries]);
 
   const[role,setRole]=React.useState('');
-  if(!auth)return CE(AdminLogin,{onLogin:(r,nom)=>{setAuth(true);setRole(r||'user');if(nom){localStorage.setItem('adm_conseiller',nom);setAdminConseiller(nom);}},savedName:adminConseiller,onResetProfil:()=>{localStorage.removeItem('adm_conseiller');setAdminConseiller('');},conseillers:loginConseillers})
+  if(!auth)return CE(AdminLogin,{onLogin:(r,nom)=>{setAuth(true);setRole(r||'user');const key=r==='superviseur'?'admin':nom;if(nom){localStorage.setItem('adm_conseiller',key);setAdminConseiller(key);}},savedName:adminConseiller,onResetProfil:()=>{localStorage.removeItem('adm_conseiller');setAdminConseiller('');},conseillers:loginConseillers})
 
   if(!adminConseiller)return CE('div',{className:'login-wrap'},
     CE('div',{className:'login-card'},
