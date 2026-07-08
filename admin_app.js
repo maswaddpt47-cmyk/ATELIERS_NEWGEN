@@ -395,7 +395,7 @@ function App(){
         view==='bingo'&&CE(VueBingo,{entries}),
         view==='anomalies'&&CE(VueAnomalies,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');},communes:window.COMMUNES_47_CACHE||[],apiFetch,showToast,addLog}),
         view==='admin'&&role==='admin'&&CE(VueAdmin,{entries,onRefresh:loadData,addLog,conseillersList:lists.conseillers,onSaveColors:(c)=>{applyColors(c);},annee,adminConseiller}),
-        view==='logs_connexion'&&role==='admin'&&CE(VueLogs,null),
+        view==='logs_connexion'&&(role==='admin'||role==='superviseur')&&CE(VueLogs,null),
           view==='logs'&&CE('div',{className:'card'},
             CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:8}},
               CE('h2',{style:{margin:0}},'📜 Journal des opérations'),
@@ -500,7 +500,7 @@ function App(){
           ),
           CE('span',{className:'bnav-lbl'},'Listes')
         ),
-        role==='admin'&&navBtn('logs_connexion',
+        (role==='admin'||role==='superviseur')&&navBtn('logs_connexion',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:3,y:11,width:18,height:11,rx:2}),CE('path',{d:'M7 11V7a5 5 0 0 1 10 0v4'})),
           'Connexions')
       )
@@ -754,11 +754,12 @@ function VueLogs(){
         ?CE('p',{style:{color:'#718096',fontSize:13}},'Aucune entrée.')
         :CE('div',{style:{overflowX:'auto'}},
           CE('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
-            CE('thead',null,CE('tr',null,['Horodatage','Conseiller','Rôle','Résultat','Tentatives','Appareil'].map(h=>CE('th',{key:h,style:{padding:'8px 10px',textAlign:'left',fontWeight:700,color:'#4a5568',borderBottom:'2px solid #e2e8f0',background:'#f7fafc',whiteSpace:'nowrap'}},h)))),
+            CE('thead',null,CE('tr',null,['Horodatage','Conseiller','Rôle','Via','Résultat','Tentatives','Appareil'].map(h=>CE('th',{key:h,style:{padding:'8px 10px',textAlign:'left',fontWeight:700,color:'#4a5568',borderBottom:'2px solid #e2e8f0',background:'#f7fafc',whiteSpace:'nowrap'}},h)))),
             CE('tbody',null,filtered.map((l,i)=>CE('tr',{key:i,style:{background:l.success?(i%2===0?'#f0fdf4':'#fff'):(i%2===0?'#fff5f5':'#fff')}},
               CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',whiteSpace:'nowrap',color:'#4a5568'}},formatTs(l.timestamp)),
               CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',fontWeight:600}},l.conseiller||'—'),
               CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:700,background:l.role==='admin'?'#ede9fe':'#dbeafe',color:l.role==='admin'?'#6d28d9':'#1d4ed8'}},l.role||'—')),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:600,background:l.source==='admin.html'?'#fef3c7':l.source?'#dbeafe':'#f1f5f9',color:l.source==='admin.html'?'#92400e':l.source?'#1d4ed8':'#94a3b8'}},l.source||'—')),
               CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:700,background:l.success?'#dcfce7':'#fee2e2',color:l.success?'#166534':'#991b1b'}},l.success?'✅ Succès':'❌ Échec')),
               CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',textAlign:'center',color:l.tentatives>0?'#dc2626':'#9ca3af',fontWeight:l.tentatives>0?700:400}},l.tentatives||0),
               CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',fontSize:10,color:'#9ca3af',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},l.user_agent||'—')
