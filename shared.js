@@ -381,6 +381,13 @@ tr:hover td{background:#f7fafc}
 [data-theme="dark"] .accueil-select{border-color:var(--border);color:var(--text);background:var(--surface-2)}
 [data-theme="dark"] .accueil-select:focus{border-color:var(--primary);background:var(--surface)}
 [data-theme="dark"] .accueil-skip{color:var(--text-3)}
+[data-theme="dark"] .app-topbar-v2{background:var(--surface);border-bottom:1px solid var(--border);box-shadow:0 1px 5px rgba(0,0,0,.3)}
+[data-theme="dark"] .app-topbar-v2-title{color:var(--text)}
+[data-theme="dark"] .app-topbar-v2-sub{color:var(--text-2)}
+[data-theme="dark"] .app-main-v2{background:var(--bg)}
+[data-theme="dark"] .bottom-nav-v2{background:var(--surface);border-top-color:var(--border);box-shadow:0 -1px 5px rgba(0,0,0,.3)}
+[data-theme="dark"] .bnav-btn{color:var(--text-2)}
+[data-theme="dark"] .bnav-btn.active{color:#5eead4;background:rgba(94,234,212,.12)}
 /* ══ KPI strip maquette v2 ══════════════════════════════════ */
 .kpi-strip-v2{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:12px}
 .kpi-mini-v2{
