@@ -332,6 +332,7 @@ tr:hover td{background:#f7fafc}
 .bottom-nav-v2{position:fixed;bottom:0;left:0;right:0;height:62px;background:rgba(255,255,255,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;box-shadow:0 -2px 12px rgba(12,36,48,.08);z-index:200}
 .bnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:0;border:none;background:none;color:var(--text-3);font-size:10px;font-weight:600;width:66px;height:54px;border-radius:12px;justify-content:center;transition:.15s;cursor:pointer}
 .bnav-btn.active{background:var(--primary-soft);color:var(--primary)}
+.bnav-btn:hover{color:var(--text-3);background:rgba(0,0,0,.04)}
 .bnav-ico{display:flex;align-items:center;justify-content:center}
 .bnav-lbl{font-size:10px;font-weight:600}
 :root{
