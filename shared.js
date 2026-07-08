@@ -375,6 +375,12 @@ tr:hover td{background:#f7fafc}
 [data-theme="dark"] .pill-v2{background:var(--surface-2);border-color:var(--border);color:var(--text-2)}
 [data-theme="dark"] .pill-v2:hover{border-color:var(--primary);color:var(--primary)}
 [data-theme="dark"] .filter-tag{background:var(--primary-soft);color:var(--primary)}
+[data-theme="dark"] .accueil-card{background:var(--surface);box-shadow:0 4px 24px rgba(0,0,0,.4)}
+[data-theme="dark"] .accueil-sub{color:var(--text-2)}
+[data-theme="dark"] .accueil-label{color:var(--text-2)}
+[data-theme="dark"] .accueil-select{border-color:var(--border);color:var(--text);background:var(--surface-2)}
+[data-theme="dark"] .accueil-select:focus{border-color:var(--primary);background:var(--surface)}
+[data-theme="dark"] .accueil-skip{color:var(--text-3)}
 /* ══ KPI strip maquette v2 ══════════════════════════════════ */
 .kpi-strip-v2{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:12px}
 .kpi-mini-v2{
