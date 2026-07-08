@@ -659,6 +659,15 @@
 /* Filtre banner */
 [data-theme="dark"] .filtre-banner              { background: #0c1a2e; border-color: #1d4ed8; color: #93c5fd; }
 
+/* ── v2 shell — dark mode ────────────────────────────────── */
+[data-theme="dark"] .app-topbar-v2       { background: var(--bg2); border-bottom: 1px solid var(--border); box-shadow: 0 1px 5px rgba(0,0,0,.3); }
+[data-theme="dark"] .app-topbar-v2-title { color: var(--text); }
+[data-theme="dark"] .app-topbar-v2-sub   { color: var(--text2); }
+[data-theme="dark"] .app-main-v2         { background: var(--bg); }
+[data-theme="dark"] .bottom-nav-v2       { background: var(--bg2); border-top-color: var(--border); box-shadow: 0 -1px 5px rgba(0,0,0,.3); }
+[data-theme="dark"] .bnav-btn            { color: var(--text2); }
+[data-theme="dark"] .bnav-btn.active     { color: #5eead4; background: rgba(94,234,212,.12); }
+
 /* ── Fix position bottom nav ─────────────────────────────── */
 .bottom-nav-v2 {
   top: auto !important;
