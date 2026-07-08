@@ -451,7 +451,7 @@ tr:hover td{background:#f7fafc}
 .pill-group-v2{display:flex;flex-wrap:wrap;gap:6px}
 .pill-v2{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:20px;font-size:13px;font-weight:600;border:1.5px solid #d4dfe6;background:#fff;color:#4e6270;transition:.15s;cursor:pointer;box-shadow:0 1px 2px rgba(12,36,48,.07),0 3px 8px rgba(12,36,48,.07)}
 .pill-v2:hover{border-color:#0f6e7a;color:#0f6e7a}
-.pill-v2.active{border-color:transparent;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.pill-v2.active{border-color:transparent;color:#fff;background:#475569;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 .pill-v2-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
 .f-sel-wrap-v2{position:relative}
 .f-sel-wrap-v2 .f-sel-ico{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:#7a8e98;font-size:11px}
