@@ -2764,6 +2764,7 @@ function VueCarte({entries,active}){
   // Init carte
   React.useEffect(()=>{
     if(!active||mapRef.current)return;
+    if(!window.L){console.error('Leaflet non chargé');return;}
     mapRef.current=L.map('map-container').setView([44.35,0.52],9);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap contributors © CARTO',maxZoom:18}).addTo(mapRef.current);
     buildMarkers(entries,modeAffichage);
