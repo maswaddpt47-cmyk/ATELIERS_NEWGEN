@@ -15,7 +15,8 @@ function normCommune(s){
   return s.replace(/\s*\(\d+\)\s*/g,'').trim();
 }
 function normalizeCommune(c){
-  return COMMUNE_MAP[String(c||'').trim()]||String(c||'').trim();
+  const stripped=normCommune(String(c||'').toUpperCase());
+  return COMMUNE_MAP[stripped]||stripped||String(c||'').trim();
 }
 
 // ── Texte ──────────────────────────────────────────────────
@@ -106,7 +107,7 @@ function buildICS(evts){
     out.push('UID:'+e._id+'@ateliers-newgen','END:VEVENT');
   }
   out.push('END:VCALENDAR');
-  return out.map(foldICSLine).join('\r\n');
+  return out.map(foldICSLine).join('\r\n') + '\r\n';
 }
 
 module.exports={

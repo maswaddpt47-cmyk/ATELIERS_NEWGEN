@@ -221,7 +221,7 @@ describe('buildICS', () => {
     assert.ok(ics.startsWith('BEGIN:VCALENDAR'));
     assert.ok(ics.includes('BEGIN:VEVENT'));
     assert.ok(ics.includes('END:VEVENT'));
-    assert.ok(ics.endsWith('END:VCALENDAR'));
+    assert.ok(ics.endsWith('END:VCALENDAR\r\n'));
   });
   it('contient DTSTART et DTEND corrects', () => {
     const ics = buildICS([evt]);
