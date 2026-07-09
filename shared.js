@@ -1206,11 +1206,12 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       if(!r.horaire)    er.horaire='Requis';
       if(!r.ampm)       er.ampm='Requis';
       if(!r.thematique.trim()) er.thematique='Requis';
+      if(r.inscrits==='')er.inscrits='Requis';
       if(Object.keys(er).length>0)re[r.id]=er;
     });
     setLotRowErrors(re);
     const missing=[...Object.keys(e).map(k=>FIELD_LABELS[k]||k)];
-    if(Object.keys(re).length>0)missing.push('Date/Horaire/AM-PM/Thématique dans le tableau');
+    if(Object.keys(re).length>0)missing.push('Date/Horaire/AM-PM/Thématique/Inscrits dans le tableau');
     if(missing.length>0)setFormError('Champs obligatoires manquants : '+missing.join(', '));
     else setFormError('');
     return Object.keys(e).length===0&&Object.keys(re).length===0;
@@ -1424,34 +1425,36 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       // Tableau des dates
       CE('div',{style:secStyle},
         CE('div',{style:{fontSize:13,fontWeight:700,color:ac,marginBottom:12}},'📅 Dates du cycle'),
-        CE('div',{style:{display:'grid',gridTemplateColumns:'140px 100px 64px 1fr 32px',gap:8,padding:'0 4px',marginBottom:6}},
-          CE('span',{style:{fontSize:11,fontWeight:700,color:'#718096'}},'DATE *'),
-          CE('span',{style:{fontSize:11,fontWeight:700,color:'#718096'}},'HORAIRE *'),
-          CE('span',{style:{fontSize:11,fontWeight:700,color:'#718096'}},'AM/PM'),
-          CE('span',{style:{fontSize:11,fontWeight:700,color:'#718096'}},'THÉMATIQUE *'),
-          CE('span',null)
-        ),
         lotRows.map((row)=>{
           const rErr=lotRowErrors[row.id]||{};
           const hasErr=Object.keys(rErr).length>0;
           const brd=(err)=>`2px solid ${err?'#e53e3e':'#e2e8f0'}`;
-          const inp=(type,val,key,err,ph)=>CE('input',{type,value:val,placeholder:ph||'',onChange:e=>setRow(row.id,key,e.target.value),style:{width:'100%',padding:'8px 10px',border:brd(err),borderRadius:8,fontSize:12,background:err?'#fff5f5':'#f8fafc',outline:'none',boxSizing:'border-box'}});
+          const bg=(err)=>err?'#fff5f5':'#f8fafc';
+          const inp=(type,val,key,err,ph)=>CE('input',{type,value:val,placeholder:ph||'',onChange:e=>setRow(row.id,key,e.target.value),style:{width:'100%',padding:'8px 10px',border:brd(err),borderRadius:8,fontSize:12,background:bg(err),outline:'none',boxSizing:'border-box'}});
+          const lbl=(t,err)=>CE('span',{style:{fontSize:10,fontWeight:700,color:err?'#e53e3e':'#718096',textTransform:'uppercase',letterSpacing:'.06em',display:'block',marginBottom:3}},t);
           return CE('div',{key:row.id,style:{borderRadius:10,border:`1.5px solid ${hasErr?'#fc8181':acLight}`,marginBottom:6,background:hasErr?'#fff5f5':acLight,overflow:'hidden'}},
-            CE('div',{style:{display:'grid',gridTemplateColumns:'140px 100px 64px 1fr 32px',gap:8,alignItems:'start',padding:'9px 10px'}},
-              inp('date',row.date,'date',rErr.date),
-              inp('time',row.horaire,'horaire',rErr.horaire),
-              CE('select',{value:row.ampm,onChange:e=>setRow(row.id,'ampm',e.target.value),style:{width:'100%',padding:'8px 4px',border:brd(rErr.ampm),borderRadius:8,fontSize:12,background:'#f8fafc'}},
-                CE('option',{value:'',disabled:true},'—'),CE('option',{value:'AM'},'AM'),CE('option',{value:'PM'},'PM')),
-              inp('text',row.thematique,'thematique',rErr.thematique,"Thème de la séance"),
-              CE('button',{onClick:()=>removeRow(row.id),disabled:lotRows.length===1,style:{background:'none',border:`1px solid ${acLight}`,borderRadius:6,color:'#9b2c2c',cursor:'pointer',fontSize:15,height:32,width:32,display:'flex',alignItems:'center',justifyContent:'center'}},'×')
+            // Ligne 1 : Date + Horaire + AM/PM + Supprimer
+            CE('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr auto 32px',gap:8,alignItems:'end',padding:'9px 10px 8px'}},
+              CE('div',null,lbl('Date *',rErr.date),inp('date',row.date,'date',rErr.date)),
+              CE('div',null,lbl('Horaire *',rErr.horaire),inp('time',row.horaire,'horaire',rErr.horaire)),
+              CE('div',null,lbl('AM/PM',rErr.ampm),
+                CE('select',{value:row.ampm,onChange:e=>setRow(row.id,'ampm',e.target.value),style:{padding:'8px 6px',border:brd(rErr.ampm),borderRadius:8,fontSize:12,background:bg(rErr.ampm)}},
+                  CE('option',{value:'',disabled:true},'—'),CE('option',{value:'AM'},'AM'),CE('option',{value:'PM'},'PM'))),
+              CE('button',{onClick:()=>removeRow(row.id),disabled:lotRows.length===1,style:{background:'none',border:`1px solid ${acLight}`,borderRadius:6,color:'#9b2c2c',cursor:'pointer',fontSize:15,height:32,width:32,display:'flex',alignItems:'center',justifyContent:'center',alignSelf:'end'}},'×')
             ),
+            // Ligne 2 : Thématique pleine largeur
+            CE('div',{style:{padding:'0 10px 8px'}},
+              lbl('Thématique *',rErr.thematique),
+              inp('text',row.thematique,'thematique',rErr.thematique,'Thème de la séance')
+            ),
+            // Ligne 3 : Inscrits + Présents
             CE('div',{style:{display:'flex',gap:8,padding:'0 10px 9px',borderTop:`1px solid ${acLight}`}},
               CE('div',{style:{flex:1}},
-                CE('span',{style:{fontSize:10,fontWeight:700,color:'#718096',textTransform:'uppercase',letterSpacing:'.06em',display:'block',marginBottom:4}},'Inscrits'),
-                CE('input',{type:'number',min:0,value:row.inscrits,placeholder:'—',onChange:e=>setRow(row.id,'inscrits',e.target.value),style:{width:'100%',padding:'7px 10px',border:brd(false),borderRadius:8,fontSize:13,fontWeight:700,textAlign:'center',background:'#f8fafc',outline:'none',boxSizing:'border-box'}})
+                lbl('Inscrits *',rErr.inscrits),
+                CE('input',{type:'number',min:0,value:row.inscrits,placeholder:'—',onChange:e=>setRow(row.id,'inscrits',e.target.value),style:{width:'100%',padding:'7px 10px',border:brd(rErr.inscrits),borderRadius:8,fontSize:13,fontWeight:700,textAlign:'center',background:bg(rErr.inscrits),outline:'none',boxSizing:'border-box'}})
               ),
               CE('div',{style:{flex:1}},
-                CE('span',{style:{fontSize:10,fontWeight:700,color:'#718096',textTransform:'uppercase',letterSpacing:'.06em',display:'block',marginBottom:4}},'Présents'),
+                lbl('Présents',false),
                 CE('input',{type:'number',min:0,value:row.presents,placeholder:'—',onChange:e=>setRow(row.id,'presents',e.target.value),style:{width:'100%',padding:'7px 10px',border:brd(false),borderRadius:8,fontSize:13,fontWeight:700,textAlign:'center',background:'#f8fafc',outline:'none',boxSizing:'border-box'}})
               )
             )
