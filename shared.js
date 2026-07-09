@@ -1427,7 +1427,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
         CE('div',{style:{fontSize:13,fontWeight:700,color:ac,marginBottom:12}},'📅 Dates du cycle'),
         lotRows.map((row)=>{
           const rErr=lotRowErrors[row.id]||{};
-          const hasErr=Object.keys(rErr).length>0;
+          const hasErr=Object.values(rErr).some(v=>v);
           const brd=(err)=>`2px solid ${err?'#e53e3e':'#e2e8f0'}`;
           const bg=(err)=>err?'#fff5f5':'#f8fafc';
           const inp=(type,val,key,err,ph)=>CE('input',{type,value:val,placeholder:ph||'',onChange:e=>setRow(row.id,key,e.target.value),style:{width:'100%',padding:'8px 10px',border:brd(err),borderRadius:8,fontSize:12,background:bg(err),outline:'none',boxSizing:'border-box'}});
