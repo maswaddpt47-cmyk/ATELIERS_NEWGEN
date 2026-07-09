@@ -259,4 +259,59 @@ describe('buildICS', () => {
     const ics = buildICS([{...evt, date:'2026-06-30', horaire:'23H00'}]);
     assert.ok(ics.includes('DTEND:20260701T000000'), 'DTEND doit basculer au 1er juillet');
   });
+  it('plusieurs événements → plusieurs VEVENT dans le même fichier', () => {
+    const evt2 = {...evt, _id:'test-002', date:'2026-06-17', thematique:'Cybersécurité'};
+    const ics = buildICS([evt, evt2]);
+    const count = (ics.match(/BEGIN:VEVENT/g) || []).length;
+    assert.equal(count, 2);
+  });
+  it('description contient inscrits quand renseigné', () => {
+    const ics = buildICS([{...evt, inscrits:8}]);
+    assert.ok(ics.includes('Inscrits : 8'));
+  });
+  it('description n\'inclut pas inscrits quand vide', () => {
+    const ics = buildICS([{...evt, inscrits:'', presents:''}]);
+    assert.ok(!ics.includes('Inscrits'));
+  });
+});
+
+// ── normalizeCommune — cas limites ─────────────────────────
+describe('normalizeCommune — strip postal avant lookup', () => {
+  it('strip code postal PUIS lookup → "TEMPLE SUR LOT (47)" corrigé', () => {
+    assert.equal(normalizeCommune('TEMPLE SUR LOT (47)'), 'LE TEMPLE SUR LOT');
+  });
+  it('strip code postal PUIS lookup → "VILLENEUVE-SUR-LOT (47300)" corrigé', () => {
+    assert.equal(normalizeCommune('VILLENEUVE-SUR-LOT (47300)'), 'VILLENEUVE SUR LOT');
+  });
+  it('commune inconnue avec code postal → strip seulement', () => {
+    assert.equal(normalizeCommune('MARMANDE (47200)'), 'MARMANDE');
+  });
+  it('commune minuscule → passée en majuscules', () => {
+    assert.equal(normalizeCommune('agen'), 'AGEN');
+  });
+});
+
+// ── normalizeDate — cas limites ────────────────────────────
+describe('normalizeDate — cas limites', () => {
+  it('nombre entier (date Excel sérialisée) → retourné tel quel (non planté)', () => {
+    const r = normalizeDate(45000);
+    assert.equal(typeof r, 'string');
+  });
+  it('format DD/MM/YYYY avec tirets → non reconnu, retourné tel quel', () => {
+    const r = normalizeDate('16-06-2026');
+    assert.equal(typeof r, 'string');
+  });
+  it('datetime ISO avec Z → extrait la date', () => {
+    assert.equal(normalizeDate('2026-06-16T09:00:00Z'), '2026-06-16');
+  });
+});
+
+// ── normalizeHoraire — cas limites ─────────────────────────
+describe('normalizeHoraire — cas limites', () => {
+  it('HH:MM:SS → tronqué à HH:MM', () => {
+    assert.equal(normalizeHoraire('09:30:00'), '09:30');
+  });
+  it('9h00 minuscule → normalisé', () => {
+    assert.equal(normalizeHoraire('9h00'), '9:00');
+  });
 });
