@@ -1191,7 +1191,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   }
 
   // ── validation mode lot ──
-  function validateLot(){
+  function validateLot(rows=lotRows){
     const e={};
     if(!lotForm.commune.trim())   e.commune='Requis';
     if(!lotForm.lieu.trim())      e.lieu='Requis';
@@ -1200,12 +1200,12 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     if(!lotForm.public)           e.public='Requis';
     setLotErrors(e);
     const re={};
-    lotRows.forEach(r=>{
+    rows.forEach(r=>{
       const er={};
       if(!r.date)       er.date='Requis';
       if(!r.horaire)    er.horaire='Requis';
       if(!r.ampm)       er.ampm='Requis';
-      if(!r.thematique.trim()) er.thematique='Requis';
+      if(!(r.thematique||'').trim()) er.thematique='Requis';
       if(r.inscrits==='')er.inscrits='Requis';
       if(Object.keys(er).length>0)re[r.id]=er;
     });
@@ -1235,14 +1235,14 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
 
   // ── submit mode lot ──
   async function handleSubmitLot(){
-    const rowsFilled=lotRows.filter(r=>r.date||r.horaire||r.thematique.trim());
+    const rowsFilled=lotRows.filter(r=>r.date||r.horaire||(r.thematique||'').trim());
     if(rowsFilled.length===0){setFormError('Ajoutez au moins une date dans le tableau.');showToast('⚠️ Ajoutez au moins une date dans le tableau.',false);return;}
     if(rowsFilled.length<lotRows.length)setLotRows(rowsFilled);
-    if(!validateLot()){showToast('⚠️ Champs obligatoires manquants',false);return;}
+    if(!validateLot(rowsFilled)){showToast('⚠️ Champs obligatoires manquants',false);return;}
     setSaving(true);
     try{
       let ok=0; const createdIds=[];
-      for(const row of lotRows){
+      for(const row of rowsFilled){
         const entry={_id:genId(),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0};
         const res=await apiFetch('saveEntry',{entry});
         if(!res.ok)throw new Error(res.error);
@@ -1560,7 +1560,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
     return[...r].sort((a,b)=>{const va=a.date||'',vb=b.date||'';return va<vb?-sortDir:va>vb?sortDir:0;});
   },[entries,filtStatut,filtMois,filtCommune,filtConseiller,filtPublic,dSearch,sortDir,dateFrom,dateTo]);
 
-  const kpi=React.useMemo(()=>{const realises=filtered.filter(e=>e.statut==='Réalisé');const annules=filtered.filter(e=>e.statut==='Annulé').length;const inscrits=filtered.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);const presents=filtered.reduce((s,e)=>s+(parseInt(e.presents)||0),0);const tx=inscrits>0?Math.round(presents/inscrits*100):0;return{total:filtered.length,realises:realises.length,annules,inscrits,presents,tx};},[filtered]);
+  const kpi=React.useMemo(()=>{const realises=filtered.filter(e=>e.statut==='Réalisé');const annules=filtered.filter(e=>e.statut==='Annulé').length;const inscrits=realises.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);const presents=realises.reduce((s,e)=>s+(parseInt(e.presents)||0),0);const tx=inscrits>0?Math.round(presents/inscrits*100):0;return{total:filtered.length,realises:realises.length,annules,inscrits,presents,tx};},[filtered]);
   const nRetard=entries.filter(e=>isRetard(e)&&(filtConseiller==='Tous'||e.conseiller===filtConseiller)).length;
 
   function openPanel(e){setPanel(e);setPanelStatut(e.statut);setPanelInscrits(e.inscrits===undefined||e.inscrits===''?'':String(e.inscrits));setPanelPresents(e.presents===undefined||e.presents===''?'':String(e.presents));setPanelThematique(e.thematique||'');setPanelNote(e.remarques||'');}
@@ -1569,7 +1569,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
   async function savePanel(){
     if(!panel)return;setSaving(true);
     try{
-      const updated={...panel,statut:panelStatut,inscrits:panelInscrits===''?'':parseInt(panelInscrits)||0,presents:panelPresents===''?'':parseInt(panelPresents)||0,thematique:panelThematique,remarques:panelNote};
+      const updated={...panel,statut:panelStatut,inscrits:panelInscrits===''?'':parseInt(panelInscrits)||0,presents:panelPresents===''?'':parseInt(panelPresents)||0,thematique:panelThematique,remarques:panelNote,materiel:(panel.materiel||[]).join('|')};
       const res=await apiFetch('saveEntry',{entry:updated});
       if(!res.ok)throw new Error(res.error);
       showToast('✅ Mis à jour');closePanel();onRefresh();
@@ -1590,7 +1590,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
       });
     }
     const rows=[['N°','Statut','Date','Horaire','Commune','Lieu','Thématique','Inscrits','Présents','Public','Conseiller','Orienteur','Matériel','Résidence','Remarques']];
-    filtered.forEach(e=>rows.push([e._n,e.statut,fmtDate(e.date),e.horaire,normCommune(e.commune),e.lieu,e.thematique,e.inscrits,e.presents,e.public,e.conseiller,e.orienteur,(e.materiel||[]).join(', '),e.residence,e.remarques]));
+    filtered.forEach(e=>rows.push([e._n,e.statut,e.date,e.horaire,normCommune(e.commune),e.lieu,e.thematique,e.inscrits,e.presents,e.public,e.conseiller,e.orienteur,(e.materiel||[]).join('|'),e.residence,e.remarques]));
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Ateliers');
     XLSX.writeFile(wb,`ateliers_cd47_${new Date().toISOString().slice(0,10)}.xlsx`);
   }
@@ -1926,7 +1926,7 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
     if(filtConseiller!=='Tous')r=r.filter(e=>e.conseiller===filtConseiller);
     if(filtPublic!=='Tous')r=r.filter(e=>(e.public||'Tous publics')===filtPublic);
     return r;
-  },[entries,monthStr,filtConseiller]);
+  },[entries,monthStr,filtConseiller,filtPublic]);
 
   // Map jour→ateliers
   const dayMap=React.useMemo(()=>{
@@ -1962,7 +1962,7 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
   async function savePanel(){
     if(!panel)return;setSaving(true);
     try{
-      const updated={...panel,statut:panelStatut,inscrits:panelInscrits===''?'':parseInt(panelInscrits)||0,presents:panelPresents===''?'':parseInt(panelPresents)||0,thematique:panelThematique,remarques:panelNote};
+      const updated={...panel,statut:panelStatut,inscrits:panelInscrits===''?'':parseInt(panelInscrits)||0,presents:panelPresents===''?'':parseInt(panelPresents)||0,thematique:panelThematique,remarques:panelNote,materiel:(panel.materiel||[]).join('|')};
       const res=await apiFetch('saveEntry',{entry:updated});
       if(!res.ok)throw new Error(res.error);
       showToast('✅ Mis à jour');closePanel();onRefresh();
@@ -1974,8 +1974,9 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
   const kpi=React.useMemo(()=>{
     const r=monthEntries.filter(e=>e.statut==='Réalisé').length;
     const p=monthEntries.filter(e=>e.statut==='Planifié').length;
-    const ins=monthEntries.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);
-    const pres=monthEntries.reduce((s,e)=>s+(parseInt(e.presents)||0),0);
+    const rea=monthEntries.filter(e=>e.statut==='Réalisé');
+    const ins=rea.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);
+    const pres=rea.reduce((s,e)=>s+(parseInt(e.presents)||0),0);
     return{total:monthEntries.length,realises:r,planifies:p,inscrits:ins,presents:pres};
   },[monthEntries]);
 
@@ -2590,8 +2591,8 @@ function VueGraphiques({entries}){
   const byMoisTx={};filtered.forEach(e=>{const m=e.date?e.date.slice(0,7):'?';if(m<'2000'||m>=todayYM)return;if(!byMoisTx[m])byMoisTx[m]={realises:0,total:0};if(['Réalisé','Annulé','Non réalisé','Reporté'].includes(e.statut))byMoisTx[m].total++;if(e.statut==='Réalisé')byMoisTx[m].realises++;});
   const dataTxRealisation=Object.keys(byMoisTx).sort().map(k=>({label:fmtML(k),value:byMoisTx[k].total>0?Math.round(byMoisTx[k].realises/byMoisTx[k].total*100):0}));
 
-  // 2. Comparaison N vs N-1
-  const cmpYear=new Date().getFullYear();const prevCmpYear=cmpYear-1;
+  // 2. Comparaison N vs N-1 — year derived from entries (most recent réalisé), never hardcoded
+  const cmpYear=entries.reduce((mx,e)=>e.statut==='Réalisé'&&e.date?Math.max(mx,parseInt(e.date.slice(0,4))||0):mx,new Date().getFullYear());const prevCmpYear=cmpYear-1;
   const byMoisCmp={};entries.forEach(e=>{if(e.statut!=='Réalisé')return;const yr=e.date?parseInt(e.date.slice(0,4)):0;if(yr!==cmpYear&&yr!==prevCmpYear)return;const mo=e.date.slice(5,7);if(!byMoisCmp[mo])byMoisCmp[mo]={curr:0,prev:0};if(yr===cmpYear)byMoisCmp[mo].curr++;else byMoisCmp[mo].prev++;});
   const CMP_MOIS=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
   const dataCmpCurr=Array.from({length:12},(_,i)=>{const m=String(i+1).padStart(2,'0');return byMoisCmp[m]?byMoisCmp[m].curr:0;});
@@ -2932,7 +2933,7 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
     if(!valeur||!valeur.trim())return;
     setSaving(entry._id);
     try{
-      const updated={...entry,commune:valeur.trim()};
+      const updated={...entry,commune:valeur.trim(),materiel:(entry.materiel||[]).join('|')};
       const res=await apiFetch('saveEntry',{entry:updated});
       if(res&&res.ok){setSaved(s=>({...s,[entry._id]:true}));if(showToast)showToast('✅ Commune corrigée');if(addLog)addLog('Commune corrigée : '+entry._id,'ok');}
       else{if(showToast)showToast('⚠️ Erreur sauvegarde');}
@@ -3150,14 +3151,14 @@ function VueAdmin({entries,onRefresh,addLog,conseillersList,onSaveColors}){
         presents:  g(r,'presents','Présents','Presents')===''?'':parseInt(g(r,'presents','Présents','Presents'))||0,
         public:    g(r,'public','Public')||'Tous publics',
         conseiller:g(r,'conseiller','Conseiller','Conseiller numérique'),
-        materiel:  MATERIELS.filter(m=>String(g(r,m)).trim().toUpperCase()==='OUI'),
+        materiel:  (()=>{const raw=g(r,'materiel','Matériel','Materiel');if(raw){const sep=String(raw).includes('|')?'|':',';return String(raw).split(sep).map(s=>s.trim()).filter(Boolean);}return MATERIELS.filter(m=>String(g(r,m)).trim().toUpperCase()==='OUI');})(),
         residence: g(r,'residence','Résidence','Résidence des participants'),
         remarques: g(r,'remarques','Remarques'),
       })).filter(r=>r.statut);
       const BATCH=5;let done=0;
       for(let i=0;i<entries_raw.length;i+=BATCH){
         if(cancelRef.current){showToast(`⛔ Annulé — ${done} lignes importées`,false);addLog(`Import XLSX annulé à ${done}/${entries_raw.length}`,'info');return;}
-        const batch=entries_raw.slice(i,i+BATCH);const params=new URLSearchParams({action:'saveMany',entries:JSON.stringify(batch)});const res=await Promise.race([fetch(`${GS_URL}?${params.toString()}`),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),45000))]);const data=await res.json();if(!data.ok)throw new Error(data.error);done+=batch.length;setImportProgress(Math.round(done/entries_raw.length*100));}
+        const batch=entries_raw.slice(i,i+BATCH);const data=await apiFetch('saveMany',{entries:batch});if(!data.ok)throw new Error(data.error);done+=batch.length;setImportProgress(Math.round(done/entries_raw.length*100));}
       addLog(`Import XLSX : ${entries_raw.length} ateliers`,'ok');showToast(`✅ ${entries_raw.length} ateliers importés`);onRefresh();
     }catch(err){showToast('❌ '+err.message,false);addLog('Erreur import XLSX : '+err.message,'err');}
     finally{setImporting(false);setImportProgress(0);setImportMsg('');cancelRef.current=false;}
@@ -3738,8 +3739,9 @@ function VueAgendaSemaine({entries,onEdit,onDelete,onDuplicate,canDelete,initCon
   const planifies=filtered.filter(e=>e.statut==='Planifié').length;
   const realises=filtered.filter(e=>e.statut==='Réalisé').length;
   const retards=filtered.filter(e=>isRetard(e)).length;
-  const inscritsW=filtered.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);
-  const presentsW=filtered.reduce((s,e)=>s+(parseInt(e.presents)||0),0);
+  const realisesW=filtered.filter(e=>e.statut==='Réalisé');
+  const inscritsW=realisesW.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);
+  const presentsW=realisesW.reduce((s,e)=>s+(parseInt(e.presents)||0),0);
 
   // ── Card atelier ────────────────────────────────────────────
   function renderCard(e){
