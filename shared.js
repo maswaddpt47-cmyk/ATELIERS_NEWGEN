@@ -766,7 +766,7 @@ function stripAccents(str){return String(str||'').normalize('NFD').replace(/[\u0
 function normalizeDate(val){if(!val)return'';const s=String(val).trim();if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;if(/^\d{4}-\d{2}-\d{2}T/.test(s))return s.split('T')[0];const m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);if(m)return`${m[3]}-${m[2]}-${m[1]}`;return s;}
 function normalizeHoraire(val){if(!val)return'';const s=String(val).trim();const iso=s.match(/T(\d{2}:\d{2})/);if(iso)return iso[1];if(/^\d{1,2}[Hh]\d{2}$/.test(s))return s.replace(/[Hh]/,':');if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(s))return s.slice(0,5);return s;}
 const COMMUNE_MAP={'TEMPLE SUR LOT':'LE TEMPLE SUR LOT','VILLENEUVE-SUR-LOT':'VILLENEUVE SUR LOT'};
-function normalizeCommune(c){return COMMUNE_MAP[String(c||'').trim()]||String(c||'').trim();}
+function normalizeCommune(c){const stripped=normCommune(String(c||'').toUpperCase());return COMMUNE_MAP[stripped]||stripped||String(c||'').trim();}
 function badgePill(statut,retard){
   if(retard)return CE('span',{className:'badge-pill bp-retard'},'⚠ À mettre à jour');
   const cls={'Planifié':'bp-planifie','Réalisé':'bp-realise','Annulé':'bp-annule','Reporté':'bp-reporte','Non réalisé':'bp-nonrealise'}[statut]||'bp-nonrealise';
