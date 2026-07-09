@@ -53,4 +53,4 @@ Pour chaque session de travail :
 2. Appliquer les modifications
 3. Si `utils.js` est modifié : exécuter `node --test utils.test.js` avant de commiter
 4. Committer chaque modification séparément avec message conventionnel
-5. Pousser sur la branche de travail désignée
+5. Pousser sur `main` : `git push origin main`
