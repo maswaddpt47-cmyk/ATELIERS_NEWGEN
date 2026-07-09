@@ -1113,7 +1113,7 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
 // ═══════════════════════════════════════════════════════════
 // VUE SAISIE — v9.1 : mode unique + mode lot (cycle)
 // ═══════════════════════════════════════════════════════════
-const emptyRow=()=>({id:genId(),date:'',horaire:'',ampm:'',thematique:'',inscrits:'',presents:''});
+const emptyRow=()=>({id:genId(),date:'',horaire:'',ampm:'',thematique:'',inscrits:4,presents:''});
 
 function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefillData,onClearPrefill,accentColor}){
   const statuts    = lists?.statuts     || STATUTS_DEFAULT;
