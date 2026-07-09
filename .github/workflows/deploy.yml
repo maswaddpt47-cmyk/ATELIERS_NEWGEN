@@ -32,6 +32,9 @@ jobs:
       - name: Tests logic
         run: node --test logic.test.js
 
+      - name: Tests contrat
+        run: node --test contract.test.js
+
   deploy:
     needs: test
     environment:

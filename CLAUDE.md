@@ -34,15 +34,19 @@ Deux fichiers de tests, un runner par fichier (Node.js natif, sans dépendance) 
 |---|---|---|
 | `utils.js` — fonctions bas niveau (dates, ICS, communes) | `utils.test.js` | `node --test utils.test.js` |
 | `logic.js` — logique métier (KPI, validation, filtres, matériel) | `logic.test.js` | `node --test logic.test.js` |
+| Format des données envoyées à GAS | `contract.test.js` | `node --test contract.test.js` |
 
 **Quand intervenir :**
 Si la session touche à la logique métier (parsing, calcul, normalisation, validation, export),
-vérifier les deux suites avant de commiter.
+vérifier les trois suites avant de commiter.
 
 **Après toute modification de `utils.js` ou `logic.js` :**
 1. Modifier la fonction
 2. Exécuter le runner correspondant
 3. Commiter le fichier source + le fichier de tests ensemble si un test a dû être mis à jour
+
+**Si le format d'un entry change (nouveau champ, type modifié) :**
+Mettre à jour `contract.test.js` dans le même commit.
 
 **Règle de décision :**
 - Test qui échoue après une **correction de bug** → corriger le code, pas le test.
@@ -57,6 +61,6 @@ Pour chaque session de travail :
 
 1. `git pull origin main`
 2. Appliquer les modifications
-3. Si `utils.js` ou `logic.js` est modifié : exécuter les runners avant de commiter
+3. Si `utils.js`, `logic.js` ou le format entry change : exécuter les runners avant de commiter
 4. Committer chaque modification séparément avec message conventionnel
 5. Pousser sur `main` : `git push origin main`
