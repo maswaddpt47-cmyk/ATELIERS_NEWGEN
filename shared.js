@@ -2915,7 +2915,7 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
       ];
       let communeInvalide=false,communeSugg=null;
       if(e.commune&&communes.length>0){
-        const q=stripAccents(e.commune.replace(/\s*\(\d+\)\s*/g,'').trim().toLowerCase());
+        const q=stripAccents(normCommune(e.commune).trim().toLowerCase());
         if(!nomsCommunesOff.has(q)){
           communeInvalide=true;
           function lev(a,b){const m=a.length,n=b.length;const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);return dp[m][n];}
@@ -3009,7 +3009,7 @@ function VueBingo({entries}){
   const[selected,setSelected]=React.useState(null);
   const communes=React.useMemo(()=>{
     const byC={};
-    entries.forEach(e=>{const c=normCommune(e.commune)||'Inconnue';if(!byC[c])byC[c]={total:0,realises:0,annules:0,ateliers:[]};byC[c].total++;if(e.statut==='Réalisé')byC[c].realises++;if(e.statut==='Annulé')byC[c].annules++;byC[c].ateliers.push(e);});
+    entries.forEach(e=>{const c=normalizeCommune(e.commune)||'Inconnue';if(!byC[c])byC[c]={total:0,realises:0,annules:0,ateliers:[]};byC[c].total++;if(e.statut==='Réalisé')byC[c].realises++;if(e.statut==='Annulé')byC[c].annules++;byC[c].ateliers.push(e);});
     return Object.entries(byC).sort((a,b)=>b[1].total-a[1].total).map(([nom,d])=>({nom,total:d.total,realises:d.realises,annules:d.annules,pct:d.total>0?Math.round(d.realises/d.total*100):0,ateliers:[...d.ateliers].sort((a,b)=>a.date>b.date?1:-1)}));
   },[entries]);
   function getCircleColor(pct){if(pct>=70)return{stroke:'#22c55e',text:'#166534',bg:'#dcfce7'};if(pct>=40)return{stroke:'#f97316',text:'#9a3412',bg:'#ffedd5'};return{stroke:'#3b82f6',text:'#1d4ed8',bg:'#dbeafe'};}
