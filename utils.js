@@ -110,8 +110,10 @@ function buildICS(evts){
   return out.map(foldICSLine).join('\r\n') + '\r\n';
 }
 
-module.exports={
-  normCommune,normalizeCommune,stripAccents,htmlEsc,
-  normalizeDate,normalizeHoraire,fmtDate,fmtCardDate,
-  escapeICS,foldICSLine,parseHoraireICS,parseDateICS,buildICS,
-};
+if (typeof module !== 'undefined') {
+  module.exports={
+    normCommune,normalizeCommune,stripAccents,htmlEsc,
+    normalizeDate,normalizeHoraire,fmtDate,fmtCardDate,
+    escapeICS,foldICSLine,parseHoraireICS,parseDateICS,buildICS,
+  };
+}
