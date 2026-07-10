@@ -31,6 +31,14 @@ run_suite utils.test.js
 run_suite logic.test.js
 run_suite contract.test.js
 
+# Sandbox navigateur (Playwright)
+if node sandbox.test.js 2>/dev/null; then
+  echo "✅ sandbox.test.js — chargement navigateur OK"
+else
+  echo "❌ sandbox.test.js — erreur de chargement navigateur"
+  FAIL=$((FAIL + 1))
+fi
+
 if [ "$FAIL" -eq 0 ]; then
   echo "=== ✅ Tous les tests passent — code sain ==="
 else

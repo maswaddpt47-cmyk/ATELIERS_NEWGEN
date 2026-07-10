@@ -2,7 +2,10 @@
 // Miroir de la logique embarquée dans les composants React de shared.js.
 // Chargé uniquement pour les tests (node --test logic.test.js).
 
-const {stripAccents, normCommune} = require('./utils.js');
+if (typeof require !== 'undefined') {
+  var {stripAccents, normCommune} = require('./utils.js');
+}
+// En contexte navigateur, stripAccents et normCommune sont déjà des globals (utils.js chargé avant)
 
 // ── Matériel ──────────────────────────────────────────────────
 
@@ -137,10 +140,12 @@ function applyFilters(entries, filtres = {}) {
   });
 }
 
-module.exports = {
-  normalizeMateriel, parseMateriel,
-  validateLotRow, validateLotForm, filterLotRows,
-  computeKpi,
-  isEntryRetard, isEntryPasse,
-  applyFilters,
-};
+if (typeof module !== 'undefined') {
+  module.exports = {
+    normalizeMateriel, parseMateriel,
+    validateLotRow, validateLotForm, filterLotRows,
+    computeKpi,
+    isEntryRetard, isEntryPasse,
+    applyFilters,
+  };
+}
