@@ -31,11 +31,20 @@ run_suite utils.test.js
 run_suite logic.test.js
 run_suite contract.test.js
 
-# Sandbox navigateur (Playwright)
+# Sandbox navigateur (Playwright — utils.js + logic.js isolés)
 if node sandbox.test.js 2>/dev/null; then
   echo "✅ sandbox.test.js — chargement navigateur OK"
 else
   echo "❌ sandbox.test.js — erreur de chargement navigateur"
+  FAIL=$((FAIL + 1))
+fi
+
+# E2E navigateur (Playwright — index.html + admin.html, tous les onglets)
+if node e2e.test.js 2>&1 | tail -1 | grep -q "✅"; then
+  echo "✅ e2e.test.js — tous les onglets OK"
+else
+  echo "❌ e2e.test.js — erreurs JS détectées"
+  node e2e.test.js 2>&1 | grep "❌"
   FAIL=$((FAIL + 1))
 fi
 
