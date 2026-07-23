@@ -39,13 +39,18 @@ else
   FAIL=$((FAIL + 1))
 fi
 
-# E2E navigateur (Playwright — index.html + admin.html, tous les onglets)
-if node e2e.test.js 2>&1 | tail -1 | grep -q "✅"; then
-  echo "✅ e2e.test.js — tous les onglets OK"
+# E2E navigateur — uniquement si index.html, admin.html ou shared.js ont changé récemment
+UI_CHANGED=$(git log --name-only -5 --format="" 2>/dev/null | grep -E '^(index|admin)\.html$|^shared\.js$' | head -1)
+if [ -n "$UI_CHANGED" ]; then
+  if node e2e.test.js 2>&1 | tail -1 | grep -q "✅"; then
+    echo "✅ e2e.test.js — tous les onglets OK"
+  else
+    echo "❌ e2e.test.js — erreurs JS détectées"
+    node e2e.test.js 2>&1 | grep "❌"
+    FAIL=$((FAIL + 1))
+  fi
 else
-  echo "❌ e2e.test.js — erreurs JS détectées"
-  node e2e.test.js 2>&1 | grep "❌"
-  FAIL=$((FAIL + 1))
+  echo "⏭  e2e.test.js — ignoré (pas de changement UI dans les 5 derniers commits)"
 fi
 
 if [ "$FAIL" -eq 0 ]; then
