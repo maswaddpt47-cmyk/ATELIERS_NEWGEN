@@ -64,3 +64,13 @@ Pour chaque session de travail :
 3. Si `utils.js`, `logic.js` ou le format entry change : exécuter les runners avant de commiter
 4. Committer chaque modification séparément avec message conventionnel
 5. Pousser sur `main` : `git push origin main`
+
+**Important — branche imposée par la plateforme :**
+Claude Code sur le web impose parfois une branche de travail dédiée (ex. `claude/code-review-*`).
+Dans ce cas, merger systématiquement dans `main` et pousser à la fin de chaque session :
+```bash
+git checkout main
+git merge <branche> --no-ff
+git push origin main
+```
+Le déploiement GitHub Pages ne se déclenche que sur `main`. Travailler uniquement sur une branche de feature rend les changements invisibles en production.
