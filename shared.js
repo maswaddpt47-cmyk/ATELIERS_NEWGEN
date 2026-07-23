@@ -1461,7 +1461,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
             // Ligne 2 : Thématique pleine largeur
             CE('div',{style:{padding:'0 10px 8px'}},
               lbl('Thématique *',rErr.thematique),
-              inp('text',row.thematique,'thematique',rErr.thematique,'Thème de la séance')
+              CE(ComboThematique,{value:row.thematique,onChange:v=>setRow(row.id,'thematique',v),entries:entries,hasError:!!rErr.thematique})
             ),
             // Ligne 3 : Inscrits + Présents
             CE('div',{style:{display:'flex',gap:8,padding:'0 10px 9px',borderTop:`1px solid ${acLight}`}},
