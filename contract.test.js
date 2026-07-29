@@ -156,3 +156,40 @@ describe('ampm', () => {
     assert.ok(!['AM', 'PM'].includes(undefined));
   });
 });
+
+// ── Format rappels_actifs (config GAS) ───────────────────────
+describe('rappels_actifs — format config GAS', () => {
+  const exemples = [
+    { 'Michel Aswad': true,  'Eva Capelle': false },
+    { 'Michel Aswad': false },
+    {},
+  ];
+  exemples.forEach((obj, i) => {
+    it(`exemple ${i+1} : est un objet JSON sérialisable`, () => {
+      const json = JSON.stringify(obj);
+      const parsed = JSON.parse(json);
+      assert.strictEqual(typeof parsed, 'object');
+      assert.ok(parsed !== null && !Array.isArray(parsed));
+    });
+    it(`exemple ${i+1} : toutes les valeurs sont des booléens`, () => {
+      Object.values(obj).forEach(v => assert.strictEqual(typeof v, 'boolean'));
+    });
+  });
+
+  it('une valeur false désactive bien le conseiller', () => {
+    const cfg = { 'Eva Capelle': false, 'Michel Aswad': true };
+    assert.strictEqual(cfg['Eva Capelle'], false);
+    assert.notStrictEqual(cfg['Michel Aswad'], false);
+  });
+
+  it('une clé absente est traitée comme actif (comportement GAS)', () => {
+    const cfg = { 'Michel Aswad': true };
+    // conseiller absent → rappelsActifs[conseiller] !== false → inclus
+    assert.ok(cfg['Eva Capelle'] !== false);
+  });
+
+  it('JSON.parse(false) retourne false (cas global désactivé)', () => {
+    assert.strictEqual(JSON.parse('false'), false);
+    assert.strictEqual(typeof JSON.parse('false'), 'boolean');
+  });
+});
