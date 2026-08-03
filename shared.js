@@ -826,13 +826,14 @@ window.onLogout = function(){
       const res = await fetch(`${GS_URL}?${params.toString()}`, { signal: controller.signal });
       clearTimeout(timeoutId);
 
-      // ── Vérifier res.ok + content-type ───────────────────
-      if(!res.ok) throw new Error(`Erreur serveur HTTP ${res.status}`);
-      const ct = res.headers.get('content-type') || '';
-      if(!ct.includes('application/json') && !ct.includes('text/plain')){
-        throw new Error('Réponse inattendue du serveur (pas du JSON).');
+      // ── Parsing robuste : lire text d'abord, JSON.parse ensuite ─
+      if(!res.ok){
+        await res.text().catch(()=>'');
+        throw new Error(`Réponse invalide du serveur (HTTP ${res.status}) — déploiement GAS à vérifier.`);
       }
-      return res.json();
+      const text = await res.text();
+      try{ return JSON.parse(text); }
+      catch(_){ throw new Error(`Réponse invalide du serveur — déploiement GAS à vérifier.`); }
 
     }catch(err){
       clearTimeout(timeoutId);
