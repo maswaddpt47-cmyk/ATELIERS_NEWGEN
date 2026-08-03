@@ -748,6 +748,15 @@ window.onLoginSuccess = function(conseiller, res){
     window.authToken.set(res.token);
     window.authToken.setRole(res.role || 'user');
     sessionStorage.setItem('gs_conseiller', conseiller);
+    // fire-and-forget : log écrit après connexion, sans bloquer l'utilisateur
+    setTimeout(function(){
+      window.apiFetch && window.apiFetch('logLogin',{
+        conseiller: conseiller,
+        role: res.role || 'user',
+        userAgent: navigator.userAgent,
+        source: window.location.pathname.indexOf('admin.html') > -1 ? 'admin.html' : 'index.html'
+      }).catch(function(){});
+    }, 0);
   }
 };
 window.onLogout = function(){
