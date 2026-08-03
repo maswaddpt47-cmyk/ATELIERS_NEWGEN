@@ -760,7 +760,7 @@ window.onLogout = function(){
   const MAX_RETRY   = 1;
   const RETRY_DELAY = 3000;
   const isMobile    = /Android|iPhone|iPad/i.test(navigator.userAgent);
-  const TIMEOUT_MS  = isMobile ? 35000 : 25000;
+  const TIMEOUT_MS  = isMobile ? 20000 : 12000;
 
   // Actions d'écriture qui exigent un token (admin uniquement)
   // saveEntry/saveMany/delete accessibles aux conseillers sans token
