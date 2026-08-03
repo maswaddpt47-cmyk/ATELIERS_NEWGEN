@@ -1922,6 +1922,7 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
   const[filtPublic,setFiltPublic]=React.useState('Tous');
   const[filtresOpen,setFiltresOpen]=React.useState(false);
   const[panel,setPanel]=React.useState(null);
+  const[panelStatut,setPanelStatut]=React.useState('');
   const[panelInscrits,setPanelInscrits]=React.useState('');
   const[panelPresents,setPanelPresents]=React.useState('');
   const[panelThematique,setPanelThematique]=React.useState('');
