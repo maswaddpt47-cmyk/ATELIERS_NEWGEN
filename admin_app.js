@@ -39,6 +39,11 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
     setConseiller(c=>base.includes(c)?c:base[0]);
   },[base.join(',')]);
 
+  // Préchauffage GAS dès l'affichage du formulaire (cold start pendant la frappe, pas au clic)
+  React.useEffect(function(){
+    window.apiFetch && window.apiFetch('getConfig').catch(function(){});
+  },[]);
+
   // Tick du countdown
   React.useEffect(()=>{
     if(!lockUntil||lockUntil<=Date.now()) return;
