@@ -221,7 +221,9 @@ function App(){
   const conseillerActifs = lists.conseillers.filter(c=>!inactifsSet.has(c));
 
   // ── Vue Accueil ───────────────────────────────────────────────
-  if(maintenance===null) return CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'var(--bg)'}},CE('div',{style:{fontSize:13,color:'var(--text-3)'}},'Chargement…'));
+  // 15 s d'écran quasi vide passaient pour un plantage : on montre l'étape en
+  // cours et un compteur de secondes.
+  if(maintenance===null) return CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'var(--bg)'}},CE(AttenteGAS,{titre:'Ateliers Inclusion Numérique'}));
   if(maintenance!==false) return CE(MaintenanceScreen,{msg:maintenance.msg});
 
   if(view==='accueil'){
