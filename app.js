@@ -137,7 +137,9 @@ function App(){
       });
       setLoading(false);
     }catch(err){
-      const isTimeout = err.message==='timeout' || err.name==='AbortError';
+      // err.httpStatus : 404/5xx transitoire de la redirection GAS — fetchAll a
+      // déjà réessayé en interne, on lui laisse une dernière chance ici.
+      const isTimeout = err.message==='timeout' || err.name==='AbortError' || !!err.httpStatus;
       if(isTimeout && attempt<3){
         const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
         setTimeout(()=>loadData(attempt+1,silent),isMobile?[3000,6000][attempt-1]||6000:2000);
