@@ -39,12 +39,22 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
     setConseiller(c=>base.includes(c)?c:base[0]);
   },[base.join(',')]);
 
-  // Préchauffage par un appel léger (getConfig, ~2 s) et non par getAll (~20 s) :
-  // réveiller l'instance GAS suffit, et se connecter n'a besoin que de
-  // checkPassword. Le getAll ne part qu'après authentification, quand il sert
-  // vraiment.
+  // getConfig sert de témoin pour le hint "Préchauffage…" — le bouton
+  // Connexion n'en dépend plus, il est actif dès l'affichage du formulaire.
   React.useEffect(function(){
     window.apiFetch && window.apiFetch('getConfig').catch(function(){});
+  },[]);
+
+  // Préchargement des ateliers en parallèle de la saisie du mot de passe :
+  // getAll ne dépend pas d'un jeton, rien n'empêche de le lancer avant que
+  // checkPassword ait répondu. Sans ça, Historique attendait le plein
+  // aller-retour de checkPassword avant même de commencer son propre
+  // chargement — même défaut que celui corrigé sur l'Index, ici entre
+  // l'authentification et les données plutôt qu'entre la maintenance et les
+  // données. loadData (après connexion) réutilise ce résultat via fetchAll,
+  // qui dédoublonne : aucun getAll supplémentaire n'est déclenché.
+  React.useEffect(function(){
+    window.fetchAll && window.fetchAll(new Date().getFullYear(),{source:'admin'}).catch(function(){});
   },[]);
 
   // Tick du countdown
