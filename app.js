@@ -63,7 +63,14 @@ function App(){
   const[online,setOnline]          = React.useState(navigator.onLine);
   const[showPicker,setShowPicker]   = React.useState(false);
   const[inactifsSet,setInactifsSet] = React.useState(new Set());
-  React.useEffect(()=>{apiFetch('getComptes').then(res=>{if(res.ok&&res.comptes){setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));}}).catch(()=>{});},[]);
+  // gasReady : passe à true dès que le check maintenance a répondu. Les autres
+  // appels GAS attendent ce signal — GAS sérialise les exécutions concurrentes,
+  // et un appel qui patiente dans la file consomme quand même son timeout.
+  const[gasReady,setGasReady]       = React.useState(false);
+  React.useEffect(()=>{
+    if(!gasReady) return;
+    apiFetch('getComptes').then(res=>{if(res.ok&&res.comptes){setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));}}).catch(()=>{});
+  },[gasReady]);
   const[sidebarPinned,setSidebarPinned] = React.useState(()=>localStorage.getItem('sidebar_pinned')==='1');
   const[darkMode,setDarkMode]=React.useState(()=>localStorage.getItem('f_dark')==='1');
   React.useEffect(()=>{document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');localStorage.setItem('f_dark',darkMode?'1':'0');},[darkMode]);
@@ -75,15 +82,8 @@ function App(){
 
   const isFirstLoad=React.useRef(true);
 
-  // ── Chargement v11.0 — AbortController + cache localStorage ─
-  const loadAbortRef = React.useRef(null);
-
+  // ── Chargement v11.0 — fetchAll single-flight + cache localStorage ─
   async function loadData(attempt=1, silent=false){
-    // Annuler toute requête précédente encore en cours
-    if(loadAbortRef.current) loadAbortRef.current.abort();
-    const controller = new AbortController();
-    loadAbortRef.current = controller;
-
     if(!silent) setLoading(true);
     setError(null);
 
@@ -101,16 +101,17 @@ function App(){
     }
 
     try{
+      // 8 s sur PC ne couvrait pas un cold start Sheets : la 1re tentative
+      // expirait pour rien. fetchAll dédoublonne l'appel et pose son propre
+      // plafond absolu, l'annulation manuelle n'est plus nécessaire.
       const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
-      const timeoutMs=(isMobile?[20000,25000,30000]:[8000,10000,12000])[attempt-1]||12000;
-      const timeoutId = setTimeout(()=>controller.abort(), timeoutMs);
-
-      const res = await fetch(`${GS_URL}?action=getAll&year=${annee}`, {signal: controller.signal});
-      clearTimeout(timeoutId);
-
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if(!data.ok) throw new Error(data.error||'Erreur serveur');
+      const timeoutMs=(isMobile?[20000,25000,30000]:[25000,30000,35000])[attempt-1]||35000;
+      // attempt>1 : réutilise la réponse arrivée juste après le timeout
+      // précédent au lieu de relancer un getAll.
+      const data = await Promise.race([
+        fetchAll(annee,{force:attempt===1}),
+        new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),timeoutMs))
+      ]);
       const incoming = data.entries||[];
       setEntries(incoming);
       if(data.lists){
@@ -136,10 +137,11 @@ function App(){
       });
       setLoading(false);
     }catch(err){
-      if(err.name==='AbortError' && attempt<3){
+      const isTimeout = err.message==='timeout' || err.name==='AbortError';
+      if(isTimeout && attempt<3){
         const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
         setTimeout(()=>loadData(attempt+1,silent),isMobile?[3000,6000][attempt-1]||6000:2000);
-      } else if(err.name==='AbortError'){
+      } else if(isTimeout){
         setError('Google Sheets ne répond pas après 3 tentatives.');
         setLoading(false);
       } else {
@@ -174,18 +176,20 @@ function App(){
         const msg=res.config['maintenance_msg']||'';
         setMaintenance(active?{msg}:false);
       } else setMaintenance(false);
-    }).catch(()=>setMaintenance(false));
+    }).catch(()=>setMaintenance(false)).finally(()=>setGasReady(true));
   },[]);
 
   React.useEffect(()=>{
+    if(!gasReady) return;
     if(isFirstLoad.current){isFirstLoad.current=false;loadData();}
     else{setSeenIds(new Set());loadData();}
-  },[annee]);
+  },[annee,gasReady]);
 
   React.useEffect(()=>{
+    if(!gasReady) return;
     const id=setInterval(()=>loadData(1,true),5*60*1000);
     return()=>clearInterval(id);
-  },[annee]);
+  },[annee,gasReady]);
 
   React.useEffect(()=>{
     const label=view==='accueil'?'Accueil':VIEW_META_F[view]?.label||view;
@@ -245,7 +249,7 @@ function App(){
       ),
       CE('div',{className:'main'},
         error
-          ? CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:loadData},'🔄 Réessayer'))
+          ? CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:()=>loadData()},'🔄 Réessayer'))
           : CE('div',null,
               !loading&&entries.length>0&&CE('div',{className:'accueil-stats'},
                 lists.conseillers.map(c=>{
@@ -343,15 +347,15 @@ function App(){
 
     // ── Contenu principal ────────────────────────────────────
     CE('main',{className:'app-main-v2'},
-      error&&CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:loadData},'🔄 Réessayer')),
+      error&&CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:()=>loadData()},'🔄 Réessayer')),
       loading&&!error&&CE('div',null,
         [1,2,3].map(i=>CE('div',{key:i,className:'skeleton skeleton-card'}))
       ),
       !loading&&!error&&CE('div',{className:'view-anim',key:view+'_'+(filtreConseiller||'all')},
         view==='saisie'&&visibility.saisie&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
-        view==='historique'&&visibility.historique&&CE(VueHistorique,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
+        view==='historique'&&visibility.historique&&CE(VueHistorique,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
         view==='agenda'&&visibility.agenda&&CE(VueAgendaSemaine,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:filtreConseiller,accentColor}),
-        view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:loadData,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
+        view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
         view==='dashboard'&&visibility.dashboard&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
         view==='carte'&&visibility.carte&&CE(VueCarte,{entries,active:view==='carte'}),
         view==='roadmap'&&visibility.roadmap&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),
