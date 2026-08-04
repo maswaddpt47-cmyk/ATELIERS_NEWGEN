@@ -15,6 +15,7 @@ const path = require('path');
 
 const ROOT = __dirname;
 const PORT = 17341;
+const CHROMIUM_PREINSTALLED = '/opt/pw-browsers/chromium';
 
 // ── Réponse mock GAS ──────────────────────────────────────────────────────
 const MOCK_RESPONSE = JSON.stringify({
@@ -240,7 +241,10 @@ window.L = {
   try {
     server  = await startServer();
     browser = await chromium.launch({
-      executablePath: '/opt/pw-browsers/chromium',
+      // Chromium préinstallé en local ; sur un runner GitHub le chemin n'existe
+      // pas et c'est `npx playwright install chromium` qui fournit le binaire,
+      // que Playwright résout seul quand executablePath vaut undefined.
+      executablePath: fs.existsSync(CHROMIUM_PREINSTALLED) ? CHROMIUM_PREINSTALLED : undefined,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 

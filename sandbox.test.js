@@ -4,6 +4,12 @@
 
 const { chromium } = require('playwright');
 const path = require('path');
+const fs = require('fs');
+
+// Chromium préinstallé en local ; sur un runner GitHub le chemin n'existe pas et
+// c'est `npx playwright install chromium` qui fournit le binaire, que Playwright
+// résout seul quand executablePath vaut undefined.
+const CHROMIUM_PREINSTALLED = '/opt/pw-browsers/chromium';
 
 const UTILS_GLOBALS = [
   'normCommune', 'normalizeCommune', 'stripAccents', 'htmlEsc',
@@ -19,7 +25,7 @@ const LOGIC_GLOBALS = [
 
 (async () => {
   const browser = await chromium.launch({
-    executablePath: '/opt/pw-browsers/chromium',
+    executablePath: fs.existsSync(CHROMIUM_PREINSTALLED) ? CHROMIUM_PREINSTALLED : undefined,
     args: ['--no-sandbox'],
   });
   const page = await browser.newPage();
