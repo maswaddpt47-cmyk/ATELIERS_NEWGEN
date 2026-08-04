@@ -35,8 +35,36 @@ jobs:
       - name: Tests contrat
         run: node --test contract.test.js
 
-  deploy:
+  # Charge réellement index.html et admin.html dans Chromium et clique chaque
+  # onglet. Les suites Node ne testent que des fonctions pures : elles passent
+  # même si shared.js lève une erreur au chargement et laisse les deux pages
+  # blanches. Ce job est le seul à voir ce genre de casse.
+  e2e:
     needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Sandbox navigateur (utils + logic)
+        run: node sandbox.test.js
+
+      - name: Tests e2e (index + admin, tous les onglets)
+        run: node e2e.test.js
+
+  deploy:
+    needs: [test, e2e]
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
