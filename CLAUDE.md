@@ -40,6 +40,24 @@ Deux fichiers de tests, un runner par fichier (Node.js natif, sans dépendance) 
 Si la session touche à la logique métier (parsing, calcul, normalisation, validation, export),
 vérifier les trois suites avant de commiter.
 
+### Tests navigateur (Playwright, job `e2e` de la CI)
+
+| Fichier de tests | Ce qu'il vérifie | Runner |
+|---|---|---|
+| `sandbox.test.js` | `utils.js` + `logic.js` se chargent dans un navigateur, globals présents | `node sandbox.test.js` |
+| `e2e.test.js` | `index.html` et `admin.html` se chargent et chaque onglet s'ouvre sans erreur JS (GAS et CDN mockés) | `node e2e.test.js` |
+
+Ces deux runners exigent `npm ci` (React UMD servi depuis `node_modules`) et un
+Chromium : celui préinstallé en local, sinon `npx playwright install chromium`.
+
+**Pourquoi ils sont indispensables :** les trois suites Node ne testent que des
+fonctions pures. Elles passent même quand `shared.js` lève une erreur au
+chargement et laisse les deux pages blanches — un point-virgule manquant devant
+une IIFE suffit. Seul le job `e2e` voit ce genre de casse, et il bloque le
+déploiement avant qu'elle n'atteigne GitHub Pages.
+
+**À exécuter avant tout commit touchant `shared.js`, `app.js` ou `admin_app.js`.**
+
 **Après toute modification de `utils.js` ou `logic.js` :**
 1. Modifier la fonction
 2. Exécuter le runner correspondant
