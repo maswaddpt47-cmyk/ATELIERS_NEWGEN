@@ -770,6 +770,7 @@ window.onLogout = function(){
   const RETRY_DELAY = 3000;
   const isMobile    = /Android|iPhone|iPad/i.test(navigator.userAgent);
   const TIMEOUT_MS  = isMobile ? 20000 : 12000;
+  const RETRYABLE_HTTP = [404, 408, 429, 500, 502, 503, 504];
 
   // Actions d'écriture qui exigent un token (admin uniquement)
   // saveEntry/saveMany/delete accessibles aux conseillers sans token
@@ -829,6 +830,15 @@ window.onLogout = function(){
       // ── Parsing robuste : lire text d'abord, JSON.parse ensuite ─
       if(!res.ok){
         await res.text().catch(()=>'');
+        // /exec renvoie une redirection 302 vers script.googleusercontent.com.
+        // Quand le GAS est saturé (plusieurs exécutions en parallèle), cette
+        // redirection répond 404/429/5xx : c'est transitoire, pas un problème
+        // de déploiement — d'où les 404 observés sur mobile. On réessaie.
+        if(RETRYABLE_HTTP.indexOf(res.status) > -1){
+          const e = new Error(`HTTP ${res.status}`);
+          e.httpStatus = res.status;
+          throw e;
+        }
         throw new Error(`Réponse invalide du serveur (HTTP ${res.status}) — déploiement GAS à vérifier.`);
       }
       const text = await res.text();
@@ -837,17 +847,87 @@ window.onLogout = function(){
 
     }catch(err){
       clearTimeout(timeoutId);
-      if(err.name === 'AbortError' && _attempt <= MAX_RETRY){
-        console.warn(`[apiFetch] Timeout "${action}" — retry ${_attempt}/${MAX_RETRY} dans ${RETRY_DELAY/1000}s`);
+      const retryable = err.name === 'AbortError' || !!err.httpStatus;
+      if(retryable && _attempt <= MAX_RETRY){
+        console.warn(`[apiFetch] ${err.message} "${action}" — retry ${_attempt}/${MAX_RETRY} dans ${RETRY_DELAY/1000}s`);
         await new Promise(r=>setTimeout(r, RETRY_DELAY));
         return window.apiFetch(action, body, _attempt + 1);
       }
       if(err.name === 'AbortError')
         throw new Error('Le serveur ne répond pas (GAS cold start ?) — réessaie dans quelques secondes.');
+      if(err.httpStatus)
+        throw new Error(`Google a répondu HTTP ${err.httpStatus} — serveur saturé, réessaie dans quelques secondes.`);
       throw err;
     }
   };
-})()
+})();
+
+// ── getAll partagé : un seul appel réseau par année ────────────────────────
+// Google Apps Script sérialise les exécutions concurrentes d'un même script.
+// admin.html lançait plusieurs getAll simultanés au chargement (liste des
+// conseillers du dropdown + loadData, en plus du préchauffage) : le dernier
+// attendait la fin des précédents, donc plusieurs fois le temps d'un getAll,
+// et les timeouts de loadData expiraient tous au cold start → « Google Sheets
+// ne répond pas après 3 tentatives ». La même concurrence fait répondre 404 à
+// la redirection /exec sur mobile.
+//
+// fetchAll() garantit un seul appel en vol par année et sert un cache court :
+// le préchauffage de l'écran de login devient un vrai prefetch dont loadData
+// réutilise le résultat après connexion.
+(function(){
+  const TTL_MS  = 45000;     // fenêtre pendant laquelle le prefetch reste valable
+  const HARD_MS = 60000;     // plafond absolu : voir plus bas
+  const cache   = new Map(); // année → {promise, inflight, ts}
+
+  async function rawGetAll(year, source){
+    const params = new URLSearchParams({action:'getAll', year:String(year)});
+    if(source) params.set('source', source);
+    // Plafond absolu : sans lui, une requête qui ne revient jamais (coupure
+    // réseau mobile) laisserait l'entrée de cache « en vol » indéfiniment et
+    // tous les appels suivants — y compris le bouton Réessayer — se
+    // rattacheraient à cette promesse morte.
+    const ctrl = new AbortController();
+    const kill = setTimeout(()=>ctrl.abort(), HARD_MS);
+    let res;
+    try{
+      res = await fetch(`${GS_URL}?${params.toString()}`, {signal:ctrl.signal});
+    }catch(err){
+      // AbortError → traité comme un timeout par les appelants
+      throw ctrl.signal.aborted ? new Error('timeout') : err;
+    }finally{
+      clearTimeout(kill);
+    }
+    if(!res.ok){
+      const e = new Error(`HTTP ${res.status}`);
+      e.httpStatus = res.status;
+      throw e;
+    }
+    const text = await res.text();
+    let data;
+    try{ data = JSON.parse(text); }
+    catch(_){ throw new Error(`Réponse invalide du serveur (HTTP ${res.status}) — GAS saturé ou déploiement à vérifier.`); }
+    if(!data || !data.ok) throw new Error((data && data.error) || 'Erreur serveur');
+    return data;
+  }
+
+  // force:true = ignore le cache terminé (après une écriture, un refresh manuel).
+  // Un appel déjà en vol est toujours réutilisé : réessayer ne doit pas
+  // ajouter une exécution GAS de plus dans la file.
+  window.fetchAll = function fetchAll(year, opts){
+    const o = opts || {};
+    const key = String(year);
+    const hit = cache.get(key);
+    if(hit && (hit.inflight || (!o.force && Date.now()-hit.ts < TTL_MS))) return hit.promise;
+    const entry = {inflight:true, ts:Date.now(), promise:null};
+    entry.promise = rawGetAll(year, o.source)
+      .then(data=>{ entry.inflight=false; entry.ts=Date.now(); return data; })
+      .catch(err=>{ cache.delete(key); throw err; });
+    cache.set(key, entry);
+    return entry.promise;
+  };
+
+  window.invalidateFetchAll = function(){ cache.clear(); };
+})();
 async function loadCommunes47(){
   if(COMMUNES_47_CACHE)return COMMUNES_47_CACHE;
   try{
