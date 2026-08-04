@@ -101,17 +101,8 @@ function App(){
     }
 
     try{
-      // 8 s sur PC ne couvrait pas un cold start Sheets : la 1re tentative
-      // expirait pour rien. fetchAll dédoublonne l'appel et pose son propre
-      // plafond absolu, l'annulation manuelle n'est plus nécessaire.
-      const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
-      const timeoutMs=(isMobile?[20000,25000,30000]:[25000,30000,35000])[attempt-1]||35000;
-      // attempt>1 : réutilise la réponse arrivée juste après le timeout
-      // précédent au lieu de relancer un getAll.
-      const data = await Promise.race([
-        fetchAll(annee,{force:attempt===1}),
-        new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),timeoutMs))
-      ]);
+      // fetchAll porte seul les tentatives (3 essais échelonnés, budget borné).
+      const data=await fetchAll(annee,{force:true});
       const incoming = data.entries||[];
       setEntries(incoming);
       if(data.lists){
@@ -137,19 +128,9 @@ function App(){
       });
       setLoading(false);
     }catch(err){
-      // err.httpStatus : 404/5xx transitoire de la redirection GAS — fetchAll a
-      // déjà réessayé en interne, on lui laisse une dernière chance ici.
-      const isTimeout = err.message==='timeout' || err.name==='AbortError' || !!err.httpStatus;
-      if(isTimeout && attempt<3){
-        const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
-        setTimeout(()=>loadData(attempt+1,silent),isMobile?[3000,6000][attempt-1]||6000:2000);
-      } else if(isTimeout){
-        setError('Google Sheets ne répond pas après 3 tentatives.');
-        setLoading(false);
-      } else {
-        setError('Impossible de charger : '+err.message);
-        setLoading(false);
-      }
+      // fetchAll a déjà épuisé ses tentatives : on affiche, sans relancer.
+      setError('Impossible de charger : '+err.message);
+      setLoading(false);
     }
   }
 
