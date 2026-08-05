@@ -322,9 +322,12 @@ function App(){
     if(isFirstLoad.current){isFirstLoad.current=false;loadData(1,false,true);}
     else{setSeenIds(new Set());loadData();}
   },[annee,auth]);
+  // Onglet caché = pas d'appel : même correctif que sur Index — un onglet
+  // Admin oublié en arrière-plan ne doit pas ajouter de getAll toutes les
+  // 5 min à la file GAS (sérialisée par projet), en concurrence avec keepAlive.
   React.useEffect(()=>{
     if(!auth) return;
-    const id=setInterval(()=>loadData(1,true),5*60*1000);
+    const id=setInterval(()=>{ if(document.visibilityState==='visible') loadData(1,true); },5*60*1000);
     return()=>clearInterval(id);
   },[annee,auth]);
   async function handleDelete(id){
