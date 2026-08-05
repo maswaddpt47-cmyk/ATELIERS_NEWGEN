@@ -1012,6 +1012,49 @@ window.onLogout = function(){
 
   window.invalidateFetchAll = function(){ cache.clear(); };
 })();
+
+// ── getConfig partagé : un seul appel réseau, réutilisé par tous les
+// composants qui en ont besoin. Contrairement à getAll, getConfig n'avait
+// aucune déduplication : jusqu'à 4 composants (hint login, maintenance,
+// rappels_actifs, check maintenance Index) déclenchaient chacun leur propre
+// aller-retour GAS pour la même info au même instant — aggravant la file
+// d'attente (sérialisée par projet) juste après le login. Logs de prod :
+// des getConfig abandonnés à 35s ou résolus en 27s juste après un login par
+// ailleurs réussi.
+(function(){
+  const TTL_MS = 30000;
+  let cache = null; // {promise, inflight, ts}
+
+  async function rawGetConfig(_attempt=1){
+    try{
+      const data = await gasUnAppel(`${GS_URL}?action=getConfig`, 'getConfig', _attempt);
+      if(!data || !data.ok) throw new Error((data && data.error) || 'Erreur serveur');
+      return data;
+    }catch(err){
+      if(err.reessayable && _attempt < 2){
+        await new Promise(r=>setTimeout(r, 1500));
+        return rawGetConfig(_attempt + 1);
+      }
+      if(err.httpStatus)
+        throw new Error(`Google a répondu HTTP ${err.httpStatus} — réessaie dans quelques secondes.`);
+      if(err.message==='timeout')
+        throw new Error(`Aucune réponse de Google après ${GAS_TIMEOUT_MS/1000}s — la connexion est peut-être instable, réessaie.`);
+      throw err;
+    }
+  }
+
+  // force:true = ignore le cache terminé. Un appel déjà en vol est toujours réutilisé.
+  window.fetchConfig = function fetchConfig(opts){
+    const o = opts || {};
+    if(cache && (cache.inflight || (!o.force && Date.now()-cache.ts < TTL_MS))) return cache.promise;
+    const entry = {inflight:true, ts:Date.now(), promise:null};
+    entry.promise = rawGetConfig()
+      .then(data=>{ entry.inflight=false; entry.ts=Date.now(); return data; })
+      .catch(err=>{ cache=null; throw err; });
+    cache = entry;
+    return entry.promise;
+  };
+})();
 async function loadCommunes47(){
   if(COMMUNES_47_CACHE)return COMMUNES_47_CACHE;
   try{
@@ -1201,7 +1244,7 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
   }
   React.useEffect(()=>{function k(e){if(e.key==='Escape')onClose();}document.addEventListener('keydown',k);return()=>document.removeEventListener('keydown',k);},[]);
   React.useEffect(()=>{setNewVal('');setEditIdx(null);},[activeTab]);
-  React.useEffect(()=>{apiFetch('getConfig').then(res=>{if(res.ok&&res.config){try{setRappelsActif(JSON.parse(res.config['rappels_actifs']||'{}'));}catch(_){setRappelsActif({});}}}).catch(()=>{});},[]);
+  React.useEffect(()=>{fetchConfig().then(res=>{if(res.ok&&res.config){try{setRappelsActif(JSON.parse(res.config['rappels_actifs']||'{}'));}catch(_){setRappelsActif({});}}}).catch(()=>{});},[]);
   React.useEffect(()=>{if(activeTab==='conseillers'){apiFetch('getComptes').then(res=>{if(res.ok&&res.comptes){const m={};res.comptes.forEach(c=>{m[c.conseiller]={role:c.role||'user',actif:c.actif};});setComptes(m);}}).catch(()=>{});}},[activeTab]);
 
   async function handleSaveRappels(newObj){

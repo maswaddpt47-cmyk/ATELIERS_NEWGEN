@@ -59,7 +59,7 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
   // getComptes abandonnés à 35s en même temps qu'un getAll tournait encore).
   React.useEffect(function(){
     (window.fetchAll ? window.fetchAll(new Date().getFullYear(),{source:'admin'}).catch(function(){}) : Promise.resolve())
-      .finally(function(){ window.apiFetch && window.apiFetch('getConfig').catch(function(){}); });
+      .finally(function(){ window.fetchConfig && window.fetchConfig().catch(function(){}); });
   },[]);
 
   // Tick du countdown
@@ -1050,7 +1050,7 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
   const[maintenanceSaving,setMaintenanceSaving]=React.useState(false);
   const[maintenanceLoaded,setMaintenanceLoaded]=React.useState(false);
   React.useEffect(()=>{
-    apiFetch('getConfig').then(res=>{
+    fetchConfig().then(res=>{
       if(res.ok&&res.config){setMaintenanceOn(res.config['maintenance']==='true');setMaintenanceMsg(res.config['maintenance_msg']||'');}
       setMaintenanceLoaded(true);
     }).catch(()=>setMaintenanceLoaded(true));
