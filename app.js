@@ -63,12 +63,6 @@ function App(){
   const[online,setOnline]          = React.useState(navigator.onLine);
   const[showPicker,setShowPicker]   = React.useState(false);
   const[inactifsSet,setInactifsSet] = React.useState(new Set());
-  // Appel indépendant du check maintenance : le faire attendre getConfig (qui
-  // peut prendre plusieurs secondes) retardait Historique pour rien — même
-  // défaut que celui corrigé sur la landing, ici sur les données elles-mêmes.
-  React.useEffect(()=>{
-    apiFetch('getComptes').then(res=>{if(res.ok&&res.comptes){setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));}}).catch(()=>{});
-  },[]);
   const[sidebarPinned,setSidebarPinned] = React.useState(()=>localStorage.getItem('sidebar_pinned')==='1');
   const[darkMode,setDarkMode]=React.useState(()=>localStorage.getItem('f_dark')==='1');
   React.useEffect(()=>{document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');localStorage.setItem('f_dark',darkMode?'1':'0');},[darkMode]);
@@ -79,6 +73,11 @@ function App(){
   function togglePin(){ setSidebarPinned(p=>{ const n=!p; localStorage.setItem('sidebar_pinned',n?'1':'0'); return n; }); }
 
   const isFirstLoad=React.useRef(true);
+  // Promesse du premier getAll : getComptes et getConfig s'alignent dessus
+  // au lieu de le concurrencer sur la file GAS (sérialisée par projet) — logs
+  // de prod : ces appels se bloquaient mutuellement, plusieurs abandonnés à
+  // 35s alors que getAll lui-même n'était pas fautif.
+  const firstLoadPromiseRef=React.useRef(null);
 
   // ── Chargement v11.0 — fetchAll single-flight + cache localStorage ─
   async function loadData(attempt=1, silent=false){
@@ -149,27 +148,31 @@ function App(){
 
   React.useEffect(()=>{loadCommunes47().catch(()=>{});},[]);
 
-  // Check maintenance : ne bloque plus l'affichage de la landing. Le mode
-  // maintenance est un cas rare, activé à la main par un admin — faire
-  // attendre CHAQUE chargement pour ce cas rare n'a pas de sens. La landing
-  // s'affiche donc tout de suite ; si getConfig confirme la maintenance,
-  // MaintenanceScreen prend le relais quelques secondes plus tard.
+  // getAll part en premier, seul : c'est lui qui bloque Historique, il ne
+  // doit pas partager la file GAS (sérialisée par projet) avec getComptes/
+  // getConfig au même instant (voir commentaire sur firstLoadPromiseRef).
   React.useEffect(()=>{
-    apiFetch('getConfig').then(res=>{
-      if(res.ok&&res.config){
-        const active=res.config['maintenance']==='true'||res.config['maintenance']===true||res.config['maintenance']==='TRUE';
-        const msg=res.config['maintenance_msg']||'';
-        setMaintenance(active?{msg}:false);
-      } else setMaintenance(false);
-    }).catch(()=>setMaintenance(false));
-  },[]);
-
-  // Indépendant du check maintenance : voir plus haut. getAll part dès le
-  // montage, en parallèle de getConfig — rien ne justifie de les enchaîner.
-  React.useEffect(()=>{
-    if(isFirstLoad.current){isFirstLoad.current=false;loadData();}
-    else{setSeenIds(new Set());loadData();}
+    let p;
+    if(isFirstLoad.current){isFirstLoad.current=false;p=loadData();}
+    else{setSeenIds(new Set());p=loadData();}
+    firstLoadPromiseRef.current=p;
   },[annee]);
+
+  // getComptes puis getConfig, chacun après le précédent — jamais en
+  // parallèle avec getAll ni entre eux. Check maintenance : ne bloque
+  // toujours pas l'affichage de la landing, il arrive juste après les deux
+  // autres au lieu d'en même temps.
+  React.useEffect(()=>{
+    Promise.resolve(firstLoadPromiseRef.current)
+      .finally(()=>apiFetch('getComptes').then(res=>{if(res.ok&&res.comptes){setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));}}).catch(()=>{}))
+      .finally(()=>apiFetch('getConfig').then(res=>{
+        if(res.ok&&res.config){
+          const active=res.config['maintenance']==='true'||res.config['maintenance']===true||res.config['maintenance']==='TRUE';
+          const msg=res.config['maintenance_msg']||'';
+          setMaintenance(active?{msg}:false);
+        } else setMaintenance(false);
+      }).catch(()=>setMaintenance(false)));
+  },[]);
 
   // Onglet caché = pas d'appel : un onglet Index oublié en arrière-plan
   // ne doit pas taper sur la file GAS (sérialisée par projet) toutes les
