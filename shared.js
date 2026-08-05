@@ -63,19 +63,27 @@ tr:hover td{background:#f7fafc}
 @keyframes blink-retard{0%,100%{opacity:1}50%{opacity:.45}}
 .loading-full{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:#718096;gap:12px}
 .loading-full .big-spin{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#1e3a8a;border-radius:50%;animation:spin .8s linear infinite}
-.attente-gas{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:48px 28px;text-align:center;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-panel);max-width:380px;margin:32px auto}
-.attente-gas-ring{position:relative;width:68px;height:68px}
-.attente-gas-ring::before{content:'';position:absolute;inset:0;border-radius:50%;border:5px solid var(--primary-dim)}
-.attente-gas-ring::after{content:'';position:absolute;inset:0;border-radius:50%;border:5px solid transparent;border-top-color:var(--primary);border-right-color:var(--primary);animation:spin 1.2s cubic-bezier(.5,.1,.5,.9) infinite}
-.attente-gas-secs{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums}
+.attente-gas{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:44px 28px;text-align:center;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-panel);max-width:380px;margin:32px auto}
+/* ── Bobine façon amorce de film (compte à rebours cinéma) ──────────────── */
+.attente-reel{position:relative;width:92px;height:92px;border-radius:50%;flex:none;
+  background:radial-gradient(circle at 50% 50%,#242424 0%,#050505 78%,#000 100%);
+  box-shadow:0 6px 18px rgba(0,0,0,.4),inset 0 0 0 3px rgba(255,255,255,.07),inset 0 0 14px rgba(0,0,0,.6);
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+.attente-reel-sweep{position:absolute;inset:0;
+  background:conic-gradient(from 0deg,var(--primary) 0deg,rgba(15,110,122,.05) 70deg,transparent 90deg,transparent 360deg);
+  animation:reel-spin 1s linear infinite;mix-blend-mode:screen;opacity:.9}
+.attente-reel-tickwrap{position:absolute;inset:0}
+.attente-reel-tick{position:absolute;top:5px;left:50%;width:2px;height:8px;background:rgba(255,255,255,.5);transform:translateX(-1px);border-radius:1px}
+.attente-reel-tick.maj{height:11px;background:rgba(255,255,255,.75)}
+.attente-reel-cross{position:absolute;inset:0}
+.attente-reel-cross::before,.attente-reel-cross::after{content:'';position:absolute;background:rgba(255,255,255,.35)}
+.attente-reel-cross::before{left:8%;right:8%;top:50%;height:1px}
+.attente-reel-cross::after{top:8%;bottom:8%;left:50%;width:1px}
+.attente-reel-num{position:relative;z-index:2;font-size:30px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 1px 4px rgba(0,0,0,.7);letter-spacing:-.5px}
+@keyframes reel-spin{to{transform:rotate(360deg)}}
 .attente-gas-titre{font-size:15px;font-weight:700;color:var(--info)}
 .attente-gas-txt{font-size:13px;color:var(--text-2);max-width:300px;line-height:1.5;animation:attente-fade .4s ease}
-.attente-gas-dots{display:flex;gap:5px;margin-top:-4px}
-.attente-gas-dots span{width:5px;height:5px;border-radius:50%;background:var(--primary);opacity:.3;animation:attente-dot 1.4s ease-in-out infinite}
-.attente-gas-dots span:nth-child(2){animation-delay:.2s}
-.attente-gas-dots span:nth-child(3){animation-delay:.4s}
 @keyframes attente-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-@keyframes attente-dot{0%,60%,100%{opacity:.3;transform:scale(1)}30%{opacity:1;transform:scale(1.3)}}
 .mat-checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .mat-checks label{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:400;color:#4a5568;margin-top:0;cursor:pointer}
 .mat-checks input{width:auto}
@@ -772,10 +780,17 @@ function AttenteGAS({titre}){
     return()=>{timers.forEach(clearTimeout);clearInterval(tick);};
   },[]);
   return CE('div',{className:'attente-gas'},
-    CE('div',{className:'attente-gas-ring'},CE('span',{className:'attente-gas-secs'},secs)),
+    CE('div',{className:'attente-reel'},
+      CE('div',{className:'attente-reel-sweep'}),
+      // 12 repères façon amorce de film — 4 principaux (0/3/6/9h) plus longs
+      Array.from({length:12}).map((_,i)=>CE('div',{key:i,className:'attente-reel-tickwrap',style:{transform:`rotate(${i*30}deg)`}},
+        CE('div',{className:'attente-reel-tick'+(i%3===0?' maj':'')})
+      )),
+      CE('div',{className:'attente-reel-cross'}),
+      CE('span',{className:'attente-reel-num'},secs)
+    ),
     titre&&CE('div',{className:'attente-gas-titre'},titre),
-    CE('div',{key:palier,className:'attente-gas-txt'},PALIERS[palier].txt),
-    CE('div',{className:'attente-gas-dots'},CE('span',null),CE('span',null),CE('span',null))
+    CE('div',{key:palier,className:'attente-gas-txt'},PALIERS[palier].txt)
   );
 }
 
