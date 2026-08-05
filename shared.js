@@ -64,23 +64,29 @@ tr:hover td{background:#f7fafc}
 .loading-full{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:#718096;gap:12px}
 .loading-full .big-spin{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#1e3a8a;border-radius:50%;animation:spin .8s linear infinite}
 .attente-gas{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:44px 28px;text-align:center;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-panel);max-width:380px;margin:32px auto}
-/* ── Bobine façon amorce de film (compte à rebours cinéma) ──────────────── */
+/* ── Bobine façon amorce SMPTE (compte à rebours cinéma vintage) ─────────── */
+@property --sweep{syntax:'<angle>';initial-value:0deg;inherits:false}
 .attente-reel{position:relative;width:92px;height:92px;border-radius:50%;flex:none;
-  background:radial-gradient(circle at 50% 50%,#242424 0%,#050505 78%,#000 100%);
-  box-shadow:0 6px 18px rgba(0,0,0,.4),inset 0 0 0 3px rgba(255,255,255,.07),inset 0 0 14px rgba(0,0,0,.6);
-  display:flex;align-items:center;justify-content:center;overflow:hidden}
-.attente-reel-sweep{position:absolute;inset:0;
-  background:conic-gradient(from 0deg,var(--primary) 0deg,rgba(15,110,122,.05) 70deg,transparent 90deg,transparent 360deg);
-  animation:reel-spin 1s linear infinite;mix-blend-mode:screen;opacity:.9}
-.attente-reel-tickwrap{position:absolute;inset:0}
-.attente-reel-tick{position:absolute;top:5px;left:50%;width:2px;height:8px;background:rgba(255,255,255,.5);transform:translateX(-1px);border-radius:1px}
-.attente-reel-tick.maj{height:11px;background:rgba(255,255,255,.75)}
-.attente-reel-cross{position:absolute;inset:0}
-.attente-reel-cross::before,.attente-reel-cross::after{content:'';position:absolute;background:rgba(255,255,255,.35)}
-.attente-reel-cross::before{left:8%;right:8%;top:50%;height:1px}
-.attente-reel-cross::after{top:8%;bottom:8%;left:50%;width:1px}
-.attente-reel-num{position:relative;z-index:2;font-size:30px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 1px 4px rgba(0,0,0,.7);letter-spacing:-.5px}
-@keyframes reel-spin{to{transform:rotate(360deg)}}
+  background:radial-gradient(circle at 42% 38%,#ddd7c7 0%,#c7c0ac 45%,#a89f89 78%,#8b8270 100%);
+  box-shadow:0 6px 16px rgba(0,0,0,.3),inset 0 0 20px rgba(0,0,0,.35),inset 0 0 0 2px rgba(20,18,14,.45);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  animation:reel-flicker 3.6s steps(1) infinite}
+.attente-reel-grain{position:absolute;inset:0;border-radius:50%;pointer-events:none;mix-blend-mode:multiply;opacity:.3;z-index:1;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.attente-reel-ring{position:absolute;inset:8px;border-radius:50%;border:1.5px solid rgba(20,18,14,.4);z-index:2}
+.attente-reel-tickwrap{position:absolute;inset:0;z-index:2}
+.attente-reel-tick{position:absolute;top:5px;left:50%;width:2px;height:8px;background:rgba(20,18,14,.55);transform:translateX(-1px);border-radius:1px}
+.attente-reel-tick.maj{height:11px;background:rgba(20,18,14,.8)}
+.attente-reel-cross{position:absolute;inset:0;z-index:2}
+.attente-reel-cross::before,.attente-reel-cross::after{content:'';position:absolute;background:rgba(20,18,14,.55)}
+.attente-reel-cross::before{left:6%;right:6%;top:50%;height:1.5px}
+.attente-reel-cross::after{top:6%;bottom:6%;left:50%;width:1.5px}
+.attente-reel-wedge{position:absolute;inset:0;border-radius:50%;z-index:3;
+  background:conic-gradient(from 0deg,rgba(18,16,12,.85) 0deg,rgba(18,16,12,.85) var(--sweep),transparent var(--sweep),transparent 360deg);
+  animation:reel-sweep 1s linear infinite}
+.attente-reel-num{position:relative;z-index:4;font-size:30px;font-weight:800;color:#14120e;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+@keyframes reel-sweep{from{--sweep:0deg}to{--sweep:360deg}}
+@keyframes reel-flicker{0%,84%,100%{filter:brightness(1)}86%{filter:brightness(.9)}88%{filter:brightness(1.06)}90%{filter:brightness(.96)}92%{filter:brightness(1)}}
 .attente-gas-titre{font-size:15px;font-weight:700;color:var(--info)}
 .attente-gas-txt{font-size:13px;color:var(--text-2);max-width:300px;line-height:1.5;animation:attente-fade .4s ease}
 @keyframes attente-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
@@ -781,12 +787,14 @@ function AttenteGAS({titre}){
   },[]);
   return CE('div',{className:'attente-gas'},
     CE('div',{className:'attente-reel'},
-      CE('div',{className:'attente-reel-sweep'}),
+      CE('div',{className:'attente-reel-grain'}),
+      CE('div',{className:'attente-reel-ring'}),
       // 12 repères façon amorce de film — 4 principaux (0/3/6/9h) plus longs
       Array.from({length:12}).map((_,i)=>CE('div',{key:i,className:'attente-reel-tickwrap',style:{transform:`rotate(${i*30}deg)`}},
         CE('div',{className:'attente-reel-tick'+(i%3===0?' maj':'')})
       )),
       CE('div',{className:'attente-reel-cross'}),
+      CE('div',{className:'attente-reel-wedge'}),
       CE('span',{className:'attente-reel-num'},secs)
     ),
     titre&&CE('div',{className:'attente-gas-titre'},titre),
