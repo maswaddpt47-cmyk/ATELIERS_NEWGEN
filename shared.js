@@ -929,7 +929,8 @@ window.onLogout = function(){
   const ADMIN_ONLY_ACTIONS = new Set([
     'saveLists','saveConfig','setConfig',
     'saveVisibility','saveColors','saveEmails',
-    'saveCompte','resetPassword','setPassword'
+    'saveCompte','resetPassword','setPassword',
+    'getLogs'
   ]);
   const WRITE_ACTIONS = new Set([
     'saveEntry','saveMany','delete',
