@@ -192,6 +192,7 @@ function App(){
   const[editingId,setEditingId]  = React.useState(null);
   const[prefillData,setPrefillData]= React.useState(null);
   const[annee,setAnnee]    = React.useState(String(new Date().getFullYear()));
+  const[cachedVisibility,setCachedVisibility]= React.useState(null);
   const[lists,setLists]    = React.useState({
     statuts:[...STATUTS_DEFAULT],conseillers:[...CONSEILLERS_DEFAULT],
     publics:[...PUBLICS_DEFAULT],materiels:[...MATERIELS_DEFAULT]
@@ -298,6 +299,7 @@ function App(){
       }
       if(data.conseiller_colors){applyColors(data.conseiller_colors);}
       if(data.emails){setEmails(data.emails);addLog('Emails chargés','ok');}
+      if(data.visibility){setCachedVisibility(data.visibility);}
       addLog(`${incoming.length} ateliers chargés (${annee})`,'ok');
       setLastSync(new Date());
       setSeenIds(prev=>{if(prev.size===0)return new Set(incoming.map(e=>e._id));const nouvs=incoming.filter(e=>!prev.has(e._id));if(nouvs.length>0)setNewEntries(n=>[...nouvs,...n]);return new Set(incoming.map(e=>e._id));});
@@ -446,7 +448,7 @@ function App(){
         view==='roadmap'&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),
         view==='bingo'&&CE(VueBingo,{entries}),
         view==='anomalies'&&CE(VueAnomalies,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');},communes:window.COMMUNES_47_CACHE||[],apiFetch,showToast,addLog}),
-        view==='admin'&&role==='admin'&&CE(VueAdmin,{entries,onRefresh:()=>loadData(),addLog,conseillersList:lists.conseillers,onSaveColors:(c)=>{applyColors(c);},annee,adminConseiller}),
+        view==='admin'&&role==='admin'&&CE(VueAdmin,{entries,onRefresh:()=>loadData(),addLog,conseillersList:lists.conseillers,onSaveColors:(c)=>{applyColors(c);},annee,adminConseiller,initialVisibility:cachedVisibility}),
         view==='logs_connexion'&&(role==='admin'||role==='superviseur')&&CE(VueLogs,null),
           view==='logs'&&CE('div',{className:'card'},
             CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:8}},
@@ -823,7 +825,7 @@ function VueLogs(){
 }
 
 // ── VueAdmin override ──────────────────────────────────────
-function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,annee,adminConseiller}){
+function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,annee,adminConseiller,initialVisibility}){
   const adminRef=React.useRef(null);
   React.useEffect(()=>{
     if(!adminRef.current)return;
@@ -834,7 +836,7 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
     });
   },[]);
   const[resetStep,setResetStep]=React.useState(0);
-  const[visibility,setVisibility]=React.useState(null);
+  const[visibility,setVisibility]=React.useState(initialVisibility||null);
   const[visSaving,setVisSaving]=React.useState(false);
   const[importing,setImporting]=React.useState(false);
   const[colorDraft,setColorDraft]=React.useState({...CONSEILLER_COLORS});
@@ -860,7 +862,7 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
   function changeMoisFin(v){localStorage.setItem('cal_moisFin',v);setMoisFin(v);setLastExport(null);}
   const VIS_ITEMS=[{key:'saisie',label:'✏️ Saisie',sub:'Formulaire de saisie'},{key:'historique',label:'📋 Historique',sub:'Liste des ateliers'},{key:'agenda',label:'🗓️ Agenda',sub:'Planning hebdo AM/PM'},{key:'calendrier',label:'📅 Calendrier',sub:'Vue calendrier mensuelle'},{key:'dashboard',label:'📊 Dashboard',sub:'Synthèse · Graphiques · Territoire'},{key:'carte',label:'🗺️ Carte',sub:'Carte des communes'},{key:'bingo',label:'🎯 Bingo',sub:'Vue par commune'},{key:'roadmap',label:'🛣️ Roadmap',sub:'Timeline & densité'},{key:'anomalies',label:'⚠️ Anomalies',sub:'Champs manquants & communes invalides'}];
 
-  React.useEffect(()=>{apiFetch('getVisibility').then(res=>{if(res.ok)setVisibility(res.visibility);}).catch(()=>{});},[]);
+  React.useEffect(()=>{if(initialVisibility)return;apiFetch('getVisibility').then(res=>{if(res.ok)setVisibility(res.visibility);}).catch(()=>{});},[]);
   React.useEffect(()=>{setColorDraft(d=>{const draft={...CONSEILLER_COLORS,...d};(conseillersList||[]).forEach(c=>{if(!draft[c])draft[c]='#6B7280';});return draft;});},[conseillersList]);
 
   // ── v10.0 : KPIs enrichis ─────────────────────────────────
