@@ -983,10 +983,8 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
       for(let i=0;i<rows_raw.length;i+=BATCH){
         if(cancelRef.current){annule=true;break;}
         const batch=rows_raw.slice(i,i+BATCH);
-        const params=new URLSearchParams({action:'saveMany',source:'admin',entries:JSON.stringify(batch)});
         try{
-          const res=await Promise.race([fetch(`${GS_URL}?${params.toString()}`),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),45000))]);
-          const data=await res.json();
+          const data=await apiFetch('saveMany',{entries:batch});
           if(!data.ok)throw new Error(data.error||'Erreur batch');
           done+=batch.length;
         }catch(be){batchErrors.push({from:i+1,to:Math.min(i+BATCH,rows_raw.length),msg:be.message});}
