@@ -323,6 +323,8 @@ function App(){
   },[]);
 
   const isFirstLoad=React.useRef(true);
+  const errorRef=React.useRef(null);
+  errorRef.current=error;
   React.useEffect(()=>{loadCommunes47().catch(()=>{});},[]);
   // Attendre l'authentification avant de charger : sur l'écran de login, ces
   // hooks tournaient déjà (ils sont déclarés avant le `if(!auth) return`), donc
@@ -340,7 +342,7 @@ function App(){
   // 5 min à la file GAS (sérialisée par projet), en concurrence avec keepAlive.
   React.useEffect(()=>{
     if(!auth) return;
-    const id=setInterval(()=>{ if(document.visibilityState==='visible') loadData(1,true); },5*60*1000);
+    const id=setInterval(()=>{ if(document.visibilityState==='visible'&&!errorRef.current) loadData(1,true); },5*60*1000);
     return()=>clearInterval(id);
   },[annee,auth]);
   async function handleDelete(id){
@@ -780,23 +782,28 @@ function ChangerMotDePasse({adminConseiller}){
 }
 
 // ── VueLogs : audit des connexions (admin seulement) ─────────
+let logsCache=null; // {data:[...], ts:number} — survit aux démontages du composant
 function VueLogs(){
   const[logs,setLogs]=React.useState([]);
   const[loading,setLoading]=React.useState(true);
   const[err,setErr]=React.useState('');
   const[filter,setFilter]=React.useState('all');
-  React.useEffect(()=>{
+  function fetchLogs(force){
+    if(!force&&logsCache&&Date.now()-logsCache.ts<2*60*1000){setLogs(logsCache.data);setLoading(false);return;}
+    setLoading(true);setErr('');
     apiFetch('getLogs',{n:100})
-      .then(res=>{if(res.ok)setLogs(res.logs||[]);else setErr(res.error||'Erreur');})
+      .then(res=>{if(res.ok){logsCache={data:res.logs||[],ts:Date.now()};setLogs(res.logs||[]);}else setErr(res.error||'Erreur');})
       .catch(e=>setErr('Erreur réseau : '+e.message))
       .finally(()=>setLoading(false));
-  },[]);
+  }
+  React.useEffect(()=>{fetchLogs(false);},[]);
   const filtered=filter==='all'?logs:filter==='ok'?logs.filter(l=>l.success):logs.filter(l=>!l.success);
   function formatTs(ts){if(!ts)return'—';try{return new Date(ts).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return ts;}}
   return CE('div',{className:'card'},
     CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:8}},
       CE('h2',{style:{margin:0}},'🔐 Logs de connexion'),
-      CE('div',{style:{display:'flex',gap:6}},
+      CE('div',{style:{display:'flex',gap:6,alignItems:'center'}},
+        CE('button',{onClick:()=>fetchLogs(true),disabled:loading,style:{fontSize:11,padding:'3px 10px',borderRadius:6,cursor:'pointer',border:'1px solid #e2e8f0',background:'#f8fafc',color:'#4a5568'}},loading?'…':'🔄 Actualiser'),
         ['all','ok','err'].map(f=>CE('button',{key:f,onClick:()=>setFilter(f),style:{fontSize:11,padding:'3px 10px',borderRadius:6,cursor:'pointer',fontWeight:filter===f?700:400,border:filter===f?'1.5px solid #1e3a8a':'1px solid #e2e8f0',background:filter===f?'#eff6ff':'#f8fafc',color:filter===f?'#1e3a8a':f==='ok'?'#16a34a':f==='err'?'#dc2626':'#718096'}},{all:'Tous',ok:'✅ Succès',err:'❌ Échecs'}[f]))
       )
     ),

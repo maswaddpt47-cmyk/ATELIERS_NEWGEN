@@ -73,6 +73,8 @@ function App(){
   function togglePin(){ setSidebarPinned(p=>{ const n=!p; localStorage.setItem('sidebar_pinned',n?'1':'0'); return n; }); }
 
   const isFirstLoad=React.useRef(true);
+  const errorRef=React.useRef(null);
+  errorRef.current=error;
 
   // ── Chargement v11.0 — fetchAll single-flight + cache localStorage ─
   async function loadData(attempt=1, silent=false){
@@ -178,7 +180,7 @@ function App(){
   // ne doit pas taper sur la file GAS (sérialisée par projet) toutes les
   // 5 min pour rien — ça entre directement en concurrence avec le keepAlive.
   React.useEffect(()=>{
-    const id=setInterval(()=>{ if(document.visibilityState==='visible') loadData(1,true); },5*60*1000);
+    const id=setInterval(()=>{ if(document.visibilityState==='visible'&&!errorRef.current) loadData(1,true); },5*60*1000);
     return()=>clearInterval(id);
   },[annee]);
 
@@ -207,7 +209,7 @@ function App(){
     setPrefillData({...rest});setEditingId(null);setView('saisie');
   }
 
-  const conseillerActifs = lists.conseillers.filter(c=>!inactifsSet.has(c));
+  const conseillerActifs = React.useMemo(()=>lists.conseillers.filter(c=>!inactifsSet.has(c)),[lists.conseillers,inactifsSet]);
 
   // ── Vue Accueil ───────────────────────────────────────────────
   // maintenance===null (réponse pas encore arrivée) est traité comme "pas en
