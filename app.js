@@ -165,7 +165,7 @@ function App(){
   React.useEffect(()=>{
     Promise.resolve(firstLoadPromiseRef.current)
       .finally(()=>apiFetch('getComptes').then(res=>{if(res.ok&&res.comptes){setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));}}).catch(()=>{}))
-      .finally(()=>apiFetch('getConfig').then(res=>{
+      .finally(()=>fetchConfig().then(res=>{
         if(res.ok&&res.config){
           const active=res.config['maintenance']==='true'||res.config['maintenance']===true||res.config['maintenance']==='TRUE';
           const msg=res.config['maintenance_msg']||'';
