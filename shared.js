@@ -63,6 +63,19 @@ tr:hover td{background:#f7fafc}
 @keyframes blink-retard{0%,100%{opacity:1}50%{opacity:.45}}
 .loading-full{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:#718096;gap:12px}
 .loading-full .big-spin{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#1e3a8a;border-radius:50%;animation:spin .8s linear infinite}
+.attente-gas{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:48px 28px;text-align:center;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-panel);max-width:380px;margin:32px auto}
+.attente-gas-ring{position:relative;width:68px;height:68px}
+.attente-gas-ring::before{content:'';position:absolute;inset:0;border-radius:50%;border:5px solid var(--primary-dim)}
+.attente-gas-ring::after{content:'';position:absolute;inset:0;border-radius:50%;border:5px solid transparent;border-top-color:var(--primary);border-right-color:var(--primary);animation:spin 1.2s cubic-bezier(.5,.1,.5,.9) infinite}
+.attente-gas-secs{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums}
+.attente-gas-titre{font-size:15px;font-weight:700;color:var(--info)}
+.attente-gas-txt{font-size:13px;color:var(--text-2);max-width:300px;line-height:1.5;animation:attente-fade .4s ease}
+.attente-gas-dots{display:flex;gap:5px;margin-top:-4px}
+.attente-gas-dots span{width:5px;height:5px;border-radius:50%;background:var(--primary);opacity:.3;animation:attente-dot 1.4s ease-in-out infinite}
+.attente-gas-dots span:nth-child(2){animation-delay:.2s}
+.attente-gas-dots span:nth-child(3){animation-delay:.4s}
+@keyframes attente-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes attente-dot{0%,60%,100%{opacity:.3;transform:scale(1)}30%{opacity:1;transform:scale(1.3)}}
 .mat-checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .mat-checks label{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:400;color:#4a5568;margin-top:0;cursor:pointer}
 .mat-checks input{width:auto}
@@ -758,11 +771,11 @@ function AttenteGAS({titre}){
     const tick=setInterval(()=>setSecs(s=>s+1),1000);
     return()=>{timers.forEach(clearTimeout);clearInterval(tick);};
   },[]);
-  return CE('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,padding:'40px 20px',textAlign:'center'}},
-    CE('span',{className:'spinner',style:{width:30,height:30,borderWidth:3}}),
-    titre&&CE('div',{style:{fontSize:15,fontWeight:700,color:'var(--info)'}},titre),
-    CE('div',{style:{fontSize:13,color:'var(--text-2)',maxWidth:340,lineHeight:1.5}},PALIERS[palier].txt),
-    CE('div',{style:{fontSize:12,color:'var(--text-3)',fontVariantNumeric:'tabular-nums'}},secs+' s')
+  return CE('div',{className:'attente-gas'},
+    CE('div',{className:'attente-gas-ring'},CE('span',{className:'attente-gas-secs'},secs)),
+    titre&&CE('div',{className:'attente-gas-titre'},titre),
+    CE('div',{key:palier,className:'attente-gas-txt'},PALIERS[palier].txt),
+    CE('div',{className:'attente-gas-dots'},CE('span',null),CE('span',null),CE('span',null))
   );
 }
 
