@@ -1513,15 +1513,12 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     if(!validateLot(rowsFilled)){showToast('⚠️ Champs obligatoires manquants',false);return;}
     setSaving(true);
     try{
-      let ok=0; const createdIds=[];
-      for(const row of rowsFilled){
-        const entry={_id:genId(),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0};
-        const res=await apiFetch('saveEntry',{entry});
-        if(!res.ok)throw new Error(res.error);
-        if(onNewEntry)onNewEntry(entry);
-        createdIds.push(entry._id);ok++;
-      }
-      showToast(`✅ ${ok} atelier(s) créé(s)`);
+      const entries=rowsFilled.map(row=>({_id:genId(),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0}));
+      const res=await apiFetch('saveMany',{entries});
+      if(!res.ok)throw new Error(res.error);
+      entries.forEach(entry=>{if(onNewEntry)onNewEntry(entry);});
+      const createdIds=entries.map(e=>e._id);
+      showToast(`✅ ${entries.length} atelier(s) créé(s)`);
       document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:createdIds}}));
       onSaved();resetLot();
     }catch(err){showToast('❌ '+err.message,false);}
