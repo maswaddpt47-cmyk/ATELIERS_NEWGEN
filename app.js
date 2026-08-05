@@ -73,11 +73,6 @@ function App(){
   function togglePin(){ setSidebarPinned(p=>{ const n=!p; localStorage.setItem('sidebar_pinned',n?'1':'0'); return n; }); }
 
   const isFirstLoad=React.useRef(true);
-  // Promesse du premier getAll : getComptes et getConfig s'alignent dessus
-  // au lieu de le concurrencer sur la file GAS (sérialisée par projet) — logs
-  // de prod : ces appels se bloquaient mutuellement, plusieurs abandonnés à
-  // 35s alors que getAll lui-même n'était pas fautif.
-  const firstLoadPromiseRef=React.useRef(null);
 
   // ── Chargement v11.0 — fetchAll single-flight + cache localStorage ─
   async function loadData(attempt=1, silent=false){
@@ -148,30 +143,35 @@ function App(){
 
   React.useEffect(()=>{loadCommunes47().catch(()=>{});},[]);
 
-  // getAll part en premier, seul : c'est lui qui bloque Historique, il ne
-  // doit pas partager la file GAS (sérialisée par projet) avec getComptes/
-  // getConfig au même instant (voir commentaire sur firstLoadPromiseRef).
+  // getAll part dès le montage, en parallèle de getComptes/getConfig
+  // ci-dessous. Un chaînage séquentiel a été essayé puis retiré : sa
+  // justification ("GAS n'exécute qu'une requête à la fois par projet")
+  // n'a pas résisté aux logs Exécutions Apps Script (deux doGet observés se
+  // chevauchant dans le temps) — et le chaînage a un risque asymétrique
+  // (si getAll traîne ou échoue, getComptes/getConfig n'ont plus leur
+  // chance de réussir en parallèle pendant ce temps). Reste en parallèle
+  // tant qu'aucune preuve ne justifie de les enchaîner.
   React.useEffect(()=>{
-    let p;
-    if(isFirstLoad.current){isFirstLoad.current=false;p=loadData();}
-    else{setSeenIds(new Set());p=loadData();}
-    firstLoadPromiseRef.current=p;
+    if(isFirstLoad.current){isFirstLoad.current=false;loadData();}
+    else{setSeenIds(new Set());loadData();}
   },[annee]);
 
-  // getComptes puis getConfig, chacun après le précédent — jamais en
-  // parallèle avec getAll ni entre eux. Check maintenance : ne bloque
-  // toujours pas l'affichage de la landing, il arrive juste après les deux
-  // autres au lieu d'en même temps.
   React.useEffect(()=>{
-    Promise.resolve(firstLoadPromiseRef.current)
-      .finally(()=>apiFetch('getComptes').then(res=>{if(res.ok&&res.comptes){setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));}}).catch(()=>{}))
-      .finally(()=>fetchConfig().then(res=>{
-        if(res.ok&&res.config){
-          const active=res.config['maintenance']==='true'||res.config['maintenance']===true||res.config['maintenance']==='TRUE';
-          const msg=res.config['maintenance_msg']||'';
-          setMaintenance(active?{msg}:false);
-        } else setMaintenance(false);
-      }).catch(()=>setMaintenance(false)));
+    apiFetch('getComptes').then(res=>{if(res.ok&&res.comptes){setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));}}).catch(()=>{});
+  },[]);
+
+  // Check maintenance : ne bloque pas l'affichage de la landing. fetchConfig
+  // (au lieu d'apiFetch('getConfig') brut) dédoublonne avec les autres
+  // composants qui demandent la même config — ce gain-là est indépendant de
+  // la question du chaînage ci-dessus, donc conservé.
+  React.useEffect(()=>{
+    fetchConfig().then(res=>{
+      if(res.ok&&res.config){
+        const active=res.config['maintenance']==='true'||res.config['maintenance']===true||res.config['maintenance']==='TRUE';
+        const msg=res.config['maintenance_msg']||'';
+        setMaintenance(active?{msg}:false);
+      } else setMaintenance(false);
+    }).catch(()=>setMaintenance(false));
   },[]);
 
   // Onglet caché = pas d'appel : un onglet Index oublié en arrière-plan

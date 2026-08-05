@@ -53,13 +53,16 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
 
   // getConfig sert de témoin pour le hint "Préchauffage…" — le bouton
   // Connexion n'en dépend plus, il est actif dès l'affichage du formulaire.
-  // Part après getAll (fetchAll dédoublonne : cet appel réutilise la même
-  // promesse, gratuit) : les deux sur la même file GAS (sérialisée par
-  // projet) se bloquaient l'un l'autre en prod (logs : getConfig et
-  // getComptes abandonnés à 35s en même temps qu'un getAll tournait encore).
+  // Part en parallèle de getAll ci-dessus, pas après : le chaînage essayé
+  // reposait sur "GAS n'exécute qu'une requête à la fois par projet", non
+  // confirmé (logs Exécutions Apps Script : doGet observés se chevauchant),
+  // et son pire cas (getAll qui traîne retarde getConfig pour rien) est pire
+  // que ce qu'il corrigeait. fetchConfig (au lieu d'apiFetch('getConfig')
+  // brut) dédoublonne avec les autres composants qui demandent la même
+  // config — ce gain-là est indépendant de la question du chaînage, donc
+  // conservé.
   React.useEffect(function(){
-    (window.fetchAll ? window.fetchAll(new Date().getFullYear(),{source:'admin'}).catch(function(){}) : Promise.resolve())
-      .finally(function(){ window.fetchConfig && window.fetchConfig().catch(function(){}); });
+    window.fetchConfig && window.fetchConfig().catch(function(){});
   },[]);
 
   // Tick du countdown
@@ -198,24 +201,19 @@ function App(){
   // Dropdown construit sur getComptes seul : la feuille Comptes porte déjà le
   // nom, le rôle et l'état actif de chacun. Le getAll qui servait à récupérer
   // lists.conseillers coûtait ~20 s pour la même information.
-  // Part après getAll (fetchAll dédoublonne : réutilise la même promesse,
-  // gratuit) — en prod, ce getComptes se bloquait avec getAll et avec
-  // getConfig, tous abandonnés à 35s (voir commentaire sur le hint login).
-  // CONSEILLERS_DEFAULT reste affiché entre-temps, la connexion n'est jamais
-  // bloquée par ce chargement.
+  // Part en parallèle de getAll, pas après : chaînage retiré (voir commentaire
+  // sur le hint login getConfig) — CONSEILLERS_DEFAULT reste affiché entre-
+  // temps de toute façon, la connexion n'est jamais bloquée par ce chargement.
   React.useEffect(()=>{
-    (window.fetchAll ? window.fetchAll(new Date().getFullYear(),{source:'admin'}).catch(()=>{}) : Promise.resolve())
-      .finally(()=>{
-        apiFetch('getComptes').catch(()=>null).then(res=>{
-          const comptes=res?.ok&&res.comptes?res.comptes:[];
-          if(comptes.length===0)return; // on garde CONSEILLERS_DEFAULT
-          const eligibles=comptes
-            .filter(c=>(c.role==='admin'||c.role==='superviseur')&&c.actif!=='NON')
-            .map(c=>c.conseiller)
-            .filter(Boolean);
-          setLoginConseillers(eligibles.length>0?eligibles:CONSEILLERS_DEFAULT);
-        });
-      });
+    apiFetch('getComptes').catch(()=>null).then(res=>{
+      const comptes=res?.ok&&res.comptes?res.comptes:[];
+      if(comptes.length===0)return; // on garde CONSEILLERS_DEFAULT
+      const eligibles=comptes
+        .filter(c=>(c.role==='admin'||c.role==='superviseur')&&c.actif!=='NON')
+        .map(c=>c.conseiller)
+        .filter(Boolean);
+      setLoginConseillers(eligibles.length>0?eligibles:CONSEILLERS_DEFAULT);
+    });
   },[]);
   const[emails,setEmails]  = React.useState({});
   const[lastSync,setLastSync]= React.useState(null);
