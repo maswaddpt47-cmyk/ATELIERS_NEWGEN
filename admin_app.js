@@ -39,12 +39,6 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
     setConseiller(c=>base.includes(c)?c:base[0]);
   },[base.join(',')]);
 
-  // getConfig sert de témoin pour le hint "Préchauffage…" — le bouton
-  // Connexion n'en dépend plus, il est actif dès l'affichage du formulaire.
-  React.useEffect(function(){
-    window.apiFetch && window.apiFetch('getConfig').catch(function(){});
-  },[]);
-
   // Préchargement des ateliers en parallèle de la saisie du mot de passe :
   // getAll ne dépend pas d'un jeton, rien n'empêche de le lancer avant que
   // checkPassword ait répondu. Sans ça, Historique attendait le plein
@@ -55,6 +49,17 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
   // qui dédoublonne : aucun getAll supplémentaire n'est déclenché.
   React.useEffect(function(){
     window.fetchAll && window.fetchAll(new Date().getFullYear(),{source:'admin'}).catch(function(){});
+  },[]);
+
+  // getConfig sert de témoin pour le hint "Préchauffage…" — le bouton
+  // Connexion n'en dépend plus, il est actif dès l'affichage du formulaire.
+  // Part après getAll (fetchAll dédoublonne : cet appel réutilise la même
+  // promesse, gratuit) : les deux sur la même file GAS (sérialisée par
+  // projet) se bloquaient l'un l'autre en prod (logs : getConfig et
+  // getComptes abandonnés à 35s en même temps qu'un getAll tournait encore).
+  React.useEffect(function(){
+    (window.fetchAll ? window.fetchAll(new Date().getFullYear(),{source:'admin'}).catch(function(){}) : Promise.resolve())
+      .finally(function(){ window.apiFetch && window.apiFetch('getConfig').catch(function(){}); });
   },[]);
 
   // Tick du countdown
@@ -193,16 +198,24 @@ function App(){
   // Dropdown construit sur getComptes seul : la feuille Comptes porte déjà le
   // nom, le rôle et l'état actif de chacun. Le getAll qui servait à récupérer
   // lists.conseillers coûtait ~20 s pour la même information.
+  // Part après getAll (fetchAll dédoublonne : réutilise la même promesse,
+  // gratuit) — en prod, ce getComptes se bloquait avec getAll et avec
+  // getConfig, tous abandonnés à 35s (voir commentaire sur le hint login).
+  // CONSEILLERS_DEFAULT reste affiché entre-temps, la connexion n'est jamais
+  // bloquée par ce chargement.
   React.useEffect(()=>{
-    apiFetch('getComptes').catch(()=>null).then(res=>{
-      const comptes=res?.ok&&res.comptes?res.comptes:[];
-      if(comptes.length===0)return; // on garde CONSEILLERS_DEFAULT
-      const eligibles=comptes
-        .filter(c=>(c.role==='admin'||c.role==='superviseur')&&c.actif!=='NON')
-        .map(c=>c.conseiller)
-        .filter(Boolean);
-      setLoginConseillers(eligibles.length>0?eligibles:CONSEILLERS_DEFAULT);
-    });
+    (window.fetchAll ? window.fetchAll(new Date().getFullYear(),{source:'admin'}).catch(()=>{}) : Promise.resolve())
+      .finally(()=>{
+        apiFetch('getComptes').catch(()=>null).then(res=>{
+          const comptes=res?.ok&&res.comptes?res.comptes:[];
+          if(comptes.length===0)return; // on garde CONSEILLERS_DEFAULT
+          const eligibles=comptes
+            .filter(c=>(c.role==='admin'||c.role==='superviseur')&&c.actif!=='NON')
+            .map(c=>c.conseiller)
+            .filter(Boolean);
+          setLoginConseillers(eligibles.length>0?eligibles:CONSEILLERS_DEFAULT);
+        });
+      });
   },[]);
   const[emails,setEmails]  = React.useState({});
   const[lastSync,setLastSync]= React.useState(null);
