@@ -1499,9 +1499,13 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       const res=await apiFetch('saveEntry',{entry});
       if(!res.ok)throw new Error(res.error);
       showToast(editId?'✅ Atelier modifié':'✅ Atelier enregistré');
-      if(onNewEntry&&!editId)onNewEntry(entry);
+      // materiel repart en tableau (pas la chaîne '|' envoyée à GAS) : c'est
+      // le format attendu partout ailleurs dans l'app (badges, filtres...).
+      // _n reste vide : seul GAS connaît le vrai numéro de ligne, il arrivera
+      // au prochain rechargement réel sans que ça bloque l'affichage ici.
+      if(onNewEntry&&!editId)onNewEntry({...entry,_n:'',materiel:form.materiel||[]});
       if(!editId) document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:[entry._id]}}));
-      onSaved();reset();
+      onSaved(!editId);reset();
     }catch(err){showToast('❌ '+err.message,false);}
     finally{setSaving(false);}
   }
@@ -1517,11 +1521,12 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       const entries=rowsFilled.map(row=>({_id:genId(),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0}));
       const res=await apiFetch('saveMany',{entries});
       if(!res.ok)throw new Error(res.error);
-      entries.forEach(entry=>{if(onNewEntry)onNewEntry(entry);});
+      // Même conversion materiel string→tableau que le mode unique.
+      entries.forEach(entry=>{if(onNewEntry)onNewEntry({...entry,materiel:lotForm.materiel||[]});});
       const createdIds=entries.map(e=>e._id);
       showToast(`✅ ${entries.length} atelier(s) créé(s)`);
       document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:createdIds}}));
-      onSaved();resetLot();
+      onSaved(true);resetLot();
     }catch(err){showToast('❌ '+err.message,false);}
     finally{setSaving(false);}
   }
