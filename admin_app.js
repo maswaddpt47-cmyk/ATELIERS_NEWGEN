@@ -284,6 +284,24 @@ function App(){
     setSyncing(true);
     if(!silent) setLoading(true);
     setError(null);
+
+    // Cache localStorage : afficher les données de la session précédente
+    // immédiatement, pendant que le vrai chargement se fait en arrière-plan.
+    // Index l'a déjà (app.js) ; Admin ne l'avait pas — un login qui tombe
+    // sur le raté de livraison réseau connu de GAS (calcul fini en 2s côté
+    // serveur, réponse jamais reçue côté client avant 25s) n'avait alors
+    // rien à montrer d'autre que l'écran d'attente ou l'erreur.
+    if(!silent && attempt===1){
+      try{
+        const cached=localStorage.getItem(`ateliers_cache_${annee}`);
+        if(cached){
+          const {entries:cachedEntries,lists:cachedLists}=JSON.parse(cached);
+          if(cachedEntries) setEntries(cachedEntries);
+          if(cachedLists){ setLists(cachedLists);STATUTS=[...cachedLists.statuts];CONSEILLERS=[...cachedLists.conseillers];PUBLICS=[...cachedLists.publics];MATERIELS=[...cachedLists.materiels]; }
+        }
+      }catch(_){}
+    }
+
     try{
       // fetchAll porte seul les tentatives (3 essais échelonnés, budget borné).
       // Une échelle de retry supplémentaire ici multipliait les appels : 3 × 3
@@ -296,6 +314,7 @@ function App(){
         const nl={statuts:Array.isArray(l.statuts)?l.statuts:[...STATUTS_DEFAULT],conseillers:Array.isArray(l.conseillers)?l.conseillers:[...CONSEILLERS_DEFAULT],publics:Array.isArray(l.publics)?l.publics:[...PUBLICS_DEFAULT],materiels:Array.isArray(l.materiels)?l.materiels:[...MATERIELS_DEFAULT]};
         setLists(nl);STATUTS=[...nl.statuts];CONSEILLERS=[...nl.conseillers];PUBLICS=[...nl.publics];MATERIELS=[...nl.materiels];
         addLog('Listes synchronisées','ok');
+        try{ localStorage.setItem(`ateliers_cache_${annee}`, JSON.stringify({entries:incoming,lists:nl})); }catch(_){}
       }
       if(data.conseiller_colors){applyColors(data.conseiller_colors);}
       if(data.emails){setEmails(data.emails);addLog('Emails chargés','ok');}
