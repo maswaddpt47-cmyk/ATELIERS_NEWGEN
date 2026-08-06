@@ -199,7 +199,12 @@ function App(){
     }
   }
   function handleEdit(id){setEditingId(id);setPrefillData(null);setView('saisie');}
-  function handleSaved(){loadData();setView('historique');}
+  // isNewEntry=true : le(s) nouvel(aux) atelier(s) est/sont déjà dans `entries`
+  // via onNewEntry (insertion locale) — inutile d'attendre un aller-retour
+  // GAS complet pour afficher Historique. Le prochain rechargement réel
+  // (auto 5 min, ou manuel) resynchronise avec le serveur. Une modification
+  // (édition) n'a pas ce raccourci : loadData() reste nécessaire.
+  function handleSaved(isNewEntry){ if(!isNewEntry) loadData(); setView('historique'); }
   async function handleDelete(id){
     try{const res=await apiFetch('delete',{_id:id});if(!res.ok)throw new Error(res.error);showToast('✅ Atelier supprimé');loadData();}
     catch(err){showToast('❌ '+err.message,false);}
@@ -352,7 +357,7 @@ function App(){
         [1,2,3].map(i=>CE('div',{key:i,className:'skeleton skeleton-card'}))
       ),
       !loading&&!error&&CE('div',{className:'view-anim',key:view+'_'+(filtreConseiller||'all')},
-        view==='saisie'&&visibility.saisie&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
+        view==='saisie'&&visibility.saisie&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{if(String(e.date||'').slice(0,4)===annee)setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
         view==='historique'&&visibility.historique&&CE(VueHistorique,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
         view==='agenda'&&visibility.agenda&&CE(VueAgendaSemaine,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:filtreConseiller,accentColor}),
         view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
