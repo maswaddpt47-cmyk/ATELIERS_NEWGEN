@@ -357,8 +357,8 @@ function App(){
     else{setSeenIds(new Set());loadData();}
   },[annee,auth]);
   // Onglet caché = pas d'appel : même correctif que sur Index — un onglet
-  // Admin oublié en arrière-plan ne doit pas ajouter de getAll toutes les
-  // 5 min à la file GAS (sérialisée par projet), en concurrence avec keepAlive.
+  // Admin oublié en arrière-plan ne doit pas ajouter de getAll superflu
+  // toutes les 5 min pour rien.
   React.useEffect(()=>{
     if(!auth) return;
     const id=setInterval(()=>{ if(document.visibilityState==='visible'&&!errorRef.current) loadData(1,true); },5*60*1000);

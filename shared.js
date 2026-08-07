@@ -978,8 +978,7 @@ window.onLogout = function(){
     // Un seul appel. Une seule reprise, et seulement si la requête n'a jamais
     // atteint Google (réseau coupé) ou a été refusée avant exécution
     // (429/503) — jamais parce que la réponse met du temps à arriver : GAS a
-    // déjà exécuté, en redemander ajoute une exécution pour rien dans une
-    // file qui sérialise déjà tous les appels du projet.
+    // déjà exécuté, en redemander ajoute une exécution pour rien.
     try{
       return await gasUnAppel(url, action, _attempt);
     }catch(err){
@@ -997,13 +996,15 @@ window.onLogout = function(){
 })();
 
 // ── getAll partagé : un seul appel réseau par année ────────────────────────
-// Google Apps Script sérialise les exécutions concurrentes d'un même script.
 // admin.html lançait plusieurs getAll simultanés au chargement (liste des
-// conseillers du dropdown + loadData, en plus du préchauffage) : le dernier
-// attendait la fin des précédents, donc plusieurs fois le temps d'un getAll,
-// et les timeouts de loadData expiraient tous au cold start → « Google Sheets
-// ne répond pas après 3 tentatives ». La même concurrence fait répondre 404 à
-// la redirection /exec sur mobile.
+// conseillers du dropdown + loadData, en plus du préchauffage) : au mieux
+// plusieurs exécutions GAS pour la même donnée, au pire les timeouts de
+// loadData qui expirent tous ensemble → « Google Sheets ne répond pas après
+// 3 tentatives ». Vérifié depuis via le panneau Exécutions Apps Script : GAS
+// ne sérialise pas ses exécutions (deux doGet démarrés à 1s d'intervalle s'y
+// chevauchent) — la dédup ci-dessous reste justifiée (plusieurs appels
+// réseau pour la même donnée est un gaspillage dans tous les cas), mais pas
+// pour la raison initialement supposée.
 //
 // fetchAll() garantit un seul appel en vol par année et sert un cache court :
 // le préchauffage de l'écran de login devient un vrai prefetch dont loadData
@@ -1054,10 +1055,9 @@ window.onLogout = function(){
 // composants qui en ont besoin. Contrairement à getAll, getConfig n'avait
 // aucune déduplication : jusqu'à 4 composants (hint login, maintenance,
 // rappels_actifs, check maintenance Index) déclenchaient chacun leur propre
-// aller-retour GAS pour la même info au même instant — aggravant la file
-// d'attente (sérialisée par projet) juste après le login. Logs de prod :
-// des getConfig abandonnés à 35s ou résolus en 27s juste après un login par
-// ailleurs réussi.
+// aller-retour GAS pour la même info au même instant — inutilement, puisque
+// c'est toujours la même donnée. Logs de prod : des getConfig abandonnés à
+// 35s ou résolus en 27s juste après un login par ailleurs réussi.
 (function(){
   const TTL_MS = 30000;
   let cache = null; // {promise, inflight, ts}

@@ -177,8 +177,7 @@ function App(){
   },[]);
 
   // Onglet caché = pas d'appel : un onglet Index oublié en arrière-plan
-  // ne doit pas taper sur la file GAS (sérialisée par projet) toutes les
-  // 5 min pour rien — ça entre directement en concurrence avec le keepAlive.
+  // ne doit pas ajouter de getAll superflu toutes les 5 min pour rien.
   React.useEffect(()=>{
     const id=setInterval(()=>{ if(document.visibilityState==='visible'&&!errorRef.current) loadData(1,true); },5*60*1000);
     return()=>clearInterval(id);
