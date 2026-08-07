@@ -92,3 +92,11 @@ git merge <branche> --no-ff
 git push origin main
 ```
 Le déploiement GitHub Pages ne se déclenche que sur `main`. Travailler uniquement sur une branche de feature rend les changements invisibles en production.
+
+## 5. Backend GAS
+
+Le script Google Apps Script (URL dans `shared.js` → `GS_URL`) n'est pas
+déployé depuis ce repo — pas d'API de push GAS, le déploiement reste manuel
+via l'éditeur script.google.com. `gas/GAS_NEWGEN.js` en est une copie de
+référence versionnée (diffable), à tenir à jour manuellement après chaque
+déploiement confirmé — voir `gas/README.md` pour la procédure.
