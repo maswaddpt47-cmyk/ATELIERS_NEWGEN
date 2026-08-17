@@ -1,5 +1,14 @@
 
-// ── GAS Backend v11.14 ────────────────────────────────────────
+// ── GAS Backend v11.16 ────────────────────────────────────────
+// v11.16 : CORRECTIF — actionGetLogs classait les lignes 'alertesRetard' (écrites
+//          par _logAction, même format que saveEntry/delete) dans la mauvaise
+//          branche de parsing car 'alertesRetard' manquait de la liste isB.
+//          Conséquence : conseiller affiché comme "alertesRetard" au lieu de
+//          "system", le résumé de l'envoi affiché dans la colonne Appareil, et
+//          success toujours calculé à false → chaque exécution du trigger
+//          quotidien apparaissait comme un "Échec" dans l'onglet Connexions,
+//          même quand l'envoi s'était déroulé normalement (0 destinataire actif
+//          n'est pas une erreur). isB inclut maintenant 'alertesRetard'.
 // v11.9 : suppression keepAlive — retour au cold start natif GAS
 // v11.10 : retour keepAlive (touche Sheets — utile pour Index)
 //          checkPassword — suppression _logAuth du chemin critique
@@ -525,7 +534,7 @@ function actionGetLogs(p) {
   var logs = rows.map(function(r) {
     var ts = r[0]||''; if (ts instanceof Date) ts = ts.toISOString(); else if (ts && !isNaN(Date.parse(String(ts)))) ts = new Date(String(ts)).toISOString();
     var col1 = String(r[1]||'').trim();
-    var isB = (col1==='login'||col1==='loginFail'||col1==='saveEntry'||col1==='delete'||col1==='accesIndex');
+    var isB = (col1==='login'||col1==='loginFail'||col1==='saveEntry'||col1==='delete'||col1==='accesIndex'||col1==='alertesRetard');
     var conseiller, role, success, tentatives, ua;
     if (isB) {
       conseiller = String(r[2]||''); role = String(r[4]||'user'); ua = String(r[5]||'');
