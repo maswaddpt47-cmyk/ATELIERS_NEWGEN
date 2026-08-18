@@ -551,16 +551,21 @@ function actionGetLogs(p) {
     var ts = r[0]||''; if (ts instanceof Date) ts = ts.toISOString(); else if (ts && !isNaN(Date.parse(String(ts)))) ts = new Date(String(ts)).toISOString();
     var col1 = String(r[1]||'').trim();
     var isB = (col1==='login'||col1==='loginFail'||col1==='saveEntry'||col1==='delete'||col1==='accesIndex'||col1==='alertesRetard');
-    var conseiller, role, success, tentatives, ua;
+    var conseiller, role, success, tentatives, ua, action;
     if (isB) {
       conseiller = String(r[2]||''); role = String(r[4]||'user'); ua = String(r[5]||'');
       var sv = r[6]; success = (sv===true||sv==='TRUE'||sv==='true'||sv===1||sv==='1'); tentatives = parseInt(r[7]||0);
+      action = col1;
     } else {
       conseiller = String(r[1]||''); var rawRole = String(r[2]||'').trim(); ua = String(r[4]||r[3]||'');
       tentatives = parseInt(r[5]||0); role = ['admin','user',''].indexOf(rawRole.toLowerCase())>=0?rawRole:'user';
       var sv3 = String(r[3]||'').trim().toUpperCase(); success = (sv3==='OUI'||sv3==='TRUE'||sv3==='1')?true:(sv3==='NON'||sv3==='FALSE'||sv3==='0')?false:(rawRole==='OK'||rawRole==='admin'||rawRole==='user');
+      // Format historique (avant l'ajout de la colonne action dédiée) : col1 est
+      // ici le nom du conseiller, pas une action — checkPassword est la seule
+      // action connue à avoir jamais utilisé ce format.
+      action = 'checkPassword';
     }
-    return {timestamp:ts, conseiller:conseiller, role:role, success:success, tentatives:tentatives, user_agent:ua, source:String(r[8]||'')};
+    return {timestamp:ts, conseiller:conseiller, role:role, success:success, tentatives:tentatives, user_agent:ua, source:String(r[8]||''), action:action};
   });
   return {ok:true, logs:logs};
 }
