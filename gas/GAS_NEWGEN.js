@@ -1,5 +1,10 @@
 
-// ── GAS Backend v11.16 ────────────────────────────────────────
+// ── GAS Backend v11.17 ────────────────────────────────────────
+// v11.17 : CORRECTIF — actionDelete journalisait toujours 'delete' avec un
+//          conseiller vide (_logAction('delete','',id) codé en dur), rendant
+//          impossible de savoir qui avait supprimé un atelier en consultant les
+//          logs. Le conseiller est maintenant lu sur la ligne juste avant sa
+//          suppression et transmis au log.
 // v11.16 : CORRECTIF — actionGetLogs classait les lignes 'alertesRetard' (écrites
 //          par _logAction, même format que saveEntry/delete) dans la mauvaise
 //          branche de parsing car 'alertesRetard' manquait de la liste isB.
@@ -406,7 +411,18 @@ function actionDelete(p) {
   var id = p._id || ''; if (!id) return {ok:false, error:'ID manquant'};
   var ids = sh.getRange(1,1,sh.getLastRow(),1).getValues();
   for (var i = 1; i < ids.length; i++) {
-    if (ids[i][0] === id) { sh.deleteRow(i + 1); _logAction('delete', '', id); _invalidateCache(); return {ok:true}; }
+    if (ids[i][0] === id) {
+      // conseiller lu sur la ligne avant suppression : _logAction('delete','',id)
+      // codait ce champ en dur en chaine vide, rendant impossible de savoir qui
+      // avait supprime un atelier en consultant les logs.
+      var headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(function(h) { return String(h).trim(); });
+      var iCons = headers.indexOf('conseiller');
+      var conseiller = iCons >= 0 ? String(sh.getRange(i+1,iCons+1).getValue()||'') : '';
+      sh.deleteRow(i + 1);
+      _logAction('delete', conseiller, id);
+      _invalidateCache();
+      return {ok:true};
+    }
   }
   return {ok:false, error:'Entrée introuvable'};
 }
