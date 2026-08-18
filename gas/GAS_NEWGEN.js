@@ -1,5 +1,9 @@
 
-// ── GAS Backend v11.17 ────────────────────────────────────────
+// ── GAS Backend v11.18 ────────────────────────────────────────
+// v11.18 : FEAT — actionGetLogs renvoie maintenant le champ action (delete,
+//          saveEntry, login, alertesRetard...) au frontend, qui l'affiche dans
+//          une colonne dédiée de l'onglet Connexions. Auparavant impossible de
+//          distinguer une ligne de suppression d'une ligne de connexion.
 // v11.17 : CORRECTIF — actionDelete journalisait toujours 'delete' avec un
 //          conseiller vide (_logAction('delete','',id) codé en dur), rendant
 //          impossible de savoir qui avait supprimé un atelier en consultant les
