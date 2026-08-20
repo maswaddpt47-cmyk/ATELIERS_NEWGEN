@@ -170,6 +170,14 @@ function App(){
   // ── Helpers ───────────────────────────────────────────────────
   function setAnnee(v){ localStorage.setItem('f_annee',v); setAnneeState(v); }
   function resetConseiller(){ setFiltreConseiller(null); }
+  function handleLogout(){
+    if(!window.confirm('Se déconnecter ?'))return;
+    window.authToken.clear();
+    setAuthed(false);
+    setFiltreConseiller(null);
+    setShowPicker(false);
+    setView('accueil');
+  }
   function togglePin(){ setSidebarPinned(p=>{ const n=!p; localStorage.setItem('sidebar_pinned',n?'1':'0'); return n; }); }
 
   const isFirstLoad=React.useRef(true);
@@ -451,7 +459,12 @@ function App(){
         !filtreConseiller&&CE('button',{
           className:'topbar-changer-btn',
           onClick:()=>{ resetConseiller(); setView('accueil'); }
-        },'Changer')
+        },'Changer'),
+        CE('button',{
+          className:'topbar-changer-btn',
+          title:'Déconnexion',
+          onClick:handleLogout
+        },'🚪')
       )
     ),
 
