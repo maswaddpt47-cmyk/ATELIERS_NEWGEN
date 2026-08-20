@@ -170,12 +170,22 @@ window.L = {
 
   await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 });
 
-  // Sur index.html, passer l'écran d'accueil
+  // Sur index.html, passer l'écran de connexion (mot de passe par conum),
+  // puis l'écran d'accueil (sélection du conum, affiché après connexion)
   if (!skipAccueil) {
     try {
-      const skipBtn = page.getByText('Voir tous les ateliers');
-      if (await skipBtn.isVisible({ timeout: 3000 })) {
-        await skipBtn.click();
+      const pwdInput = page.locator('input[type="password"]').first();
+      if (await pwdInput.isVisible({ timeout: 3000 })) {
+        await pwdInput.fill('test');
+        await page.getByRole('button', { name: 'Connexion' }).click();
+        await page.waitForTimeout(1500);
+      }
+    } catch (_) { /* pas d'écran de connexion */ }
+    try {
+      const accessBtn = page.getByText('Accéder à mes ateliers');
+      if (await accessBtn.isVisible({ timeout: 3000 })) {
+        await page.locator('select.accueil-select').selectOption({ index: 1 });
+        await accessBtn.click();
         await page.waitForTimeout(600);
       }
     } catch (_) { /* pas d'écran accueil */ }

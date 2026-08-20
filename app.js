@@ -22,9 +22,9 @@ function MaintenanceScreen({msg}){
   );
 }
 
-// ── VueAccueilStatic — dropdown CONUM fixe (landing) ─────────
-function VueAccueilStatic({onChoix}){
-  const CONUM_STATIC = [...CONSEILLERS_DEFAULT];
+// ── VueAccueilStatic — dropdown CONUM fixe (landing, post-authentification) ─
+function VueAccueilStatic({onChoix,conseillers}){
+  const CONUM_STATIC = conseillers&&conseillers.length?conseillers:[...CONSEILLERS_DEFAULT];
   const[choix,setChoix]=React.useState('');
   return CE('div',{className:'accueil-wrap'},
     CE('div',{className:'accueil-card'},
@@ -36,13 +36,100 @@ function VueAccueilStatic({onChoix}){
         CE('option',{value:''},'— Sélectionner votre nom —'),
         CONUM_STATIC.map(c=>CE('option',{key:c,value:c},c))
       ),
-      CE('button',{className:'accueil-btn',disabled:!choix,onClick:()=>onChoix(choix)},'📋 Accéder à mes ateliers'),
-      CE('button',{className:'accueil-skip',onClick:()=>onChoix(null)},'Voir tous les ateliers')
+      CE('button',{className:'accueil-btn',disabled:!choix,onClick:()=>onChoix(choix)},'📋 Accéder à mes ateliers')
+    )
+  );
+}
+
+// ── VueLoginIndex — gate mot de passe par conum (identification, avant l'accueil) ─
+function VueLoginIndex({conseillers,onSuccess}){
+  const MAX_FAILS=3, LOCK_MS=5*60*1000;
+  const base=conseillers&&conseillers.length?conseillers:CONSEILLERS_DEFAULT;
+
+  const[conseiller,setConseiller]=React.useState(base[0]||'');
+  const[pwd,setPwd]=React.useState('');
+  const[show,setShow]=React.useState(false);
+  const[err,setErr]=React.useState('');
+  const[loading,setLoading]=React.useState(false);
+  const[failCount,setFailCount]=React.useState(0);
+  const[lockUntil,setLockUntil]=React.useState(0);
+  const[countdown,setCountdown]=React.useState(0);
+
+  React.useEffect(()=>{ if(base.length) setConseiller(c=>base.includes(c)?c:base[0]); },[base.join(',')]);
+
+  React.useEffect(()=>{
+    if(!lockUntil||lockUntil<=Date.now())return;
+    const tick=()=>{
+      const left=lockUntil-Date.now();
+      if(left<=0){setCountdown(0);setLockUntil(0);setFailCount(0);}
+      else setCountdown(Math.ceil(left/1000));
+    };
+    tick();
+    const id=setInterval(tick,1000);
+    return()=>clearInterval(id);
+  },[lockUntil]);
+
+  const isLocked=lockUntil>Date.now()||countdown>0;
+
+  async function handleSubmit(){
+    if(!pwd.trim()||isLocked)return;
+    setLoading(true);setErr('');
+    try{
+      const res=await apiFetch('checkPassword',{conseiller,password:pwd,userAgent:navigator.userAgent,source:'index.html'});
+      if(res.ok){
+        setFailCount(0);setLockUntil(0);
+        onSuccess(conseiller,res);
+      }else{
+        const nf=failCount+1;
+        setFailCount(nf);
+        if(nf>=MAX_FAILS){
+          setLockUntil(Date.now()+LOCK_MS);
+          setErr('🔒 Trop de tentatives — accès bloqué 5 minutes.');
+        }else{
+          setErr(`Mot de passe incorrect (${nf}/${MAX_FAILS} tentative${nf>1?'s':''})`);
+        }
+      }
+    }catch(e){setErr('Erreur réseau : '+e.message);}
+    finally{setLoading(false);}
+  }
+
+  const mins=Math.floor(countdown/60), secs=String(countdown%60).padStart(2,'0');
+
+  return CE('div',{className:'accueil-wrap'},
+    CE('div',{className:'accueil-card'},
+      CE('div',{className:'accueil-logo'},'🖥️'),
+      CE('div',{className:'accueil-title'},'Ateliers Inclusion Numérique — NewGen'),
+      CE('div',{className:'accueil-sub'},'Conseil Départemental du Lot-et-Garonne'),
+      isLocked
+        ? CE('div',{style:{textAlign:'center',padding:'28px 0'}},
+            CE('div',{style:{fontSize:44,marginBottom:10}},'🔒'),
+            CE('div',{style:{fontSize:15,fontWeight:700,color:'#c53030',marginBottom:6}},'Accès temporairement bloqué'),
+            CE('div',{style:{fontSize:28,fontWeight:800,color:'#1a202c',fontVariantNumeric:'tabular-nums'}},mins+'m'+secs+'s'),
+            CE('div',{style:{fontSize:12,color:'#9ca3af',marginTop:4}},'Trop de tentatives incorrectes')
+          )
+        : CE(React.Fragment,null,
+            CE('label',{className:'accueil-label'},'Qui êtes-vous ?'),
+            CE('select',{className:'accueil-select',value:conseiller,onChange:e=>setConseiller(e.target.value)},
+              base.map(c=>CE('option',{key:c,value:c},c))
+            ),
+            CE('div',{style:{position:'relative',margin:'10px 0'}},
+              CE('input',{
+                type:show?'text':'password',placeholder:'Mot de passe',value:pwd,
+                onChange:e=>setPwd(e.target.value),
+                onKeyDown:e=>e.key==='Enter'&&handleSubmit(),
+                style:{width:'100%',padding:'10px 40px 10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)'}
+              }),
+              CE('button',{onClick:()=>setShow(s=>!s),style:{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#718096',padding:0}},show?'🙈':'👁️')
+            ),
+            err&&CE('p',{style:{color:'#c53030',fontSize:13,marginBottom:8}},err),
+            CE('button',{className:'accueil-btn',disabled:loading||!pwd.trim(),onClick:handleSubmit},loading?'Vérification…':'🔓 Connexion')
+          )
     )
   );
 }
 
 function App(){
+  const[authed,setAuthed]          = React.useState(()=>!!window.authToken.get());
   const[view,setView]              = React.useState('accueil');
   const[entries,setEntries]        = React.useState([]);
   const[loading,setLoading]        = React.useState(true);
@@ -221,6 +308,13 @@ function App(){
   // une confirmation positive de getConfig bascule sur MaintenanceScreen.
   if(maintenance && maintenance!==false) return CE(MaintenanceScreen,{msg:maintenance.msg});
 
+  if(!authed){
+    return CE(VueLoginIndex,{
+      conseillers:lists.conseillers,
+      onSuccess:(nom,res)=>{ window.onLoginSuccess(nom,res); setAuthed(true); }
+    });
+  }
+
   if(view==='accueil'){
     const now=new Date();
     const moisKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
@@ -276,7 +370,7 @@ function App(){
                   );
                 })
               ),
-              CE(VueAccueilStatic,{onChoix:handleChoixConseiller})
+              CE(VueAccueilStatic,{onChoix:handleChoixConseiller,conseillers:lists.conseillers})
             )
       ),
       CE('div',{id:'toast',className:'toast',style:{opacity:0}})
