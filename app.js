@@ -54,7 +54,6 @@ function VueLoginIndex({conseillers,onSuccess}){
   const[failCount,setFailCount]=React.useState(0);
   const[lockUntil,setLockUntil]=React.useState(0);
   const[countdown,setCountdown]=React.useState(0);
-  const[debugRes,setDebugRes]=React.useState(''); // diagnostic temporaire — à retirer une fois le bug de connexion résolu
 
   React.useEffect(()=>{ if(base.length) setConseiller(c=>base.includes(c)?c:base[0]); },[base.join(',')]);
 
@@ -77,7 +76,6 @@ function VueLoginIndex({conseillers,onSuccess}){
     setLoading(true);setErr('');
     try{
       const res=await apiFetch('checkPassword',{conseiller,password:pwd,userAgent:navigator.userAgent,source:'index.html'});
-      setDebugRes(JSON.stringify(res));
       if(res.ok){
         setFailCount(0);setLockUntil(0);
         onSuccess(conseiller,res);
@@ -92,7 +90,7 @@ function VueLoginIndex({conseillers,onSuccess}){
           setErr(`${raison} (${nf}/${MAX_FAILS} tentative${nf>1?'s':''})`);
         }
       }
-    }catch(e){setErr('Erreur réseau : '+e.message);setDebugRes('EXCEPTION: '+e.message);}
+    }catch(e){setErr('Erreur réseau : '+e.message);}
     finally{setLoading(false);}
   }
 
@@ -125,8 +123,7 @@ function VueLoginIndex({conseillers,onSuccess}){
               CE('button',{onClick:()=>setShow(s=>!s),style:{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#718096',padding:0}},show?'🙈':'👁️')
             ),
             err&&CE('p',{style:{color:'#c53030',fontSize:13,marginBottom:8}},err),
-            CE('button',{className:'accueil-btn',disabled:loading||!pwd.trim(),onClick:handleSubmit},loading?'Vérification…':'🔓 Connexion'),
-            debugRes&&CE('p',{style:{fontFamily:'monospace',fontSize:10,color:'#9ca3af',marginTop:10,wordBreak:'break-all',border:'1px dashed #cbd5e0',borderRadius:6,padding:6}},'🔧 Diag temporaire — réponse brute : ',debugRes)
+            CE('button',{className:'accueil-btn',disabled:loading||!pwd.trim(),onClick:handleSubmit},loading?'Vérification…':'🔓 Connexion')
           )
     )
   );
