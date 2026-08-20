@@ -311,7 +311,7 @@ function App(){
   if(!authed){
     return CE(VueLoginIndex,{
       conseillers:lists.conseillers,
-      onSuccess:(nom,res)=>{ window.onLoginSuccess(nom,res); setAuthed(true); }
+      onSuccess:(nom,res)=>{ window.onLoginSuccess(nom,res); setAuthed(true); handleChoixConseiller(nom); }
     });
   }
 
