@@ -41,6 +41,15 @@ function VueAccueilStatic({onChoix,conseillers}){
   );
 }
 
+// Miroir JS de defaultPwd() côté GAS — formule publique (cd47+prénom), pas un
+// secret : sert uniquement à détecter côté client qu'un conum utilise encore
+// son mot de passe de création, pour déclencher le changement obligatoire.
+function defaultPwdIndex(nom){
+  var p=(nom||'').split(' ')[0]||nom||'';
+  p=p.toLowerCase().replace(/[àâä]/g,'a').replace(/[éèêë]/g,'e').replace(/[îï]/g,'i').replace(/[ôö]/g,'o').replace(/[ùûü]/g,'u').replace(/ç/g,'c');
+  return 'cd47'+p;
+}
+
 // ── VueLoginIndex — gate mot de passe par conum (identification, avant l'accueil) ─
 function VueLoginIndex({conseillers,onSuccess}){
   const MAX_FAILS=3, LOCK_MS=5*60*1000;
@@ -54,6 +63,15 @@ function VueLoginIndex({conseillers,onSuccess}){
   const[failCount,setFailCount]=React.useState(0);
   const[lockUntil,setLockUntil]=React.useState(0);
   const[countdown,setCountdown]=React.useState(0);
+
+  // Mot de passe par défaut détecté à la connexion → changement obligatoire
+  // avant d'entrer, tant que pendingRes n'est pas encore transmis à onSuccess.
+  const[mustChangePwd,setMustChangePwd]=React.useState(false);
+  const[pendingRes,setPendingRes]=React.useState(null);
+  const[newPwd,setNewPwd]=React.useState('');
+  const[newPwd2,setNewPwd2]=React.useState('');
+  const[newPwdErr,setNewPwdErr]=React.useState('');
+  const[changingPwd,setChangingPwd]=React.useState(false);
 
   React.useEffect(()=>{ if(base.length) setConseiller(c=>base.includes(c)?c:base[0]); },[base.join(',')]);
 
@@ -78,7 +96,12 @@ function VueLoginIndex({conseillers,onSuccess}){
       const res=await apiFetch('checkPassword',{conseiller,password:pwd,userAgent:navigator.userAgent,source:'index.html'});
       if(res.ok){
         setFailCount(0);setLockUntil(0);
-        onSuccess(conseiller,res);
+        if(pwd.trim()===defaultPwdIndex(conseiller)){
+          setPendingRes(res);
+          setMustChangePwd(true);
+        }else{
+          onSuccess(conseiller,res);
+        }
       }else{
         const nf=failCount+1;
         setFailCount(nf);
@@ -94,6 +117,21 @@ function VueLoginIndex({conseillers,onSuccess}){
     finally{setLoading(false);}
   }
 
+  async function handleChangePwd(){
+    if(newPwd.length<8){setNewPwdErr('8 caractères minimum');return;}
+    if(newPwd!==newPwd2){setNewPwdErr('Les mots de passe ne correspondent pas');return;}
+    setChangingPwd(true);setNewPwdErr('');
+    try{
+      const res2=await apiFetch('selfSetPassword',{password:newPwd,token:pendingRes.token});
+      if(res2&&res2.ok){
+        onSuccess(conseiller,pendingRes);
+      }else{
+        setNewPwdErr(res2&&res2.error||'Erreur');
+      }
+    }catch(e){setNewPwdErr('Erreur réseau : '+e.message);}
+    finally{setChangingPwd(false);}
+  }
+
   const mins=Math.floor(countdown/60), secs=String(countdown%60).padStart(2,'0');
 
   return CE('div',{className:'accueil-wrap'},
@@ -107,6 +145,29 @@ function VueLoginIndex({conseillers,onSuccess}){
             CE('div',{style:{fontSize:15,fontWeight:700,color:'#c53030',marginBottom:6}},'Accès temporairement bloqué'),
             CE('div',{style:{fontSize:28,fontWeight:800,color:'#1a202c',fontVariantNumeric:'tabular-nums'}},mins+'m'+secs+'s'),
             CE('div',{style:{fontSize:12,color:'#9ca3af',marginTop:4}},'Trop de tentatives incorrectes')
+          )
+        : mustChangePwd
+        ? CE(React.Fragment,null,
+            CE('div',{style:{textAlign:'center',fontSize:32,marginBottom:8}},'🔑'),
+            CE('div',{style:{fontSize:14,fontWeight:700,color:'#1a202c',textAlign:'center',marginBottom:4}},'Mot de passe par défaut détecté'),
+            CE('div',{style:{fontSize:12,color:'#718096',textAlign:'center',marginBottom:16}},'Choisissez un nouveau mot de passe personnel pour continuer.'),
+            CE('div',{style:{position:'relative',margin:'0 0 10px'}},
+              CE('input',{
+                type:'password',placeholder:'Nouveau mot de passe (min. 8 caractères)',value:newPwd,
+                onChange:e=>setNewPwd(e.target.value),
+                style:{width:'100%',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)'}
+              })
+            ),
+            CE('div',{style:{position:'relative',margin:'0 0 10px'}},
+              CE('input',{
+                type:'password',placeholder:'Confirmer',value:newPwd2,
+                onChange:e=>setNewPwd2(e.target.value),
+                onKeyDown:e=>e.key==='Enter'&&handleChangePwd(),
+                style:{width:'100%',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)'}
+              })
+            ),
+            newPwdErr&&CE('p',{style:{color:'#c53030',fontSize:13,marginBottom:8}},newPwdErr),
+            CE('button',{className:'accueil-btn',disabled:changingPwd||!newPwd||!newPwd2,onClick:handleChangePwd},changingPwd?'Enregistrement…':'✅ Valider et continuer')
           )
         : CE(React.Fragment,null,
             CE('label',{className:'accueil-label'},'Qui êtes-vous ?'),

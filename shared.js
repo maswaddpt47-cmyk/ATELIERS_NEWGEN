@@ -933,7 +933,7 @@ window.onLogout = function(){
     'getLogs'
   ]);
   const WRITE_ACTIONS = new Set([
-    'saveEntry','saveMany','delete',
+    'saveEntry','saveMany','delete','selfSetPassword',
     ...ADMIN_ONLY_ACTIONS
   ]);
 

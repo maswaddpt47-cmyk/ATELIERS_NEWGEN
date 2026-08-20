@@ -1,5 +1,14 @@
 
-// ── GAS Backend v11.18 ────────────────────────────────────────
+// ── GAS Backend v11.19 ────────────────────────────────────────
+// v11.19 : FEAT — nouvelle action selfSetPassword : un conseiller connecté
+//          (n'importe quel rôle, pas seulement admin/superviseur) peut changer
+//          SON PROPRE mot de passe. Volontairement hors ADMIN_ONLY_ACTIONS —
+//          la protection vient de _verifyToken : le conseiller ciblé est
+//          toujours celui du token (tokenCheck.conseiller), jamais un
+//          p.conseiller envoyé par le client, donc impossible de changer le
+//          mot de passe de quelqu'un d'autre par ce chemin. Sert le nouveau
+//          flux "mot de passe par défaut détecté à la connexion → changement
+//          obligatoire" sur index.html.
 // v11.18 : FEAT — actionGetLogs renvoie maintenant le champ action (delete,
 //          saveEntry, login, alertesRetard...) au frontend, qui l'affiche dans
 //          une colonne dédiée de l'onglet Connexions. Auparavant impossible de
@@ -232,6 +241,7 @@ function handleWriteAction(p) {
   if (action === 'saveCompte')     return actionSaveCompte(p);
   if (action === 'resetPassword')  return actionResetPassword(p);
   if (action === 'setPassword')    return actionSetPassword(p);
+  if (action === 'selfSetPassword')return actionSelfSetPassword(p);
   if (action === 'logAccesIndex')  return actionLogAccesIndex(p);
   if (action === 'getLogs')        return actionGetLogs(p);
   return {ok:false, error:'action inconnue: ' + action};
@@ -529,6 +539,21 @@ function actionResetPassword(p) {
 function actionSetPassword(p) {
   var nom = String(p.conseiller || '').trim(), pwd = String(p.password || '').trim();
   if (!nom || !pwd) return {ok:false, error:'Paramètres manquants'};
+  if (pwd.length < 8) return {ok:false, error:'Le mot de passe doit contenir au moins 8 caractères.'};
+  var row = _findCompte(nom); if (!row) return {ok:false, error:'Conseiller introuvable'};
+  var sh = _ss().getSheetByName('Comptes');
+  var headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(function(h) { return String(h).trim(); });
+  sh.getRange(row.rowIndex, headers.indexOf('Hash') + 1).setValue(_sha256(pwd));
+  return {ok:true};
+}
+// v11.19 : conseiller change SON PROPRE mot de passe — cible toujours
+// tokenCheck.conseiller (jamais p.conseiller), donc pas de gate admin requis.
+function actionSelfSetPassword(p) {
+  var tokenCheck = _verifyToken(p.token);
+  if (!tokenCheck.ok) return {ok:false, error:'Non autorisé : ' + tokenCheck.error};
+  var nom = tokenCheck.conseiller;
+  var pwd = String(p.password || '').trim();
+  if (!pwd) return {ok:false, error:'Mot de passe manquant'};
   if (pwd.length < 8) return {ok:false, error:'Le mot de passe doit contenir au moins 8 caractères.'};
   var row = _findCompte(nom); if (!row) return {ok:false, error:'Conseiller introuvable'};
   var sh = _ss().getSheetByName('Comptes');
