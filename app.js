@@ -150,10 +150,11 @@ function VueLoginIndex({conseillers,onSuccess}){
         ? CE(React.Fragment,null,
             CE('div',{style:{textAlign:'center',fontSize:32,marginBottom:8}},'🔑'),
             CE('div',{style:{fontSize:14,fontWeight:700,color:'#1a202c',textAlign:'center',marginBottom:4}},'Mot de passe par défaut détecté'),
-            CE('div',{style:{fontSize:12,color:'#718096',textAlign:'center',marginBottom:16}},'Choisissez un nouveau mot de passe personnel pour continuer.'),
+            CE('div',{style:{fontSize:12,color:'#718096',textAlign:'center',marginBottom:4}},'Choisissez un nouveau mot de passe personnel pour continuer.'),
+            CE('div',{style:{fontSize:11,color:'#a0aec0',textAlign:'center',marginBottom:12}},'12 caractères min. avec majuscule, minuscule, chiffre et caractère spécial.'),
             CE('div',{style:{position:'relative',margin:'0 0 10px'}},
               CE('input',{
-                type:'password',placeholder:'Nouveau mot de passe (12 car. min., Maj/min/chiffre/spécial)',value:newPwd,
+                type:'password',placeholder:'Nouveau mot de passe',value:newPwd,
                 onChange:e=>setNewPwd(e.target.value),
                 style:{width:'100%',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)'}
               })

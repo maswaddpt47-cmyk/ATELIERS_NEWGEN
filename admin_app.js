@@ -786,7 +786,7 @@ function ChangerMotDePasse({adminConseiller}){
       CE('div',null,
         CE('label',null,'Nouveau mot de passe'),
         CE('div',{style:{position:'relative'}},
-          CE('input',{type:show?'text':'password',value:pwd,onChange:e=>setPwd(e.target.value),placeholder:'12 car. min., Maj/min/chiffre/spécial',style:inputStyle}),
+          CE('input',{type:show?'text':'password',value:pwd,onChange:e=>setPwd(e.target.value),placeholder:'Nouveau mot de passe',style:inputStyle}),
           CE('button',{onClick:()=>setShow(s=>!s),style:eyeStyle},show?'🙈':'👁️')
         )
       ),
@@ -799,7 +799,8 @@ function ChangerMotDePasse({adminConseiller}){
       ),
       CE('button',{className:'btn btn-primary',disabled:saving||!currentPwd||!pwd||!pwd2,onClick:handleSave,style:{alignSelf:'flex-end'}},saving?'Sauvegarde…':'💾 Sauvegarder')
     ),
-    msg&&CE('p',{style:{marginTop:8,fontSize:13,color:msg.ok?'#276749':'#c53030'}},msg.txt)
+    CE('p',{style:{marginTop:8,fontSize:11,color:'#a0aec0'}},'12 caractères min. avec majuscule, minuscule, chiffre et caractère spécial.'),
+    msg&&CE('p',{style:{marginTop:4,fontSize:13,color:msg.ok?'#276749':'#c53030'}},msg.txt)
   );
 }
 
