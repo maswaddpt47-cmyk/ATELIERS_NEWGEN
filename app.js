@@ -154,6 +154,19 @@ function App(){
   const[darkMode,setDarkMode]=React.useState(()=>localStorage.getItem('f_dark')==='1');
   React.useEffect(()=>{document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');localStorage.setItem('f_dark',darkMode?'1':'0');},[darkMode]);
 
+  // Un token peut déjà être présent en sessionStorage au chargement (login
+  // précédent dans cet onglet, ou déjà connecté sur admin.html — sessionStorage
+  // est partagé entre les pages d'une même origine et survit à un simple
+  // rechargement). Dans ce cas authed démarre déjà à true et VueLoginIndex ne
+  // s'affiche jamais : sans ce useEffect on retombait sur l'ancien écran
+  // "Qui êtes-vous ?" (VueAccueilStatic) au lieu de rester identifié.
+  React.useEffect(()=>{
+    if(authed&&!filtreConseiller){
+      const stored=sessionStorage.getItem('gs_conseiller');
+      if(stored) handleChoixConseiller(stored);
+    }
+  },[]);
+
   // ── Helpers ───────────────────────────────────────────────────
   function setAnnee(v){ localStorage.setItem('f_annee',v); setAnneeState(v); }
   function resetConseiller(){ setFiltreConseiller(null); }
