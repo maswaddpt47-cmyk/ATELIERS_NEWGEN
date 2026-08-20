@@ -82,11 +82,12 @@ function VueLoginIndex({conseillers,onSuccess}){
       }else{
         const nf=failCount+1;
         setFailCount(nf);
+        const raison=res.error||'Mot de passe incorrect';
         if(nf>=MAX_FAILS){
           setLockUntil(Date.now()+LOCK_MS);
           setErr('🔒 Trop de tentatives — accès bloqué 5 minutes.');
         }else{
-          setErr(`Mot de passe incorrect (${nf}/${MAX_FAILS} tentative${nf>1?'s':''})`);
+          setErr(`${raison} (${nf}/${MAX_FAILS} tentative${nf>1?'s':''})`);
         }
       }
     }catch(e){setErr('Erreur réseau : '+e.message);}
