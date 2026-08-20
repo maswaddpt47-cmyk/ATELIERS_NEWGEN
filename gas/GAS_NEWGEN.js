@@ -1,5 +1,11 @@
 
-// ── GAS Backend v11.19 ────────────────────────────────────────
+// ── GAS Backend v11.20 ────────────────────────────────────────
+// v11.20 : FEAT — politique de mot de passe (12 caractères min., majuscule,
+//          minuscule, chiffre, caractère spécial) sur actionSetPassword et
+//          actionSelfSetPassword — remplace le simple "8 caractères min.".
+//          Ne s'applique pas à resetPassword (mot de passe par défaut
+//          cd47+prénom, volontairement faible mais temporaire, remplacé de
+//          force au prochain login via selfSetPassword).
 // v11.19 : FEAT — nouvelle action selfSetPassword : un conseiller connecté
 //          (n'importe quel rôle, pas seulement admin/superviseur) peut changer
 //          SON PROPRE mot de passe. Volontairement hors ADMIN_ONLY_ACTIONS —
@@ -536,10 +542,17 @@ function actionResetPassword(p) {
   sh.getRange(row.rowIndex, headers.indexOf('Hash') + 1).setValue(newPwd);
   return {ok:true, newPassword:newPwd};
 }
+// v11.20 : politique de mot de passe pour un mot de passe auto-choisi (pas le
+// défaut cd47+prénom généré par resetPassword, volontairement faible mais
+// temporaire — le changement obligatoire à la connexion force à le remplacer).
+var PWD_POLICY_MSG = 'Le mot de passe doit contenir au moins 12 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.';
+function _pwdPolicyOk(pwd) {
+  return pwd.length >= 12 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd);
+}
 function actionSetPassword(p) {
   var nom = String(p.conseiller || '').trim(), pwd = String(p.password || '').trim();
   if (!nom || !pwd) return {ok:false, error:'Paramètres manquants'};
-  if (pwd.length < 8) return {ok:false, error:'Le mot de passe doit contenir au moins 8 caractères.'};
+  if (!_pwdPolicyOk(pwd)) return {ok:false, error:PWD_POLICY_MSG};
   var row = _findCompte(nom); if (!row) return {ok:false, error:'Conseiller introuvable'};
   var sh = _ss().getSheetByName('Comptes');
   var headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(function(h) { return String(h).trim(); });
@@ -554,7 +567,7 @@ function actionSelfSetPassword(p) {
   var nom = tokenCheck.conseiller;
   var pwd = String(p.password || '').trim();
   if (!pwd) return {ok:false, error:'Mot de passe manquant'};
-  if (pwd.length < 8) return {ok:false, error:'Le mot de passe doit contenir au moins 8 caractères.'};
+  if (!_pwdPolicyOk(pwd)) return {ok:false, error:PWD_POLICY_MSG};
   var row = _findCompte(nom); if (!row) return {ok:false, error:'Conseiller introuvable'};
   var sh = _ss().getSheetByName('Comptes');
   var headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(function(h) { return String(h).trim(); });

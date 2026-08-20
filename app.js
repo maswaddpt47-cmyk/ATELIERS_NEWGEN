@@ -118,7 +118,7 @@ function VueLoginIndex({conseillers,onSuccess}){
   }
 
   async function handleChangePwd(){
-    if(newPwd.length<8){setNewPwdErr('8 caractères minimum');return;}
+    if(!pwdPolicyOk(newPwd)){setNewPwdErr(PWD_POLICY_MSG);return;}
     if(newPwd!==newPwd2){setNewPwdErr('Les mots de passe ne correspondent pas');return;}
     setChangingPwd(true);setNewPwdErr('');
     try{
@@ -153,7 +153,7 @@ function VueLoginIndex({conseillers,onSuccess}){
             CE('div',{style:{fontSize:12,color:'#718096',textAlign:'center',marginBottom:16}},'Choisissez un nouveau mot de passe personnel pour continuer.'),
             CE('div',{style:{position:'relative',margin:'0 0 10px'}},
               CE('input',{
-                type:'password',placeholder:'Nouveau mot de passe (min. 8 caractères)',value:newPwd,
+                type:'password',placeholder:'Nouveau mot de passe (12 car. min., Maj/min/chiffre/spécial)',value:newPwd,
                 onChange:e=>setNewPwd(e.target.value),
                 style:{width:'100%',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)'}
               })
