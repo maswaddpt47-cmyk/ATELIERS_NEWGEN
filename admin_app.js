@@ -759,11 +759,11 @@ function ChangerMotDePasse({adminConseiller}){
 
   async function handleSave(){
     if(!currentPwd){setMsg({ok:false,txt:'Mot de passe actuel requis'});return;}
-    if(pwd.length<4){setMsg({ok:false,txt:'4 caractères minimum'});return;}
+    if(pwd.length<8){setMsg({ok:false,txt:'8 caractères minimum'});return;}
     if(pwd!==pwd2){setMsg({ok:false,txt:'Les mots de passe ne correspondent pas'});return;}
     setSaving(true);setMsg(null);
     try{
-      const res=await apiFetch('setPassword',{conseiller:adminConseiller,currentPwd,pwd});
+      const res=await apiFetch('setPassword',{conseiller:adminConseiller,currentPwd,password:pwd});
       if(res.ok){setMsg({ok:true,txt:'✅ Mot de passe mis à jour'});setCurrentPwd('');setPwd('');setPwd2('');}
       else setMsg({ok:false,txt:res.error||'Erreur'});
     }catch(e){setMsg({ok:false,txt:'Erreur réseau'});}
@@ -786,7 +786,7 @@ function ChangerMotDePasse({adminConseiller}){
       CE('div',null,
         CE('label',null,'Nouveau mot de passe'),
         CE('div',{style:{position:'relative'}},
-          CE('input',{type:show?'text':'password',value:pwd,onChange:e=>setPwd(e.target.value),placeholder:'Min. 4 caractères',style:inputStyle}),
+          CE('input',{type:show?'text':'password',value:pwd,onChange:e=>setPwd(e.target.value),placeholder:'Min. 8 caractères',style:inputStyle}),
           CE('button',{onClick:()=>setShow(s=>!s),style:eyeStyle},show?'🙈':'👁️')
         )
       ),
