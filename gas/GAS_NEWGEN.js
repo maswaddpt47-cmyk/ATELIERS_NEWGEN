@@ -1,5 +1,10 @@
 
-// ── GAS Backend v11.25 ────────────────────────────────────────
+// ── GAS Backend v11.26 ────────────────────────────────────────
+// v11.26 : NETTOYAGE — correctif PropertiesService (v11.25) confirmé stable
+//          par test réel. Retrait des diagnostics temporaires (v11.22-25) :
+//          _generateToken renvoie de nouveau directement le token (string),
+//          checkPassword ne renvoie plus diagSelfCheckOk/diagAttempts, et
+//          le texte de debug sur l'écran de connexion (app.js) est retiré.
 // v11.25 : CORRECTIF — les 3 tentatives de v11.24 sur CacheService ont
 //          TOUTES échoué en prod (diagAttempts:3, diagSelfCheckOk:false) :
 //          pas une consistance différée occasionnelle, une lecture qui
@@ -316,11 +321,7 @@ function _generateToken(conseiller, role) {
   var now = new Date().getTime();
   var payload = JSON.stringify({conseiller:conseiller, role:role, ts:now, exp:now + TOKEN_TTL_SECONDS*1000});
   props.setProperty('token_' + token, payload);
-  // DIAG TEMPORAIRE v11.25 — relecture immédiate, pour confirmer que
-  // PropertiesService est bien fiable ici (contrairement à CacheService,
-  // voir v11.22-24). À retirer une fois confirmé par un test réel.
-  var selfCheck = props.getProperty('token_' + token);
-  return {token:token, diagSelfCheckOk: !!selfCheck, diagAttempts:0, diagStore:'PropertiesService'};
+  return token;
 }
 // v11.15 : ne vérifie plus que la validité du token et le rôle qu'il porte —
 // jamais une correspondance avec p.conseiller (voir note v11.15 en tête de
@@ -332,10 +333,7 @@ function _verifyToken(token) {
   if (!token) return {ok:false, error:'Token manquant'};
   var props = PropertiesService.getScriptProperties();
   var raw = props.getProperty('token_' + token);
-  if (!raw) {
-    // DIAG TEMPORAIRE v11.23 — détail directement dans le message d'erreur.
-    return {ok:false, error:'Token invalide ou expiré [reçu="' + token + '" longueur=' + token.length + ']'};
-  }
+  if (!raw) return {ok:false, error:'Token invalide ou expiré'};
   try {
     var payload = JSON.parse(raw);
     if (payload.exp && new Date().getTime() > payload.exp) {
@@ -381,11 +379,9 @@ function actionCheckPassword(p) {
   }
   cache.remove(rlKey);
   var role = String(rowData[iRole] || 'user').trim();
-  var tokenInfo = _generateToken(nom, role);
+  var token = _generateToken(nom, role);
   // pas de _logAuth ici — le frontend appelle logLogin en fire-and-forget
-  // diagSelfCheckOk/diagAttempts : DIAG TEMPORAIRE v11.23/v11.24, à retirer
-  // une fois le correctif confirmé.
-  return {ok:true, role:role, token:tokenInfo.token, diagSelfCheckOk:tokenInfo.diagSelfCheckOk, diagAttempts:tokenInfo.diagAttempts};
+  return {ok:true, role:role, token:token};
 }
 // ── v11.10 : logLogin — appelé par le frontend après connexion réussie ──
 function actionLogLogin(p) {
@@ -790,7 +786,7 @@ function backupGAS() {
   var date = Utilities.formatDate(new Date(), 'Europe/Paris', 'yyyy-MM-dd_HH-mm');
   var folders = DriveApp.getFoldersByName('GAS_Backups');
   var dossier = folders.hasNext() ? folders.next() : DriveApp.createFolder('GAS_Backups');
-  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.25 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
+  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.26 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
   Logger.log('Backup créé.');
 }
 function _getAteliersRetard() {
@@ -887,7 +883,7 @@ function testerSecuriteDoGet() {
   });
   // v11.13 : un token valide mais de rôle "user" doit être refusé sur les
   // actions admin — c'était le second trou (rôle jamais vérifié).
-  var fakeUserToken = _generateToken('__test_user__', 'user').token;
+  var fakeUserToken = _generateToken('__test_user__', 'user');
   var fakeEvent2 = { parameter: { action: 'saveConfig', token: fakeUserToken, conseiller: '__test_user__', key: 'test', value: 'x' } };
   var result2 = JSON.parse(doGet(fakeEvent2).getContent());
   var bloqueRole = result2.ok === false && result2.error && result2.error.indexOf('administrateurs') !== -1;
