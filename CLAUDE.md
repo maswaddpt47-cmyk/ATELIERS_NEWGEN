@@ -58,6 +58,18 @@ déploiement avant qu'elle n'atteigne GitHub Pages.
 
 **À exécuter avant tout commit touchant `shared.js`, `app.js` ou `admin_app.js`.**
 
+**Économie de tokens/quota — pas par défaut sur les changements mineurs :**
+`node --check` (syntaxe) reste systématique dans tous les cas — c'est lui qui
+attrape la classe de bug (point-virgule manquant, IIFE cassée) qui justifiait
+`e2e` à l'origine. Mais `sandbox.test.js`/`e2e.test.js` ne sont **pas**
+à relancer par défaut pour un changement mineur (texte, style, ajout d'un
+élément UI sans nouvelle logique) — l'utilisateur vérifie lui-même en direct,
+et la CI relance `e2e` à chaque push de toute façon (bloque le déploiement si
+ça casse). À exécuter localement avant de commiter dès que le changement
+touche à un comportement : nouveau flux d'authentification, nouvelle action
+GAS, changement d'état/de flux, ou en cas de doute — demander à l'utilisateur
+si l'un des deux n'est pas sûr du niveau de risque.
+
 **Après toute modification de `utils.js` ou `logic.js` :**
 1. Modifier la fonction
 2. Exécuter le runner correspondant
