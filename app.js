@@ -157,6 +157,10 @@ function VueLoginIndex({conseillers,onSuccess}){
             CE('div',{style:{fontSize:28,fontWeight:800,color:'#1a202c',fontVariantNumeric:'tabular-nums'}},mins+'m'+secs+'s'),
             CE('div',{style:{fontSize:12,color:'#9ca3af',marginTop:4}},'Trop de tentatives incorrectes')
           )
+        : loading
+        ? CE(AttenteGAS,{titre:'Connexion en cours…'})
+        : mustChangePwd&&changingPwd
+        ? CE(AttenteGAS,{titre:'Enregistrement du nouveau mot de passe…'})
         : mustChangePwd
         ? CE(React.Fragment,null,
             CE('div',{style:{textAlign:'center',fontSize:32,marginBottom:8}},'🔑'),
