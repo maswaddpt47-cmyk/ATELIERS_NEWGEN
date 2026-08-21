@@ -1,5 +1,17 @@
 
-// ── GAS Backend v11.20 ────────────────────────────────────────
+// ── GAS Backend v11.21 ────────────────────────────────────────
+// v11.21 : CORRECTIF — TOKEN_TTL_SECONDS valait 8*60*60 (28800s), au-dessus
+//          de la limite documentée de CacheService.put() (21600s / 6h max).
+//          Hypothèse non confirmée avec certitude (le diff v11.18→v11.20 ne
+//          touche ni doGet, ni _verifyToken, ni _generateToken — un "Token
+//          invalide ou expiré" est apparu ce soir sur des actions comme
+//          getLogs qui fonctionnaient déjà avant le chantier MdP, donc cette
+//          régression n'est structurellement pas due aux changements de
+//          v11.19/v11.20). Corrigé à 6h par prudence — dépasser la limite
+//          documentée d'une API est incorrect indépendamment de la cause
+//          réelle du bug signalé. Si le problème persiste après ce correctif,
+//          la cause est probablement ponctuelle côté Google (CacheService),
+//          pas dans ce script.
 // v11.20 : FEAT — politique de mot de passe (12 caractères min., majuscule,
 //          minuscule, chiffre, caractère spécial) sur actionSetPassword et
 //          actionSelfSetPassword — remplace le simple "8 caractères min.".
@@ -86,7 +98,7 @@ var ADMIN_ONLY_ACTIONS = [
   'saveCompte','resetPassword','setPassword',
   'getLogs'
 ];
-var TOKEN_TTL_SECONDS = 8 * 60 * 60;
+var TOKEN_TTL_SECONDS = 6 * 60 * 60; // 21600s = maximum documenté de CacheService.put() ; 28800 (8h) le dépassait
 var _SS = null;
 function _ss() {
   if (!_SS) _SS = SpreadsheetApp.getActiveSpreadsheet();
