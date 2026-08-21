@@ -72,6 +72,7 @@ function VueLoginIndex({conseillers,onSuccess}){
   const[newPwd2,setNewPwd2]=React.useState('');
   const[newPwdErr,setNewPwdErr]=React.useState('');
   const[changingPwd,setChangingPwd]=React.useState(false);
+  const[showNewPwd,setShowNewPwd]=React.useState(false);
 
   React.useEffect(()=>{ if(base.length) setConseiller(c=>base.includes(c)?c:base[0]); },[base.join(',')]);
 
@@ -154,18 +155,20 @@ function VueLoginIndex({conseillers,onSuccess}){
             CE('div',{style:{fontSize:11,color:'#a0aec0',textAlign:'center',marginBottom:12}},'12 caractères min. avec majuscule, minuscule, chiffre et caractère spécial.'),
             CE('div',{style:{position:'relative',margin:'0 0 10px'}},
               CE('input',{
-                type:'password',placeholder:'Nouveau mot de passe',value:newPwd,
+                type:showNewPwd?'text':'password',placeholder:'Nouveau mot de passe',value:newPwd,
                 onChange:e=>setNewPwd(e.target.value),
-                style:{width:'100%',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)'}
-              })
+                style:{width:'100%',padding:'10px 40px 10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)'}
+              }),
+              CE('button',{onClick:()=>setShowNewPwd(s=>!s),style:{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#718096',padding:0}},showNewPwd?'🙈':'👁️')
             ),
             CE('div',{style:{position:'relative',margin:'0 0 10px'}},
               CE('input',{
-                type:'password',placeholder:'Confirmer',value:newPwd2,
+                type:showNewPwd?'text':'password',placeholder:'Confirmer',value:newPwd2,
                 onChange:e=>setNewPwd2(e.target.value),
                 onKeyDown:e=>e.key==='Enter'&&handleChangePwd(),
-                style:{width:'100%',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)'}
-              })
+                style:{width:'100%',padding:'10px 40px 10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)'}
+              }),
+              CE('button',{onClick:()=>setShowNewPwd(s=>!s),style:{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#718096',padding:0}},showNewPwd?'🙈':'👁️')
             ),
             newPwdErr&&CE('p',{style:{color:'#c53030',fontSize:13,marginBottom:8}},newPwdErr),
             CE('button',{className:'accueil-btn',disabled:changingPwd||!newPwd||!newPwd2,onClick:handleChangePwd},changingPwd?'Enregistrement…':'✅ Valider et continuer')
