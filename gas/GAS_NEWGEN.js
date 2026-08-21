@@ -1,5 +1,19 @@
 
-// ── GAS Backend v11.24 ────────────────────────────────────────
+// ── GAS Backend v11.25 ────────────────────────────────────────
+// v11.25 : CORRECTIF — les 3 tentatives de v11.24 sur CacheService ont
+//          TOUTES échoué en prod (diagAttempts:3, diagSelfCheckOk:false) :
+//          pas une consistance différée occasionnelle, une lecture qui
+//          échoue systématiquement dans ce contexte, même en insistant.
+//          Cause possible : quota CacheService sous tension après l'usage
+//          cumulé de cette session (segments getAll réécrits sans arrêt,
+//          keepAlive toutes les 5 min, rate-limit, tokens...), ou panne
+//          plus large du service — dans les deux cas hors de contrôle du
+//          script. Retenter sur le même service n'aurait rien réglé.
+//          Les tokens passent sur PropertiesService (stockage clé/valeur
+//          persistant, pas un cache best-effort, quota séparé de
+//          CacheService). L'expiration, avant gérée automatiquement par
+//          CacheService, est maintenant vérifiée manuellement à la lecture
+//          (champ exp dans le payload, nettoyé au passage si dépassé).
 // v11.24 : CORRECTIF — diagSelfCheckOk (v11.23) a confirmé la cause : un
 //          cache.put() suivi immédiatement d'un cache.get() DANS LA MÊME
 //          EXÉCUTION peut ne pas retrouver la valeur qu'on vient d'écrire.
@@ -288,46 +302,46 @@ function handleWriteAction(p) {
   if (action === 'getLogs')        return actionGetLogs(p);
   return {ok:false, error:'action inconnue: ' + action};
 }
-// v11.24 : CacheService n'a pas de garantie de cohérence lecture-après-
-// écriture (best-effort, documenté par Google) — confirmé en prod via
-// diagSelfCheckOk (v11.23) : un put() suivi immédiatement d'un get() dans
-// la MÊME exécution peut échouer à retrouver la valeur qu'on vient
-// d'écrire. On retente plutôt que de renvoyer un token qu'on sait déjà
-// invalide. Nouveau token à chaque tentative (défensif, écarte tout souci
-// propre à une clé donnée) ; petite pause pour laisser une éventuelle
-// propagation se faire.
+// v11.25 : les tentatives de v11.24 sur CacheService ont TOUTES échoué en
+// prod (diagAttempts:3, diagSelfCheckOk:false) — pas une consistance
+// différée occasionnelle, une lecture qui échoue systématiquement dans ce
+// contexte. Les tokens passent sur PropertiesService : stockage clé/valeur
+// persistant (pas un cache best-effort), quota séparé de CacheService.
+// Pas d'expiration native comme CacheService.put() en offrait : le champ
+// exp du payload est vérifié à la lecture, avec nettoyage de la propriété
+// si dépassé.
 function _generateToken(conseiller, role) {
-  var cache = CacheService.getScriptCache();
-  var payload = JSON.stringify({conseiller:conseiller, role:role, ts:new Date().getTime()});
-  var token, okCheck = false, attempts = 0;
-  for (; attempts < 3 && !okCheck; attempts++) {
-    if (attempts > 0) Utilities.sleep(150);
-    token = Utilities.getUuid();
-    cache.put('token_' + token, payload, TOKEN_TTL_SECONDS);
-    okCheck = !!cache.get('token_' + token);
-  }
-  // DIAG TEMPORAIRE v11.22/23, étendu en v11.24 (diagAttempts) — à retirer
-  // une fois le correctif confirmé par un test réel (diagSelfCheckOk true,
-  // diagAttempts bas la plupart du temps).
-  return {token:token, diagSelfCheckOk: okCheck, diagAttempts: attempts};
+  var token = Utilities.getUuid();
+  var props = PropertiesService.getScriptProperties();
+  var now = new Date().getTime();
+  var payload = JSON.stringify({conseiller:conseiller, role:role, ts:now, exp:now + TOKEN_TTL_SECONDS*1000});
+  props.setProperty('token_' + token, payload);
+  // DIAG TEMPORAIRE v11.25 — relecture immédiate, pour confirmer que
+  // PropertiesService est bien fiable ici (contrairement à CacheService,
+  // voir v11.22-24). À retirer une fois confirmé par un test réel.
+  var selfCheck = props.getProperty('token_' + token);
+  return {token:token, diagSelfCheckOk: !!selfCheck, diagAttempts:0, diagStore:'PropertiesService'};
 }
 // v11.15 : ne vérifie plus que la validité du token et le rôle qu'il porte —
 // jamais une correspondance avec p.conseiller (voir note v11.15 en tête de
 // fichier : plusieurs actions admin ciblent un AUTRE conseiller que l'admin
 // connecté, comparer les deux bloquait ces cas d'usage légitimes).
-// v11.24 : même retenue qu'à l'écriture (voir _generateToken) — une lecture
-// isolée sur CacheService n'est plus considérée fiable à elle seule.
+// v11.25 : lecture sur PropertiesService (voir _generateToken) — expiration
+// vérifiée manuellement (exp du payload), propriété nettoyée si dépassée.
 function _verifyToken(token) {
   if (!token) return {ok:false, error:'Token manquant'};
-  var cache = CacheService.getScriptCache();
-  var raw = cache.get('token_' + token);
-  for (var i = 0; i < 2 && !raw; i++) { Utilities.sleep(150); raw = cache.get('token_' + token); }
+  var props = PropertiesService.getScriptProperties();
+  var raw = props.getProperty('token_' + token);
   if (!raw) {
     // DIAG TEMPORAIRE v11.23 — détail directement dans le message d'erreur.
     return {ok:false, error:'Token invalide ou expiré [reçu="' + token + '" longueur=' + token.length + ']'};
   }
   try {
     var payload = JSON.parse(raw);
+    if (payload.exp && new Date().getTime() > payload.exp) {
+      props.deleteProperty('token_' + token);
+      return {ok:false, error:'Token expiré'};
+    }
     return {ok:true, role:payload.role, conseiller:payload.conseiller};
   } catch(_) { return {ok:false, error:'Token corrompu'}; }
 }
@@ -776,7 +790,7 @@ function backupGAS() {
   var date = Utilities.formatDate(new Date(), 'Europe/Paris', 'yyyy-MM-dd_HH-mm');
   var folders = DriveApp.getFoldersByName('GAS_Backups');
   var dossier = folders.hasNext() ? folders.next() : DriveApp.createFolder('GAS_Backups');
-  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.14 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
+  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.25 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
   Logger.log('Backup créé.');
 }
 function _getAteliersRetard() {
