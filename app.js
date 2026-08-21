@@ -119,7 +119,7 @@ function VueLoginIndex({conseillers,onSuccess}){
   }
 
   async function handleChangePwd(){
-    if(!pwdPolicyOk(newPwd)){setNewPwdErr(PWD_POLICY_MSG);return;}
+    if(!pwdPolicyOk(newPwd)){setNewPwdErr('❌ Règle du mot de passe non respectée.');return;}
     if(newPwd!==newPwd2){setNewPwdErr('Les mots de passe ne correspondent pas');return;}
     setChangingPwd(true);setNewPwdErr('');
     try{
@@ -127,7 +127,17 @@ function VueLoginIndex({conseillers,onSuccess}){
       if(res2&&res2.ok){
         onSuccess(conseiller,pendingRes);
       }else{
-        setNewPwdErr(res2&&res2.error||'Erreur');
+        const msg=(res2&&res2.error)||'Erreur';
+        if(/token/i.test(msg)){
+          // Le token obtenu à la connexion n'est plus valide (session expirée
+          // entre-temps) — impossible de continuer avec ce token, on renvoie
+          // vers l'écran de connexion plutôt que de laisser réessayer dans le
+          // vide avec un token mort.
+          setMustChangePwd(false);setPendingRes(null);setPwd('');setNewPwd('');setNewPwd2('');
+          setErr('Session expirée pendant le changement de mot de passe — merci de vous reconnecter.');
+        }else{
+          setNewPwdErr(msg);
+        }
       }
     }catch(e){setNewPwdErr('Erreur réseau : '+e.message);}
     finally{setChangingPwd(false);}

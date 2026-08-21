@@ -759,7 +759,7 @@ function ChangerMotDePasse({adminConseiller}){
 
   async function handleSave(){
     if(!currentPwd){setMsg({ok:false,txt:'Mot de passe actuel requis'});return;}
-    if(!pwdPolicyOk(pwd)){setMsg({ok:false,txt:PWD_POLICY_MSG});return;}
+    if(!pwdPolicyOk(pwd)){setMsg({ok:false,txt:'❌ Règle du mot de passe non respectée.'});return;}
     if(pwd!==pwd2){setMsg({ok:false,txt:'Les mots de passe ne correspondent pas'});return;}
     setSaving(true);setMsg(null);
     try{
