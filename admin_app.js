@@ -253,6 +253,12 @@ function App(){
     showToast('⏱️ Session expirée — reconnecte-toi.',false);
     addLog('Session expirée (30 min inactivité)','info');
   }
+  function handleLogout(){
+    if(!window.confirm('Se déconnecter ?'))return;
+    window.authToken.clear();
+    clearSession();
+    setAuth(false);
+  }
   React.useEffect(()=>{
     if(!auth) return;
     touchSession();
@@ -454,7 +460,12 @@ function App(){
         CE('button',{
           className:'topbar-changer-btn',
           onClick:()=>{localStorage.removeItem('adm_conseiller');setAdminConseiller('');}
-        },'Changer')
+        },'Changer'),
+        CE('button',{
+          className:'topbar-changer-btn',
+          title:'Déconnexion',
+          onClick:handleLogout
+        },'🚪')
       )
     ),
 
