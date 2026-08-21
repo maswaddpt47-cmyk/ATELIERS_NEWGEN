@@ -1,5 +1,10 @@
 
-// ── GAS Backend v11.21 ────────────────────────────────────────
+// ── GAS Backend v11.22 ────────────────────────────────────────
+// v11.22 : DIAG TEMPORAIRE — Logger.log dans _generateToken (avec relecture
+//          immédiate dans la même exécution) et _verifyToken, pour
+//          diagnostiquer "Token invalide ou expiré" persistant même après
+//          le correctif TTL de v11.21 (confirmé insuffisant par test réel).
+//          À retirer une fois la cause identifiée via le panneau Exécutions.
 // v11.21 : CORRECTIF — TOKEN_TTL_SECONDS valait 8*60*60 (28800s), au-dessus
 //          de la limite documentée de CacheService.put() (21600s / 6h max).
 //          Hypothèse non confirmée avec certitude (le diff v11.18→v11.20 ne
@@ -266,7 +271,14 @@ function handleWriteAction(p) {
 }
 function _generateToken(conseiller, role) {
   var token = Utilities.getUuid();
-  CacheService.getScriptCache().put('token_' + token, JSON.stringify({conseiller:conseiller, role:role, ts:new Date().getTime()}), TOKEN_TTL_SECONDS);
+  var cache = CacheService.getScriptCache();
+  cache.put('token_' + token, JSON.stringify({conseiller:conseiller, role:role, ts:new Date().getTime()}), TOKEN_TTL_SECONDS);
+  // DIAG TEMPORAIRE v11.22 — à retirer une fois le bug "Token invalide ou
+  // expiré" diagnostiqué. Relecture immédiate dans la même exécution :
+  // si ÉCHEC ici, cache.put() lui-même ne fonctionne pas (problème Google
+  // immédiat, pas un souci de persistance entre requêtes séparées).
+  var selfCheck = cache.get('token_' + token);
+  Logger.log('DIAG _generateToken: token=' + token + ' | relecture immédiate=' + (selfCheck ? 'OK' : 'ECHEC'));
   return token;
 }
 // v11.15 : ne vérifie plus que la validité du token et le rôle qu'il porte —
@@ -276,6 +288,8 @@ function _generateToken(conseiller, role) {
 function _verifyToken(token) {
   if (!token) return {ok:false, error:'Token manquant'};
   var raw = CacheService.getScriptCache().get('token_' + token);
+  // DIAG TEMPORAIRE v11.22 — à retirer une fois le bug diagnostiqué.
+  Logger.log('DIAG _verifyToken: token reçu=[' + token + '] | trouvé en cache=' + (raw ? 'OUI' : 'NON'));
   if (!raw) return {ok:false, error:'Token invalide ou expiré'};
   try {
     var payload = JSON.parse(raw);
