@@ -1,5 +1,16 @@
 
-// ── GAS Backend v11.23 ────────────────────────────────────────
+// ── GAS Backend v11.24 ────────────────────────────────────────
+// v11.24 : CORRECTIF — diagSelfCheckOk (v11.23) a confirmé la cause : un
+//          cache.put() suivi immédiatement d'un cache.get() DANS LA MÊME
+//          EXÉCUTION peut ne pas retrouver la valeur qu'on vient d'écrire.
+//          CacheService est documenté par Google comme best-effort, sans
+//          garantie de cohérence lecture-après-écriture — ce n'est pas un
+//          bug de ce script, mais le code supposait à tort une garantie que
+//          Google ne donne pas. _generateToken et _verifyToken retentent
+//          maintenant plusieurs fois avant d'abandonner, au lieu de faire
+//          confiance à un seul aller-retour. Diagnostics (v11.22/v11.23)
+//          conservés pour confirmer le correctif au prochain test réel —
+//          à retirer une fois confirmé.
 // v11.23 : DIAG TEMPORAIRE — remplace les Logger.log de v11.22 (illisibles
 //          pour une exécution doGet dans le panneau Exécutions) par un
 //          diagnostic transmis directement dans les réponses JSON déjà
@@ -277,28 +288,40 @@ function handleWriteAction(p) {
   if (action === 'getLogs')        return actionGetLogs(p);
   return {ok:false, error:'action inconnue: ' + action};
 }
+// v11.24 : CacheService n'a pas de garantie de cohérence lecture-après-
+// écriture (best-effort, documenté par Google) — confirmé en prod via
+// diagSelfCheckOk (v11.23) : un put() suivi immédiatement d'un get() dans
+// la MÊME exécution peut échouer à retrouver la valeur qu'on vient
+// d'écrire. On retente plutôt que de renvoyer un token qu'on sait déjà
+// invalide. Nouveau token à chaque tentative (défensif, écarte tout souci
+// propre à une clé donnée) ; petite pause pour laisser une éventuelle
+// propagation se faire.
 function _generateToken(conseiller, role) {
-  var token = Utilities.getUuid();
   var cache = CacheService.getScriptCache();
-  cache.put('token_' + token, JSON.stringify({conseiller:conseiller, role:role, ts:new Date().getTime()}), TOKEN_TTL_SECONDS);
-  // DIAG TEMPORAIRE v11.22 — à retirer une fois le bug "Token invalide ou
-  // expiré" diagnostiqué. Relecture immédiate dans la même exécution :
-  // si ÉCHEC ici, cache.put() lui-même ne fonctionne pas (problème Google
-  // immédiat, pas un souci de persistance entre requêtes séparées).
-  // DIAG TEMPORAIRE v11.23 — relecture immédiate dans la même exécution,
-  // remontée dans la réponse JSON (les logs Logger.log ne sont pas visibles
-  // pour les exécutions doGet dans le panneau Exécutions). À retirer une
-  // fois le bug "Token invalide ou expiré" diagnostiqué.
-  var selfCheck = cache.get('token_' + token);
-  return {token:token, diagSelfCheckOk: !!selfCheck};
+  var payload = JSON.stringify({conseiller:conseiller, role:role, ts:new Date().getTime()});
+  var token, okCheck = false, attempts = 0;
+  for (; attempts < 3 && !okCheck; attempts++) {
+    if (attempts > 0) Utilities.sleep(150);
+    token = Utilities.getUuid();
+    cache.put('token_' + token, payload, TOKEN_TTL_SECONDS);
+    okCheck = !!cache.get('token_' + token);
+  }
+  // DIAG TEMPORAIRE v11.22/23, étendu en v11.24 (diagAttempts) — à retirer
+  // une fois le correctif confirmé par un test réel (diagSelfCheckOk true,
+  // diagAttempts bas la plupart du temps).
+  return {token:token, diagSelfCheckOk: okCheck, diagAttempts: attempts};
 }
 // v11.15 : ne vérifie plus que la validité du token et le rôle qu'il porte —
 // jamais une correspondance avec p.conseiller (voir note v11.15 en tête de
 // fichier : plusieurs actions admin ciblent un AUTRE conseiller que l'admin
 // connecté, comparer les deux bloquait ces cas d'usage légitimes).
+// v11.24 : même retenue qu'à l'écriture (voir _generateToken) — une lecture
+// isolée sur CacheService n'est plus considérée fiable à elle seule.
 function _verifyToken(token) {
   if (!token) return {ok:false, error:'Token manquant'};
-  var raw = CacheService.getScriptCache().get('token_' + token);
+  var cache = CacheService.getScriptCache();
+  var raw = cache.get('token_' + token);
+  for (var i = 0; i < 2 && !raw; i++) { Utilities.sleep(150); raw = cache.get('token_' + token); }
   if (!raw) {
     // DIAG TEMPORAIRE v11.23 — détail directement dans le message d'erreur.
     return {ok:false, error:'Token invalide ou expiré [reçu="' + token + '" longueur=' + token.length + ']'};
@@ -346,8 +369,9 @@ function actionCheckPassword(p) {
   var role = String(rowData[iRole] || 'user').trim();
   var tokenInfo = _generateToken(nom, role);
   // pas de _logAuth ici — le frontend appelle logLogin en fire-and-forget
-  // diagSelfCheckOk : DIAG TEMPORAIRE v11.23, à retirer avec le reste.
-  return {ok:true, role:role, token:tokenInfo.token, diagSelfCheckOk:tokenInfo.diagSelfCheckOk};
+  // diagSelfCheckOk/diagAttempts : DIAG TEMPORAIRE v11.23/v11.24, à retirer
+  // une fois le correctif confirmé.
+  return {ok:true, role:role, token:tokenInfo.token, diagSelfCheckOk:tokenInfo.diagSelfCheckOk, diagAttempts:tokenInfo.diagAttempts};
 }
 // ── v11.10 : logLogin — appelé par le frontend après connexion réussie ──
 function actionLogLogin(p) {
