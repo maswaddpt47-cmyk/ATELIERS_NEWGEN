@@ -1,5 +1,13 @@
 
-// ── GAS Backend v11.22 ────────────────────────────────────────
+// ── GAS Backend v11.23 ────────────────────────────────────────
+// v11.23 : DIAG TEMPORAIRE — remplace les Logger.log de v11.22 (illisibles
+//          pour une exécution doGet dans le panneau Exécutions) par un
+//          diagnostic transmis directement dans les réponses JSON déjà
+//          affichées à l'écran : checkPassword renvoie diagSelfCheckOk
+//          (relecture immédiate après cache.put(), dans la même exécution),
+//          et un token introuvable renvoie sa valeur exacte + sa longueur
+//          dans le message d'erreur. À retirer une fois la cause du "Token
+//          invalide ou expiré" identifiée.
 // v11.22 : DIAG TEMPORAIRE — Logger.log dans _generateToken (avec relecture
 //          immédiate dans la même exécution) et _verifyToken, pour
 //          diagnostiquer "Token invalide ou expiré" persistant même après
@@ -277,9 +285,12 @@ function _generateToken(conseiller, role) {
   // expiré" diagnostiqué. Relecture immédiate dans la même exécution :
   // si ÉCHEC ici, cache.put() lui-même ne fonctionne pas (problème Google
   // immédiat, pas un souci de persistance entre requêtes séparées).
+  // DIAG TEMPORAIRE v11.23 — relecture immédiate dans la même exécution,
+  // remontée dans la réponse JSON (les logs Logger.log ne sont pas visibles
+  // pour les exécutions doGet dans le panneau Exécutions). À retirer une
+  // fois le bug "Token invalide ou expiré" diagnostiqué.
   var selfCheck = cache.get('token_' + token);
-  Logger.log('DIAG _generateToken: token=' + token + ' | relecture immédiate=' + (selfCheck ? 'OK' : 'ECHEC'));
-  return token;
+  return {token:token, diagSelfCheckOk: !!selfCheck};
 }
 // v11.15 : ne vérifie plus que la validité du token et le rôle qu'il porte —
 // jamais une correspondance avec p.conseiller (voir note v11.15 en tête de
@@ -288,9 +299,10 @@ function _generateToken(conseiller, role) {
 function _verifyToken(token) {
   if (!token) return {ok:false, error:'Token manquant'};
   var raw = CacheService.getScriptCache().get('token_' + token);
-  // DIAG TEMPORAIRE v11.22 — à retirer une fois le bug diagnostiqué.
-  Logger.log('DIAG _verifyToken: token reçu=[' + token + '] | trouvé en cache=' + (raw ? 'OUI' : 'NON'));
-  if (!raw) return {ok:false, error:'Token invalide ou expiré'};
+  if (!raw) {
+    // DIAG TEMPORAIRE v11.23 — détail directement dans le message d'erreur.
+    return {ok:false, error:'Token invalide ou expiré [reçu="' + token + '" longueur=' + token.length + ']'};
+  }
   try {
     var payload = JSON.parse(raw);
     return {ok:true, role:payload.role, conseiller:payload.conseiller};
@@ -332,9 +344,10 @@ function actionCheckPassword(p) {
   }
   cache.remove(rlKey);
   var role = String(rowData[iRole] || 'user').trim();
-  var token = _generateToken(nom, role);
+  var tokenInfo = _generateToken(nom, role);
   // pas de _logAuth ici — le frontend appelle logLogin en fire-and-forget
-  return {ok:true, role:role, token:token};
+  // diagSelfCheckOk : DIAG TEMPORAIRE v11.23, à retirer avec le reste.
+  return {ok:true, role:role, token:tokenInfo.token, diagSelfCheckOk:tokenInfo.diagSelfCheckOk};
 }
 // ── v11.10 : logLogin — appelé par le frontend après connexion réussie ──
 function actionLogLogin(p) {
@@ -836,7 +849,7 @@ function testerSecuriteDoGet() {
   });
   // v11.13 : un token valide mais de rôle "user" doit être refusé sur les
   // actions admin — c'était le second trou (rôle jamais vérifié).
-  var fakeUserToken = _generateToken('__test_user__', 'user');
+  var fakeUserToken = _generateToken('__test_user__', 'user').token;
   var fakeEvent2 = { parameter: { action: 'saveConfig', token: fakeUserToken, conseiller: '__test_user__', key: 'test', value: 'x' } };
   var result2 = JSON.parse(doGet(fakeEvent2).getContent());
   var bloqueRole = result2.ok === false && result2.error && result2.error.indexOf('administrateurs') !== -1;

@@ -73,6 +73,7 @@ function VueLoginIndex({conseillers,onSuccess}){
   const[newPwdErr,setNewPwdErr]=React.useState('');
   const[changingPwd,setChangingPwd]=React.useState(false);
   const[showNewPwd,setShowNewPwd]=React.useState(false);
+  const[debugRes,setDebugRes]=React.useState(''); // DIAG TEMPORAIRE v11.23 — à retirer avec le reste
 
   React.useEffect(()=>{ if(base.length) setConseiller(c=>base.includes(c)?c:base[0]); },[base.join(',')]);
 
@@ -95,6 +96,7 @@ function VueLoginIndex({conseillers,onSuccess}){
     setLoading(true);setErr('');
     try{
       const res=await apiFetch('checkPassword',{conseiller,password:pwd,userAgent:navigator.userAgent,source:'index.html'});
+      setDebugRes('checkPassword → '+JSON.stringify(res));
       if(res.ok){
         setFailCount(0);setLockUntil(0);
         if(pwd.trim()===defaultPwdIndex(conseiller)){
@@ -114,7 +116,7 @@ function VueLoginIndex({conseillers,onSuccess}){
           setErr(`${raison} (${nf}/${MAX_FAILS} tentative${nf>1?'s':''})`);
         }
       }
-    }catch(e){setErr('Erreur réseau : '+e.message);}
+    }catch(e){setErr('Erreur réseau : '+e.message);setDebugRes('checkPassword EXCEPTION: '+e.message);}
     finally{setLoading(false);}
   }
 
@@ -124,6 +126,7 @@ function VueLoginIndex({conseillers,onSuccess}){
     setChangingPwd(true);setNewPwdErr('');
     try{
       const res2=await apiFetch('selfSetPassword',{password:newPwd,token:pendingRes.token});
+      setDebugRes('selfSetPassword (token envoyé='+pendingRes.token+') → '+JSON.stringify(res2));
       if(res2&&res2.ok){
         onSuccess(conseiller,pendingRes);
       }else{
@@ -139,7 +142,7 @@ function VueLoginIndex({conseillers,onSuccess}){
           setNewPwdErr(msg);
         }
       }
-    }catch(e){setNewPwdErr('Erreur réseau : '+e.message);}
+    }catch(e){setNewPwdErr('Erreur réseau : '+e.message);setDebugRes('selfSetPassword EXCEPTION: '+e.message);}
     finally{setChangingPwd(false);}
   }
 
@@ -150,6 +153,7 @@ function VueLoginIndex({conseillers,onSuccess}){
       CE('div',{className:'accueil-logo'},'🖥️'),
       CE('div',{className:'accueil-title'},'Ateliers Inclusion Numérique — NewGen'),
       CE('div',{className:'accueil-sub'},'Conseil Départemental du Lot-et-Garonne'),
+      debugRes&&CE('p',{style:{fontFamily:'monospace',fontSize:10,color:'#9ca3af',margin:'8px 0',wordBreak:'break-all',border:'1px dashed #cbd5e0',borderRadius:6,padding:6,textAlign:'left'}},'🔧 Diag temporaire : ',debugRes),
       isLocked
         ? CE('div',{style:{textAlign:'center',padding:'28px 0'}},
             CE('div',{style:{fontSize:44,marginBottom:10}},'🔒'),
