@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -34,6 +36,9 @@ jobs:
 
       - name: Tests contrat
         run: node --test contract.test.js
+
+      - name: Garde-fou cache-busting
+        run: node scripts/check-cache-busting.js "${{ github.event.before }}" "${{ github.sha }}"
 
   # Charge réellement index.html et admin.html dans Chromium et clique chaque
   # onglet. Les suites Node ne testent que des fonctions pures : elles passent
