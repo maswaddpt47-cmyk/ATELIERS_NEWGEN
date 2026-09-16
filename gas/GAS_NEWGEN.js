@@ -1,5 +1,11 @@
 
-// ── GAS Backend v11.30 ────────────────────────────────────────
+// ── GAS Backend v11.31 ────────────────────────────────────────
+// v11.31 : AJOUT — le stock de 10 ordinateurs (v11.30) était figé en dur
+//          côté frontend. Devient configurable : clé Config
+//          'stock_ordinateurs' (générique, via setConfig comme
+//          maintenance/maintenance_msg), lue dans _actionGetAllFresh et
+//          renvoyée dans getAll (stockOrdinateurs, défaut 10 si absente/
+//          invalide). Modifiable depuis Admin → Panneau Administrateur.
 // v11.30 : AJOUT — suivi du prêt du stock d'ordinateurs (10 unités, prêtées
 //          aux participants). Deux nouveaux champs simples sur chaque
 //          atelier : nb_ordinateurs (quantité prêtée, saisie manuelle) et
@@ -492,6 +498,9 @@ function _actionGetAllFresh(p) {
     try { if (cfg['visibility']) visibility = JSON.parse(cfg['visibility']); } catch(_) {}
     try { if (cfg['conseiller_colors']) conseiller_colors = JSON.parse(cfg['conseiller_colors']); } catch(_) {}
     try { if (cfg['emails']) emails = JSON.parse(cfg['emails']); } catch(_) {}
+    // Stock d'ordinateurs prêtés (défaut 10, modifiable depuis Admin →
+    // Config). parseInt sur une valeur absente/invalide retombe sur le défaut.
+    var stockOrdinateurs = parseInt(cfg['stock_ordinateurs'], 10) || 10;
     var entries = [];
     try {
       var sh = _ss().getSheetByName(SHEET_NAME);
@@ -525,7 +534,7 @@ function _actionGetAllFresh(p) {
         }
       }
     } catch(err) { Logger.log('entries error: ' + err); }
-    return {ok:true, entries:entries, lists:lists, visibility:visibility, conseiller_colors:conseiller_colors, emails:emails};
+    return {ok:true, entries:entries, lists:lists, visibility:visibility, conseiller_colors:conseiller_colors, emails:emails, stockOrdinateurs:stockOrdinateurs};
   } catch(err) { return {ok:false, error:String(err)}; }
 }
 function actionSaveEntry(p) {
@@ -855,7 +864,7 @@ function backupGAS() {
   var date = Utilities.formatDate(new Date(), 'Europe/Paris', 'yyyy-MM-dd_HH-mm');
   var folders = DriveApp.getFoldersByName('GAS_Backups');
   var dossier = folders.hasNext() ? folders.next() : DriveApp.createFolder('GAS_Backups');
-  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.30 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
+  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.31 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
   Logger.log('Backup créé.');
 }
 function _getAteliersRetard() {
