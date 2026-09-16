@@ -241,16 +241,15 @@ function doGet(e) {
     var p = e.parameter || {};
     var action = p.action || 'getAll';
     var READ_ACTIONS = ['getAll','getConfig','getVisibility','getComptes','checkPassword','logAccesIndex','logLogin'];
-    // v11.14 : CORRECTIF CRITIQUE — saveEntry/saveMany/delete doivent rester
-    // accessibles aux conseillers sans token (Index n'a pas d'écran de
-    // connexion, ils n'en ont jamais). Ce n'était plus le cas : ces 3 actions
-    // tombaient dans la branche "token obligatoire" ci-dessous comme
-    // n'importe quelle action admin, cassant l'enregistrement d'ateliers
-    // dès que ce fichier passait en production ("Non autorisé : Token
-    // manquant" au clic sur Enregistrer). Elles sont désormais routées
-    // AVANT toute vérification de token, comme des actions de lecture.
-    var OPEN_WRITE_ACTIONS = ['saveEntry','saveMany','delete'];
-    if (OPEN_WRITE_ACTIONS.indexOf(action) !== -1) return json(handleWriteAction(p));
+    // v11.27 : CORRECTIF SÉCURITÉ — saveEntry/saveMany/delete étaient routées
+    // AVANT toute vérification de token (OPEN_WRITE_ACTIONS, v11.14), pour ne
+    // pas casser Index qui n'avait alors aucun écran de connexion. Depuis le
+    // 21/08/2026, Index a un login (VueLoginIndex) et le frontend envoie déjà
+    // un token sur ces 3 actions (shared.js → WRITE_ACTIONS) — la précondition
+    // qui manquait en v11.14 existe maintenant. Elles passent désormais par la
+    // même vérification que toute autre action d'écriture : n'importe quel
+    // rôle valide (pas admin seulement — un conseiller doit pouvoir
+    // enregistrer ses propres ateliers), via la branche générale ci-dessous.
     if (READ_ACTIONS.indexOf(action) === -1) {
       var tokenCheck = _verifyToken(p.token);
       if (!tokenCheck.ok) return json({ok:false, error:'Non autorisé : ' + tokenCheck.error});
@@ -275,6 +274,14 @@ function doPost(e) {
     var tokenCheck = _verifyToken(p.token);
     var roleCheck = _requireAdminRole(tokenCheck);
     if (!roleCheck.ok) return json(roleCheck);
+  } else if (['saveEntry','saveMany','delete'].indexOf(action) !== -1) {
+    // v11.27 : même correctif que doGet. doPost n'exigeait jusqu'ici aucun
+    // token pour ces 3 actions — pas même la vérification "n'importe quel
+    // rôle" que doGet appliquait. Le frontend n'utilise que doGet (GET),
+    // mais /exec reste appelable en POST directement : corrigé pour
+    // cohérence et défense en profondeur.
+    var writeTokenCheck = _verifyToken(p.token);
+    if (!writeTokenCheck.ok) return json({ok:false, error:'Non autorisé : ' + writeTokenCheck.error});
   }
   return json(handleWriteAction(p));
 }
