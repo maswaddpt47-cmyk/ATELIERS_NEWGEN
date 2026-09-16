@@ -882,7 +882,9 @@ function findMobileClassConflicts(entries){
 // quantité (nb_ordinateurs) et la date de retour (date_retour_materiel)
 // forment une période de prêt : deux ateliers à des dates différentes
 // peuvent se disputer le stock si le premier n'a pas rendu le matériel.
-const STOCK_ORDINATEURS=10;
+// let (pas const) : valeur par défaut, écrasée par la config GAS
+// (stockOrdinateurs renvoyé par getAll) dans loadData (app.js/admin_app.js).
+let STOCK_ORDINATEURS=10;
 function findOrdinateursConflicts(entries,stock=STOCK_ORDINATEURS){
   const parJour={};
   (entries||[]).forEach(e=>{
