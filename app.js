@@ -377,11 +377,17 @@ function App(){
   },[view]);
 
   // ── Handlers ──────────────────────────────────────────────────
-  function handleChoixConseiller(nom){
+  // skipLog=true juste après un login frais : logLogin (déclenché par
+  // onLoginSuccess) vient déjà de journaliser cet accès dans la même feuille
+  // Logs_Connexion — logAccesIndex y ferait doublon, un appel GAS de plus à
+  // chaque connexion de toute l'équipe. Les autres appelants (restauration
+  // de session, sélecteur de conseiller) n'ont pas ce doublon et gardent le
+  // log. Porté depuis ateliers-cd47_NextStep (même correctif, 16/09/2026).
+  function handleChoixConseiller(nom, skipLog){
     setFiltreConseiller(nom);
     setShowPicker(false);
     setView(visibility.historique?'historique':visibility.calendrier?'calendrier':visibility.saisie?'saisie':'dashboard');
-    if(nom){
+    if(nom && !skipLog){
       apiFetch('logAccesIndex',{conseiller:nom,userAgent:navigator.userAgent}).catch(()=>{});
     }
   }
@@ -412,7 +418,7 @@ function App(){
   if(!authed){
     return CE(VueLoginIndex,{
       conseillers:lists.conseillers,
-      onSuccess:(nom,res)=>{ window.onLoginSuccess(nom,res); setAuthed(true); handleChoixConseiller(nom); }
+      onSuccess:(nom,res)=>{ window.onLoginSuccess(nom,res); setAuthed(true); handleChoixConseiller(nom, true); }
     });
   }
 
