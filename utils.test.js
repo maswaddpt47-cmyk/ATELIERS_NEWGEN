@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const {
   normCommune, normalizeCommune,
   stripAccents, htmlEsc,
-  normalizeDate, normalizeHoraire, fmtDate, fmtCardDate,
+  normalizeDate, normalizeHoraire, fmtDate, fmtCardDate, addJoursIso,
   escapeICS, foldICSLine, parseHoraireICS, parseDateICS, buildICS,
 } = require('./utils.js');
 
@@ -115,6 +115,25 @@ describe('fmtDate', () => {
   it('retourne chaîne vide sur entrée vide', () => {
     assert.equal(fmtDate(''), '');
     assert.equal(fmtDate(null), '');
+  });
+});
+
+// ── addJoursIso ──────────────────────────────────────────────
+describe('addJoursIso', () => {
+  it('ajoute des jours sans franchir de mois', () => {
+    assert.equal(addJoursIso('2026-09-17', 3), '2026-09-20');
+  });
+  it('franchit correctement une fin de mois', () => {
+    assert.equal(addJoursIso('2026-09-29', 3), '2026-10-02');
+  });
+  it('franchit correctement une fin d\'année', () => {
+    assert.equal(addJoursIso('2026-12-30', 3), '2027-01-02');
+  });
+  it('n=0 retourne la même date', () => {
+    assert.equal(addJoursIso('2026-09-17', 0), '2026-09-17');
+  });
+  it('retourne chaîne vide sur entrée vide', () => {
+    assert.equal(addJoursIso('', 3), '');
   });
 });
 

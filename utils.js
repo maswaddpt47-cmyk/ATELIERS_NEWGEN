@@ -52,6 +52,12 @@ function fmtDate(d){
   const jour=JOURS[new Date(parseInt(y,10),parseInt(m,10)-1,parseInt(j,10)).getDay()];
   return`${jour} ${j}/${m}/${y}`;
 }
+function addJoursIso(d,n){
+  if(!d)return'';
+  const[y,m,j]=d.split('-').map(Number);
+  const dt=new Date(y,m-1,j+n);
+  return`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
 function fmtCardDate(d){
   if(!d)return{day:'',month:'',jour:''};
   const[y,m,j]=d.split('-');
@@ -113,7 +119,7 @@ function buildICS(evts){
 if (typeof module !== 'undefined') {
   module.exports={
     normCommune,normalizeCommune,stripAccents,htmlEsc,
-    normalizeDate,normalizeHoraire,fmtDate,fmtCardDate,
+    normalizeDate,normalizeHoraire,fmtDate,fmtCardDate,addJoursIso,
     escapeICS,foldICSLine,parseHoraireICS,parseDateICS,buildICS,
   };
 }

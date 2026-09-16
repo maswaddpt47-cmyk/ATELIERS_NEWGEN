@@ -11,6 +11,7 @@ const {
   isEntryRetard, isEntryPasse,
   applyFilters,
   findMobileClassConflicts,
+  findOrdinateursConflicts,
 } = require('./logic.js');
 
 // ──────────────────────────────────────────────────────────────
@@ -392,5 +393,89 @@ describe('findMobileClassConflicts', () => {
 
   it('tableau vide → aucun conflit', () => {
     assert.deepEqual(findMobileClassConflicts([]), []);
+  });
+});
+
+// ── findOrdinateursConflicts ────────────────────────────────────────────────
+describe('findOrdinateursConflicts', () => {
+  it('pas de conflit si le cumul ne dépasse pas le stock (10)', () => {
+    const entries = [
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Alice', materiel: ['Classe mobile'], nb_ordinateurs: 5 },
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Bob',   materiel: ['Classe mobile'], nb_ordinateurs: 5 },
+    ];
+    assert.equal(findOrdinateursConflicts(entries).length, 0);
+  });
+
+  it('détecte un conflit si le cumul du même jour dépasse le stock', () => {
+    const entries = [
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Alice', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Bob',   materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+    ];
+    const conflits = findOrdinateursConflicts(entries);
+    assert.equal(conflits.length, 1);
+    assert.equal(conflits[0].date, '2026-10-01');
+    assert.equal(conflits[0].total, 12);
+  });
+
+  it('détecte un conflit sur une période de prêt qui chevauche (dates différentes)', () => {
+    const entries = [
+      { statut: 'Planifié', date: '2026-10-01', date_retour_materiel: '2026-10-05', conseiller: 'Alice', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+      { statut: 'Planifié', date: '2026-10-03', conseiller: 'Bob', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+    ];
+    const conflits = findOrdinateursConflicts(entries);
+    assert.equal(conflits.length, 1);
+    assert.equal(conflits[0].date, '2026-10-03');
+  });
+
+  it('pas de conflit si les périodes de prêt ne se chevauchent pas', () => {
+    const entries = [
+      { statut: 'Planifié', date: '2026-10-01', date_retour_materiel: '2026-10-02', conseiller: 'Alice', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+      { statut: 'Planifié', date: '2026-10-03', conseiller: 'Bob', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+    ];
+    assert.equal(findOrdinateursConflicts(entries).length, 0);
+  });
+
+  it('ignore les ateliers Annulés', () => {
+    const entries = [
+      { statut: 'Annulé',   date: '2026-10-01', conseiller: 'Alice', materiel: ['Classe mobile'], nb_ordinateurs: 8 },
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Bob',   materiel: ['Classe mobile'], nb_ordinateurs: 8 },
+    ];
+    assert.equal(findOrdinateursConflicts(entries).length, 0);
+  });
+
+  it('ignore les ateliers sans Classe mobile même avec nb_ordinateurs renseigné', () => {
+    const entries = [
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Alice', materiel: ['Tablette'], nb_ordinateurs: 20 },
+    ];
+    assert.equal(findOrdinateursConflicts(entries).length, 0);
+  });
+
+  it('ignore nb_ordinateurs manquant ou à 0', () => {
+    const entries = [
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Alice', materiel: ['Classe mobile'] },
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Bob',   materiel: ['Classe mobile'], nb_ordinateurs: 0 },
+    ];
+    assert.equal(findOrdinateursConflicts(entries).length, 0);
+  });
+
+  it('accepte un stock personnalisé en 2e argument', () => {
+    const entries = [
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Alice', materiel: ['Classe mobile'], nb_ordinateurs: 3 },
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Bob',   materiel: ['Classe mobile'], nb_ordinateurs: 3 },
+    ];
+    assert.equal(findOrdinateursConflicts(entries, 5).length, 1);
+    assert.equal(findOrdinateursConflicts(entries, 10).length, 0);
+  });
+
+  it('date_retour_materiel antérieure ou égale à date n\'étend pas la période', () => {
+    const entries = [
+      { statut: 'Planifié', date: '2026-10-01', date_retour_materiel: '2026-09-28', conseiller: 'Alice', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+      { statut: 'Planifié', date: '2026-10-02', conseiller: 'Bob', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+    ];
+    assert.equal(findOrdinateursConflicts(entries).length, 0);
+  });
+
+  it('tableau vide → aucun conflit', () => {
+    assert.deepEqual(findOrdinateursConflicts([]), []);
   });
 });
