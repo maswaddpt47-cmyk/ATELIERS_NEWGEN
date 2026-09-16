@@ -3,7 +3,7 @@
 // Chargé uniquement pour les tests (node --test logic.test.js).
 
 if (typeof require !== 'undefined') {
-  var {stripAccents, normCommune} = require('./utils.js');
+  var {stripAccents, normCommune, addJoursIso} = require('./utils.js');
 }
 // En contexte navigateur, stripAccents et normCommune sont déjà des globals (utils.js chargé avant)
 
@@ -166,6 +166,42 @@ function normalizeMatLabel(s) {
   return stripAccents(String(s || '').toLowerCase()).replace(/\s+/g, '').replace(/s$/, '');
 }
 
+// Miroir de findOrdinateursConflicts (shared.js). Contrairement à
+// findMobileClassConflicts (même jour uniquement, matériel considéré comme
+// unique/indivisible), ici la quantité (nb_ordinateurs, saisie manuelle) et
+// la date de retour (date_retour_materiel) forment une période de prêt :
+// deux ateliers à des dates différentes peuvent quand même se disputer le
+// stock si le premier n'a pas rendu le matériel avant que le second en ait
+// besoin. On étale chaque atelier sur les jours qu'il occupe (date →
+// date_retour_materiel inclus, ou juste date si pas de retour renseigné) et
+// on cumule les quantités par jour ; un jour est en conflit si le cumul
+// dépasse le stock disponible.
+const STOCK_ORDINATEURS = 10;
+function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
+  const parJour = {};
+  (entries || []).forEach(e => {
+    if (e.statut === 'Annulé') return;
+    if (!e.date) return;
+    if (!parseMateriel(e.materiel).some(m => normalizeMatLabel(m) === 'classemobile')) return;
+    const qte = parseInt(e.nb_ordinateurs) || 0;
+    if (qte <= 0) return;
+    const fin = (e.date_retour_materiel && e.date_retour_materiel > e.date) ? e.date_retour_materiel : e.date;
+    // Garde-fou : une date de retour saisie à la main peut être erronée
+    // (année oubliée, inversion jour/mois...) — on plafonne à 90 jours pour
+    // ne jamais boucler indéfiniment sur une période aberrante.
+    let d = e.date, garde = 0;
+    while (d <= fin && garde < 90) {
+      (parJour[d] = parJour[d] || []).push({ _id: e._id, conseiller: e.conseiller, qte });
+      d = addJoursIso(d, 1);
+      garde++;
+    }
+  });
+  return Object.keys(parJour)
+    .map(date => ({ date, entries: parJour[date], total: parJour[date].reduce((s, x) => s + x.qte, 0) }))
+    .filter(g => g.total > stock)
+    .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     normalizeMateriel, parseMateriel,
@@ -174,5 +210,6 @@ if (typeof module !== 'undefined') {
     isEntryRetard, isEntryPasse,
     applyFilters,
     findMobileClassConflicts,
+    STOCK_ORDINATEURS, findOrdinateursConflicts,
   };
 }

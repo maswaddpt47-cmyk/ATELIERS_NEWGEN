@@ -877,6 +877,32 @@ function findMobileClassConflicts(entries){
     .filter(g=>new Set(g.entries.map(e=>e.conseiller)).size>=2)
     .sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
 }
+// Miroir logique dans logic.js (findOrdinateursConflicts, testé). Contrairement
+// à findMobileClassConflicts (même jour, matériel indivisible), ici la
+// quantité (nb_ordinateurs) et la date de retour (date_retour_materiel)
+// forment une période de prêt : deux ateliers à des dates différentes
+// peuvent se disputer le stock si le premier n'a pas rendu le matériel.
+const STOCK_ORDINATEURS=10;
+function findOrdinateursConflicts(entries,stock=STOCK_ORDINATEURS){
+  const parJour={};
+  (entries||[]).forEach(e=>{
+    if(e.statut==='Annulé')return;
+    if(!e.date)return;
+    if(!matIncludes(e.materiel,'Classe mobile'))return;
+    const qte=parseInt(e.nb_ordinateurs)||0;
+    if(qte<=0)return;
+    const fin=(e.date_retour_materiel&&e.date_retour_materiel>e.date)?e.date_retour_materiel:e.date;
+    let d=e.date,garde=0;
+    while(d<=fin&&garde<90){
+      (parJour[d]=parJour[d]||[]).push({_id:e._id,conseiller:e.conseiller,qte});
+      d=addJoursIso(d,1);garde++;
+    }
+  });
+  return Object.keys(parJour)
+    .map(date=>({date,entries:parJour[date],total:parJour[date].reduce((s,x)=>s+x.qte,0)}))
+    .filter(g=>g.total>stock)
+    .sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+}
 
 let STATUTS     = [...STATUTS_DEFAULT];
 let CONSEILLERS = [...CONSEILLERS_DEFAULT];
@@ -1441,7 +1467,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   const conseillers= lists?.conseillers || CONSEILLERS_DEFAULT;
   const publics    = lists?.publics     || PUBLICS_DEFAULT;
   const materiels  = lists?.materiels   || MATERIELS_DEFAULT;
-  const empty={_id:'',_n:'',statut:'',date:'',horaire:'',ampm:'',orienteur:'',commune:'',lieu:'',thematique:'',inscrits:4,presents:'',public:'',conseiller:'',co_animateur:'',materiel:[],residence:'',remarques:''};
+  const empty={_id:'',_n:'',statut:'',date:'',horaire:'',ampm:'',orienteur:'',commune:'',lieu:'',thematique:'',inscrits:4,presents:'',public:'',conseiller:'',co_animateur:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:'',date_retour_materiel:''};
 
   // ── états mode unique ──
   const[form,setForm]   = React.useState(empty);
@@ -1451,7 +1477,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
 
   // ── états mode lot ──
   const[modeLot,setModeLot]     = React.useState(false);
-  const[lotForm,setLotForm]     = React.useState({orienteur:'',commune:'',lieu:'',conseiller:'',co_animateur:'',public:'',materiel:[],residence:'',remarques:''});
+  const[lotForm,setLotForm]     = React.useState({orienteur:'',commune:'',lieu:'',conseiller:'',co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:'',date_retour_materiel:''});
   const[lotRows,setLotRows]     = React.useState([emptyRow(),emptyRow()]);
   const[lotErrors,setLotErrors] = React.useState({});
   const[lotRowErrors,setLotRowErrors]= React.useState({});
@@ -1476,7 +1502,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   },[prefillData]);
 
   function reset(){setForm(empty);setEditId(null);setIsDup(false);setErrors({});}
-  function resetLot(){setLotForm({orienteur:'',commune:'',lieu:'',conseiller:'',co_animateur:'',public:'',materiel:[],residence:'',remarques:''});setLotRows([emptyRow(),emptyRow()]);setLotErrors({});setLotRowErrors({});}
+  function resetLot(){setLotForm({orienteur:'',commune:'',lieu:'',conseiller:'',co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:'',date_retour_materiel:''});setLotRows([emptyRow(),emptyRow()]);setLotErrors({});setLotRowErrors({});}
 
   function set(k,v){setForm(f=>({...f,[k]:v}));setErrors(er=>({...er,[k]:''}));}
   function toggleMat(m){setForm(f=>{const already=matIncludes(f.materiel,m);return{...f,materiel:already?f.materiel.filter(x=>normalizeMat(x)!==normalizeMat(m)):[...f.materiel,m]};});}
@@ -1543,7 +1569,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     if(!validate()){showToast('⚠️ Champs obligatoires manquants',false);return;}
     setSaving(true);
     try{
-      const entry={...form,_id:form._id||genId(),inscrits:form.inscrits===''?'':parseInt(form.inscrits)||0,presents:form.presents===''?'':parseInt(form.presents)||0,materiel:(form.materiel||[]).join('|')};
+      const entry={...form,_id:form._id||genId(),inscrits:form.inscrits===''?'':parseInt(form.inscrits)||0,presents:form.presents===''?'':parseInt(form.presents)||0,nb_ordinateurs:form.nb_ordinateurs===''?'':parseInt(form.nb_ordinateurs)||0,materiel:(form.materiel||[]).join('|')};
       const res=await apiFetch('saveEntry',{entry});
       if(!res.ok)throw new Error(res.error);
       showToast(editId?'✅ Atelier modifié':'✅ Atelier enregistré');
@@ -1566,7 +1592,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     if(!validateLot(rowsFilled)){showToast('⚠️ Champs obligatoires manquants',false);return;}
     setSaving(true);
     try{
-      const entries=rowsFilled.map(row=>({_id:genId(),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0}));
+      const entries=rowsFilled.map(row=>({_id:genId(),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0,nb_ordinateurs:lotForm.nb_ordinateurs===''?'':parseInt(lotForm.nb_ordinateurs)||0,date_retour_materiel:lotForm.date_retour_materiel||''}));
       const res=await apiFetch('saveMany',{entries});
       if(!res.ok)throw new Error(res.error);
       // Même conversion materiel string→tableau que le mode unique.
@@ -1682,6 +1708,18 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
           CE('span',null,fmtDate(g.date)+' — Classe mobile déjà réservée par '+g.autres.map(e=>e.conseiller).join(', ')+' ce jour-là. Pour info, rien ne vous empêche d\'enregistrer.')
         ))
       )
+    ),
+    // Nombre d'ordinateurs prêtés + date de retour : uniquement pertinent si
+    // Classe mobile est cochée (les 10 ordinateurs du stock à prêter aux
+    // participants, distincts du matériel "Ordinateur" du conseiller
+    // lui-même). Saisie manuelle, sert au calcul de findOrdinateursConflicts.
+    matMobileActif&&CE('div',{style:{marginTop:12,display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}},
+      CE('div',null,
+        LblG({t:'Ordinateurs prêtés'}),
+        CE('input',{type:'number',min:0,max:10,style:iStyle(false),value:frm.nb_ordinateurs,placeholder:'Ex : 4',onChange:e=>setFn('nb_ordinateurs',e.target.value)})),
+      CE('div',null,
+        LblG({t:'Date de retour prévue'}),
+        CE('input',{type:'date',style:iStyle(false),value:frm.date_retour_materiel||'',onChange:e=>setFn('date_retour_materiel',e.target.value)}))
     ),
     CE('div',{style:{marginTop:12}},
       LblG({t:'Remarques'}),
@@ -3278,6 +3316,12 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
   // anomalies de champs/commune ci-dessus (voir findMobileClassConflicts).
   const conflitsMobile=React.useMemo(()=>findMobileClassConflicts(entries),[entries]);
   const conflitsFiltres=filtreConum==='Tous'?conflitsMobile:conflitsMobile.filter(g=>g.entries.some(e=>e.conseiller===filtreConum));
+  // Conflit de stock : cumul des ordinateurs prêtés (période date → date de
+  // retour comprise) qui dépasse le stock disponible (10) un jour donné —
+  // voir findOrdinateursConflicts, différent de conflitsMobile (même jour
+  // uniquement, matériel indivisible).
+  const conflitsOrdi=React.useMemo(()=>findOrdinateursConflicts(entries),[entries]);
+  const conflitsOrdiFiltres=filtreConum==='Tous'?conflitsOrdi:conflitsOrdi.filter(g=>g.entries.some(e=>e.conseiller===filtreConum));
   async function handleSaveCommune(entry,valeur){
     if(!valeur||!valeur.trim())return;
     setSaving(entry._id);
@@ -3315,13 +3359,36 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
       CE('div',{style:{background:'#ffedd5',borderRadius:8,padding:'8px 14px',flex:'1',minWidth:120,cursor:'pointer',border:filter==='conflits'?'2px solid #ea580c':'2px solid transparent'},onClick:()=>setFilter('conflits')},
         CE('div',{style:{fontSize:20,fontWeight:700,color:'#9a3412'}},conflitsMobile.length),
         CE('div',{style:{fontSize:11,color:'#7c2d12'}},'⚠️ Conflits Classe mobile')
+      ),
+      CE('div',{style:{background:'#fee2e2',borderRadius:8,padding:'8px 14px',flex:'1',minWidth:120,cursor:'pointer',border:filter==='conflits_ordi'?'2px solid #dc2626':'2px solid transparent'},onClick:()=>setFilter('conflits_ordi')},
+        CE('div',{style:{fontSize:20,fontWeight:700,color:'#991b1b'}},conflitsOrdi.length),
+        CE('div',{style:{fontSize:11,color:'#7f1d1d'}},'🖥️ Stock ordinateurs dépassé')
       )
     ),
     CE('div',{className:'chip-bar',style:{marginBottom:12}},
       conumsList.map(c=>CE('span',{key:c,className:'chip'+(c==='Tous'?' chip-all':'')+(filtreConum===c?' active':''),style:c!=='Tous'?{color:conseillerColor(c)}:{},onClick:()=>setFiltreConum(p=>p===c&&c!=='Tous'?'Tous':c)},
         CE('span',{className:'chip-dot',style:c!=='Tous'?{background:conseillerColor(c)}:{}}),c))
     ),
-    filter==='conflits'
+    filter==='conflits_ordi'
+      ?(conflitsOrdiFiltres.length===0
+          ?CE('div',{style:{textAlign:'center',padding:'40px 0',color:'#16a34a',fontSize:14}},
+              CE('div',{style:{fontSize:32,marginBottom:8}},'✅'),
+              'Aucun dépassement de stock'
+            )
+          :CE('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+              conflitsOrdiFiltres.map(g=>CE('div',{key:g.date,style:{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:8,padding:'10px 14px'}},
+                CE('div',{style:{fontWeight:700,fontSize:12,color:'#991b1b',marginBottom:6}},'📅 '+fmtDate(g.date)+' — '+g.total+' ordinateurs demandés sur '+STOCK_ORDINATEURS+' en stock'),
+                CE('div',{style:{display:'flex',flexDirection:'column',gap:4}},
+                  g.entries.map(e=>CE('div',{key:e._id+'_'+g.date,style:{display:'flex',alignItems:'center',gap:8,fontSize:12,flexWrap:'wrap'}},
+                    CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
+                    CE('span',{style:{color:'#6b7280'}},e.qte+' ordinateur(s)'),
+                    onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
+                  ))
+                )
+              ))
+            )
+        )
+      :filter==='conflits'
       ?(conflitsFiltres.length===0
           ?CE('div',{style:{textAlign:'center',padding:'40px 0',color:'#16a34a',fontSize:14}},
               CE('div',{style:{fontSize:32,marginBottom:8}},'✅'),

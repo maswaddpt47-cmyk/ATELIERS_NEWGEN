@@ -29,6 +29,8 @@ function buildEntry(overrides = {}) {
     remarques:    '',
     inscrits:     4,
     presents:     '',
+    nb_ordinateurs:       '',
+    date_retour_materiel: '',
     ...overrides,
   };
 }
@@ -39,6 +41,7 @@ describe('champs obligatoires présents', () => {
     '_id', 'statut', 'date', 'horaire', 'ampm',
     'thematique', 'commune', 'lieu', 'conseiller',
     'orienteur', 'public', 'materiel', 'inscrits', 'presents',
+    'nb_ordinateurs', 'date_retour_materiel',
   ];
   const entry = buildEntry();
   CHAMPS.forEach(champ => {
@@ -130,6 +133,27 @@ describe('inscrits / presents', () => {
   it('parseInt(\'\') → NaN donc traité comme 0 dans les calculs', () => {
     assert.ok(isNaN(parseInt('')));
     assert.equal(parseInt('') || 0, 0);
+  });
+});
+
+// ── nb_ordinateurs / date_retour_materiel ────────────────────────
+describe('nb_ordinateurs / date_retour_materiel', () => {
+  it('nb_ordinateurs est un nombre ou \'\' — jamais null/undefined', () => {
+    const e = buildEntry({nb_ordinateurs: 4});
+    assert.ok(e.nb_ordinateurs !== null && e.nb_ordinateurs !== undefined);
+    assert.ok(typeof e.nb_ordinateurs === 'number' || e.nb_ordinateurs === '');
+  });
+  it('nb_ordinateurs=0 est valide (≠ nb_ordinateurs=\'\')', () => {
+    const e = buildEntry({nb_ordinateurs: 0});
+    assert.equal(e.nb_ordinateurs, 0);
+    assert.notEqual(e.nb_ordinateurs, '');
+  });
+  it('date_retour_materiel vide est valide (matériel non concerné/pas de prêt)', () => {
+    assert.equal(buildEntry().date_retour_materiel, '');
+  });
+  it('date_retour_materiel renseignée est au format ISO YYYY-MM-DD', () => {
+    const e = buildEntry({date_retour_materiel: '2026-06-20'});
+    assert.match(e.date_retour_materiel, /^\d{4}-\d{2}-\d{2}$/);
   });
 });
 
