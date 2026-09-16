@@ -1,5 +1,18 @@
 
-// ── GAS Backend v11.29 ────────────────────────────────────────
+// ── GAS Backend v11.30 ────────────────────────────────────────
+// v11.30 : AJOUT — suivi du prêt du stock d'ordinateurs (10 unités, prêtées
+//          aux participants). Deux nouveaux champs simples sur chaque
+//          atelier : nb_ordinateurs (quantité prêtée, saisie manuelle) et
+//          date_retour_materiel (date de retour prévue). Contrairement à
+//          Classe mobile (matériel indivisible, conflit = 2+ conseillers le
+//          même jour), le stock est divisible : deux ateliers à des dates
+//          différentes peuvent quand même se disputer les 10 unités si la
+//          période de prêt du premier chevauche le second — détecté côté
+//          frontend par findOrdinateursConflicts (shared.js/logic.js),
+//          nouvelle catégorie dans VueAnomalies. Migration ajoutée :
+//          ajouterColonnesPretMateriel() (à lancer une fois manuellement),
+//          FIXED_COLS/FIXED_COLS2 mis à jour pour ne pas traiter ces deux
+//          colonnes comme du matériel générique OUI/vide.
 // v11.29 : AJOUT — onEdit(e), simple trigger qui invalide automatiquement
 //          le cache getAll dès qu'une édition manuelle touche la feuille
 //          Ateliers_next_step (collage, saisie directe...). Suite de
@@ -486,7 +499,7 @@ function _actionGetAllFresh(p) {
         var data = sh.getDataRange().getValues();
         var headers = data[0].map(function(h) { return String(h).trim(); });
         var dateIdx = headers.indexOf('date');
-        var FIXED_COLS = ['id','n','statut','date','horaire','ampm','orienteur','commune','lieu','thematique','inscrit','present','public','conseiller','coanimateur','residence','remarque'];
+        var FIXED_COLS = ['id','n','statut','date','horaire','ampm','orienteur','commune','lieu','thematique','inscrit','present','public','conseiller','coanimateur','residence','remarque','nbordinateur','dateretourmateriel'];
         var MCOLS_DYN = headers.filter(function(h) { return FIXED_COLS.indexOf(_normMat(h)) === -1 && h !== ''; }).map(function(h) { return _normMat(h); });
         // CORRECTION B - _normMat(h) etait recalcule pour chaque cellule de
         // chaque ligne. Les en-tetes ne changent pas : on normalise une fois.
@@ -531,7 +544,7 @@ function actionSaveEntry(p) {
     var sep = d.materiel.indexOf('|') !== -1 ? '|' : ',';
     materielList = d.materiel.split(sep).map(_normMat);
   }
-  var FIXED_COLS2 = ['id','n','statut','date','horaire','ampm','orienteur','commune','lieu','thematique','inscrit','present','public','conseiller','coanimateur','residence','remarque'];
+  var FIXED_COLS2 = ['id','n','statut','date','horaire','ampm','orienteur','commune','lieu','thematique','inscrit','present','public','conseiller','coanimateur','residence','remarque','nbordinateur','dateretourmateriel'];
   var row = headers.map(function(h) {
     if (h === '_id') return id;
     if (h === '_n') return isNew ? sh.getLastRow() : (d._n || '');
@@ -842,7 +855,7 @@ function backupGAS() {
   var date = Utilities.formatDate(new Date(), 'Europe/Paris', 'yyyy-MM-dd_HH-mm');
   var folders = DriveApp.getFoldersByName('GAS_Backups');
   var dossier = folders.hasNext() ? folders.next() : DriveApp.createFolder('GAS_Backups');
-  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.29 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
+  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.30 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
   Logger.log('Backup créé.');
 }
 function _getAteliersRetard() {
@@ -880,6 +893,23 @@ function ajouterColonneAutre() {
   var iOrd = headers.indexOf('Ordinateur');
   if (iOrd !== -1) { sh.insertColumnAfter(iOrd+1); sh.getRange(1,iOrd+2).setValue('Autre'); Logger.log('Colonne Autre ajoutée après Ordinateur'); }
   else { sh.getRange(1,sh.getLastColumn()+1).setValue('Autre'); Logger.log('Colonne Autre ajoutée en fin'); }
+}
+// À lancer une fois manuellement (menu Exécuter) pour le suivi du prêt du
+// stock d'ordinateurs (Classe mobile) : nb_ordinateurs (quantité prêtée,
+// saisie manuelle) et date_retour_materiel (date de retour prévue), lues/
+// écrites comme champs simples grâce à FIXED_COLS/FIXED_COLS2 — sans cette
+// migration les colonnes n'existent pas encore et actionSaveEntry ne peut
+// rien y écrire.
+function ajouterColonnesPretMateriel() {
+  var sh = _ss().getSheetByName(SHEET_NAME);
+  if (!sh) { Logger.log('Feuille introuvable'); return; }
+  var headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(function(h){return String(h).trim();});
+  ['nb_ordinateurs','date_retour_materiel'].forEach(function(col){
+    if (headers.indexOf(col) !== -1) { Logger.log('Colonne ' + col + ' déjà présente'); return; }
+    sh.getRange(1, sh.getLastColumn()+1).setValue(col);
+    headers.push(col);
+    Logger.log('Colonne ' + col + ' ajoutée en fin');
+  });
 }
 // ── keepAlive v11.12 : réchauffe le cache getAll segmenté ──────────────────
 // v11.10 avait renoncé à tout réchauffement actif (ping léger sur Config
