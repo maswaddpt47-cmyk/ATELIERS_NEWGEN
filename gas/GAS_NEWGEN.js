@@ -1,5 +1,16 @@
 
-// ── GAS Backend v11.26 ────────────────────────────────────────
+// ── GAS Backend v11.27 ────────────────────────────────────────
+// v11.27 : AJOUT — invaliderCacheGetAll(), fonction de maintenance à lancer
+//          manuellement (menu Exécuter de l'éditeur) après un import/collage
+//          direct dans la feuille (hors appli). Contexte : import manuel
+//          Ateliers_next_step → next_gen le 16/09/2026, ateliers de Cynthia
+//          Pineau et de la Régie du Territoire invisibles ~10 min dans
+//          Historique/Admin — cache getAll (TTL 600s) jamais invalidé car
+//          _invalidateCache() n'est appelé que par actionSaveEntry/saveMany/
+//          delete, jamais par une écriture manuelle sur la feuille. Résolu
+//          seul après expiration naturelle du TTL (confirmé par l'utilisateur
+//          après comparaison xlsx réel vs affichage Admin périmé) ; cette
+//          fonction évite d'attendre la prochaine fois.
 // v11.26 : NETTOYAGE — correctif PropertiesService (v11.25) confirmé stable
 //          par test réel. Retrait des diagnostics temporaires (v11.22-25) :
 //          _generateToken renvoie de nouveau directement le token (string),
@@ -223,6 +234,15 @@ function _invalidateCache() {
     _invalidateGetAllCache(String(parseInt(year) + 1));
     CacheService.getScriptCache().remove('config');
   } catch(_) {}
+}
+// v11.27 : à lancer manuellement depuis l'éditeur (menu Exécuter) après un
+// collage/import manuel dans la feuille — ce genre d'écriture ne passe pas
+// par actionSaveEntry/saveMany, donc _invalidateCache() n'est jamais
+// déclenché automatiquement, et les nouvelles lignes restent invisibles
+// dans l'appli jusqu'à expiration du cache getAll (jusqu'à 10 min).
+function invaliderCacheGetAll() {
+  _invalidateCache();
+  Logger.log('Cache getAll invalidé (année courante ± 1). Les prochains appels liront la feuille à nouveau.');
 }
 function json(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
