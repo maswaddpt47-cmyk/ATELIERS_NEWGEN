@@ -6,6 +6,7 @@ var VIEW_META_F = {
   calendrier: {ico:'📅',  label:'Calendrier',   group:'Voir'},
   carte:      {ico:'🗺️', label:'Carte',        group:'Voir'},
   roadmap:    {ico:'🛣️', label:'Roadmap',      group:'Voir'},
+  gestion_ordi:{ico:'🖥️', label:'Gestion ordi', group:'Voir'},
   graphiques: {ico:'📊',  label:'Statistiques', group:'Stats'},
   bingo:      {ico:'🎯',  label:'Bingo',        group:'Stats'},
 };
@@ -221,7 +222,7 @@ function App(){
   const[editingId,setEditingId]    = React.useState(null);
   const[prefillData,setPrefillData] = React.useState(null);
   const[annee,setAnneeState]       = React.useState(()=>localStorage.getItem('f_annee')||String(new Date().getFullYear()));
-  const[visibility,setVisibility]   = React.useState({saisie:true,historique:true,dashboard:true,carte:true,bingo:true,calendrier:false,agenda:false,roadmap:false});
+  const[visibility,setVisibility]   = React.useState({saisie:true,historique:true,dashboard:true,carte:true,bingo:true,calendrier:false,agenda:false,roadmap:false,gestion_ordi:true});
   const[lists,setLists]            = React.useState({
     statuts:[...STATUTS_DEFAULT],conseillers:[...CONSEILLERS_DEFAULT],
     publics:[...PUBLICS_DEFAULT],materiels:[...MATERIELS_DEFAULT]
@@ -569,6 +570,7 @@ function App(){
         view==='dashboard'&&visibility.dashboard&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
         view==='carte'&&visibility.carte&&CE(VueCarte,{entries,active:view==='carte'}),
         view==='roadmap'&&visibility.roadmap&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),
+        view==='gestion_ordi'&&visibility.gestion_ordi&&CE(VueGestionOrdi,{entries,onEdit:handleEdit}),
         view==='bingo'&&visibility.bingo&&CE(VueBingo,{entries})
       )
     ),
@@ -594,6 +596,9 @@ function App(){
         navBtn('roadmap',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M3 17l4-8 4 4 4-6 4 4'})),
           'Roadmap', visibility.roadmap),
+        navBtn('gestion_ordi',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:2,y:4,width:20,height:13,rx:2}),CE('path',{d:'M8 21h8M12 17v4'})),
+          'Gestion ordi', visibility.gestion_ordi),
         navBtn('dashboard',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M3 3v18h18'}),CE('rect',{x:7,y:10,width:3,height:8,rx:1}),CE('rect',{x:13,y:6,width:3,height:12,rx:1})),
           'Stats', visibility.dashboard),

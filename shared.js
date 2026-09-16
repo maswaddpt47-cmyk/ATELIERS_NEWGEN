@@ -3271,6 +3271,73 @@ function VueCarte({entries,active}){
 // ═══════════════════════════════════════════════════════════
 
 // ─── VueAnomalies ──────────────────────────────────────────────────────────
+// Rendu d'une liste de groupes de conflits (par date) — réutilisé par
+// VueAnomalies (Admin, onglet Anomalies) et VueGestionOrdi (Index, onglet
+// dédié). renderTitre(g) et renderItem(e,g) laissent chaque catégorie
+// (Classe mobile même jour / stock ordinateurs) personnaliser son contenu,
+// seule la coquille (état vide vs liste) est commune.
+function BlocConflits({groupes,vide,bg,border,titreColor,renderTitre,renderItem}){
+  if(groupes.length===0)return CE('div',{style:{textAlign:'center',padding:'40px 0',color:'#16a34a',fontSize:14}},
+    CE('div',{style:{fontSize:32,marginBottom:8}},'✅'), vide
+  );
+  return CE('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+    groupes.map(g=>CE('div',{key:g.date,style:{background:bg,border:'1px solid '+border,borderRadius:8,padding:'10px 14px'}},
+      CE('div',{style:{fontWeight:700,fontSize:12,color:titreColor,marginBottom:6}},renderTitre(g)),
+      CE('div',{style:{display:'flex',flexDirection:'column',gap:4}}, g.entries.map(e=>renderItem(e,g)))
+    ))
+  );
+}
+// Onglet Index dédié à la gestion du matériel partagé : Classe mobile (même
+// jour, matériel indivisible) et stock d'ordinateurs (période de prêt,
+// divisible). Contrairement à VueAnomalies (Admin), pas de filtre par
+// conseiller ni d'autres catégories d'anomalies — le stock est partagé par
+// tous, chacun doit voir l'ensemble des conflits.
+function VueGestionOrdi({entries,onEdit}){
+  const conflitsMobile=React.useMemo(()=>findMobileClassConflicts(entries),[entries]);
+  const conflitsOrdi=React.useMemo(()=>findOrdinateursConflicts(entries),[entries]);
+  return CE('div',{className:'card',style:{maxWidth:900,margin:'0 auto'}},
+    CE('div',{style:{display:'flex',alignItems:'center',gap:12,marginBottom:16}},
+      CE('span',{style:{fontSize:22}},'🖥️'),
+      CE('div',null,
+        CE('h2',{style:{margin:0,fontSize:16,fontWeight:700}},'Gestion ordi'),
+        CE('p',{style:{margin:0,fontSize:12,color:'#6b7280'}},'Classe mobile & stock de '+STOCK_ORDINATEURS+' ordinateurs prêtés aux participants')
+      )
+    ),
+    CE('div',{style:{display:'flex',gap:10,marginBottom:16,flexWrap:'wrap'}},
+      CE('div',{style:{background:'#ffedd5',borderRadius:8,padding:'8px 14px',flex:'1',minWidth:120}},
+        CE('div',{style:{fontSize:20,fontWeight:700,color:'#9a3412'}},conflitsMobile.length),
+        CE('div',{style:{fontSize:11,color:'#7c2d12'}},'⚠️ Conflits Classe mobile')
+      ),
+      CE('div',{style:{background:'#fee2e2',borderRadius:8,padding:'8px 14px',flex:'1',minWidth:120}},
+        CE('div',{style:{fontSize:20,fontWeight:700,color:'#991b1b'}},conflitsOrdi.length),
+        CE('div',{style:{fontSize:11,color:'#7f1d1d'}},'🖥️ Stock ordinateurs dépassé')
+      )
+    ),
+    CE('div',{style:{marginBottom:8,fontSize:12,fontWeight:700,color:'#9a3412'}},'Classe mobile'),
+    BlocConflits({
+      groupes:conflitsMobile, vide:'Aucun conflit Classe mobile',
+      bg:'#fff7ed', border:'#fed7aa', titreColor:'#9a3412',
+      renderTitre:g=>'📅 '+fmtDate(g.date)+' — Classe mobile réservée par '+g.entries.length+' conseillers',
+      renderItem:e=>CE('div',{key:e._id,style:{display:'flex',alignItems:'center',gap:8,fontSize:12,flexWrap:'wrap'}},
+        CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
+        CE('span',{style:{color:'#6b7280'}},e.thematique||''),
+        CE('span',{style:{color:'#9ca3af'}},e.commune||''),
+        onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
+      )
+    }),
+    CE('div',{style:{margin:'20px 0 8px',fontSize:12,fontWeight:700,color:'#991b1b'}},'Stock ordinateurs'),
+    BlocConflits({
+      groupes:conflitsOrdi, vide:'Aucun dépassement de stock',
+      bg:'#fef2f2', border:'#fecaca', titreColor:'#991b1b',
+      renderTitre:g=>'📅 '+fmtDate(g.date)+' — '+g.total+' ordinateurs demandés sur '+STOCK_ORDINATEURS+' en stock',
+      renderItem:e=>CE('div',{key:e._id,style:{display:'flex',alignItems:'center',gap:8,fontSize:12,flexWrap:'wrap'}},
+        CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
+        CE('span',{style:{color:'#6b7280'}},e.qte+' ordinateur(s)'),
+        onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
+      )
+    })
+  );
+}
 function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,addLog}){
   const CE=React.createElement;
   const CHAMPS_OBL=['statut','date','horaire','ampm','commune','lieu','thematique','conseiller','orienteur','public'];
@@ -3370,44 +3437,28 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
         CE('span',{className:'chip-dot',style:c!=='Tous'?{background:conseillerColor(c)}:{}}),c))
     ),
     filter==='conflits_ordi'
-      ?(conflitsOrdiFiltres.length===0
-          ?CE('div',{style:{textAlign:'center',padding:'40px 0',color:'#16a34a',fontSize:14}},
-              CE('div',{style:{fontSize:32,marginBottom:8}},'✅'),
-              'Aucun dépassement de stock'
-            )
-          :CE('div',{style:{display:'flex',flexDirection:'column',gap:8}},
-              conflitsOrdiFiltres.map(g=>CE('div',{key:g.date,style:{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:8,padding:'10px 14px'}},
-                CE('div',{style:{fontWeight:700,fontSize:12,color:'#991b1b',marginBottom:6}},'📅 '+fmtDate(g.date)+' — '+g.total+' ordinateurs demandés sur '+STOCK_ORDINATEURS+' en stock'),
-                CE('div',{style:{display:'flex',flexDirection:'column',gap:4}},
-                  g.entries.map(e=>CE('div',{key:e._id+'_'+g.date,style:{display:'flex',alignItems:'center',gap:8,fontSize:12,flexWrap:'wrap'}},
-                    CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
-                    CE('span',{style:{color:'#6b7280'}},e.qte+' ordinateur(s)'),
-                    onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
-                  ))
-                )
-              ))
-            )
-        )
+      ?BlocConflits({
+          groupes:conflitsOrdiFiltres, vide:'Aucun dépassement de stock',
+          bg:'#fef2f2', border:'#fecaca', titreColor:'#991b1b',
+          renderTitre:g=>'📅 '+fmtDate(g.date)+' — '+g.total+' ordinateurs demandés sur '+STOCK_ORDINATEURS+' en stock',
+          renderItem:e=>CE('div',{key:e._id,style:{display:'flex',alignItems:'center',gap:8,fontSize:12,flexWrap:'wrap'}},
+            CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
+            CE('span',{style:{color:'#6b7280'}},e.qte+' ordinateur(s)'),
+            onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
+          )
+        })
       :filter==='conflits'
-      ?(conflitsFiltres.length===0
-          ?CE('div',{style:{textAlign:'center',padding:'40px 0',color:'#16a34a',fontSize:14}},
-              CE('div',{style:{fontSize:32,marginBottom:8}},'✅'),
-              'Aucun conflit Classe mobile'
-            )
-          :CE('div',{style:{display:'flex',flexDirection:'column',gap:8}},
-              conflitsFiltres.map(g=>CE('div',{key:g.date,style:{background:'#fff7ed',border:'1px solid #fed7aa',borderRadius:8,padding:'10px 14px'}},
-                CE('div',{style:{fontWeight:700,fontSize:12,color:'#9a3412',marginBottom:6}},'📅 '+fmtDate(g.date)+' — Classe mobile réservée par '+g.entries.length+' conseillers'),
-                CE('div',{style:{display:'flex',flexDirection:'column',gap:4}},
-                  g.entries.map(e=>CE('div',{key:e._id,style:{display:'flex',alignItems:'center',gap:8,fontSize:12,flexWrap:'wrap'}},
-                    CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
-                    CE('span',{style:{color:'#6b7280'}},e.thematique||''),
-                    CE('span',{style:{color:'#9ca3af'}},e.commune||''),
-                    onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
-                  ))
-                )
-              ))
-            )
-        )
+      ?BlocConflits({
+          groupes:conflitsFiltres, vide:'Aucun conflit Classe mobile',
+          bg:'#fff7ed', border:'#fed7aa', titreColor:'#9a3412',
+          renderTitre:g=>'📅 '+fmtDate(g.date)+' — Classe mobile réservée par '+g.entries.length+' conseillers',
+          renderItem:e=>CE('div',{key:e._id,style:{display:'flex',alignItems:'center',gap:8,fontSize:12,flexWrap:'wrap'}},
+            CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
+            CE('span',{style:{color:'#6b7280'}},e.thematique||''),
+            CE('span',{style:{color:'#9ca3af'}},e.commune||''),
+            onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
+          )
+        })
       :filtered.length===0
       ?CE('div',{style:{textAlign:'center',padding:'40px 0',color:'#16a34a',fontSize:14}},
           CE('div',{style:{fontSize:32,marginBottom:8}},'✅'),

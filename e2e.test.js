@@ -81,6 +81,7 @@ const INDEX_VIEWS = [
   { label: 'Calendrier', ariaLabel: 'Calendrier' },
   { label: 'Carte',      ariaLabel: 'Carte'      },
   { label: 'Roadmap',    ariaLabel: 'Roadmap'    },
+  { label: 'Gestion ordi', ariaLabel: 'Gestion ordi' },
   { label: 'Bingo',      ariaLabel: 'Bingo'      },
 ];
 
