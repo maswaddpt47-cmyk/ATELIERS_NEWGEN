@@ -1,6 +1,12 @@
 
-// ── GAS Backend v11.27 ────────────────────────────────────────
-// v11.27 : AJOUT — invaliderCacheGetAll(), fonction de maintenance à lancer
+// ── GAS Backend v11.29 ────────────────────────────────────────
+// v11.29 : AJOUT — onEdit(e), simple trigger qui invalide automatiquement
+//          le cache getAll dès qu'une édition manuelle touche la feuille
+//          Ateliers_next_step (collage, saisie directe...). Suite de
+//          v11.28 : plus besoin de penser à lancer invaliderCacheGetAll()
+//          à la main après un import — elle reste en filet de secours pour
+//          les écritures qui ne déclenchent pas onEdit (API Sheets).
+// v11.28 : AJOUT — invaliderCacheGetAll(), fonction de maintenance à lancer
 //          manuellement (menu Exécuter de l'éditeur) après un import/collage
 //          direct dans la feuille (hors appli). Contexte : import manuel
 //          Ateliers_next_step → next_gen le 16/09/2026, ateliers de Cynthia
@@ -11,6 +17,13 @@
 //          seul après expiration naturelle du TTL (confirmé par l'utilisateur
 //          après comparaison xlsx réel vs affichage Admin périmé) ; cette
 //          fonction évite d'attendre la prochaine fois.
+// v11.27 : CORRECTIF SÉCURITÉ — saveEntry/saveMany/delete routées avant
+//          vérification de token (OPEN_WRITE_ACTIONS, v11.14) fermé : Index a
+//          désormais un login (VueLoginIndex, depuis le 21/08/2026) et envoie
+//          un token sur ces 3 actions — elles passent par la vérification
+//          standard (n'importe quel rôle valide, pas admin seul). Voir
+//          commentaire dans doGet. Entrée ajoutée après coup dans cet
+//          en-tête (absente au moment du commit d'origine).
 // v11.26 : NETTOYAGE — correctif PropertiesService (v11.25) confirmé stable
 //          par test réel. Retrait des diagnostics temporaires (v11.22-25) :
 //          _generateToken renvoie de nouveau directement le token (string),
@@ -235,7 +248,7 @@ function _invalidateCache() {
     CacheService.getScriptCache().remove('config');
   } catch(_) {}
 }
-// v11.27 : à lancer manuellement depuis l'éditeur (menu Exécuter) après un
+// v11.28 : à lancer manuellement depuis l'éditeur (menu Exécuter) après un
 // collage/import manuel dans la feuille — ce genre d'écriture ne passe pas
 // par actionSaveEntry/saveMany, donc _invalidateCache() n'est jamais
 // déclenché automatiquement, et les nouvelles lignes restent invisibles
@@ -243,6 +256,22 @@ function _invalidateCache() {
 function invaliderCacheGetAll() {
   _invalidateCache();
   Logger.log('Cache getAll invalidé (année courante ± 1). Les prochains appels liront la feuille à nouveau.');
+}
+// v11.29 : simple trigger — se déclenche automatiquement pour toute édition
+// faite à la main dans l'UI Google Sheets (collage, saisie directe...),
+// sans déclencheur à ajouter dans l'éditeur (contrairement à keepAlive,
+// qui est un trigger "temps" installé séparément). Ne fait rien pour les
+// écritures du script lui-même (actionSaveEntry/saveMany/delete appellent
+// déjà _invalidateCache() directement) ni pour les feuilles autres que
+// SHEET_NAME (Comptes, Config, Logs_Connexion). Rend invaliderCacheGetAll()
+// inutile pour ce cas précis, mais on la garde en filet de secours (édition
+// via l'API Sheets par ex., qui ne déclenche pas onEdit).
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    if (e.range.getSheet().getName() !== SHEET_NAME) return;
+    _invalidateCache();
+  } catch (_) {}
 }
 function json(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
@@ -813,7 +842,7 @@ function backupGAS() {
   var date = Utilities.formatDate(new Date(), 'Europe/Paris', 'yyyy-MM-dd_HH-mm');
   var folders = DriveApp.getFoldersByName('GAS_Backups');
   var dossier = folders.hasNext() ? folders.next() : DriveApp.createFolder('GAS_Backups');
-  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.26 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
+  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.29 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
   Logger.log('Backup créé.');
 }
 function _getAteliersRetard() {
