@@ -105,6 +105,19 @@ git push origin main
 ```
 Le déploiement GitHub Pages ne se déclenche que sur `main`. Travailler uniquement sur une branche de feature rend les changements invisibles en production.
 
+## 4bis. Cache-busting obligatoire
+
+`index.html` et `admin.html` chargent `app.css`/`admin.css`, `utils.js`,
+`shared.js`, `app.js`/`admin_app.js`/`admin_config.js`/`xlsxstyle.js` avec un
+paramètre `?v=N`. À chaque commit qui modifie le **contenu** d'un de ces
+fichiers, incrémenter son `?v=` dans **chaque** page HTML qui le charge —
+`shared.js` est partagé par les deux pages et doit être bumpé dans les deux,
+même si une seule a changé par ailleurs. Sans ce bump, le correctif n'atteint
+jamais les navigateurs qui ont déjà l'ancienne version en cache (incident
+confirmé sur ateliers-cd47_NextStep le 16/09/2026, porté ici en garde-fou
+préventif — `scripts/check-cache-busting.js`, vérifié en CI). Vérifier ce
+point avant de conclure qu'un correctif ne marche pas.
+
 ## 5. Backend GAS
 
 Le script Google Apps Script (URL dans `shared.js` → `GS_URL`) n'est pas
@@ -112,6 +125,23 @@ déployé depuis ce repo — pas d'API de push GAS, le déploiement reste manuel
 via l'éditeur script.google.com. `gas/GAS_NEWGEN.js` en est une copie de
 référence versionnée (diffable), à tenir à jour manuellement après chaque
 déploiement confirmé — voir `gas/README.md` pour la procédure.
+
+### Limite connue — latence de livraison indépendante du temps d'exécution
+
+Confirmé les 15-16/09/2026 sur ateliers-cd47_NextStep (captures croisées
+Journal client + Exécutions Apps Script) : des appels (`checkPassword`,
+`getComptes`) mesurés à 23-25 s côté navigateur, alors que l'exécution
+`doGet` correspondante (même horodatage) dure moins de 2 s côté serveur.
+L'écart se situe dans l'acheminement de la réponse après exécution
+(redirection `/exec`), pas dans le script — Google Workspace ne signalait
+aucun incident sur Apps Script à ce moment-là. Non corrigible par une
+modification du code GAS ou frontend — probablement la même limite sur
+NEWGEN (même type de déploiement Apps Script), à garder en tête avant de
+rouvrir un audit de contention/appels redondants : recouper d'abord Journal
+client vs Exécutions sur le créneau concerné plutôt que de supposer une
+cause côté code. Les Exécutions Apps Script n'affichent jamais le nom des
+actions (`checkPassword`, `getAll`...), seulement `doGet` — comparer par
+horodatage.
 
 ## 6. Routine RGPD & sécurité des accès/données
 
