@@ -140,6 +140,32 @@ function applyFilters(entries, filtres = {}) {
   });
 }
 
+// ── Conflits matériel ─────────────────────────────────────────
+
+// Miroir de findMobileClassConflicts (shared.js) : Classe mobile est un
+// matériel physique unique, ne peut pas être à deux endroits le même jour.
+// entries[].materiel est attendu en tableau (forme en mémoire côté navigateur,
+// avant la conversion pipe-string faite juste avant l'envoi à GAS).
+function findMobileClassConflicts(entries) {
+  const parDate = {};
+  (entries || []).forEach(e => {
+    if (e.statut === 'Annulé') return;
+    if (!e.date) return;
+    if (!parseMateriel(e.materiel).some(m => normalizeMatLabel(m) === 'classemobile')) return;
+    (parDate[e.date] = parDate[e.date] || []).push(e);
+  });
+  return Object.keys(parDate)
+    .map(date => ({ date, entries: parDate[date] }))
+    .filter(g => new Set(g.entries.map(e => e.conseiller)).size >= 2)
+    .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+}
+
+// Même normalisation que normalizeMat (shared.js) — insensible à la casse,
+// aux accents et au pluriel.
+function normalizeMatLabel(s) {
+  return stripAccents(String(s || '').toLowerCase()).replace(/\s+/g, '').replace(/s$/, '');
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     normalizeMateriel, parseMateriel,
@@ -147,5 +173,6 @@ if (typeof module !== 'undefined') {
     computeKpi,
     isEntryRetard, isEntryPasse,
     applyFilters,
+    findMobileClassConflicts,
   };
 }
