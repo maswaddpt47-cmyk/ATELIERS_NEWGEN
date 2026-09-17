@@ -2301,6 +2301,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
             CE('div',{style:{fontSize:11,fontWeight:700,color:'#718096',marginBottom:4}},'MATÉRIEL'),
             panel.materiel.map(m=>CE('span',{key:m,className:'mat-chip'},m))
           ),
+          parseInt(panel.nb_ordinateurs)>0&&CE('div',{className:'sp-info-row'},CE('span',null,'Ordinateurs prêtés'),CE('span',null,panel.nb_ordinateurs)),
           CE('hr',{style:{border:'none',borderTop:'1px solid #e2e8f0',margin:'12px 0'}}),
           CE('div',{className:'sp-field'},CE('label',null,'Statut *'),
             CE('select',{value:panelStatut,onChange:e=>setPanelStatut(e.target.value),style:{width:'100%',padding:'8px 10px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:13}},
@@ -2529,6 +2530,7 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
             CE('div',{style:{fontSize:11,fontWeight:700,color:'#718096',marginBottom:4}},'MATÉRIEL'),
             panel.materiel.map(m=>CE('span',{key:m,className:'mat-chip'},m))
           ),
+          parseInt(panel.nb_ordinateurs)>0&&CE('div',{className:'sp-info-row'},CE('span',null,'Ordinateurs prêtés'),CE('span',null,panel.nb_ordinateurs)),
           CE('hr',{style:{border:'none',borderTop:'1px solid #e2e8f0',margin:'12px 0'}}),
           CE('div',{className:'sp-field'},CE('label',null,'Statut *'),
             CE('select',{value:panelStatut,onChange:e=>setPanelStatut(e.target.value),style:{width:'100%',padding:'8px 10px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:13}},
