@@ -885,6 +885,9 @@ function findMobileClassConflicts(entries){
 // let (pas const) : valeur par défaut, écrasée par la config GAS
 // (stockOrdinateurs renvoyé par getAll) dans loadData (app.js/admin_app.js).
 let STOCK_ORDINATEURS=10;
+// Jours consécutifs en conflit fusionnés en un seul bloc (dateFin étendue)
+// pour ne pas répéter les mêmes conseillers sur chaque jour d'un même
+// chevauchement — tous les conseillers d'un bloc sont en conflit entre eux.
 function findOrdinateursConflicts(entries,stock=STOCK_ORDINATEURS){
   const parJour={};
   (entries||[]).forEach(e=>{
@@ -896,14 +899,26 @@ function findOrdinateursConflicts(entries,stock=STOCK_ORDINATEURS){
     const fin=(e.date_retour_materiel&&e.date_retour_materiel>e.date)?e.date_retour_materiel:e.date;
     let d=e.date,garde=0;
     while(d<=fin&&garde<90){
-      (parJour[d]=parJour[d]||[]).push({_id:e._id,conseiller:e.conseiller,qte});
+      (parJour[d]=parJour[d]||[]).push({_id:e._id,conseiller:e.conseiller,qte,commune:e.commune||'',lieu:e.lieu||'',dateDebut:e.date,dateFin:e.date_retour_materiel||e.date});
       d=addJoursIso(d,1);garde++;
     }
   });
-  return Object.keys(parJour)
+  const joursConflit=Object.keys(parJour)
     .map(date=>({date,entries:parJour[date],total:parJour[date].reduce((s,x)=>s+x.qte,0)}))
     .filter(g=>g.total>stock)
     .sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  const blocs=[];
+  joursConflit.forEach(g=>{
+    const dernier=blocs[blocs.length-1];
+    if(dernier&&addJoursIso(dernier.dateFin,1)===g.date){
+      dernier.dateFin=g.date;
+      dernier.total=Math.max(dernier.total,g.total);
+      g.entries.forEach(e=>{if(!dernier._vus.has(e._id)){dernier._vus.add(e._id);dernier.entries.push(e);}});
+    }else{
+      blocs.push({date:g.date,dateFin:g.date,total:g.total,entries:[...g.entries],_vus:new Set(g.entries.map(e=>e._id))});
+    }
+  });
+  return blocs.map(({_vus,...b})=>b);
 }
 
 let STATUTS     = [...STATUTS_DEFAULT];
@@ -3273,6 +3288,20 @@ function VueCarte({entries,active}){
 // ═══════════════════════════════════════════════════════════
 
 // ─── VueAnomalies ──────────────────────────────────────────────────────────
+// Formatage commun titre/item des blocs de conflit "stock ordinateurs" —
+// utilisé par VueAnomalies (Admin) et VueGestionOrdi (Index).
+function fmtPeriode(debut,fin){return debut===fin?fmtDate(debut):fmtDate(debut)+' → '+fmtDate(fin);}
+function titreConflitOrdi(g){return '📅 '+fmtPeriode(g.date,g.dateFin)+' — jusqu\'à '+g.total+' ordinateurs demandés sur '+STOCK_ORDINATEURS+' en stock';}
+function itemConflitOrdi(onEdit){
+  return e=>CE('div',{key:e._id,style:{display:'flex',flexDirection:'column',gap:2,fontSize:12,padding:'4px 0'}},
+    CE('div',{style:{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}},
+      CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
+      CE('span',{style:{color:'#6b7280'}},e.qte+' ordinateur(s)'),
+      onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
+    ),
+    CE('div',{style:{color:'#9ca3af',fontSize:11}}, ([e.commune,e.lieu].filter(Boolean).join(' · ')||'—')+' — '+fmtPeriode(e.dateDebut,e.dateFin))
+  );
+}
 // Rendu d'une liste de groupes de conflits (par date) — réutilisé par
 // VueAnomalies (Admin, onglet Anomalies) et VueGestionOrdi (Index, onglet
 // dédié). renderTitre(g) et renderItem(e,g) laissent chaque catégorie
@@ -3331,12 +3360,8 @@ function VueGestionOrdi({entries,onEdit}){
     BlocConflits({
       groupes:conflitsOrdi, vide:'Aucun dépassement de stock',
       bg:'#fef2f2', border:'#fecaca', titreColor:'#991b1b',
-      renderTitre:g=>'📅 '+fmtDate(g.date)+' — '+g.total+' ordinateurs demandés sur '+STOCK_ORDINATEURS+' en stock',
-      renderItem:e=>CE('div',{key:e._id,style:{display:'flex',alignItems:'center',gap:8,fontSize:12,flexWrap:'wrap'}},
-        CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
-        CE('span',{style:{color:'#6b7280'}},e.qte+' ordinateur(s)'),
-        onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
-      )
+      renderTitre:titreConflitOrdi,
+      renderItem:itemConflitOrdi(onEdit)
     })
   );
 }
@@ -3442,12 +3467,8 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
       ?BlocConflits({
           groupes:conflitsOrdiFiltres, vide:'Aucun dépassement de stock',
           bg:'#fef2f2', border:'#fecaca', titreColor:'#991b1b',
-          renderTitre:g=>'📅 '+fmtDate(g.date)+' — '+g.total+' ordinateurs demandés sur '+STOCK_ORDINATEURS+' en stock',
-          renderItem:e=>CE('div',{key:e._id,style:{display:'flex',alignItems:'center',gap:8,fontSize:12,flexWrap:'wrap'}},
-            CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
-            CE('span',{style:{color:'#6b7280'}},e.qte+' ordinateur(s)'),
-            onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
-          )
+          renderTitre:titreConflitOrdi,
+          renderItem:itemConflitOrdi(onEdit)
         })
       :filter==='conflits'
       ?BlocConflits({
