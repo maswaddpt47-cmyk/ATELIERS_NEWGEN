@@ -173,9 +173,12 @@ function normalizeMatLabel(s) {
 // deux ateliers à des dates différentes peuvent quand même se disputer le
 // stock si le premier n'a pas rendu le matériel avant que le second en ait
 // besoin. On étale chaque atelier sur les jours qu'il occupe (date →
-// date_retour_materiel inclus, ou juste date si pas de retour renseigné) et
-// on cumule les quantités par jour ; un jour est en conflit si le cumul
-// dépasse le stock disponible.
+// date_retour_materiel inclus, ou juste date si pas de retour renseigné),
+// on cumule les quantités par jour, puis on fusionne les jours consécutifs
+// en conflit en un seul bloc (date de début → date de fin) — pour ne pas
+// répéter les mêmes conseillers sur chaque jour d'un même chevauchement de
+// plusieurs jours. Chaque conseiller d'un bloc est en conflit avec tous les
+// autres conseillers du même bloc.
 const STOCK_ORDINATEURS = 10;
 function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
   const parJour = {};
@@ -191,15 +194,32 @@ function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
     // ne jamais boucler indéfiniment sur une période aberrante.
     let d = e.date, garde = 0;
     while (d <= fin && garde < 90) {
-      (parJour[d] = parJour[d] || []).push({ _id: e._id, conseiller: e.conseiller, qte });
+      (parJour[d] = parJour[d] || []).push({
+        _id: e._id, conseiller: e.conseiller, qte,
+        commune: e.commune || '', lieu: e.lieu || '',
+        dateDebut: e.date, dateFin: e.date_retour_materiel || e.date,
+      });
       d = addJoursIso(d, 1);
       garde++;
     }
   });
-  return Object.keys(parJour)
+  const joursConflit = Object.keys(parJour)
     .map(date => ({ date, entries: parJour[date], total: parJour[date].reduce((s, x) => s + x.qte, 0) }))
     .filter(g => g.total > stock)
     .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+
+  const blocs = [];
+  joursConflit.forEach(g => {
+    const dernier = blocs[blocs.length - 1];
+    if (dernier && addJoursIso(dernier.dateFin, 1) === g.date) {
+      dernier.dateFin = g.date;
+      dernier.total = Math.max(dernier.total, g.total);
+      g.entries.forEach(e => { if (!dernier._vus.has(e._id)) { dernier._vus.add(e._id); dernier.entries.push(e); } });
+    } else {
+      blocs.push({ date: g.date, dateFin: g.date, total: g.total, entries: [...g.entries], _vus: new Set(g.entries.map(e => e._id)) });
+    }
+  });
+  return blocs.map(({ _vus, ...b }) => b);
 }
 
 if (typeof module !== 'undefined') {

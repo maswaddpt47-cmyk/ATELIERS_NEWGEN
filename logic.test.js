@@ -478,4 +478,45 @@ describe('findOrdinateursConflicts', () => {
   it('tableau vide → aucun conflit', () => {
     assert.deepEqual(findOrdinateursConflicts([]), []);
   });
+
+  it('fusionne les jours consécutifs en conflit en un seul bloc', () => {
+    const entries = [
+      { statut: 'Planifié', date: '2026-10-01', date_retour_materiel: '2026-10-04', conseiller: 'Alice', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+      { statut: 'Planifié', date: '2026-10-01', date_retour_materiel: '2026-10-02', conseiller: 'Bob',   materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+    ];
+    const conflits = findOrdinateursConflicts(entries);
+    assert.equal(conflits.length, 1);
+    assert.equal(conflits[0].date, '2026-10-01');
+    assert.equal(conflits[0].dateFin, '2026-10-02');
+    assert.equal(conflits[0].entries.length, 2);
+  });
+
+  it('ne fusionne pas deux blocs séparés par un jour sans conflit', () => {
+    const entries = [
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Alice', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Bob',   materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+      { statut: 'Planifié', date: '2026-10-05', conseiller: 'Cynthia', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+      { statut: 'Planifié', date: '2026-10-05', conseiller: 'David',   materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+    ];
+    const conflits = findOrdinateursConflicts(entries);
+    assert.equal(conflits.length, 2);
+    assert.equal(conflits[0].date, '2026-10-01');
+    assert.equal(conflits[1].date, '2026-10-05');
+  });
+
+  it('chaque entrée porte commune/lieu/dateDebut/dateFin pour l\'affichage', () => {
+    const entries = [
+      { statut: 'Planifié', date: '2026-10-01', date_retour_materiel: '2026-10-03', conseiller: 'Alice', commune: 'AGEN', lieu: 'MFR Agen', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+      { statut: 'Planifié', date: '2026-10-01', conseiller: 'Bob', commune: 'NERAC', lieu: 'CMS Nérac', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+    ];
+    const conflits = findOrdinateursConflicts(entries);
+    const alice = conflits[0].entries.find(e => e.conseiller === 'Alice');
+    assert.equal(alice.commune, 'AGEN');
+    assert.equal(alice.lieu, 'MFR Agen');
+    assert.equal(alice.dateDebut, '2026-10-01');
+    assert.equal(alice.dateFin, '2026-10-03');
+    const bob = conflits[0].entries.find(e => e.conseiller === 'Bob');
+    assert.equal(bob.dateDebut, '2026-10-01');
+    assert.equal(bob.dateFin, '2026-10-01');
+  });
 });
