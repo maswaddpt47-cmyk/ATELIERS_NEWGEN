@@ -1,5 +1,14 @@
 
-// ── GAS Backend v11.32 ────────────────────────────────────────
+// ── GAS Backend v11.33 ────────────────────────────────────────
+// v11.33 : CORRECTIF — date_retour_materiel ressortait en ISO complet
+//          ("2026-10-04T22:00:00.000Z") au lieu de "YYYY-MM-DD" dès que la
+//          cellule Sheets était un vrai type Date (cas normal : la colonne
+//          hérite du format Date des colonnes voisines à la création). Seule
+//          la colonne 'date' bénéficiait du formatage _fmtDate ; toute autre
+//          colonne Date tombait dans le else générique (v.toISOString()).
+//          Conséquence visible : affichage cassé dans les cartes de conflit
+//          ("Dim 04T22:00:00.000Z/10/2026"). date_retour_materiel traité
+//          maintenant comme 'date'.
 // v11.32 : AJOUT — possibilité de masquer un matériel du formulaire de
 //          saisie sans le supprimer de la liste Admin → Listes (qui reste
 //          la liste de référence, y compris pour les ateliers déjà
@@ -537,7 +546,7 @@ function _actionGetAllFresh(p) {
           headers.forEach(function(h, j) {
             var v = row[j];
             if (v instanceof Date) {
-              if (h === 'date') obj[h] = _fmtDate(v);            // etait Utilities.formatDate
+              if (h === 'date' || h === 'date_retour_materiel') obj[h] = _fmtDate(v); // etait Utilities.formatDate
               else if (h === 'horaire') obj[h] = _fmtHeure(v);   // etait Utilities.formatDate
               else obj[h] = v.toISOString();
             } else obj[h] = v;
@@ -878,7 +887,7 @@ function backupGAS() {
   var date = Utilities.formatDate(new Date(), 'Europe/Paris', 'yyyy-MM-dd_HH-mm');
   var folders = DriveApp.getFoldersByName('GAS_Backups');
   var dossier = folders.hasNext() ? folders.next() : DriveApp.createFolder('GAS_Backups');
-  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.32 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
+  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.33 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
   Logger.log('Backup créé.');
 }
 function _getAteliersRetard() {
