@@ -237,6 +237,14 @@ function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
   return blocs.map(({ _vus, ...b }) => b);
 }
 
+// Un conflit (issu de findMobileClassConflicts ou findOrdinateursConflicts)
+// devient "historique" une fois sa période entièrement passée — plus rien à
+// arbitrer une fois que l'atelier a eu lieu. dateFin est absent sur un
+// conflit Classe mobile (toujours un seul jour) : on retombe sur date.
+function estConflitPasse(conflit, today) {
+  return (conflit.dateFin || conflit.date) < today;
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     normalizeMateriel, parseMateriel, filterMaterielsVisibles,
@@ -246,5 +254,6 @@ if (typeof module !== 'undefined') {
     applyFilters,
     findMobileClassConflicts,
     STOCK_ORDINATEURS, findOrdinateursConflicts,
+    estConflitPasse,
   };
 }

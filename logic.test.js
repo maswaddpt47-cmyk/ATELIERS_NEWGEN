@@ -12,6 +12,7 @@ const {
   applyFilters,
   findMobileClassConflicts,
   findOrdinateursConflicts,
+  estConflitPasse,
 } = require('./logic.js');
 
 // ──────────────────────────────────────────────────────────────
@@ -541,5 +542,24 @@ describe('findOrdinateursConflicts', () => {
     const bob = conflits[0].entries.find(e => e.conseiller === 'Bob');
     assert.equal(bob.dateDebut, '2026-10-01');
     assert.equal(bob.dateFin, '2026-10-01');
+  });
+});
+
+// ──────────────────────────────────────────────────────────────
+describe('estConflitPasse', () => {
+  it('un conflit Classe mobile (sans dateFin) avant aujourd\'hui est passé', () => {
+    assert.equal(estConflitPasse({ date: '2026-09-01' }, '2026-09-17'), true);
+  });
+  it('un conflit dont la date est aujourd\'hui n\'est pas passé', () => {
+    assert.equal(estConflitPasse({ date: '2026-09-17' }, '2026-09-17'), false);
+  });
+  it('un conflit dont la date est dans le futur n\'est pas passé', () => {
+    assert.equal(estConflitPasse({ date: '2026-10-01' }, '2026-09-17'), false);
+  });
+  it('un bloc stock ordinateurs (dateFin) : utilise dateFin, pas date', () => {
+    assert.equal(estConflitPasse({ date: '2026-09-01', dateFin: '2026-09-20' }, '2026-09-17'), false);
+  });
+  it('un bloc stock ordinateurs entièrement passé (dateFin < today)', () => {
+    assert.equal(estConflitPasse({ date: '2026-08-01', dateFin: '2026-08-05' }, '2026-09-17'), true);
   });
 });
