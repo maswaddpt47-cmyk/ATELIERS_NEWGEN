@@ -195,6 +195,17 @@ function normalizeMatLabel(s) {
 // plusieurs jours. Chaque conseiller d'un bloc est en conflit avec tous les
 // autres conseillers du même bloc.
 const STOCK_ORDINATEURS = 10;
+// Cumul du jour à partir d'une liste d'items {conseiller, qte} — au max par
+// conseiller, pas en somme : un même conseiller qui enchaîne deux ateliers
+// dos-à-dos (retour du premier = prélèvement du second, sans repasser par
+// le local) n'a physiquement qu'un seul jeu d'ordinateurs en main ce
+// jour-là, jamais deux fois sa quantité. La contention réelle du stock ne
+// vient que de conseillers DIFFÉRENTS qui en ont besoin en même temps.
+function totalJourParConseiller(items) {
+  const parConseiller = {};
+  (items || []).forEach(x => { parConseiller[x.conseiller] = Math.max(parConseiller[x.conseiller] || 0, x.qte); });
+  return Object.values(parConseiller).reduce((s, q) => s + q, 0);
+}
 // Période réelle d'indisponibilité du matériel pour un atelier : du
 // prélèvement (peut précéder la date de l'atelier — ex. retrait le mardi
 // pour un atelier le vendredi) au retour. Repli sur la date de l'atelier de
@@ -229,7 +240,7 @@ function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
     }
   });
   const joursConflit = Object.keys(parJour)
-    .map(date => ({ date, entries: parJour[date], total: parJour[date].reduce((s, x) => s + x.qte, 0) }))
+    .map(date => ({ date, entries: parJour[date], total: totalJourParConseiller(parJour[date]) }))
     .filter(g => g.total > stock)
     .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
 
@@ -273,7 +284,7 @@ function getPretsMateriel(entries) {
 function totauxParJourMateriel(prets, jours) {
   const totaux = {};
   (jours || []).forEach(j => {
-    totaux[j] = (prets || []).reduce((s, p) => s + (j >= p.debut && j <= p.fin ? p.qte : 0), 0);
+    totaux[j] = totalJourParConseiller((prets || []).filter(p => j >= p.debut && j <= p.fin));
   });
   return totaux;
 }
@@ -294,7 +305,7 @@ if (typeof module !== 'undefined') {
     isEntryRetard, isEntryPasse,
     applyFilters,
     findMobileClassConflicts,
-    STOCK_ORDINATEURS, findOrdinateursConflicts, periodePretMateriel,
+    STOCK_ORDINATEURS, totalJourParConseiller, findOrdinateursConflicts, periodePretMateriel,
     getPretsMateriel, totauxParJourMateriel,
     estConflitPasse,
   };

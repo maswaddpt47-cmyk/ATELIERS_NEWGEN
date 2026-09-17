@@ -11,7 +11,7 @@ const {
   isEntryRetard, isEntryPasse,
   applyFilters,
   findMobileClassConflicts,
-  findOrdinateursConflicts, periodePretMateriel,
+  findOrdinateursConflicts, periodePretMateriel, totalJourParConseiller,
   getPretsMateriel, totauxParJourMateriel,
   estConflitPasse,
 } = require('./logic.js');
@@ -421,6 +421,22 @@ describe('findMobileClassConflicts', () => {
   });
 });
 
+// ── totalJourParConseiller ───────────────────────────────────────────────────
+describe('totalJourParConseiller', () => {
+  it('additionne des conseillers différents', () => {
+    assert.equal(totalJourParConseiller([{ conseiller: 'Alice', qte: 6 }, { conseiller: 'Bob', qte: 3 }]), 9);
+  });
+  it('prend le max, pas la somme, pour un même conseiller', () => {
+    assert.equal(totalJourParConseiller([{ conseiller: 'Alice', qte: 6 }, { conseiller: 'Alice', qte: 6 }]), 6);
+  });
+  it('mélange conseillers identiques et différents', () => {
+    assert.equal(totalJourParConseiller([{ conseiller: 'Alice', qte: 6 }, { conseiller: 'Alice', qte: 4 }, { conseiller: 'Bob', qte: 3 }]), 9);
+  });
+  it('liste vide → 0', () => {
+    assert.equal(totalJourParConseiller([]), 0);
+  });
+});
+
 // ── findOrdinateursConflicts ────────────────────────────────────────────────
 describe('findOrdinateursConflicts', () => {
   it('pas de conflit si le cumul ne dépasse pas le stock (10)', () => {
@@ -462,6 +478,16 @@ describe('findOrdinateursConflicts', () => {
     const conflits = findOrdinateursConflicts(entries);
     assert.equal(conflits.length, 1);
     assert.equal(conflits[0].date, '2026-11-18');
+  });
+
+  it('pas de conflit si le même conseiller enchaîne deux ateliers dos-à-dos (pas de double comptage)', () => {
+    // Retour du premier atelier = prélèvement du second, même conseiller :
+    // c'est le même jeu de 6 ordinateurs, jamais 6+6=12 sur le stock (10).
+    const entries = [
+      { statut: 'Planifié', date: '2026-09-25', date_prelevement_materiel: '2026-09-22', date_retour_materiel: '2026-09-29', conseiller: 'Michel Aswad', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+      { statut: 'Planifié', date: '2026-10-02', date_prelevement_materiel: '2026-09-29', conseiller: 'Michel Aswad', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+    ];
+    assert.deepEqual(findOrdinateursConflicts(entries), []);
   });
 
   it('pas de conflit si les périodes de prêt ne se chevauchent pas', () => {
@@ -616,13 +642,22 @@ describe('getPretsMateriel', () => {
 
 // ──────────────────────────────────────────────────────────────
 describe('totauxParJourMateriel', () => {
-  it('cumule les prêts qui couvrent chaque jour', () => {
+  it('cumule les prêts de conseillers différents qui couvrent chaque jour', () => {
     const prets = [
-      { qte: 6, debut: '2026-11-17', fin: '2026-11-20' },
-      { qte: 3, debut: '2026-11-19', fin: '2026-11-22' },
+      { conseiller: 'Alice', qte: 6, debut: '2026-11-17', fin: '2026-11-20' },
+      { conseiller: 'Bob',   qte: 3, debut: '2026-11-19', fin: '2026-11-22' },
     ];
     const totaux = totauxParJourMateriel(prets, ['2026-11-17', '2026-11-19', '2026-11-21']);
     assert.deepEqual(totaux, { '2026-11-17': 6, '2026-11-19': 9, '2026-11-21': 3 });
+  });
+  it('ne double-compte pas le même conseiller sur deux prêts qui se chevauchent (ateliers dos-à-dos)', () => {
+    // Le retour du premier tombe le même jour que le prélèvement du second :
+    // c'est le même jeu de 6 ordinateurs, jamais 12.
+    const prets = [
+      { conseiller: 'Michel Aswad', qte: 6, debut: '2026-09-22', fin: '2026-09-29' },
+      { conseiller: 'Michel Aswad', qte: 6, debut: '2026-09-29', fin: '2026-10-06' },
+    ];
+    assert.deepEqual(totauxParJourMateriel(prets, ['2026-09-29']), { '2026-09-29': 6 });
   });
   it('jour hors de toute période → 0', () => {
     const prets = [{ qte: 5, debut: '2026-11-01', fin: '2026-11-02' }];
