@@ -1514,7 +1514,7 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
 // ═══════════════════════════════════════════════════════════
 // VUE SAISIE — v9.1 : mode unique + mode lot (cycle)
 // ═══════════════════════════════════════════════════════════
-const emptyRow=()=>({id:genId(),date:'',horaire:'',ampm:'',thematique:'',inscrits:4,presents:''});
+const emptyRow=()=>({id:genId(),date:'',horaire:'',ampm:'',thematique:'',inscrits:4,presents:'',date_retour_materiel:''});
 
 function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefillData,onClearPrefill,accentColor}){
   const statuts    = lists?.statuts     || STATUTS_DEFAULT;
@@ -1531,7 +1531,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
 
   // ── états mode lot ──
   const[modeLot,setModeLot]     = React.useState(false);
-  const[lotForm,setLotForm]     = React.useState({orienteur:'',commune:'',lieu:'',conseiller:'',co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:'',date_retour_materiel:''});
+  const[lotForm,setLotForm]     = React.useState({orienteur:'',commune:'',lieu:'',conseiller:'',co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:''});
   const[lotRows,setLotRows]     = React.useState([emptyRow(),emptyRow()]);
   const[lotErrors,setLotErrors] = React.useState({});
   const[lotRowErrors,setLotRowErrors]= React.useState({});
@@ -1556,7 +1556,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   },[prefillData]);
 
   function reset(){setForm(empty);setEditId(null);setIsDup(false);setErrors({});}
-  function resetLot(){setLotForm({orienteur:'',commune:'',lieu:'',conseiller:'',co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:'',date_retour_materiel:''});setLotRows([emptyRow(),emptyRow()]);setLotErrors({});setLotRowErrors({});}
+  function resetLot(){setLotForm({orienteur:'',commune:'',lieu:'',conseiller:'',co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:''});setLotRows([emptyRow(),emptyRow()]);setLotErrors({});setLotRowErrors({});}
 
   function set(k,v){setForm(f=>({...f,[k]:v}));setErrors(er=>({...er,[k]:''}));}
   function toggleMat(m){setForm(f=>{const already=matIncludes(f.materiel,m);return{...f,materiel:already?f.materiel.filter(x=>normalizeMat(x)!==normalizeMat(m)):[...f.materiel,m]};});}
@@ -1646,7 +1646,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     if(!validateLot(rowsFilled)){showToast('⚠️ Champs obligatoires manquants',false);return;}
     setSaving(true);
     try{
-      const entries=rowsFilled.map(row=>({_id:genId(),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0,nb_ordinateurs:lotForm.nb_ordinateurs===''?'':parseInt(lotForm.nb_ordinateurs)||0,date_retour_materiel:lotForm.date_retour_materiel||''}));
+      const entries=rowsFilled.map(row=>({_id:genId(),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0,nb_ordinateurs:lotForm.nb_ordinateurs===''?'':parseInt(lotForm.nb_ordinateurs)||0,date_retour_materiel:row.date_retour_materiel||''}));
       const res=await apiFetch('saveMany',{entries});
       if(!res.ok)throw new Error(res.error);
       // Même conversion materiel string→tableau que le mode unique.
@@ -1767,14 +1767,18 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     // Classe mobile est cochée (les 10 ordinateurs du stock à prêter aux
     // participants, distincts du matériel "Ordinateur" du conseiller
     // lui-même). Saisie manuelle, sert au calcul de findOrdinateursConflicts.
-    matMobileActif&&CE('div',{style:{marginTop:12,display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}},
+    matMobileActif&&CE('div',{style:{marginTop:12,display:'grid',gridTemplateColumns:modeLot?'1fr':'1fr 1fr',gap:12}},
       CE('div',null,
         LblG({t:'Ordinateurs prêtés'}),
         CE('input',{type:'number',min:0,max:10,style:iStyle(false),value:frm.nb_ordinateurs,placeholder:'Ex : 4',onChange:e=>setFn('nb_ordinateurs',e.target.value)})),
-      CE('div',null,
+      // En mode cycle, la date de retour se saisit par séance (tableau
+      // ci-dessous) — une seule date partagée pour tout le cycle n'aurait
+      // pas de sens (séances étalées sur plusieurs semaines).
+      !modeLot&&CE('div',null,
         LblG({t:'Date de retour prévue'}),
         CE('input',{type:'date',style:iStyle(false),value:frm.date_retour_materiel||'',onChange:e=>setFn('date_retour_materiel',e.target.value)}))
     ),
+    modeLot&&matMobileActif&&CE('div',{style:{marginTop:4,fontSize:11,color:'#94a3b8'}},'La date de retour se saisit par séance dans le tableau ci-dessous.'),
     CE('div',{style:{marginTop:12}},
       LblG({t:'Remarques'}),
       CE('input',{type:'text',style:iStyle(false),value:frm.remarques,placeholder:'Notes libres',onChange:e=>setFn('remarques',e.target.value)}))
@@ -1892,6 +1896,14 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
                 lbl('Présents',false),
                 CE('input',{type:'number',min:0,value:row.presents,placeholder:'—',onChange:e=>setRow(row.id,'presents',e.target.value),style:{width:'100%',padding:'7px 10px',border:brd(false),borderRadius:8,fontSize:13,fontWeight:700,textAlign:'center',background:'#f8fafc',outline:'none',boxSizing:'border-box'}})
               )
+            ),
+            // Ligne 4 : Date de retour matériel — uniquement si Classe
+            // mobile est cochée (champ commun du cycle), par séance car
+            // chaque date de ce tableau emprunte et rend le matériel à son
+            // propre rythme.
+            matIncludes(lotForm.materiel,'Classe mobile')&&CE('div',{style:{padding:'0 10px 9px',borderTop:`1px solid ${acLight}`}},
+              lbl('Date de retour prévue',false),
+              inp('date',row.date_retour_materiel,'date_retour_materiel',false)
             )
           );
         }),
