@@ -303,6 +303,7 @@ function App(){
       if(data.visibility) setVisibility(v=>({...v,...data.visibility}));
       if(data.conseiller_colors) applyColors(data.conseiller_colors);
       if(data.stockOrdinateurs) STOCK_ORDINATEURS=parseInt(data.stockOrdinateurs)||STOCK_ORDINATEURS;
+      if(Array.isArray(data.materielsCaches)) MATERIELS_CACHES=data.materielsCaches;
       setLastSync(new Date());
       setSeenIds(prev=>{
         if(prev.size===0) return new Set(incoming.map(e=>e._id));

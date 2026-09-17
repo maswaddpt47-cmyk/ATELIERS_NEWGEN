@@ -29,6 +29,21 @@ function parseMateriel(val) {
   return s.split(sep).map(v => v.trim()).filter(Boolean);
 }
 
+// Retire de la liste des cases à cocher du formulaire les matériels masqués
+// (config 'materiels_caches', Admin → Listes → toggle par matériel) — sans
+// les retirer de la liste de référence (`materiels`, celle qui persiste pour
+// les ateliers déjà enregistrés). Un matériel masqué mais déjà sélectionné
+// (édition d'un atelier existant) reste affiché pour ne pas le désélectionner
+// silencieusement.
+function filterMaterielsVisibles(materiels, caches, selectionnes) {
+  const cachesNorm = (caches || []).map(normalizeMatLabel);
+  const selNorm = (selectionnes || []).map(normalizeMatLabel);
+  return (materiels || []).filter(m => {
+    const n = normalizeMatLabel(m);
+    return cachesNorm.indexOf(n) === -1 || selNorm.indexOf(n) !== -1;
+  });
+}
+
 // ── Validation lot ────────────────────────────────────────────
 
 // Valide une ligne du tableau lot — retourne {} si valide
@@ -224,7 +239,7 @@ function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    normalizeMateriel, parseMateriel,
+    normalizeMateriel, parseMateriel, filterMaterielsVisibles,
     validateLotRow, validateLotForm, filterLotRows,
     computeKpi,
     isEntryRetard, isEntryPasse,
