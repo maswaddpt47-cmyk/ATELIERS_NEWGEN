@@ -1,5 +1,13 @@
 
-// ── GAS Backend v11.33 ────────────────────────────────────────
+// ── GAS Backend v11.34 ────────────────────────────────────────
+// v11.34 : AJOUT — date_prelevement_materiel (date de retrait du matériel,
+//          peut précéder la date de l'atelier — ex. retrait le mardi pour
+//          un atelier le vendredi). Traité comme date_retour_materiel :
+//          FIXED_COLS/FIXED_COLS2, formatage _fmtDate, ajout à
+//          ajouterColonnesPretMateriel() (idempotente, relançable). La
+//          période de conflit (findOrdinateursConflicts, shared.js/
+//          logic.js) part maintenant du prélèvement, plus de la date de
+//          l'atelier — couvre l'indisponibilité réelle du matériel.
 // v11.33 : CORRECTIF — date_retour_materiel ressortait en ISO complet
 //          ("2026-10-04T22:00:00.000Z") au lieu de "YYYY-MM-DD" dès que la
 //          cellule Sheets était un vrai type Date (cas normal : la colonne
@@ -531,7 +539,7 @@ function _actionGetAllFresh(p) {
         var data = sh.getDataRange().getValues();
         var headers = data[0].map(function(h) { return String(h).trim(); });
         var dateIdx = headers.indexOf('date');
-        var FIXED_COLS = ['id','n','statut','date','horaire','ampm','orienteur','commune','lieu','thematique','inscrit','present','public','conseiller','coanimateur','residence','remarque','nbordinateur','dateretourmateriel'];
+        var FIXED_COLS = ['id','n','statut','date','horaire','ampm','orienteur','commune','lieu','thematique','inscrit','present','public','conseiller','coanimateur','residence','remarque','nbordinateur','dateretourmateriel','dateprelevementmateriel'];
         var MCOLS_DYN = headers.filter(function(h) { return FIXED_COLS.indexOf(_normMat(h)) === -1 && h !== ''; }).map(function(h) { return _normMat(h); });
         // CORRECTION B - _normMat(h) etait recalcule pour chaque cellule de
         // chaque ligne. Les en-tetes ne changent pas : on normalise une fois.
@@ -546,7 +554,7 @@ function _actionGetAllFresh(p) {
           headers.forEach(function(h, j) {
             var v = row[j];
             if (v instanceof Date) {
-              if (h === 'date' || h === 'date_retour_materiel') obj[h] = _fmtDate(v); // etait Utilities.formatDate
+              if (h === 'date' || h === 'date_retour_materiel' || h === 'date_prelevement_materiel') obj[h] = _fmtDate(v); // etait Utilities.formatDate
               else if (h === 'horaire') obj[h] = _fmtHeure(v);   // etait Utilities.formatDate
               else obj[h] = v.toISOString();
             } else obj[h] = v;
@@ -576,7 +584,7 @@ function actionSaveEntry(p) {
     var sep = d.materiel.indexOf('|') !== -1 ? '|' : ',';
     materielList = d.materiel.split(sep).map(_normMat);
   }
-  var FIXED_COLS2 = ['id','n','statut','date','horaire','ampm','orienteur','commune','lieu','thematique','inscrit','present','public','conseiller','coanimateur','residence','remarque','nbordinateur','dateretourmateriel'];
+  var FIXED_COLS2 = ['id','n','statut','date','horaire','ampm','orienteur','commune','lieu','thematique','inscrit','present','public','conseiller','coanimateur','residence','remarque','nbordinateur','dateretourmateriel','dateprelevementmateriel'];
   var row = headers.map(function(h) {
     if (h === '_id') return id;
     if (h === '_n') return isNew ? sh.getLastRow() : (d._n || '');
@@ -887,7 +895,7 @@ function backupGAS() {
   var date = Utilities.formatDate(new Date(), 'Europe/Paris', 'yyyy-MM-dd_HH-mm');
   var folders = DriveApp.getFoldersByName('GAS_Backups');
   var dossier = folders.hasNext() ? folders.next() : DriveApp.createFolder('GAS_Backups');
-  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.33 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
+  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.34 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
   Logger.log('Backup créé.');
 }
 function _getAteliersRetard() {
@@ -928,15 +936,17 @@ function ajouterColonneAutre() {
 }
 // À lancer une fois manuellement (menu Exécuter) pour le suivi du prêt du
 // stock d'ordinateurs (Classe mobile) : nb_ordinateurs (quantité prêtée,
-// saisie manuelle) et date_retour_materiel (date de retour prévue), lues/
-// écrites comme champs simples grâce à FIXED_COLS/FIXED_COLS2 — sans cette
-// migration les colonnes n'existent pas encore et actionSaveEntry ne peut
-// rien y écrire.
+// saisie manuelle), date_prelevement_materiel (date de retrait, peut
+// précéder la date de l'atelier) et date_retour_materiel (date de retour
+// prévue), lues/écrites comme champs simples grâce à FIXED_COLS/FIXED_COLS2
+// — sans cette migration les colonnes n'existent pas encore et
+// actionSaveEntry ne peut rien y écrire. Idempotente (relançable sans
+// risque : ne recrée pas une colonne déjà présente).
 function ajouterColonnesPretMateriel() {
   var sh = _ss().getSheetByName(SHEET_NAME);
   if (!sh) { Logger.log('Feuille introuvable'); return; }
   var headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(function(h){return String(h).trim();});
-  ['nb_ordinateurs','date_retour_materiel'].forEach(function(col){
+  ['nb_ordinateurs','date_prelevement_materiel','date_retour_materiel'].forEach(function(col){
     if (headers.indexOf(col) !== -1) { Logger.log('Colonne ' + col + ' déjà présente'); return; }
     sh.getRange(1, sh.getLastColumn()+1).setValue(col);
     headers.push(col);

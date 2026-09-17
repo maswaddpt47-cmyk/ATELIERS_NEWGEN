@@ -11,7 +11,8 @@ const {
   isEntryRetard, isEntryPasse,
   applyFilters,
   findMobileClassConflicts,
-  findOrdinateursConflicts,
+  findOrdinateursConflicts, periodePretMateriel,
+  getPretsMateriel, totauxParJourMateriel,
   estConflitPasse,
 } = require('./logic.js');
 
@@ -451,6 +452,18 @@ describe('findOrdinateursConflicts', () => {
     assert.equal(conflits[0].date, '2026-10-03');
   });
 
+  it('la période part du prélèvement, pas de la date de l\'atelier (ex. retrait avant l\'atelier)', () => {
+    // Atelier vendredi 20/11 à Fumel, retrait mardi 17 à Agen, retour le
+    // mardi suivant 24/11 — l'indisponibilité réelle démarre le 17.
+    const entries = [
+      { statut: 'Planifié', date: '2026-11-20', date_prelevement_materiel: '2026-11-17', date_retour_materiel: '2026-11-24', conseiller: 'Alice', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+      { statut: 'Planifié', date: '2026-11-18', conseiller: 'Bob', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+    ];
+    const conflits = findOrdinateursConflicts(entries);
+    assert.equal(conflits.length, 1);
+    assert.equal(conflits[0].date, '2026-11-18');
+  });
+
   it('pas de conflit si les périodes de prêt ne se chevauchent pas', () => {
     const entries = [
       { statut: 'Planifié', date: '2026-10-01', date_retour_materiel: '2026-10-02', conseiller: 'Alice', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
@@ -542,6 +555,81 @@ describe('findOrdinateursConflicts', () => {
     const bob = conflits[0].entries.find(e => e.conseiller === 'Bob');
     assert.equal(bob.dateDebut, '2026-10-01');
     assert.equal(bob.dateFin, '2026-10-01');
+  });
+});
+
+// ──────────────────────────────────────────────────────────────
+describe('periodePretMateriel', () => {
+  it('sans prélèvement ni retour, la période est réduite à la date de l\'atelier', () => {
+    const p = periodePretMateriel({ date: '2026-10-01' });
+    assert.deepEqual(p, { debut: '2026-10-01', fin: '2026-10-01' });
+  });
+  it('prélèvement avant la date de l\'atelier étend le début', () => {
+    const p = periodePretMateriel({ date: '2026-11-20', date_prelevement_materiel: '2026-11-17' });
+    assert.equal(p.debut, '2026-11-17');
+    assert.equal(p.fin, '2026-11-20');
+  });
+  it('un prélèvement après la date de l\'atelier est ignoré (repli sur la date)', () => {
+    const p = periodePretMateriel({ date: '2026-11-20', date_prelevement_materiel: '2026-11-25' });
+    assert.equal(p.debut, '2026-11-20');
+  });
+  it('retour après la date de l\'atelier étend la fin', () => {
+    const p = periodePretMateriel({ date: '2026-11-20', date_retour_materiel: '2026-11-24' });
+    assert.equal(p.fin, '2026-11-24');
+  });
+  it('prélèvement et retour combinés', () => {
+    const p = periodePretMateriel({ date: '2026-11-20', date_prelevement_materiel: '2026-11-17', date_retour_materiel: '2026-11-24' });
+    assert.deepEqual(p, { debut: '2026-11-17', fin: '2026-11-24' });
+  });
+});
+
+// ──────────────────────────────────────────────────────────────
+describe('getPretsMateriel', () => {
+  it('liste un prêt avec sa période complète', () => {
+    const entries = [
+      { _id: 'a1', statut: 'Planifié', date: '2026-11-20', date_prelevement_materiel: '2026-11-17', date_retour_materiel: '2026-11-24', conseiller: 'Alice', commune: 'FUMEL', lieu: 'MFR', thematique: 'Bureautique', materiel: ['Classe mobile'], nb_ordinateurs: 6 },
+    ];
+    const prets = getPretsMateriel(entries);
+    assert.equal(prets.length, 1);
+    assert.deepEqual(prets[0], { _id: 'a1', conseiller: 'Alice', qte: 6, commune: 'FUMEL', lieu: 'MFR', thematique: 'Bureautique', dateAtelier: '2026-11-20', debut: '2026-11-17', fin: '2026-11-24' });
+  });
+  it('ignore les ateliers Annulés, sans Classe mobile ou sans quantité', () => {
+    const entries = [
+      { statut: 'Annulé', date: '2026-11-01', conseiller: 'A', materiel: ['Classe mobile'], nb_ordinateurs: 4 },
+      { statut: 'Planifié', date: '2026-11-01', conseiller: 'B', materiel: ['Tablette'], nb_ordinateurs: 4 },
+      { statut: 'Planifié', date: '2026-11-01', conseiller: 'C', materiel: ['Classe mobile'], nb_ordinateurs: 0 },
+    ];
+    assert.deepEqual(getPretsMateriel(entries), []);
+  });
+  it('trie par date de début (prélèvement inclus)', () => {
+    const entries = [
+      { _id: 'x', statut: 'Planifié', date: '2026-11-20', conseiller: 'Alice', materiel: ['Classe mobile'], nb_ordinateurs: 2 },
+      { _id: 'y', statut: 'Planifié', date: '2026-11-15', date_prelevement_materiel: '2026-11-10', conseiller: 'Bob', materiel: ['Classe mobile'], nb_ordinateurs: 2 },
+    ];
+    const prets = getPretsMateriel(entries);
+    assert.deepEqual(prets.map(p => p._id), ['y', 'x']);
+  });
+  it('tableau vide → []', () => {
+    assert.deepEqual(getPretsMateriel([]), []);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────
+describe('totauxParJourMateriel', () => {
+  it('cumule les prêts qui couvrent chaque jour', () => {
+    const prets = [
+      { qte: 6, debut: '2026-11-17', fin: '2026-11-20' },
+      { qte: 3, debut: '2026-11-19', fin: '2026-11-22' },
+    ];
+    const totaux = totauxParJourMateriel(prets, ['2026-11-17', '2026-11-19', '2026-11-21']);
+    assert.deepEqual(totaux, { '2026-11-17': 6, '2026-11-19': 9, '2026-11-21': 3 });
+  });
+  it('jour hors de toute période → 0', () => {
+    const prets = [{ qte: 5, debut: '2026-11-01', fin: '2026-11-02' }];
+    assert.deepEqual(totauxParJourMateriel(prets, ['2026-11-10']), { '2026-11-10': 0 });
+  });
+  it('aucun prêt → tous les jours à 0', () => {
+    assert.deepEqual(totauxParJourMateriel([], ['2026-11-01', '2026-11-02']), { '2026-11-01': 0, '2026-11-02': 0 });
   });
 });
 
