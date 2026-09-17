@@ -1,5 +1,13 @@
 
-// ── GAS Backend v11.31 ────────────────────────────────────────
+// ── GAS Backend v11.32 ────────────────────────────────────────
+// v11.32 : AJOUT — possibilité de masquer un matériel du formulaire de
+//          saisie sans le supprimer de la liste Admin → Listes (qui reste
+//          la liste de référence, y compris pour les ateliers déjà
+//          enregistrés). Clé Config générique 'materiels_caches' (tableau
+//          JSON, via setConfig), lue dans _actionGetAllFresh et renvoyée
+//          dans getAll (materielsCaches). Toggle par matériel ajouté dans
+//          VueListes, onglet Matériels (même principe que le toggle actif/
+//          inactif déjà existant sur l'onglet Conseillers).
 // v11.31 : AJOUT — le stock de 10 ordinateurs (v11.30) était figé en dur
 //          côté frontend. Devient configurable : clé Config
 //          'stock_ordinateurs' (générique, via setConfig comme
@@ -501,6 +509,12 @@ function _actionGetAllFresh(p) {
     // Stock d'ordinateurs prêtés (défaut 10, modifiable depuis Admin →
     // Config). parseInt sur une valeur absente/invalide retombe sur le défaut.
     var stockOrdinateurs = parseInt(cfg['stock_ordinateurs'], 10) || 10;
+    // Matériels masqués du formulaire de saisie sans être retirés de
+    // list_materiels (Admin → Listes) — un atelier déjà enregistré avec ce
+    // matériel le garde, seule la case à cocher disparaît pour les nouvelles
+    // saisies.
+    var materielsCaches = [];
+    try { if (cfg['materiels_caches']) materielsCaches = JSON.parse(cfg['materiels_caches']); } catch(_) {}
     var entries = [];
     try {
       var sh = _ss().getSheetByName(SHEET_NAME);
@@ -534,7 +548,7 @@ function _actionGetAllFresh(p) {
         }
       }
     } catch(err) { Logger.log('entries error: ' + err); }
-    return {ok:true, entries:entries, lists:lists, visibility:visibility, conseiller_colors:conseiller_colors, emails:emails, stockOrdinateurs:stockOrdinateurs};
+    return {ok:true, entries:entries, lists:lists, visibility:visibility, conseiller_colors:conseiller_colors, emails:emails, stockOrdinateurs:stockOrdinateurs, materielsCaches:materielsCaches};
   } catch(err) { return {ok:false, error:String(err)}; }
 }
 function actionSaveEntry(p) {
@@ -864,7 +878,7 @@ function backupGAS() {
   var date = Utilities.formatDate(new Date(), 'Europe/Paris', 'yyyy-MM-dd_HH-mm');
   var folders = DriveApp.getFoldersByName('GAS_Backups');
   var dossier = folders.hasNext() ? folders.next() : DriveApp.createFolder('GAS_Backups');
-  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.31 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
+  dossier.createFile('GAS_backup_' + date + '.txt', 'BACKUP GAS v11.32 — ' + new Date().toISOString() + '\n\n' + JSON.stringify(cfg, null, 2), MimeType.PLAIN_TEXT);
   Logger.log('Backup créé.');
 }
 function _getAteliersRetard() {

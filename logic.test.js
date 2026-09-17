@@ -5,7 +5,7 @@ const {describe, it} = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
-  normalizeMateriel, parseMateriel,
+  normalizeMateriel, parseMateriel, filterMaterielsVisibles,
   validateLotRow, validateLotForm, filterLotRows,
   computeKpi,
   isEntryRetard, isEntryPasse,
@@ -61,6 +61,29 @@ describe('parseMateriel', () => {
   });
   it('valeur unique sans séparateur → Array à un élément', () => {
     assert.deepEqual(parseMateriel('Tablette'), ['Tablette']);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────
+describe('filterMaterielsVisibles', () => {
+  const materiels = ['Videoprojecteur', 'Ecran', 'Classe mobile', 'Scanner'];
+  it('sans caches, renvoie la liste complète', () => {
+    assert.deepEqual(filterMaterielsVisibles(materiels, [], []), materiels);
+  });
+  it('retire les matériels masqués', () => {
+    assert.deepEqual(filterMaterielsVisibles(materiels, ['Scanner'], []), ['Videoprojecteur', 'Ecran', 'Classe mobile']);
+  });
+  it('garde un matériel masqué s\'il est déjà sélectionné (édition)', () => {
+    assert.deepEqual(filterMaterielsVisibles(materiels, ['Scanner'], ['Scanner']), materiels);
+  });
+  it('insensible à la casse/pluriel', () => {
+    assert.deepEqual(filterMaterielsVisibles(materiels, ['scanners'], []), ['Videoprojecteur', 'Ecran', 'Classe mobile']);
+  });
+  it('caches vide/absent → aucun filtrage', () => {
+    assert.deepEqual(filterMaterielsVisibles(materiels, undefined, undefined), materiels);
+  });
+  it('liste de matériels vide → []', () => {
+    assert.deepEqual(filterMaterielsVisibles([], ['Scanner'], []), []);
   });
 });
 

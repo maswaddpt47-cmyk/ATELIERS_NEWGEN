@@ -326,6 +326,7 @@ function App(){
       if(data.emails){setEmails(data.emails);addLog('Emails chargés','ok');}
       if(data.visibility){setCachedVisibility(data.visibility);}
       if(data.stockOrdinateurs){STOCK_ORDINATEURS=parseInt(data.stockOrdinateurs)||STOCK_ORDINATEURS;}
+      if(Array.isArray(data.materielsCaches)){MATERIELS_CACHES=data.materielsCaches;}
       addLog(`${incoming.length} ateliers chargés (${annee})`,'ok');
       setLastSync(new Date());
       setSeenIds(prev=>{if(prev.size===0)return new Set(incoming.map(e=>e._id));const nouvs=incoming.filter(e=>!prev.has(e._id));if(nouvs.length>0)setNewEntries(n=>[...nouvs,...n]);return new Set(incoming.map(e=>e._id));});
