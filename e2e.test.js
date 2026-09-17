@@ -95,6 +95,7 @@ const ADMIN_VIEWS = [
   { label: 'Roadmap',    ariaLabel: 'Roadmap'    },
   { label: 'Bingo',      ariaLabel: 'Bingo'      },
   { label: 'Anomalies',  ariaLabel: 'Anomalies'  },
+  { label: 'Gestion ordi', ariaLabel: 'Gestion ordi' },
   { label: 'Admin',      ariaLabel: 'Admin'      },
 ];
 
