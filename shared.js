@@ -891,6 +891,15 @@ function findMobileClassConflicts(entries){
 // let (pas const) : valeur par défaut, écrasée par la config GAS
 // (stockOrdinateurs renvoyé par getAll) dans loadData (app.js/admin_app.js).
 let STOCK_ORDINATEURS=10;
+// Miroir logic.js. Cumul au max par conseiller, pas en somme : un même
+// conseiller qui enchaîne deux ateliers dos-à-dos (retour du premier =
+// prélèvement du second) n'a physiquement qu'un seul jeu d'ordinateurs en
+// main ce jour-là, jamais deux fois sa quantité.
+function totalJourParConseiller(items){
+  const parConseiller={};
+  (items||[]).forEach(x=>{parConseiller[x.conseiller]=Math.max(parConseiller[x.conseiller]||0,x.qte);});
+  return Object.values(parConseiller).reduce((s,q)=>s+q,0);
+}
 // Jours consécutifs en conflit fusionnés en un seul bloc (dateFin étendue)
 // pour ne pas répéter les mêmes conseillers sur chaque jour d'un même
 // chevauchement — tous les conseillers d'un bloc sont en conflit entre eux.
@@ -918,7 +927,7 @@ function findOrdinateursConflicts(entries,stock=STOCK_ORDINATEURS){
     }
   });
   const joursConflit=Object.keys(parJour)
-    .map(date=>({date,entries:parJour[date],total:parJour[date].reduce((s,x)=>s+x.qte,0)}))
+    .map(date=>({date,entries:parJour[date],total:totalJourParConseiller(parJour[date])}))
     .filter(g=>g.total>stock)
     .sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   const blocs=[];
@@ -948,7 +957,7 @@ function getPretsMateriel(entries){
 }
 function totauxParJourMateriel(prets,jours){
   const totaux={};
-  (jours||[]).forEach(j=>{totaux[j]=(prets||[]).reduce((s,p)=>s+(j>=p.debut&&j<=p.fin?p.qte:0),0);});
+  (jours||[]).forEach(j=>{totaux[j]=totalJourParConseiller((prets||[]).filter(p=>j>=p.debut&&j<=p.fin));});
   return totaux;
 }
 
@@ -3445,6 +3454,7 @@ function BlocConflits({groupes,vide,bg,border,titreColor,renderTitre,renderItem}
 const FRISE_NB_JOURS=28;
 function FriseMateriel({entries,onEdit}){
   const[offset,setOffset]=React.useState(0);
+  const[agrandi,setAgrandi]=React.useState(false);
   const today=todayLocal();
   const jourDebut=addJoursIso(today,offset);
   const jours=React.useMemo(()=>Array.from({length:FRISE_NB_JOURS},(_,i)=>addJoursIso(jourDebut,i)),[jourDebut]);
@@ -3455,51 +3465,74 @@ function FriseMateriel({entries,onEdit}){
   // Index (0-based) d'un jour dans la fenêtre visible, clampé aux bornes —
   // une barre qui déborde de la fenêtre est simplement tronquée à l'affichage.
   const colIdx=d=>d<jourDebut?0:d>jourFin?jours.length-1:jours.indexOf(d);
-  const gridTemplate='140px repeat('+jours.length+',minmax(22px,1fr))';
   const MOIS_ABREGE=['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
   const jourLabel=d=>{const[y,m,j]=d.split('-');return{num:parseInt(j,10),mois:MOIS_ABREGE[parseInt(m,10)-1],weekend:[0,6].includes(new Date(parseInt(y,10),parseInt(m,10)-1,parseInt(j,10)).getDay())};};
-  return CE('div',{className:'card',style:{maxWidth:'100%',margin:'0 auto 16px',overflowX:'auto'}},
-    CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12,flexWrap:'wrap',gap:8}},
-      CE('div',{style:{display:'flex',alignItems:'center',gap:8}},
-        CE('span',{style:{fontSize:18}},'📊'),
-        CE('h3',{style:{margin:0,fontSize:14,fontWeight:700}},'Frise du parc — '+fmtPeriode(jourDebut,jourFin))
+  const navBoutons=CE('div',{style:{display:'flex',gap:6}},
+    CE('button',{onClick:()=>setOffset(o=>o-7),style:{padding:'4px 10px',border:'1px solid #e2e8f0',borderRadius:6,background:'#fff',cursor:'pointer',fontSize:12}},'◀ Semaine'),
+    CE('button',{onClick:()=>setOffset(0),style:{padding:'4px 10px',border:'1px solid #e2e8f0',borderRadius:6,background:offset===0?'#eff6ff':'#fff',color:offset===0?'#1d4ed8':'#1a202c',cursor:'pointer',fontSize:12}},'Aujourd\'hui'),
+    CE('button',{onClick:()=>setOffset(o=>o+7),style:{padding:'4px 10px',border:'1px solid #e2e8f0',borderRadius:6,background:'#fff',cursor:'pointer',fontSize:12}},'Semaine ▶')
+  );
+  // colWidth/tailleTexte paramétrables : version compacte dans la carte,
+  // version agrandie dans le panneau plein écran (au clic sur 🔍 Agrandir).
+  function renderGrille(colWidth,tailleTexte){
+    const gridTemplate='140px repeat('+jours.length+',minmax('+colWidth+'px,1fr))';
+    if(pretsVisibles.length===0)return CE('div',{style:{textAlign:'center',padding:'24px 0',color:'#16a34a',fontSize:13}},'✅ Aucun prêt Classe mobile sur cette période');
+    return CE('div',{style:{minWidth:jours.length*colWidth+140}},
+      // En-tête jours
+      CE('div',{style:{display:'grid',gridTemplateColumns:gridTemplate,gap:1}},
+        CE('div',null),
+        jours.map(d=>{const l=jourLabel(d);const estAujourdhui=d===today;
+          return CE('div',{key:d,style:{textAlign:'center',fontSize:tailleTexte,color:estAujourdhui?'#1d4ed8':l.weekend?'#cbd5e0':'#9ca3af',fontWeight:estAujourdhui?700:400,padding:'2px 0',borderBottom:estAujourdhui?'2px solid #1d4ed8':'2px solid transparent'}},l.num+' '+l.mois);
+        })
       ),
-      CE('div',{style:{display:'flex',gap:6}},
-        CE('button',{onClick:()=>setOffset(o=>o-7),style:{padding:'4px 10px',border:'1px solid #e2e8f0',borderRadius:6,background:'#fff',cursor:'pointer',fontSize:12}},'◀ Semaine'),
-        CE('button',{onClick:()=>setOffset(0),style:{padding:'4px 10px',border:'1px solid #e2e8f0',borderRadius:6,background:offset===0?'#eff6ff':'#fff',color:offset===0?'#1d4ed8':'#1a202c',cursor:'pointer',fontSize:12}},'Aujourd\'hui'),
-        CE('button',{onClick:()=>setOffset(o=>o+7),style:{padding:'4px 10px',border:'1px solid #e2e8f0',borderRadius:6,background:'#fff',cursor:'pointer',fontSize:12}},'Semaine ▶')
+      // Ligne stock cumulé
+      CE('div',{style:{display:'grid',gridTemplateColumns:gridTemplate,gap:1,marginBottom:6}},
+        CE('div',{style:{fontSize:tailleTexte+1,fontWeight:700,color:'#718096',alignSelf:'center'}},'Stock ('+STOCK_ORDINATEURS+')'),
+        jours.map(d=>{const t=totaux[d]||0;const depasse=t>STOCK_ORDINATEURS;
+          return CE('div',{key:d,title:t+' ordinateur(s) réservé(s)',style:{height:colWidth<32?14:22,background:t===0?'#f1f5f9':depasse?'#dc2626':'#86efac',borderRadius:2,fontSize:tailleTexte,color:depasse?'#fff':'#166534',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}},t>0?t:'');
+        })
+      ),
+      // Une ligne par prêt
+      CE('div',{style:{display:'flex',flexDirection:'column',gap:colWidth<32?3:6}},
+        pretsVisibles.map(p=>{
+          const debutIdx=colIdx(p.debut),finIdx=colIdx(p.fin);
+          const conflit=(jours.slice(debutIdx,finIdx+1)).some(d=>(totaux[d]||0)>STOCK_ORDINATEURS);
+          return CE('div',{key:p._id,style:{display:'grid',gridTemplateColumns:gridTemplate,gap:1,alignItems:'center'}},
+            CE('div',{style:{fontSize:tailleTexte+2,fontWeight:600,color:conseillerColor(p.conseiller),whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingRight:4}},p.conseiller||'—'),
+            CE('div',{style:{gridColumn:(debutIdx+2)+' / '+(finIdx+3),background:conflit?'#fecaca':'#bfdbfe',border:'1px solid '+(conflit?'#dc2626':'#3b82f6'),borderRadius:6,padding:'2px 6px',fontSize:tailleTexte+1,color:conflit?'#7f1d1d':'#1e3a8a',fontWeight:600,cursor:onEdit?'pointer':'default',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'},onClick:()=>onEdit&&onEdit(p._id),title:(p.commune||'')+' · '+p.qte+' ordinateur(s) · '+fmtPeriode(p.debut,p.fin)},
+              p.qte+' 🖥️ '+(p.commune||''))
+          );
+        })
       )
-    ),
-    pretsVisibles.length===0
-      ?CE('div',{style:{textAlign:'center',padding:'24px 0',color:'#16a34a',fontSize:13}},'✅ Aucun prêt Classe mobile sur cette période')
-      :CE('div',{style:{minWidth:jours.length*24+140}},
-          // En-tête jours
-          CE('div',{style:{display:'grid',gridTemplateColumns:gridTemplate,gap:1}},
-            CE('div',null),
-            jours.map(d=>{const l=jourLabel(d);const estAujourdhui=d===today;
-              return CE('div',{key:d,style:{textAlign:'center',fontSize:9,color:estAujourdhui?'#1d4ed8':l.weekend?'#cbd5e0':'#9ca3af',fontWeight:estAujourdhui?700:400,padding:'2px 0',borderBottom:estAujourdhui?'2px solid #1d4ed8':'2px solid transparent'}},l.num+' '+l.mois);
-            })
-          ),
-          // Ligne stock cumulé
-          CE('div',{style:{display:'grid',gridTemplateColumns:gridTemplate,gap:1,marginBottom:6}},
-            CE('div',{style:{fontSize:10,fontWeight:700,color:'#718096',alignSelf:'center'}},'Stock ('+STOCK_ORDINATEURS+')'),
-            jours.map(d=>{const t=totaux[d]||0;const depasse=t>STOCK_ORDINATEURS;
-              return CE('div',{key:d,title:t+' ordinateur(s) réservé(s)',style:{height:14,background:t===0?'#f1f5f9':depasse?'#dc2626':'#86efac',borderRadius:2,fontSize:8,color:depasse?'#fff':'#166534',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}},t>0?t:'');
-            })
-          ),
-          // Une ligne par prêt
-          CE('div',{style:{display:'flex',flexDirection:'column',gap:3}},
-            pretsVisibles.map(p=>{
-              const debutIdx=colIdx(p.debut),finIdx=colIdx(p.fin);
-              const conflit=(jours.slice(debutIdx,finIdx+1)).some(d=>(totaux[d]||0)>STOCK_ORDINATEURS);
-              return CE('div',{key:p._id,style:{display:'grid',gridTemplateColumns:gridTemplate,gap:1,alignItems:'center'}},
-                CE('div',{style:{fontSize:11,fontWeight:600,color:conseillerColor(p.conseiller),whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingRight:4}},p.conseiller||'—'),
-                CE('div',{style:{gridColumn:(debutIdx+2)+' / '+(finIdx+3),background:conflit?'#fecaca':'#bfdbfe',border:'1px solid '+(conflit?'#dc2626':'#3b82f6'),borderRadius:6,padding:'2px 6px',fontSize:10,color:conflit?'#7f1d1d':'#1e3a8a',fontWeight:600,cursor:onEdit?'pointer':'default',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'},onClick:()=>onEdit&&onEdit(p._id),title:(p.commune||'')+' · '+p.qte+' ordinateur(s) · '+fmtPeriode(p.debut,p.fin)},
-                  p.qte+' 🖥️ '+(p.commune||''))
-              );
-            })
-          )
+    );
+  }
+  return CE(React.Fragment,null,
+    CE('div',{className:'card',style:{maxWidth:'100%',margin:'0 auto 16px',overflowX:'auto'}},
+      CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12,flexWrap:'wrap',gap:8}},
+        CE('div',{style:{display:'flex',alignItems:'center',gap:8}},
+          CE('span',{style:{fontSize:18}},'📊'),
+          CE('h3',{style:{margin:0,fontSize:14,fontWeight:700}},'Frise du parc — '+fmtPeriode(jourDebut,jourFin))
+        ),
+        CE('div',{style:{display:'flex',gap:6,alignItems:'center'}},
+          navBoutons,
+          CE('button',{onClick:()=>setAgrandi(true),title:'Agrandir la frise',style:{padding:'4px 10px',border:'1px solid #3b82f6',borderRadius:6,background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',fontSize:12,fontWeight:600}},'🔍 Agrandir')
         )
+      ),
+      renderGrille(22,9)
+    ),
+    // Panneau plein écran : mêmes données, cellules et police plus grandes
+    // pour repérer les chevauchements sans avoir à plisser les yeux.
+    agrandi&&CE('div',{className:'side-panel-overlay',onClick:()=>setAgrandi(false)}),
+    agrandi&&CE('div',{style:{position:'fixed',top:'4%',left:'4%',right:'4%',bottom:'4%',background:'#fff',borderRadius:14,padding:'20px 24px',zIndex:1000,overflow:'auto',boxShadow:'0 10px 40px rgba(0,0,0,.35)'}},
+      CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:8}},
+        CE('h3',{style:{margin:0,fontSize:18,fontWeight:700}},'📊 Frise du parc — '+fmtPeriode(jourDebut,jourFin)),
+        CE('div',{style:{display:'flex',gap:8,alignItems:'center'}},
+          navBoutons,
+          CE('button',{onClick:()=>setAgrandi(false),style:{padding:'4px 12px',border:'1px solid #e2e8f0',borderRadius:6,background:'#fff',cursor:'pointer',fontSize:13}},'✕ Fermer')
+        )
+      ),
+      renderGrille(48,12)
+    )
   );
 }
 // Onglet Index dédié à la gestion du matériel partagé : Classe mobile (même
