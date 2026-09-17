@@ -3344,6 +3344,20 @@ function fmtPeriode(debut,fin){return debut===fin?fmtDate(debut):fmtDate(debut)+
 // entièrement passée — plus rien à arbitrer une fois l'atelier passé.
 function estConflitPasse(conflit,today){return (conflit.dateFin||conflit.date)<today;}
 function titreConflitOrdi(g){return '📅 '+fmtPeriode(g.date,g.dateFin)+' — jusqu\'à '+g.total+' ordinateurs demandés sur '+STOCK_ORDINATEURS+' en stock';}
+// findMobileClassConflicts pousse l'entry brute dans chaque groupe : nb_
+// ordinateurs/date_retour_materiel sont déjà là, pas besoin de les recalculer.
+function itemConflitMobile(onEdit){
+  return e=>CE('div',{key:e._id,style:{display:'flex',flexDirection:'column',gap:2,fontSize:12,padding:'4px 0'}},
+    CE('div',{style:{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}},
+      CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
+      CE('span',{style:{color:'#6b7280'}},e.thematique||''),
+      CE('span',{style:{color:'#9ca3af'}},e.commune||''),
+      onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
+    ),
+    (parseInt(e.nb_ordinateurs)>0)&&CE('div',{style:{color:'#9ca3af',fontSize:11}},
+      '🖥️ '+e.nb_ordinateurs+' ordinateur(s)'+(e.date_retour_materiel?' — retour prévu '+fmtDate(e.date_retour_materiel):''))
+  );
+}
 function itemConflitOrdi(onEdit){
   return e=>CE('div',{key:e._id,style:{display:'flex',flexDirection:'column',gap:2,fontSize:12,padding:'4px 0'}},
     CE('div',{style:{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}},
@@ -3419,12 +3433,7 @@ function VueGestionOrdi({entries,onEdit}){
       groupes:conflitsMobile, vide:'Aucun conflit Classe mobile',
       bg:'#fff7ed', border:'#fed7aa', titreColor:'#9a3412',
       renderTitre:g=>'📅 '+fmtDate(g.date)+' — Classe mobile réservée par '+g.entries.length+' conseillers',
-      renderItem:e=>CE('div',{key:e._id,style:{display:'flex',alignItems:'center',gap:8,fontSize:12,flexWrap:'wrap'}},
-        CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
-        CE('span',{style:{color:'#6b7280'}},e.thematique||''),
-        CE('span',{style:{color:'#9ca3af'}},e.commune||''),
-        onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
-      )
+      renderItem:itemConflitMobile(onEdit)
     }),
     CE('div',{style:{margin:'20px 0 8px',fontSize:12,fontWeight:700,color:'#991b1b'}},'Stock ordinateurs'),
     BlocConflits({
@@ -3550,12 +3559,7 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
           groupes:conflitsFiltres, vide:'Aucun conflit Classe mobile',
           bg:'#fff7ed', border:'#fed7aa', titreColor:'#9a3412',
           renderTitre:g=>'📅 '+fmtDate(g.date)+' — Classe mobile réservée par '+g.entries.length+' conseillers',
-          renderItem:e=>CE('div',{key:e._id,style:{display:'flex',alignItems:'center',gap:8,fontSize:12,flexWrap:'wrap'}},
-            CE('span',{style:{fontWeight:600,color:conseillerColor(e.conseiller)}},e.conseiller||'—'),
-            CE('span',{style:{color:'#6b7280'}},e.thematique||''),
-            CE('span',{style:{color:'#9ca3af'}},e.commune||''),
-            onEdit&&CE('button',{onClick:()=>onEdit(e._id),style:{fontSize:11,padding:'2px 8px',borderRadius:4,border:'1px solid #3b82f6',background:'#eff6ff',color:'#1d4ed8',cursor:'pointer',marginLeft:'auto'}},'✏️ Ouvrir')
-          )
+          renderItem:itemConflitMobile(onEdit)
         })
       :filtered.length===0
       ?CE('div',{style:{textAlign:'center',padding:'40px 0',color:'#16a34a',fontSize:14}},
