@@ -29,8 +29,9 @@ function buildEntry(overrides = {}) {
     remarques:    '',
     inscrits:     4,
     presents:     '',
-    nb_ordinateurs:       '',
-    date_retour_materiel: '',
+    nb_ordinateurs:            '',
+    date_prelevement_materiel: '',
+    date_retour_materiel:      '',
     ...overrides,
   };
 }
@@ -41,7 +42,7 @@ describe('champs obligatoires présents', () => {
     '_id', 'statut', 'date', 'horaire', 'ampm',
     'thematique', 'commune', 'lieu', 'conseiller',
     'orienteur', 'public', 'materiel', 'inscrits', 'presents',
-    'nb_ordinateurs', 'date_retour_materiel',
+    'nb_ordinateurs', 'date_prelevement_materiel', 'date_retour_materiel',
   ];
   const entry = buildEntry();
   CHAMPS.forEach(champ => {
@@ -154,6 +155,17 @@ describe('nb_ordinateurs / date_retour_materiel', () => {
   it('date_retour_materiel renseignée est au format ISO YYYY-MM-DD', () => {
     const e = buildEntry({date_retour_materiel: '2026-06-20'});
     assert.match(e.date_retour_materiel, /^\d{4}-\d{2}-\d{2}$/);
+  });
+  it('date_prelevement_materiel vide est valide (pas de prêt à l\'avance)', () => {
+    assert.equal(buildEntry().date_prelevement_materiel, '');
+  });
+  it('date_prelevement_materiel renseignée est au format ISO YYYY-MM-DD', () => {
+    const e = buildEntry({date_prelevement_materiel: '2026-06-13'});
+    assert.match(e.date_prelevement_materiel, /^\d{4}-\d{2}-\d{2}$/);
+  });
+  it('date_prelevement_materiel peut être antérieure à date (retrait avant l\'atelier)', () => {
+    const e = buildEntry({date: '2026-06-20', date_prelevement_materiel: '2026-06-17'});
+    assert.ok(e.date_prelevement_materiel < e.date);
   });
 });
 
