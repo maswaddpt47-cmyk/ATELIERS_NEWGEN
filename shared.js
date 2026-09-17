@@ -3526,19 +3526,29 @@ function FriseMateriel({entries,onEdit}){
       legende,
       renderGrille(22,9)
     ),
-    // Panneau plein écran : mêmes données, cellules et police plus grandes
-    // pour repérer les chevauchements sans avoir à plisser les yeux.
-    agrandi&&CE('div',{className:'side-panel-overlay',onClick:()=>setAgrandi(false)}),
-    agrandi&&CE('div',{style:{position:'fixed',top:'4%',left:'4%',right:'4%',bottom:'4%',background:'#fff',borderRadius:14,padding:'20px 24px',zIndex:1000,overflow:'auto',boxShadow:'0 10px 40px rgba(0,0,0,.35)'}},
-      CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:8}},
-        CE('h3',{style:{margin:0,fontSize:18,fontWeight:700}},'📊 Frise du parc — '+fmtPeriode(jourDebut,jourFin)),
-        CE('div',{style:{display:'flex',gap:8,alignItems:'center'}},
-          navBoutons,
-          CE('button',{onClick:()=>setAgrandi(false),style:{padding:'4px 12px',border:'1px solid #e2e8f0',borderRadius:6,background:'#fff',cursor:'pointer',fontSize:13}},'✕ Fermer')
+    // Panneau plein écran monté via portail dans document.body : le
+    // wrapper .view-anim (animation d'entrée d'onglet) laisse un
+    // transform:translateY(0) actif en permanence après coup (fill-mode
+    // "both"), ce qui en fait la containing block de tout position:fixed
+    // à l'intérieur — le panneau se retrouvait coincé dans la largeur du
+    // contenu au lieu de l'écran entier. Le portail sort du sous-arbre
+    // .view-anim et échappe au problème.
+    agrandi&&ReactDOM.createPortal(
+      CE(React.Fragment,null,
+        CE('div',{className:'side-panel-overlay',onClick:()=>setAgrandi(false)}),
+        CE('div',{style:{position:'fixed',top:'4%',left:'4%',right:'4%',bottom:'4%',background:'#fff',borderRadius:14,padding:'20px 24px',zIndex:1000,overflow:'auto',boxShadow:'0 10px 40px rgba(0,0,0,.35)'}},
+          CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:8}},
+            CE('h3',{style:{margin:0,fontSize:18,fontWeight:700}},'📊 Frise du parc — '+fmtPeriode(jourDebut,jourFin)),
+            CE('div',{style:{display:'flex',gap:8,alignItems:'center'}},
+              navBoutons,
+              CE('button',{onClick:()=>setAgrandi(false),style:{padding:'4px 12px',border:'1px solid #e2e8f0',borderRadius:6,background:'#fff',cursor:'pointer',fontSize:13}},'✕ Fermer')
+            )
+          ),
+          legende,
+          renderGrille(48,12)
         )
       ),
-      legende,
-      renderGrille(48,12)
+      document.body
     )
   );
 }
