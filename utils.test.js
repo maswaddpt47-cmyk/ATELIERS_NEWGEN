@@ -116,6 +116,9 @@ describe('fmtDate', () => {
     assert.equal(fmtDate(''), '');
     assert.equal(fmtDate(null), '');
   });
+  it('nettoie un datetime ISO complet (colonne Date GAS non formatée)', () => {
+    assert.equal(fmtDate('2026-10-04T22:00:00.000Z'), 'Dim 04/10/2026');
+  });
 });
 
 // ── addJoursIso ──────────────────────────────────────────────
