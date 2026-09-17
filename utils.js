@@ -48,6 +48,10 @@ function normalizeHoraire(val){
 }
 function fmtDate(d){
   if(!d)return'';
+  // normalizeDate tronque un éventuel suffixe ISO datetime (T10:00:00.000Z) —
+  // GAS peut renvoyer ce format pour une colonne Date non explicitement
+  // formatée côté serveur (v11.33 : date_retour_materiel notamment).
+  d=normalizeDate(d);
   const[y,m,j]=d.split('-');
   const jour=JOURS[new Date(parseInt(y,10),parseInt(m,10)-1,parseInt(j,10)).getDay()];
   return`${jour} ${j}/${m}/${y}`;
