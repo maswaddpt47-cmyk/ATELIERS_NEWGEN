@@ -1811,10 +1811,10 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       // séance (tableau ci-dessous) — une seule date partagée pour tout le
       // cycle n'aurait pas de sens (séances étalées sur plusieurs semaines).
       !modeLot&&CE('div',null,
-        LblG({t:'Date de prélèvement'}),
+        LblG({t:'Date de prélèvement ordi'}),
         CE('input',{type:'date',style:iStyle(false),value:frm.date_prelevement_materiel||'',onChange:e=>setFn('date_prelevement_materiel',e.target.value)})),
       !modeLot&&CE('div',null,
-        LblG({t:'Date de retour prévue'}),
+        LblG({t:'Date de retour ordi'}),
         CE('input',{type:'date',style:iStyle(false),value:frm.date_retour_materiel||'',onChange:e=>setFn('date_retour_materiel',e.target.value)}))
     ),
     modeLot&&matMobileActif&&CE('div',{style:{marginTop:4,fontSize:11,color:'#94a3b8'}},'Les dates de prélèvement/retour se saisissent par séance dans le tableau ci-dessous.'),
@@ -1943,11 +1943,11 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
             // cette séance).
             matIncludes(lotForm.materiel,'Classe mobile')&&CE('div',{style:{display:'flex',gap:8,padding:'0 10px 9px',borderTop:`1px solid ${acLight}`}},
               CE('div',{style:{flex:1}},
-                lbl('Date de prélèvement',false),
+                lbl('Prélèvement ordi',false),
                 inp('date',row.date_prelevement_materiel,'date_prelevement_materiel',false)
               ),
               CE('div',{style:{flex:1}},
-                lbl('Date de retour prévue',false),
+                lbl('Retour ordi',false),
                 inp('date',row.date_retour_materiel,'date_retour_materiel',false)
               )
             )
@@ -3642,22 +3642,6 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
   },[entries,communes]);
   const anomaliesFiltrees=filtreConum==='Tous'?anomalies:anomalies.filter(a=>a.e.conseiller===filtreConum||a.e.co_animateur===filtreConum);
   const filtered=filter==='manquants'?anomaliesFiltrees.filter(a=>a.champsVides.length>0):filter==='communes'?anomaliesFiltrees.filter(a=>a.communeInvalide):anomaliesFiltrees;
-  // Conflit matériel : 2+ conseillers ont réservé la Classe mobile (matériel
-  // physique partagé) le même jour — alerte informative, indépendante des
-  // anomalies de champs/commune ci-dessus (voir findMobileClassConflicts).
-  const conflitsMobile=React.useMemo(()=>findMobileClassConflicts(entries),[entries]);
-  const conflitsFiltres=filtreConum==='Tous'?conflitsMobile:conflitsMobile.filter(g=>g.entries.some(e=>e.conseiller===filtreConum));
-  // Conflit de stock : cumul des ordinateurs prêtés (période date → date de
-  // retour comprise) qui dépasse le stock disponible (10) un jour donné —
-  // voir findOrdinateursConflicts, différent de conflitsMobile (même jour
-  // uniquement, matériel indivisible).
-  const conflitsOrdi=React.useMemo(()=>findOrdinateursConflicts(entries),[entries]);
-  const conflitsOrdiFiltres=filtreConum==='Tous'?conflitsOrdi:conflitsOrdi.filter(g=>g.entries.some(e=>e.conseiller===filtreConum));
-  // Compteurs des tuiles : conflits actifs/à venir uniquement (voir
-  // VueGestionOrdi, même logique).
-  const todayAno=todayLocal();
-  const nbActifsMobile=conflitsMobile.filter(g=>!estConflitPasse(g,todayAno)).length;
-  const nbActifsOrdi=conflitsOrdi.filter(g=>!estConflitPasse(g,todayAno)).length;
   async function handleSaveCommune(entry,valeur){
     if(!valeur||!valeur.trim())return;
     setSaving(entry._id);
@@ -3671,9 +3655,7 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
   }
   const nbTotal=anomaliesFiltrees.length,nbManquants=anomaliesFiltrees.filter(a=>a.champsVides.length>0).length,nbCommunes=anomaliesFiltrees.filter(a=>a.communeInvalide).length;
   const conumsList=['Tous',...Array.from(new Set(anomalies.map(a=>a.e.conseiller).filter(Boolean))).sort()];
-  return CE(React.Fragment,null,
-    CE(FriseMateriel,{entries,onEdit}),
-    CE('div',{className:'card',style:{maxWidth:900,margin:'0 auto'}},
+  return CE('div',{className:'card',style:{maxWidth:900,margin:'0 auto'}},
     CE('div',{style:{display:'flex',alignItems:'center',gap:12,marginBottom:16}},
       CE('span',{style:{fontSize:22}},'⚠️'),
       CE('div',null,
@@ -3693,35 +3675,13 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
       CE('div',{style:{background:'#ede9fe',borderRadius:8,padding:'8px 14px',flex:'1',minWidth:120,cursor:'pointer',border:filter==='communes'?'2px solid #7c3aed':'2px solid transparent'},onClick:()=>setFilter('communes')},
         CE('div',{style:{fontSize:20,fontWeight:700,color:'#6d28d9'}},nbCommunes),
         CE('div',{style:{fontSize:11,color:'#4c1d95'}},loadingCommunes?'⏳ Chargement…':'Communes invalides')
-      ),
-      CE('div',{style:{background:'#ffedd5',borderRadius:8,padding:'8px 14px',flex:'1',minWidth:120,cursor:'pointer',border:filter==='conflits'?'2px solid #ea580c':'2px solid transparent'},onClick:()=>setFilter('conflits')},
-        CE('div',{style:{fontSize:20,fontWeight:700,color:'#9a3412'}},nbActifsMobile),
-        CE('div',{style:{fontSize:11,color:'#7c2d12'}},'⚠️ Conflits Classe mobile')
-      ),
-      CE('div',{style:{background:'#fee2e2',borderRadius:8,padding:'8px 14px',flex:'1',minWidth:120,cursor:'pointer',border:filter==='conflits_ordi'?'2px solid #dc2626':'2px solid transparent'},onClick:()=>setFilter('conflits_ordi')},
-        CE('div',{style:{fontSize:20,fontWeight:700,color:'#991b1b'}},nbActifsOrdi),
-        CE('div',{style:{fontSize:11,color:'#7f1d1d'}},'🖥️ Stock ordinateurs dépassé')
       )
     ),
     CE('div',{className:'chip-bar',style:{marginBottom:12}},
       conumsList.map(c=>CE('span',{key:c,className:'chip'+(c==='Tous'?' chip-all':'')+(filtreConum===c?' active':''),style:c!=='Tous'?{color:conseillerColor(c)}:{},onClick:()=>setFiltreConum(p=>p===c&&c!=='Tous'?'Tous':c)},
         CE('span',{className:'chip-dot',style:c!=='Tous'?{background:conseillerColor(c)}:{}}),c))
     ),
-    filter==='conflits_ordi'
-      ?BlocConflits({
-          groupes:conflitsOrdiFiltres, vide:'Aucun dépassement de stock',
-          bg:'#fef2f2', border:'#fecaca', titreColor:'#991b1b',
-          renderTitre:titreConflitOrdi,
-          renderItem:itemConflitOrdi(onEdit)
-        })
-      :filter==='conflits'
-      ?BlocConflits({
-          groupes:conflitsFiltres, vide:'Aucun conflit Classe mobile',
-          bg:'#fff7ed', border:'#fed7aa', titreColor:'#9a3412',
-          renderTitre:g=>'📅 '+fmtDate(g.date)+' — Classe mobile réservée par '+g.entries.length+' conseillers',
-          renderItem:itemConflitMobile(onEdit)
-        })
-      :filtered.length===0
+    filtered.length===0
       ?CE('div',{style:{textAlign:'center',padding:'40px 0',color:'#16a34a',fontSize:14}},
           CE('div',{style:{fontSize:32,marginBottom:8}},'✅'),
           'Aucune anomalie dans cette catégorie'
@@ -3755,7 +3715,6 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
             );
           })
         )
-    )
   );
 }
 
