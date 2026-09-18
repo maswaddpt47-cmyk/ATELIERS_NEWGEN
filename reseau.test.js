@@ -75,8 +75,15 @@ function installerFetch(plan) {
     window.__appels.max = Math.max(window.__appels.max, window.__appels.enCours);
     const spec = plan[Math.min(idx, plan.length - 1)];
     return new Promise((resolve, reject) => {
-      let minuteur = null;
-      const fini = () => { window.__appels.enCours--; if (minuteur) clearTimeout(minuteur); };
+      let minuteur = null, compte = false;
+      // Idempotent : un abort qui arrive après la réponse ne doit pas
+      // décompter l'appel une seconde fois (le vrai fetch l'ignore).
+      const fini = () => {
+        if (compte) return;
+        compte = true;
+        window.__appels.enCours--;
+        if (minuteur) clearTimeout(minuteur);
+      };
       if (opts && opts.signal) {
         opts.signal.addEventListener('abort', () => {
           window.__appels.abandons++;
@@ -115,6 +122,20 @@ const CAS = [
     // Résolution attendue ~7,3 s : le doublon répond sans qu'on ait attendu
     // l'abandon du premier à 12 s.
     verifier: r => r.ok === true && r.appels.total === 2 && r.ms > 6500 && r.ms < 10000,
+  },
+  {
+    // Le doublon part à 7 s, le premier répond à 9 s : le doublon doit être
+    // annulé sur-le-champ, pas laissé courir jusqu'à son plafond. Sinon il
+    // consomme une exécution GAS pour rien et finit par écrire « bloqué —
+    // abandonné après 12s » dans le journal, alors que l'appel avait réussi
+    // (observé en production le 18/09/2026 à 23:04:23).
+    nom: 'doublon devenu inutile : annulé, et pas journalisé en erreur',
+    plan: [{ delai: 9000 }, { delai: null }],
+    action: "gasAppel(URL,'getAll')",
+    attendreApres: 6000,
+    verifier: r => r.ok === true && r.appels.total === 2
+      && r.appels.enCours === 0
+      && !r.journal.some(l => l.includes('bloqué')),
   },
   {
     nom: 'HTTP 404 (livraison ratée) : repris, pas remonté',
@@ -219,7 +240,8 @@ const CAS = [
         catch (e) { erreur = e.message; }
         const ms = Date.now() - t0;
         if (attendreApres) await new Promise(r => setTimeout(r, attendreApres));
-        return { ok, erreur, ms, appels: { ...window.__appels } };
+        const journal = (window.__gasLog || []).map(e => `${e.action} ${e.issue}`);
+        return { ok, erreur, ms, appels: { ...window.__appels }, journal };
       }, {
         plan: cas.plan,
         action: cas.action,
@@ -232,7 +254,8 @@ const CAS = [
         console.log(`  ✓ ${cas.nom}  (${res.appels.total} appel(s), ${(res.ms / 1000).toFixed(1)} s)`);
       } else {
         console.log(`  ✗ ${cas.nom}`);
-        console.log(`      obtenu : ok=${res.ok} appels=${res.appels.total} max_simultanés=${res.appels.max} durée=${(res.ms / 1000).toFixed(1)}s erreur=${res.erreur || '—'}`);
+        console.log(`      obtenu : ok=${res.ok} appels=${res.appels.total} max_simultanés=${res.appels.max} encore_en_vol=${res.appels.enCours} abandons=${res.appels.abandons} durée=${(res.ms / 1000).toFixed(1)}s erreur=${res.erreur || '—'}`);
+        console.log(`      journal : ${res.journal.join(' | ') || '(vide)'}`);
         fail++;
       }
     }

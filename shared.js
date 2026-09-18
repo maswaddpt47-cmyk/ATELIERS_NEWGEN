@@ -786,15 +786,23 @@ window.logGas = function(action, attempt, ms, issue){
 
 // Un seul appel réseau, journalisé. reessayable=true seulement pour un échec
 // de transport (jamais atteint Google) ou un refus immédiat (429/503).
-window.gasUnAppel = async function(url, action, numero, timeoutMs){
+// ctrl : AbortController fourni par l'appelant quand il veut pouvoir annuler
+// l'appel lui-même (cas du doublage : dès que l'un des deux répond, l'autre
+// n'a plus lieu d'être). Marquer ctrl.inutile avant d'annuler évite de
+// journaliser en rouge un appel qu'on a sciemment arrêté.
+window.gasUnAppel = async function(url, action, numero, timeoutMs, ctrlFourni){
   const plafond = timeoutMs || GAS_TIMEOUT_LECTURE_MS;
   const t0 = Date.now();
-  const ctrl = new AbortController();
+  const ctrl = ctrlFourni || new AbortController();
   const chien = setTimeout(()=>ctrl.abort(), plafond);
   let res;
   try{
     res = await fetch(url, {signal:ctrl.signal});
   }catch(err){
+    if(ctrl.inutile){
+      // Le jumeau a répondu : ce n'est ni un échec ni une information utile.
+      throw Object.assign(new Error('doublon inutile'), {reessayable:false, inutile:true});
+    }
     if(ctrl.signal.aborted){
       logGas(action, numero, Date.now()-t0, `bloqué — abandonné après ${plafond/1000}s`);
       throw Object.assign(new Error('timeout'), {reessayable:true});
@@ -835,17 +843,37 @@ function gasLectureDoublee(url, action, numero, plafond){
   return new Promise((resolve, reject)=>{
     let termine=false, partis=1, echecs=0, derniere=null;
     let minuteurDoublon=null;
-    const gagner=(data)=>{ if(termine)return; termine=true; clearTimeout(minuteurDoublon); resolve(data); };
-    const perdre=(err)=>{
+    const ctrls=[];
+    // Dès qu'un des deux aboutit, l'autre n'a plus d'objet : on l'annule au
+    // lieu de le laisser courir jusqu'à son plafond. Sans ça, un doublon parti
+    // à 7 s continuait après la réponse du premier et finissait par écrire
+    // « bloqué — abandonné après 12s » dans le journal — une ligne rouge pour
+    // un appel qui avait réussi (observé le 18/09/2026 à 23:04:23), plus une
+    // exécution GAS consommée pour rien.
+    // `sauf` = le contrôleur de l'appel qui vient d'aboutir : son fetch est
+    // déjà terminé, l'annuler n'aurait aucun effet utile.
+    const arreterLesAutres=(sauf)=>{
+      ctrls.forEach(c=>{ if(c!==sauf && !c.signal.aborted){ c.inutile=true; c.abort(); } });
+    };
+    const gagner=(data, ctrlGagnant)=>{
       if(termine)return;
+      termine=true; clearTimeout(minuteurDoublon); arreterLesAutres(ctrlGagnant); resolve(data);
+    };
+    const perdre=(err)=>{
+      if(termine||(err&&err.inutile))return;
       echecs++; derniere=err;
       if(echecs>=partis){ termine=true; clearTimeout(minuteurDoublon); reject(derniere); }
     };
-    gasUnAppel(url, action, numero, plafond).then(gagner, perdre);
+    const lancer=(num)=>{
+      const ctrl=new AbortController();
+      ctrls.push(ctrl);
+      gasUnAppel(url, action, num, plafond, ctrl).then(d=>gagner(d, ctrl), perdre);
+    };
+    lancer(numero);
     minuteurDoublon=setTimeout(()=>{
       if(termine)return;
       partis=2;
-      gasUnAppel(url, action, numero+'b', plafond).then(gagner, perdre);
+      lancer(numero+'b');
     }, GAS_HEDGE_MS);
   });
 }
