@@ -185,6 +185,15 @@ Conséquences pratiques, à ne pas réapprendre à chaque session :
   qui échoue si un appel supprimé réapparaît. Avant d'ajouter un appel GAS
   au démarrage, vérifier que l'information ne voyage pas déjà dans `getAll`
   (drapeau maintenance, listes, visibilité, couleurs, stock...).
+- **Rejouer une écriture est sûr, et c'est vérifié en production.** Le
+  frontend génère toujours l'`_id` avant l'envoi (`handleSubmit`), et
+  `actionSaveEntry` retrouve la ligne par cet `_id` pour la remplacer plutôt
+  que d'en créer une. Cas réel du 18/09/2026 à 22:31 : `saveEntry #1`
+  abandonné à 20 s, `#2` réussi — **aucun doublon dans la feuille**, confirmé
+  par l'utilisateur dans Historique. C'est ce qui autorise des plafonds
+  courts sur les écritures. La limite, elle, tient toujours : elles restent
+  **séquentielles, jamais doublées**, car deux appels en parallèle pourraient
+  tous deux conclure « ligne absente » et faire chacun leur `appendRow`.
 - **Après une écriture, ne jamais recharger pour relire.** `actionSaveEntry`
   invalide le cache `getAll` juste avant de rendre la main : le `loadData()`
   qui suivait repartait donc systématiquement de la feuille, au tarif maximum,
