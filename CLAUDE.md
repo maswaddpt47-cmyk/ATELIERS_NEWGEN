@@ -47,6 +47,7 @@ vérifier les trois suites avant de commiter.
 | `sandbox.test.js` | `utils.js` + `logic.js` se chargent dans un navigateur, globals présents | `node sandbox.test.js` |
 | `e2e.test.js` | `index.html` et `admin.html` se chargent et chaque onglet s'ouvre sans erreur JS (GAS et CDN mockés) | `node e2e.test.js` |
 | `reseau.test.js` | Politique d'appel GAS de `shared.js` (plafonds, reprises, doublage des lectures) avec un `fetch` qui rejoue les pannes de production | `node reseau.test.js` |
+| `appels.test.js` | Compte les appels GAS réellement émis à l'ouverture et après une écriture — échoue si un appel supprimé réapparaît | `node appels.test.js` |
 
 **`reseau.test.js` est à relancer dès qu'on touche à `gasAppel`,
 `gasUnAppel`, `gasLectureDoublee` ou aux constantes `GAS_*` de `shared.js`.**
@@ -175,6 +176,22 @@ Conséquences pratiques, à ne pas réapprendre à chaque session :
   mais couper tôt et relancer (lectures doublées à partir de 7 s) ramène le
   pire tirage de 70 s à ~20 s, et le cas courant à 1-3 s. Voir la note de
   révision en tête de `shared.js`.
+- **La panne frappe par fenêtres de temps, pas par appel.** Journal du
+  18/09/2026 à 22:10 (premier relevé avec la nouvelle politique) : les trois
+  appels d'ouverture (`getAll`, `getConfig`, `getComptes`) meurent dans la
+  même seconde, et leurs trois doublons réussissent dans la même seconde,
+  en 6,5 s chacun. Conséquence directe : **plus on lance d'appels en même
+  temps, plus on risque de tout perdre d'un coup** — d'où `appels.test.js`,
+  qui échoue si un appel supprimé réapparaît. Avant d'ajouter un appel GAS
+  au démarrage, vérifier que l'information ne voyage pas déjà dans `getAll`
+  (drapeau maintenance, listes, visibilité, couleurs, stock...).
+- **Après une écriture, ne jamais recharger pour relire.** `actionSaveEntry`
+  invalide le cache `getAll` juste avant de rendre la main : le `loadData()`
+  qui suivait repartait donc systématiquement de la feuille, au tarif maximum,
+  pour relire ce qu'on venait soi-même d'écrire. Les écritures s'appliquent
+  désormais localement (`appliquerEntree` / `retirerEntree` dans app.js et
+  admin_app.js, `onEntryUpdated` côté vues). L'écran reflète ce qu'on a
+  envoyé ; le prochain rechargement réel resynchronise.
 - Les Exécutions Apps Script n'affichent jamais le nom des actions
   (`checkPassword`, `getAll`...), seulement `doGet` — comparer par
   horodatage.

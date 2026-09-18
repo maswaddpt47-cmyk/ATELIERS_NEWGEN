@@ -71,6 +71,9 @@ jobs:
       - name: Politique d'appel GAS (plafonds, reprises, doublage)
         run: node reseau.test.js
 
+      - name: Appels GAS superflus (ouverture, écriture)
+        run: node appels.test.js
+
   deploy:
     needs: [test, e2e]
     environment:

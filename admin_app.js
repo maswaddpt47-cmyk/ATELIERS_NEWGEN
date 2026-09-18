@@ -373,8 +373,24 @@ function App(){
     const id=setInterval(()=>{ if(document.visibilityState==='visible'&&!errorRef.current) loadData(1,true); },5*60*1000);
     return()=>clearInterval(id);
   },[annee,auth]);
+  // ── Application locale d'une écriture déjà confirmée par GAS ───────────
+  // Même correctif que sur Index : une modification ou une suppression
+  // déclenchait un loadData() complet, soit deux allers-retours au lieu d'un,
+  // le second au pire tarif (actionSaveEntry invalide le cache getAll juste
+  // avant, donc la relecture repart de la feuille). L'écran reflète alors ce
+  // qu'on a envoyé ; le prochain rechargement réel resynchronise.
+  function appliquerEntree(entry){
+    if(!entry||!entry._id)return;
+    setEntries(prev=>{
+      const i=prev.findIndex(e=>e._id===entry._id);
+      if(i<0) return String(entry.date||'').slice(0,4)===annee?[entry,...prev]:prev;
+      const next=[...prev];next[i]={...next[i],...entry};return next;
+    });
+    setLastSync(new Date());
+  }
+  function retirerEntree(id){ setEntries(prev=>prev.filter(e=>e._id!==id)); setLastSync(new Date()); }
   async function handleDelete(id){
-    try{const res=await apiFetch('delete',{_id:id});if(!res.ok)throw new Error(res.error);showToast('✅ Atelier supprimé');addLog('Suppression '+id,'ok');loadData();}
+    try{const res=await apiFetch('delete',{_id:id});if(!res.ok)throw new Error(res.error);showToast('✅ Atelier supprimé');addLog('Suppression '+id,'ok');retirerEntree(id);}
     catch(err){showToast('❌ '+err.message,false);}
   }
 
@@ -382,7 +398,7 @@ function App(){
   // isNewEntry=true : déjà inséré dans `entries` via onNewEntry, inutile
   // d'attendre un aller-retour GAS complet pour afficher Historique — voir
   // le même commentaire côté Index (app.js).
-  function handleSaved(isNewEntry){ if(!isNewEntry) loadData(); setView('historique'); }
+  function handleSaved(isNewEntry,entry){ if(!isNewEntry) appliquerEntree(entry); setView('historique'); }
 
   function handleDuplicate(entry){
     const{_id,_n,date,horaire,ampm,inscrits,presents,remarques,...rest}=entry;
@@ -478,9 +494,9 @@ function App(){
       error&&CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:()=>loadData()},'🔄 Réessayer')),
       !loading&&!error&&CE('div',{key:view,className:'view-anim'},
         view==='saisie'&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{if(String(e.date||'').slice(0,4)===annee)setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(adminConseiller)}),
-        view==='historique'&&CE(VueHistorique,{key:'hist_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem('adm_conseiller',nom);setAdminConseiller(nom);}}),
+        view==='historique'&&CE(VueHistorique,{key:'hist_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem('adm_conseiller',nom);setAdminConseiller(nom);}}),
         view==='agenda'&&CE(VueAgendaSemaine,{key:'agenda_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,accentColor}),
-        view==='calendrier'&&CE(VueCalendrier,{key:'cal_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem('adm_conseiller',nom);setAdminConseiller(nom);}}),
+        view==='calendrier'&&CE(VueCalendrier,{key:'cal_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem('adm_conseiller',nom);setAdminConseiller(nom);}}),
         view==='dashboard'&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
         view==='carte'&&CE(VueCarte,{entries,active:view==='carte'}),
         view==='roadmap'&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),
@@ -1053,6 +1069,10 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
       const cons=conseillersList||[];
       addTlLog(`→ ${cons.length} conseillers : ${cons.join(', ')}`);
       if(df.length===0)throw new Error('Aucun atelier trouvé pour cette période. Vérifiez l\'année et les mois sélectionnés.');
+      // xlsxstyle.js (414 Ko) n'est plus dans le <head> d'admin.html : il ne
+      // sert qu'ici et à l'import, deux actions sur clic. Le charger à la
+      // demande rend l'ouverture d'Admin plus légère pour tout le monde.
+      await window.chargerScriptUneFois('xlsxstyle.js?v=1');
       const wb=window.generateCalendrier(df,yr,months,cons,addTlLog);
       const outData=XLSX.write(wb,{type:'base64',bookType:'xlsx'});
       const fileName=`Calendrier_ateliers_${yr}.xlsx`;
@@ -1152,6 +1172,7 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
   async function handleImportXLSX(e){
     const file=e.target.files[0];if(!file)return;e.target.value='';
     try{
+      await window.chargerScriptUneFois('xlsxstyle.js?v=1');
       const ab=await file.arrayBuffer();const wb=XLSX.read(ab);const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
       const g=(r,...keys)=>{for(const k of keys){if(r[k]!==undefined&&r[k]!=='')return r[k];}return '';};
       const rows_raw=rows.map(r=>({

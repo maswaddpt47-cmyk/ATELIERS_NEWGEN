@@ -286,6 +286,11 @@ function App(){
     try{
       // fetchAll porte seul les tentatives (3 essais échelonnés, budget borné).
       const data=await fetchAll(annee,{force:true});
+      // La maintenance voyage dans getAll (GAS la renvoie aux appels non-admin)
+      // — un getConfig séparé pour la même information faisait un aller-retour
+      // de plus au démarrage, sur un réseau qui en perd déjà.
+      if(data.maintenance){ setMaintenance({msg:data.msg||''}); setLoading(false); return; }
+      setMaintenance(false);
       const incoming = data.entries||[];
       setEntries(incoming);
       if(data.lists){
@@ -353,26 +358,21 @@ function App(){
     apiFetch('getComptes').then(res=>{if(res.ok&&res.comptes){setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));}}).catch(()=>{});
   },[]);
 
-  // Check maintenance : ne bloque pas l'affichage de la landing. fetchConfig
-  // (au lieu d'apiFetch('getConfig') brut) dédoublonne avec les autres
-  // composants qui demandent la même config — ce gain-là est indépendant de
-  // la question du chaînage ci-dessus, donc conservé.
-  React.useEffect(()=>{
-    fetchConfig().then(res=>{
-      if(res.ok&&res.config){
-        const active=res.config['maintenance']==='true'||res.config['maintenance']===true||res.config['maintenance']==='TRUE';
-        const msg=res.config['maintenance_msg']||'';
-        setMaintenance(active?{msg}:false);
-      } else setMaintenance(false);
-    }).catch(()=>setMaintenance(false));
-  },[]);
+  // L'appel getConfig dédié qui vivait ici est supprimé : il ne servait qu'à
+  // lire le drapeau maintenance, que getAll rapporte déjà (voir loadData).
+  // C'était un aller-retour GAS de plus à chaque ouverture de page, pour une
+  // information qui arrivait de toute façon.
 
   // Onglet caché = pas d'appel : un onglet Index oublié en arrière-plan
   // ne doit pas ajouter de getAll superflu toutes les 5 min pour rien.
+  // Pas connecté non plus : un poste laissé sur l'écran de connexion (cas
+  // courant en accueil du public) rappelait GAS toutes les 5 min sans que
+  // personne n'attende la moindre donnée.
   React.useEffect(()=>{
+    if(!authed) return;
     const id=setInterval(()=>{ if(document.visibilityState==='visible'&&!errorRef.current) loadData(1,true); },5*60*1000);
     return()=>clearInterval(id);
-  },[annee]);
+  },[annee,authed]);
 
   React.useEffect(()=>{
     const label=view==='accueil'?'Accueil':VIEW_META_F[view]?.label||view;
@@ -395,14 +395,34 @@ function App(){
     }
   }
   function handleEdit(id){setEditingId(id);setPrefillData(null);setView('saisie');}
+  // ── Application locale d'une écriture déjà confirmée par GAS ───────────
+  // Une modification ou une suppression déclenchait jusqu'ici un loadData()
+  // complet : deux allers-retours au lieu d'un, le second étant le plus lent
+  // de tous (actionSaveEntry invalide le cache getAll juste avant, la
+  // relecture repart donc de la feuille). La création n'a jamais eu ce
+  // détour — elle s'insère localement via onNewEntry. On aligne le reste.
+  // Compromis assumé : l'écran reflète ce qu'on a envoyé, pas ce que la
+  // feuille a stocké. Les deux ne peuvent diverger que si GAS reformate la
+  // donnée ; le prochain rechargement réel (auto 5 min, changement d'année,
+  // bouton Rafraîchir) resynchronise.
+  function appliquerEntree(entry){
+    if(!entry||!entry._id)return;
+    setEntries(prev=>{
+      const i=prev.findIndex(e=>e._id===entry._id);
+      if(i<0) return String(entry.date||'').slice(0,4)===annee?[entry,...prev]:prev;
+      const next=[...prev];next[i]={...next[i],...entry};return next;
+    });
+    setLastSync(new Date());
+  }
+  function retirerEntree(id){ setEntries(prev=>prev.filter(e=>e._id!==id)); setLastSync(new Date()); }
   // isNewEntry=true : le(s) nouvel(aux) atelier(s) est/sont déjà dans `entries`
   // via onNewEntry (insertion locale) — inutile d'attendre un aller-retour
   // GAS complet pour afficher Historique. Le prochain rechargement réel
   // (auto 5 min, ou manuel) resynchronise avec le serveur. Une modification
   // (édition) n'a pas ce raccourci : loadData() reste nécessaire.
-  function handleSaved(isNewEntry){ if(!isNewEntry) loadData(); setView('historique'); }
+  function handleSaved(isNewEntry,entry){ if(!isNewEntry) appliquerEntree(entry); setView('historique'); }
   async function handleDelete(id){
-    try{const res=await apiFetch('delete',{_id:id});if(!res.ok)throw new Error(res.error);showToast('✅ Atelier supprimé');loadData();}
+    try{const res=await apiFetch('delete',{_id:id});if(!res.ok)throw new Error(res.error);showToast('✅ Atelier supprimé');retirerEntree(id);}
     catch(err){showToast('❌ '+err.message,false);}
   }
   function handleDuplicate(entry){
@@ -566,9 +586,9 @@ function App(){
       ),
       !loading&&!error&&CE('div',{className:'view-anim',key:view+'_'+(filtreConseiller||'all')},
         view==='saisie'&&visibility.saisie&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{if(String(e.date||'').slice(0,4)===annee)setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
-        view==='historique'&&visibility.historique&&CE(VueHistorique,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
+        view==='historique'&&visibility.historique&&CE(VueHistorique,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
         view==='agenda'&&visibility.agenda&&CE(VueAgendaSemaine,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:filtreConseiller,accentColor}),
-        view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
+        view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
         view==='dashboard'&&visibility.dashboard&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
         view==='carte'&&visibility.carte&&CE(VueCarte,{entries,active:view==='carte'}),
         view==='roadmap'&&visibility.roadmap&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),

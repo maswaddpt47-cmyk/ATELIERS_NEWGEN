@@ -892,6 +892,24 @@ window.gasAppel = async function(url, action, opts){
   throw derniere || new Error('Échec inconnu');
 };
 
+// Chargement d'un script à la demande, une seule fois même si plusieurs
+// actions le réclament en même temps. Sert aux grosses librairies qui ne
+// servent qu'à un clic (xlsxstyle.js : 414 Ko, 138 Ko compressés) et qui
+// n'ont donc rien à faire dans le <head>, où elles retardent l'affichage de
+// la page pour tout le monde, y compris ceux qui n'exporteront jamais rien.
+window.__scriptsCharges = window.__scriptsCharges || {};
+window.chargerScriptUneFois = function(src){
+  if(window.__scriptsCharges[src]) return window.__scriptsCharges[src];
+  window.__scriptsCharges[src] = new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src=src;
+    s.onload=()=>resolve();
+    s.onerror=()=>{ delete window.__scriptsCharges[src]; reject(new Error('Chargement impossible : '+src)); };
+    document.head.appendChild(s);
+  });
+  return window.__scriptsCharges[src];
+};
+
 // ── Écran d'attente d'un appel GAS ─────────────────────────────────────────
 // Sans rien à l'écran, l'attente passe pour un blocage : on affiche ce qui se
 // passe et un compteur de secondes, qui prouve que ça avance.
@@ -1249,6 +1267,12 @@ window.onLogout = function(){
     const params = new URLSearchParams({action:'getAll', year:String(year)});
     if(source) params.set('source', source);
     const data = await window.gasAppel(`${GS_URL}?${params.toString()}`, 'getAll');
+    // Maintenance : GAS répond {ok:false, maintenance:true, msg} aux appels
+    // non-admin (_actionGetAllFresh). Ce n'est pas une panne mais une réponse
+    // valide — la traiter en erreur affichait « Erreur serveur » au lieu du
+    // message prévu. C'est aussi ce qui permet à Index de connaître l'état de
+    // maintenance sans un getConfig dédié.
+    if(data && data.maintenance) return data;
     if(!data || !data.ok) throw new Error((data && data.error) || 'Erreur serveur');
     return data;
   }
@@ -1772,7 +1796,10 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       // au prochain rechargement réel sans que ça bloque l'affichage ici.
       if(onNewEntry&&!editId)onNewEntry({...entry,_n:'',materiel:form.materiel||[]});
       if(!editId) document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:[entry._id]}}));
-      onSaved(!editId);reset();
+      // L'entrée est transmise à onSaved pour que la modification s'applique
+      // localement : jusqu'ici, éditer un atelier déclenchait un getAll complet
+      // juste pour relire ce qu'on venait d'écrire.
+      onSaved(!editId,{...entry,materiel:form.materiel||[]});reset();
     }catch(err){showToast('❌ '+err.message,false);}
     finally{setSaving(false);}
   }
@@ -2076,7 +2103,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
 // ═══════════════════════════════════════════════════════════
 // VUE HISTORIQUE — v9.0 : duplication + flux de clôture
 // ═══════════════════════════════════════════════════════════
-function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConseiller,onResetConseiller,canDelete,onChangeConseiller}){
+function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDuplicate,initConseiller,onResetConseiller,canDelete,onChangeConseiller}){
   const[search,setSearch]=React.useState('');
   const[dSearch,setDSearch]=React.useState('');
   const[filtStatut,setFiltStatut]=React.useState('Planifié');
@@ -2171,7 +2198,18 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
       const updated={...panel,statut:panelStatut,inscrits:panelInscrits===''?'':parseInt(panelInscrits)||0,presents:panelPresents===''?'':parseInt(panelPresents)||0,thematique:panelThematique,remarques:panelNote,materiel:(panel.materiel||[]).join('|')};
       const res=await apiFetch('saveEntry',{entry:updated});
       if(!res.ok)throw new Error(res.error);
-      showToast('✅ Mis à jour');closePanel();onRefresh();
+      showToast('✅ Mis à jour');closePanel();
+      // GAS vient de confirmer l'écriture : relancer un getAll complet pour
+      // relire ce qu'on a écrit soi-même faisait payer deux allers-retours au
+      // lieu d'un, et le second au pire tarif (actionSaveEntry invalide le
+      // cache getAll juste avant, donc la relecture repart de la feuille).
+      // On applique la même entrée localement, comme le fait déjà la création
+      // d'atelier. `materiel` repart en tableau : c'est le format attendu
+      // partout ailleurs, la chaîne '|' n'existe que pour GAS.
+      // Le prochain rechargement réel (auto 5 min, changement d'année, bouton
+      // Rafraîchir) resynchronise avec la feuille.
+      if(onEntryUpdated) onEntryUpdated({...updated,materiel:(panel.materiel||[])});
+      else onRefresh();
     }catch(err){showToast('❌ '+err.message,false);}
     finally{setSaving(false);}
   }
@@ -2496,7 +2534,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
 // ═══════════════════════════════════════════════════════════
 // VUE CALENDRIER — v9.2
 // ═══════════════════════════════════════════════════════════
-function VueCalendrier({entries,onEdit,onDelete,onRefresh,onDuplicate,initConseiller,onResetConseiller,canDelete,onChangeConseiller}){
+function VueCalendrier({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDuplicate,initConseiller,onResetConseiller,canDelete,onChangeConseiller}){
   const today=new Date();
   const todayStr=today.toISOString().slice(0,10);
   const[calDate,setCalDate]=React.useState(new Date(today.getFullYear(),today.getMonth(),1));
@@ -2567,7 +2605,18 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onDuplicate,initConsei
       const updated={...panel,statut:panelStatut,inscrits:panelInscrits===''?'':parseInt(panelInscrits)||0,presents:panelPresents===''?'':parseInt(panelPresents)||0,thematique:panelThematique,remarques:panelNote,materiel:(panel.materiel||[]).join('|')};
       const res=await apiFetch('saveEntry',{entry:updated});
       if(!res.ok)throw new Error(res.error);
-      showToast('✅ Mis à jour');closePanel();onRefresh();
+      showToast('✅ Mis à jour');closePanel();
+      // GAS vient de confirmer l'écriture : relancer un getAll complet pour
+      // relire ce qu'on a écrit soi-même faisait payer deux allers-retours au
+      // lieu d'un, et le second au pire tarif (actionSaveEntry invalide le
+      // cache getAll juste avant, donc la relecture repart de la feuille).
+      // On applique la même entrée localement, comme le fait déjà la création
+      // d'atelier. `materiel` repart en tableau : c'est le format attendu
+      // partout ailleurs, la chaîne '|' n'existe que pour GAS.
+      // Le prochain rechargement réel (auto 5 min, changement d'année, bouton
+      // Rafraîchir) resynchronise avec la feuille.
+      if(onEntryUpdated) onEntryUpdated({...updated,materiel:(panel.materiel||[])});
+      else onRefresh();
     }catch(err){showToast('❌ '+err.message,false);}
     finally{setSaving(false);}
   }

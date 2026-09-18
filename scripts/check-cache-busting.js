@@ -24,7 +24,12 @@ const FILE_MAP = {
   'app.css':         ['index.html'],
   'admin_app.js':    ['admin.html'],
   'admin_config.js': ['admin.html'],
-  'xlsxstyle.js':    ['admin.html'],
+  // xlsxstyle.js n'est plus dans le <head> d'admin.html : il est chargé à la
+  // demande (chargerScriptUneFois) au premier export/import, et c'est donc
+  // admin_app.js qui porte son ?v=. Sans cette ligne, le garde-fou le
+  // laissait passer en silence — versionOf() ne trouvant plus de ?v= dans le
+  // HTML, le fichier sortait simplement du périmètre.
+  'xlsxstyle.js':    ['admin_app.js'],
   'admin.css':       ['admin.html'],
   'shared.js':       ['index.html', 'admin.html'],
   'utils.js':        ['index.html', 'admin.html'],
