@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * appels.test.js — Playwright : compte les appels GAS réellement émis par
- * index.html et admin.html sur les parcours courants.
+ * appels.test.js — Playwright : vérifie ce sur quoi repose le diagnostic de
+ * latence — le nombre d'appels GAS réellement émis, et l'intégrité du journal
+ * Admin qui sert à les lire.
  *
  * Lance avec : node appels.test.js   (exige `npm ci` + Chromium)
  *
@@ -169,6 +170,45 @@ function verifier(nom, condition, detail) {
     } else {
       verifier('index — modifier un atelier : saveEntry seul, pas de getAll', false, 'atelier de test introuvable dans Historique');
     }
+    await ctx.close();
+  }
+
+  // 3. Deux onglets Admin ouverts en même temps ne doivent pas s'écraser le
+  //    journal — c'est l'outil qui sert à mesurer la latence, et on travaille
+  //    rarement avec un seul onglet quand on diagnostique.
+  //    window.gasLogHook (exposé par admin_app.js) appelle addLog : il permet
+  //    de faire journaliser un onglet précis sans piloter son interface.
+  {
+    const { ctx, page: A } = await preparer(browser);
+    const connecterAdmin = async (page) => {
+      await page.goto(`http://127.0.0.1:${PORT}/admin.html`, { waitUntil:'networkidle', timeout:20000 });
+      const pwd = page.locator('input[type="password"]').first();
+      if (await pwd.isVisible({ timeout:4000 }).catch(() => false)) {
+        await pwd.fill('test');
+        await page.getByRole('button', { name:/Connexion/ }).click();
+        await page.waitForTimeout(1500);
+      }
+    };
+    const marquer = (page, nom) => page.evaluate(n => {
+      if (!window.gasLogHook) throw new Error('gasLogHook absent');
+      window.gasLogHook({ action:n, attempt:1, ms:100, issue:'ok' });
+    }, nom);
+
+    await connecterAdmin(A);
+    const B = await ctx.newPage();            // même contexte = même localStorage
+    await connecterAdmin(B);
+
+    await marquer(A, 'MARQUEUR_A1'); await A.waitForTimeout(300);
+    await marquer(B, 'MARQUEUR_B1'); await B.waitForTimeout(300);
+    await marquer(A, 'MARQUEUR_A2'); await A.waitForTimeout(500);  // A écrit APRÈS B
+
+    const msgs = JSON.parse(await A.evaluate(() => localStorage.getItem('adm_logs') || '[]'))
+      .map(e => e.msg || '');
+    verifier(
+      'admin — deux onglets ne s’écrasent pas le journal',
+      msgs.some(m => m.includes('MARQUEUR_B1')) && msgs.some(m => m.includes('MARQUEUR_A2')),
+      `${msgs.length} entrées conservées`,
+    );
     await ctx.close();
   }
 

@@ -228,22 +228,50 @@ function App(){
     localStorage.setItem('adm_dark',darkMode?'1':'0');
   },[darkMode]);
   const LOGS_PURGE_MS=30*24*60*60*1000;
+  // Même lecture que lireLogsStockes (déclarée plus bas, hoistée) : la
+  // version qui vivait ici dupliquait le parse et supposait un tableau — un
+  // contenu corrompu partait en exception pour retomber sur [] par accident.
   const[logs,setLogs]=React.useState(()=>{
+    const cutoff=Date.now()-30*24*60*60*1000;
+    return lireLogsStockes().filter(e=>!e.ts||e.ts>=cutoff);
+  });
+  // ── Journal partagé entre onglets ──────────────────────────────────────
+  // addLog écrivait son propre état React par-dessus localStorage : deux
+  // onglets Admin ouverts en même temps (cas courant en diagnostic) se
+  // marchaient dessus, le dernier à journaliser faisant disparaître les
+  // lignes de l'autre. On relit donc le stockage au moment d'écrire et on
+  // fusionne, plutôt que de le remplacer.
+  // À ne pas confondre avec ce qui EFFACE réellement le journal : il vit
+  // dans le navigateur, donc un vidage des données de navigation le supprime
+  // — c'est normal, et sans effet sur la traçabilité réelle, qui est dans la
+  // feuille Logs_Connexion côté GAS.
+  function lireLogsStockes(){
     try{
       const raw=JSON.parse(localStorage.getItem('adm_logs')||'[]');
-      const cutoff=Date.now()-30*24*60*60*1000;
-      return raw.filter(e=>!e.ts||e.ts>=cutoff);
-    }catch{return[];}
-  });
-  function addLog(msg,type='info'){
-    const entry={msg,type,t:new Date().toLocaleTimeString('fr-FR'),ts:Date.now()};
-    setLogs(l=>{const nl=[entry,...l].slice(0,200);try{localStorage.setItem('adm_logs',JSON.stringify(nl));}catch{}return nl;});
+      return Array.isArray(raw)?raw:[];
+    }catch(_){return[];}
   }
-  function clearLogs(){setLogs([]);try{localStorage.removeItem('adm_logs');}catch{}}
-  function purgeLogs(){
+  // L'état React reste la base (si localStorage est indisponible — navigation
+  // privée, stockage bloqué — la session garde quand même son journal), le
+  // stockage vient s'y ajouter. L'id rend la fusion idempotente : une même
+  // entrée écrite deux fois n'apparaît qu'une fois.
+  function ecrireLogs(liste){
     const cutoff=Date.now()-LOGS_PURGE_MS;
-    setLogs(l=>{const nl=l.filter(e=>!e.ts||e.ts>=cutoff);try{localStorage.setItem('adm_logs',JSON.stringify(nl));}catch{}return nl;});
+    const vus=new Set();
+    const nl=[...liste,...lireLogsStockes()]
+      .filter(e=>e&&(!e.ts||e.ts>=cutoff))
+      .filter(e=>{const k=e.id||(e.ts+'|'+e.msg);if(vus.has(k))return false;vus.add(k);return true;})
+      .sort((a,b)=>(b.ts||0)-(a.ts||0))
+      .slice(0,200);
+    try{localStorage.setItem('adm_logs',JSON.stringify(nl));}catch(_){}
+    return nl;
   }
+  function addLog(msg,type='info'){
+    const entry={id:Date.now()+'_'+Math.random().toString(36).slice(2,8),msg,type,t:new Date().toLocaleTimeString('fr-FR'),ts:Date.now()};
+    setLogs(l=>ecrireLogs([entry,...l]));
+  }
+  function clearLogs(){setLogs([]);try{localStorage.removeItem('adm_logs');}catch(_){}}
+  function purgeLogs(){ setLogs(l=>ecrireLogs(l)); }
 
   // ── v10.0 : Session expirante ──────────────────────────────
   // Déconnexion automatique après 30 min d'inactivité.
