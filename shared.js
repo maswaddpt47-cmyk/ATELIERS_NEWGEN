@@ -848,10 +848,13 @@ function gasLectureDoublee(url, action, numero, plafond){
 //  - logLogin / logAccesIndex ajoutent une ligne dans Logs_Connexion : doubler
 //    fabriquerait de fausses connexions dans le journal.
 const GAS_SANS_DOUBLON = new Set(['checkPassword','logLogin','logAccesIndex']);
-// Journalisation en arrière-plan : personne n'attend le résultat, une seule
-// tentative suffit — insister ne ferait que consommer des exécutions GAS
-// pendant que l'utilisateur, lui, attend ses données.
-const GAS_UNE_SEULE_TENTATIVE = new Set(['logLogin','logAccesIndex']);
+// Les actions de journalisation ont d'abord été limitées à une seule
+// tentative, au motif que personne n'attend leur résultat. Mauvais arbitrage,
+// visible dès le premier relevé (18/09/2026 22:32:21 : « logLogin bloqué —
+// abandonné après 12s ») : cette connexion n'a jamais été écrite dans
+// Logs_Connexion. Personne n'attend ce résultat, mais la traçabilité des
+// accès en dépend. Elles suivent donc le régime normal de reprise — sans
+// doublage (ci-dessus), et en arrière-plan, donc sans coût perçu.
 
 // Politique d'appel unique, partagée par apiFetch, fetchAll et fetchConfig —
 // les trois recopiaient jusqu'ici la même logique de reprise, avec des
@@ -864,9 +867,7 @@ window.gasAppel = async function(url, action, opts){
   const plafond    = ecriture ? GAS_TIMEOUT_ECRITURE_MS : GAS_TIMEOUT_LECTURE_MS;
   const pause      = ecriture ? GAS_PAUSE_ECRITURE_MS   : GAS_PAUSE_LECTURE_MS;
   const doubler    = !ecriture && !GAS_SANS_DOUBLON.has(action);
-  const tentatives = GAS_UNE_SEULE_TENTATIVE.has(action)
-    ? 1
-    : (ecriture ? GAS_TENTATIVES_ECRITURE : GAS_TENTATIVES_LECTURE);
+  const tentatives = ecriture ? GAS_TENTATIVES_ECRITURE : GAS_TENTATIVES_LECTURE;
   const t0 = Date.now();
   let derniere = null;
   for(let n=1; n<=tentatives; n++){

@@ -141,10 +141,14 @@ const CAS = [
     verifier: r => r.ok === false && r.appels.total === 1,
   },
   {
-    nom: 'log en arrière-plan : une seule tentative, pas d’insistance',
+    // Les logs ont d'abord été limités à une seule tentative (« personne
+    // n'attend le résultat »). Corrigé le 18/09/2026 : une connexion perdue
+    // n'est jamais écrite dans Logs_Connexion, et la traçabilité des accès en
+    // dépend. Ils reprennent donc comme une lecture, mais sans doublage.
+    nom: 'log en arrière-plan : repris, mais jamais doublé',
     plan: [{ delai: 100, status: 404 }, { delai: 100 }],
     action: "gasAppel(URL,'logAccesIndex')",
-    verifier: r => r.ok === false && r.appels.total === 1,
+    verifier: r => r.ok === true && r.appels.total === 2 && r.appels.max === 1,
   },
   {
     // Rejoue le pire tirage relevé dans le journal de production du
