@@ -222,8 +222,13 @@ function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
     if (e.statut === 'Annulé') return;
     if (!e.date) return;
     if (!parseMateriel(e.materiel).some(m => normalizeMatLabel(m) === 'classemobile')) return;
-    const qte = parseInt(e.nb_ordinateurs) || 0;
-    if (qte <= 0) return;
+    // Classe mobile cochée sans nombre saisi ⇒ on suppose au moins 1
+    // ordinateur (jamais 0) : la barre/le conflit apparaît dès la coche,
+    // s'ajuste automatiquement dès qu'une saisie ultérieure précise le
+    // nombre réel — demande explicite utilisateur suite à des ateliers déjà
+    // enregistrés avec Classe mobile cochée mais sans quantité (invisibles
+    // dans la Frise malgré un vrai conflit Classe mobile détecté).
+    const qte = parseInt(e.nb_ordinateurs) || 1;
     const { debut, fin } = periodePretMateriel(e);
     // Garde-fou : une date de prélèvement/retour saisie à la main peut être
     // erronée (année oubliée, inversion jour/mois...) — on plafonne à 90
@@ -266,12 +271,13 @@ function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
 function getPretsMateriel(entries) {
   return (entries || [])
     .filter(e => e.statut !== 'Annulé' && e.date
-      && parseMateriel(e.materiel).some(m => normalizeMatLabel(m) === 'classemobile')
-      && (parseInt(e.nb_ordinateurs) || 0) > 0)
+      && parseMateriel(e.materiel).some(m => normalizeMatLabel(m) === 'classemobile'))
     .map(e => {
       const { debut, fin } = periodePretMateriel(e);
+      // Même hypothèse par défaut que findOrdinateursConflicts : au moins 1
+      // ordinateur supposé si le nombre n'est pas encore renseigné.
       return {
-        _id: e._id, conseiller: e.conseiller, qte: parseInt(e.nb_ordinateurs) || 0,
+        _id: e._id, conseiller: e.conseiller, qte: parseInt(e.nb_ordinateurs) || 1,
         commune: e.commune || '', lieu: e.lieu || '', thematique: e.thematique || '',
         dateAtelier: e.date, debut, fin,
       };

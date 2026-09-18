@@ -513,12 +513,24 @@ describe('findOrdinateursConflicts', () => {
     assert.equal(findOrdinateursConflicts(entries).length, 0);
   });
 
-  it('ignore nb_ordinateurs manquant ou à 0', () => {
+  it('nb_ordinateurs manquant ou à 0 → 1 supposé (pas assez pour dépasser le stock à lui seul)', () => {
     const entries = [
       { statut: 'Planifié', date: '2026-10-01', conseiller: 'Alice', materiel: ['Classe mobile'] },
       { statut: 'Planifié', date: '2026-10-01', conseiller: 'Bob',   materiel: ['Classe mobile'], nb_ordinateurs: 0 },
     ];
     assert.equal(findOrdinateursConflicts(entries).length, 0);
+  });
+
+  it('plusieurs Classe mobile sans quantité peuvent quand même dépasser le stock (1 chacun)', () => {
+    // Demande explicite : Classe mobile cochée sans nombre saisi suppose au
+    // moins 1 ordinateur — sur 11 conseillers un même jour, ça dépasse déjà
+    // le stock par défaut (10), sans qu'aucun n'ait renseigné de quantité.
+    const entries = Array.from({ length: 11 }, (_, i) => ({
+      statut: 'Planifié', date: '2026-10-01', conseiller: 'Conseiller' + i, materiel: ['Classe mobile'],
+    }));
+    const conflits = findOrdinateursConflicts(entries);
+    assert.equal(conflits.length, 1);
+    assert.equal(conflits[0].total, 11);
   });
 
   it('accepte un stock personnalisé en 2e argument', () => {
@@ -619,13 +631,26 @@ describe('getPretsMateriel', () => {
     assert.equal(prets.length, 1);
     assert.deepEqual(prets[0], { _id: 'a1', conseiller: 'Alice', qte: 6, commune: 'FUMEL', lieu: 'MFR', thematique: 'Bureautique', dateAtelier: '2026-11-20', debut: '2026-11-17', fin: '2026-11-24' });
   });
-  it('ignore les ateliers Annulés, sans Classe mobile ou sans quantité', () => {
+  it('ignore les ateliers Annulés ou sans Classe mobile', () => {
     const entries = [
       { statut: 'Annulé', date: '2026-11-01', conseiller: 'A', materiel: ['Classe mobile'], nb_ordinateurs: 4 },
       { statut: 'Planifié', date: '2026-11-01', conseiller: 'B', materiel: ['Tablette'], nb_ordinateurs: 4 },
-      { statut: 'Planifié', date: '2026-11-01', conseiller: 'C', materiel: ['Classe mobile'], nb_ordinateurs: 0 },
     ];
     assert.deepEqual(getPretsMateriel(entries), []);
+  });
+  it('Classe mobile cochée sans quantité renseignée → qte par défaut à 1 (pas exclu)', () => {
+    // Demande explicite : un atelier avec Classe mobile déjà cochée mais
+    // sans nombre d'ordinateurs saisi doit quand même apparaître dans la
+    // Frise (qte=1 supposé), quitte à s'ajuster dès qu'une saisie
+    // ultérieure précise le nombre réel — plutôt que de rester invisible.
+    const entries = [
+      { _id: 'c1', statut: 'Planifié', date: '2026-11-01', conseiller: 'C', materiel: ['Classe mobile'] },
+      { _id: 'c2', statut: 'Planifié', date: '2026-11-02', conseiller: 'D', materiel: ['Classe mobile'], nb_ordinateurs: 0 },
+    ];
+    const prets = getPretsMateriel(entries);
+    assert.equal(prets.length, 2);
+    assert.equal(prets.find(p => p._id === 'c1').qte, 1);
+    assert.equal(prets.find(p => p._id === 'c2').qte, 1);
   });
   it('trie par date de début (prélèvement inclus)', () => {
     const entries = [

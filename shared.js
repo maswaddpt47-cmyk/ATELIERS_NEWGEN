@@ -917,8 +917,10 @@ function findOrdinateursConflicts(entries,stock=STOCK_ORDINATEURS){
     if(e.statut==='Annulé')return;
     if(!e.date)return;
     if(!matIncludes(e.materiel,'Classe mobile'))return;
-    const qte=parseInt(e.nb_ordinateurs)||0;
-    if(qte<=0)return;
+    // Classe mobile cochée sans nombre saisi ⇒ on suppose au moins 1
+    // ordinateur (jamais 0) : la barre/le conflit apparaît dès la coche, et
+    // s'ajuste dès qu'une saisie ultérieure précise le nombre réel.
+    const qte=parseInt(e.nb_ordinateurs)||1;
     const{debut,fin}=periodePretMateriel(e);
     let d=debut,garde=0;
     while(d<=fin&&garde<90){
@@ -948,10 +950,12 @@ function findOrdinateursConflicts(entries,stock=STOCK_ORDINATEURS){
 // repérer les chevauchements visuellement.
 function getPretsMateriel(entries){
   return (entries||[])
-    .filter(e=>e.statut!=='Annulé'&&e.date&&matIncludes(e.materiel,'Classe mobile')&&(parseInt(e.nb_ordinateurs)||0)>0)
+    .filter(e=>e.statut!=='Annulé'&&e.date&&matIncludes(e.materiel,'Classe mobile'))
     .map(e=>{
       const{debut,fin}=periodePretMateriel(e);
-      return{_id:e._id,conseiller:e.conseiller,qte:parseInt(e.nb_ordinateurs)||0,commune:e.commune||'',lieu:e.lieu||'',thematique:e.thematique||'',dateAtelier:e.date,debut,fin};
+      // Même hypothèse par défaut que findOrdinateursConflicts : au moins 1
+      // ordinateur supposé si le nombre n'est pas encore renseigné.
+      return{_id:e._id,conseiller:e.conseiller,qte:parseInt(e.nb_ordinateurs)||1,commune:e.commune||'',lieu:e.lieu||'',thematique:e.thematique||'',dateAtelier:e.date,debut,fin};
     })
     .sort((a,b)=>a.debut<b.debut?-1:a.debut>b.debut?1:0);
 }
