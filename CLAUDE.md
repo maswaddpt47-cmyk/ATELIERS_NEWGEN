@@ -46,6 +46,14 @@ vérifier les trois suites avant de commiter.
 |---|---|---|
 | `sandbox.test.js` | `utils.js` + `logic.js` se chargent dans un navigateur, globals présents | `node sandbox.test.js` |
 | `e2e.test.js` | `index.html` et `admin.html` se chargent et chaque onglet s'ouvre sans erreur JS (GAS et CDN mockés) | `node e2e.test.js` |
+| `reseau.test.js` | Politique d'appel GAS de `shared.js` (plafonds, reprises, doublage des lectures) avec un `fetch` qui rejoue les pannes de production | `node reseau.test.js` |
+
+**`reseau.test.js` est à relancer dès qu'on touche à `gasAppel`,
+`gasUnAppel`, `gasLectureDoublee` ou aux constantes `GAS_*` de `shared.js`.**
+Il dure ~30 s (deux cas attendent volontairement un délai réel) et vérifie
+notamment qu'une **écriture n'est jamais doublée** — deux `saveEntry` en vol
+en même temps peuvent tous deux conclure « ligne absente » et faire chacun
+leur `appendRow`, soit un atelier en double dans le classeur.
 
 Ces deux runners exigent `npm ci` (React UMD servi depuis `node_modules`) et un
 Chromium : celui préinstallé en local, sinon `npx playwright install chromium`.
@@ -126,7 +134,7 @@ via l'éditeur script.google.com. `gas/GAS_NEWGEN.js` en est une copie de
 référence versionnée (diffable), à tenir à jour manuellement après chaque
 déploiement confirmé — voir `gas/README.md` pour la procédure.
 
-### Limite connue — latence de livraison indépendante du temps d'exécution
+### Limite connue — la réponse n'est pas lente, elle est perdue
 
 Confirmé les 15-16/09/2026 sur ateliers-cd47_NextStep (captures croisées
 Journal client + Exécutions Apps Script) : des appels (`checkPassword`,
@@ -134,14 +142,42 @@ Journal client + Exécutions Apps Script) : des appels (`checkPassword`,
 `doGet` correspondante (même horodatage) dure moins de 2 s côté serveur.
 L'écart se situe dans l'acheminement de la réponse après exécution
 (redirection `/exec`), pas dans le script — Google Workspace ne signalait
-aucun incident sur Apps Script à ce moment-là. Non corrigible par une
-modification du code GAS ou frontend — probablement la même limite sur
-NEWGEN (même type de déploiement Apps Script), à garder en tête avant de
-rouvrir un audit de contention/appels redondants : recouper d'abord Journal
-client vs Exécutions sur le créneau concerné plutôt que de supposer une
-cause côté code. Les Exécutions Apps Script n'affichent jamais le nom des
-actions (`checkPassword`, `getAll`...), seulement `doGet` — comparer par
-horodatage.
+aucun incident sur Apps Script à ce moment-là.
+
+**Confirmé sur NEWGEN le 18/09/2026** (journal Admin, PC *et* Android, 221
+ateliers), avec une précision qui change la conduite à tenir — le
+comportement est **bimodal**, pas « lent » :
+
+| Livraison réussie | Livraison ratée |
+|---|---|
+| `getAll` ok en **1.1 s** | `getAll` HTTP 404 en **27.3 s** |
+| `getComptes` ok en **1.8 s** | `getConfig` HTTP 404 en **29.8 s** |
+| `checkPassword` ok en **2.7 s** | `getAll` bloqué, abandonné après **35 s** |
+
+Un 404 authentique revient en ~200 ms. **Un 404 au bout de 27 s signifie que
+la réponse a été perdue en chemin, pas qu'elle arrive en retard** — au-delà
+d'une dizaine de secondes, continuer d'attendre ne la fera jamais venir.
+
+Conséquences pratiques, à ne pas réapprendre à chaque session :
+
+- **Ne pas conclure « GAS est lent » ni « le classeur est trop gros »** sur
+  un appel long : quand la livraison passe, 221 ateliers reviennent en 1 s.
+  Le volume et le code GAS ne sont pas en cause.
+- **Ne pas rallonger les plafonds côté client.** C'est l'erreur qui a coûté
+  le plus cher : le plafond à 35 s transformait chaque livraison ratée en
+  35 s d'écran d'attente (séquence du 18/09 à 20:34 : 84 s pour se
+  connecter, dont 51 d'attente pure sur des appels morts ; à 15:12 : deux
+  `getAll` bloqués d'affilée = 70 s). Plafonds actuels : 12 s en lecture,
+  20 s en écriture, verrouillés par `reseau.test.js`.
+- **Atténuable côté frontend, pas corrigible à la source.** C'est la seule
+  correction de la note d'origine, qui disait « non corrigible par une
+  modification du code GAS ou frontend » : la cause reste hors de portée,
+  mais couper tôt et relancer (lectures doublées à partir de 7 s) ramène le
+  pire tirage de 70 s à ~20 s, et le cas courant à 1-3 s. Voir la note de
+  révision en tête de `shared.js`.
+- Les Exécutions Apps Script n'affichent jamais le nom des actions
+  (`checkPassword`, `getAll`...), seulement `doGet` — comparer par
+  horodatage.
 
 ## 6. Routine RGPD & sécurité des accès/données
 

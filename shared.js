@@ -707,18 +707,61 @@ const GS_URL = 'https://script.google.com/macros/s/AKfycbwsNMoPSEIMss4kG0V13PWSr
 //      vol en même temps).
 const GAS_RETRYABLE_HTTP = [404, 408, 429, 500, 502, 503, 504];
 
-// Plafond de temps par appel. Sans lui, un fetch() qui ne se résout jamais
-// (fréquent en 4G mobile : coupure silencieuse, NAT qui abandonne la
-// connexion sans erreur) laisse l'utilisateur bloqué indéfiniment — le
-// compteur continue de tourner (minuteur local, indépendant du réseau) sans
-// qu'aucune reprise ne puisse jamais se déclencher, puisque le catch() qui
-// porte la logique de retry n'est atteint que si fetch() finit par échouer.
-// Observé en production : 73 s d'attente puis obligation de recharger la
-// page à la main. Ce plafond n'est PAS un pari sur "GAS a fini ou pas" — il
-// existe uniquement pour garantir qu'un appel bloqué finit par échouer
-// proprement et laisser la main à un retry ou au bouton Réessayer.
-const GAS_IS_MOBILE  = /Android|iPhone|iPad/i.test(navigator.userAgent);
-const GAS_TIMEOUT_MS = GAS_IS_MOBILE ? 35000 : 25000;
+// ── RÉVISION 18/09/2026 — la politique ci-dessus est corrigée par la mesure ─
+// Les commentaires qui précèdent supposaient que les appels longs étaient des
+// appels EN COURS D'EXÉCUTION ("attendre 16 s ne coûte rien si c'est le temps
+// réel qu'il faut"). Le journal de production du 18/09/2026 (onglet Logs
+// Admin, PC et Android) dit le contraire :
+//
+//   getAll      ok en 1.1 s   getComptes  ok en 1.8 s
+//   getConfig   ok en 2.3 s   checkPassword ok en 2.7 s
+//   ... sur 221 ateliers chargés — donc ni le volume ni le script GAS.
+//
+//   getAll      HTTP 404 en 27.3 s      getConfig   HTTP 404 en 29.8 s
+//   getComptes  HTTP 404 en 26.5 s      saveEntry   HTTP 404 en 32.3 s
+//   getAll      bloqué — abandonné après 35 s (deux fois de suite)
+//
+// Un 404 authentique revient en ~200 ms. Un 404 au bout de 27 s n'est pas une
+// réponse tardive : c'est la redirection /exec → googleusercontent dont la
+// cible a expiré avant d'avoir été suivie. La réponse n'est pas lente, elle
+// est PERDUE. Au-delà d'une dizaine de secondes, attendre n'apporte donc
+// rien — on attend une réponse qui n'existe plus.
+//
+// Coût réel de l'ancienne politique, séquence relevée le 18/09 à 20:34 :
+//   20:34:43 checkPassword #1 part
+//   20:35:18 bloqué — abandonné après 35 s          → 35 s perdues
+//   20:35:20 #2 part (après la pause de 1,5 s)
+//   20:35:36 HTTP 404 en 16,2 s                     → 16 s perdues
+//   20:35:40 l'utilisateur reclique, #1 repart
+//   20:36:07 ok en 27 s
+//   = 84 s pour se connecter, dont 51 d'attente pure sur des appels morts.
+// Même schéma à 15:12 : getAll #1 bloqué 35 s PUIS #2 bloqué 35 s = 70 s
+// d'écran d'attente avant la moindre donnée.
+//
+// Nouvelle règle : couper tôt, reprendre vite, et sur les lectures doubler
+// l'appel plutôt que d'attendre son échec. Ce n'est PAS le retour du doublage
+// systématique retiré autrefois (celui-là partait du principe que l'appel
+// était lent parce que GAS calculait — faux, cf. mesures ci-dessus) : ici on
+// ne double que ce qui n'a pas répondu dans le délai où une réponse saine
+// arrive, et une exécution GAS de plus coûte 1 à 3 s, pas 30.
+//
+// Lectures  : coupées à 12 s, 3 tentatives, appel doublé à partir de 7 s.
+// Écritures : coupées à 20 s (saveMany légitimement plus long), 2 tentatives
+//             SÉQUENTIELLES, jamais doublées — actionSaveEntry retrouve sa
+//             ligne par _id (toujours généré côté client avant l'envoi, cf.
+//             handleSubmit), donc rejouer est sans risque, mais deux appels
+//             EN PARALLÈLE pourraient tous deux conclure "ligne absente" et
+//             faire chacun leur appendRow.
+// Le distinguo mobile/PC est retiré : le journal montre le même phénomène
+// sur poste fixe et sur Android (confirmé par l'utilisateur le 18/09/2026).
+const GAS_TIMEOUT_LECTURE_MS  = 12000;
+const GAS_TIMEOUT_ECRITURE_MS = 20000;
+const GAS_HEDGE_MS            = 7000;   // délai avant de doubler une lecture
+const GAS_TENTATIVES_LECTURE  = 3;
+const GAS_TENTATIVES_ECRITURE = 2;
+const GAS_PAUSE_LECTURE_MS    = 300;    // inutile d'attendre : ce n'est pas une file d'attente
+const GAS_PAUSE_ECRITURE_MS   = 1000;   // laisse retomber une écriture encore en vol
+const GAS_BUDGET_TOTAL_MS     = 45000;  // au-delà, on rend la main (bouton Réessayer)
 
 // Journal consultable : window.__gasLog, et console pour le suivi en direct.
 window.__gasLog = [];
@@ -733,16 +776,17 @@ window.logGas = function(action, attempt, ms, issue){
 
 // Un seul appel réseau, journalisé. reessayable=true seulement pour un échec
 // de transport (jamais atteint Google) ou un refus immédiat (429/503).
-window.gasUnAppel = async function(url, action, numero){
+window.gasUnAppel = async function(url, action, numero, timeoutMs){
+  const plafond = timeoutMs || GAS_TIMEOUT_LECTURE_MS;
   const t0 = Date.now();
   const ctrl = new AbortController();
-  const chien = setTimeout(()=>ctrl.abort(), GAS_TIMEOUT_MS);
+  const chien = setTimeout(()=>ctrl.abort(), plafond);
   let res;
   try{
     res = await fetch(url, {signal:ctrl.signal});
   }catch(err){
     if(ctrl.signal.aborted){
-      logGas(action, numero, Date.now()-t0, `bloqué — abandonné après ${GAS_TIMEOUT_MS/1000}s`);
+      logGas(action, numero, Date.now()-t0, `bloqué — abandonné après ${plafond/1000}s`);
       throw Object.assign(new Error('timeout'), {reessayable:true});
     }
     logGas(action, numero, Date.now()-t0, 'réseau : '+err.message);
@@ -768,15 +812,100 @@ window.gasUnAppel = async function(url, action, numero){
   return data;
 };
 
+// Lecture doublée : lance l'appel, et s'il n'a toujours rien renvoyé au bout
+// de GAS_HEDGE_MS, en lance un second en parallèle sans attendre l'échec du
+// premier. Le premier qui répond gagne, l'autre est ignoré. On ne rejette que
+// si TOUS les appels partis ont échoué (sinon on abandonnerait à 3 s sur un
+// 404 pendant qu'un doublon est encore en route).
+// Pourquoi doubler plutôt que d'attendre : un appel qui n'a pas répondu en 7 s
+// n'est pas en train de calculer (les réponses saines arrivent en 1-3 s), sa
+// réponse est perdue en chemin — le relancer est le seul moyen d'en obtenir
+// une, et attendre son abandon ne fait qu'ajouter le délai du plafond.
+function gasLectureDoublee(url, action, numero, plafond){
+  return new Promise((resolve, reject)=>{
+    let termine=false, partis=1, echecs=0, derniere=null;
+    let minuteurDoublon=null;
+    const gagner=(data)=>{ if(termine)return; termine=true; clearTimeout(minuteurDoublon); resolve(data); };
+    const perdre=(err)=>{
+      if(termine)return;
+      echecs++; derniere=err;
+      if(echecs>=partis){ termine=true; clearTimeout(minuteurDoublon); reject(derniere); }
+    };
+    gasUnAppel(url, action, numero, plafond).then(gagner, perdre);
+    minuteurDoublon=setTimeout(()=>{
+      if(termine)return;
+      partis=2;
+      gasUnAppel(url, action, numero+'b', plafond).then(gagner, perdre);
+    }, GAS_HEDGE_MS);
+  });
+}
+
+// Lectures qu'on ne double JAMAIS, bien qu'elles ne modifient pas d'atelier :
+//  - checkPassword incrémente un compteur d'échecs (5 = blocage 15 min). Deux
+//    appels espacés de 7 s le voient l'un après l'autre : un mot de passe mal
+//    tapé compterait double et bloquerait le compte après 3 saisies au lieu
+//    de 5, précisément les jours où le réseau va mal.
+//  - logLogin / logAccesIndex ajoutent une ligne dans Logs_Connexion : doubler
+//    fabriquerait de fausses connexions dans le journal.
+const GAS_SANS_DOUBLON = new Set(['checkPassword','logLogin','logAccesIndex']);
+// Journalisation en arrière-plan : personne n'attend le résultat, une seule
+// tentative suffit — insister ne ferait que consommer des exécutions GAS
+// pendant que l'utilisateur, lui, attend ses données.
+const GAS_UNE_SEULE_TENTATIVE = new Set(['logLogin','logAccesIndex']);
+
+// Politique d'appel unique, partagée par apiFetch, fetchAll et fetchConfig —
+// les trois recopiaient jusqu'ici la même logique de reprise, avec des
+// plafonds qui divergeaient à chaque retouche.
+// opts.ecriture=true : appel séquentiel, jamais doublé (cf. note sur
+// appendRow plus haut).
+window.gasAppel = async function(url, action, opts){
+  const o = opts || {};
+  const ecriture   = !!o.ecriture;
+  const plafond    = ecriture ? GAS_TIMEOUT_ECRITURE_MS : GAS_TIMEOUT_LECTURE_MS;
+  const pause      = ecriture ? GAS_PAUSE_ECRITURE_MS   : GAS_PAUSE_LECTURE_MS;
+  const doubler    = !ecriture && !GAS_SANS_DOUBLON.has(action);
+  const tentatives = GAS_UNE_SEULE_TENTATIVE.has(action)
+    ? 1
+    : (ecriture ? GAS_TENTATIVES_ECRITURE : GAS_TENTATIVES_LECTURE);
+  const t0 = Date.now();
+  let derniere = null;
+  for(let n=1; n<=tentatives; n++){
+    try{
+      return doubler
+        ? await gasLectureDoublee(url, action, n, plafond)
+        : await gasUnAppel(url, action, n, plafond);
+    }catch(err){
+      derniere = err;
+      // Erreur définitive (403, réponse non-JSON, déploiement cassé) : insister
+      // ne changera rien, on rend la main tout de suite.
+      if(!err.reessayable) break;
+      // Budget épuisé : mieux vaut un bouton Réessayer qu'une attente qui
+      // s'allonge sans fin.
+      if(n < tentatives && Date.now()-t0 + pause >= GAS_BUDGET_TOTAL_MS) break;
+      if(n < tentatives) await new Promise(r=>setTimeout(r, pause));
+    }
+  }
+  if(derniere && derniere.httpStatus)
+    throw new Error(`Google n'a pas livré la réponse (HTTP ${derniere.httpStatus}) après ${tentatives} tentatives — réessaie.`);
+  if(derniere && derniere.message==='timeout')
+    throw new Error(`Aucune réponse de Google après ${tentatives} tentatives — réessaie.`);
+  throw derniere || new Error('Échec inconnu');
+};
+
 // ── Écran d'attente d'un appel GAS ─────────────────────────────────────────
-// Un getAll prend 10 à 30 s, redirection /exec → echo comprise. Sans rien à
-// l'écran, l'attente passe pour un blocage : on affiche ce qui se passe et un
-// compteur de secondes, qui prouve que ça avance.
+// Sans rien à l'écran, l'attente passe pour un blocage : on affiche ce qui se
+// passe et un compteur de secondes, qui prouve que ça avance.
+// Textes revus le 18/09/2026 : les anciens annonçaient « Google répond en 10 à
+// 20 s », ce qui était faux dans les deux sens — une réponse livrée arrive en
+// 1 à 3 s, et au-delà de ~12 s elle ne viendra plus (elle est perdue en
+// chemin, cf. note en tête de fichier). Les paliers suivent désormais ce que
+// la couche réseau fait réellement : doublage à 7 s, reprise après 12 s.
 function AttenteGAS({titre}){
   const PALIERS = [
     {t:0,     txt:'Connexion à Google Sheets…'},
-    {t:4000,  txt:'Lecture du classeur — Google répond en 10 à 20 s…'},
-    {t:15000, txt:'Toujours en cours, le serveur Google est lent — on patiente…'},
+    {t:6000,  txt:"Plus lent que d'habitude (1 à 3 s en temps normal)…"},
+    {t:13000, txt:'Réponse perdue en chemin — nouvelle tentative…'},
+    {t:26000, txt:'Dernière tentative…'},
   ];
   const[palier,setPalier]=React.useState(0);
   const[secs,setSecs]=React.useState(0);
@@ -1089,23 +1218,12 @@ window.onLogout = function(){
 
     const url = `${GS_URL}?${params.toString()}`;
 
-    // Un seul appel. Une seule reprise, et seulement si la requête n'a jamais
-    // atteint Google (réseau coupé) ou a été refusée avant exécution
-    // (429/503) — jamais parce que la réponse met du temps à arriver : GAS a
-    // déjà exécuté, en redemander ajoute une exécution pour rien.
-    try{
-      return await gasUnAppel(url, action, _attempt);
-    }catch(err){
-      if(err.reessayable && _attempt < 2){
-        await new Promise(r=>setTimeout(r, 1500));
-        return window.apiFetch(action, body, _attempt + 1);
-      }
-      if(err.httpStatus)
-        throw new Error(`Google a répondu HTTP ${err.httpStatus} — réessaie dans quelques secondes.`);
-      if(err.message==='timeout')
-        throw new Error(`Aucune réponse de Google après ${GAS_TIMEOUT_MS/1000}s — la connexion est peut-être instable, réessaie.`);
-      throw err;
-    }
+    // Plafonds et reprises : gasAppel (voir la note de révision du 18/09/2026
+    // en tête de ce fichier). Le paramètre _attempt est conservé pour ne pas
+    // casser les appelants qui le passent encore, mais il ne sert plus : la
+    // boucle de reprise vit désormais dans gasAppel, qui distingue lecture
+    // (doublée) et écriture (séquentielle).
+    return window.gasAppel(url, action, {ecriture:isWrite});
   };
 })();
 
@@ -1127,24 +1245,12 @@ window.onLogout = function(){
   const TTL_MS = 45000;      // fenêtre pendant laquelle le prefetch reste valable
   const cache  = new Map();  // année → {promise, inflight, ts}
 
-  async function rawGetAll(year, source, _attempt=1){
+  async function rawGetAll(year, source){
     const params = new URLSearchParams({action:'getAll', year:String(year)});
     if(source) params.set('source', source);
-    try{
-      const data = await gasUnAppel(`${GS_URL}?${params.toString()}`, 'getAll', _attempt);
-      if(!data || !data.ok) throw new Error((data && data.error) || 'Erreur serveur');
-      return data;
-    }catch(err){
-      if(err.reessayable && _attempt < 2){
-        await new Promise(r=>setTimeout(r, 1500));
-        return rawGetAll(year, source, _attempt + 1);
-      }
-      if(err.httpStatus)
-        throw new Error(`Google a répondu HTTP ${err.httpStatus} — réessaie dans quelques secondes.`);
-      if(err.message==='timeout')
-        throw new Error(`Aucune réponse de Google après ${GAS_TIMEOUT_MS/1000}s — la connexion est peut-être instable, réessaie.`);
-      throw err;
-    }
+    const data = await window.gasAppel(`${GS_URL}?${params.toString()}`, 'getAll');
+    if(!data || !data.ok) throw new Error((data && data.error) || 'Erreur serveur');
+    return data;
   }
 
   // force:true = ignore le cache terminé (après une écriture, un refresh manuel).
@@ -1176,22 +1282,10 @@ window.onLogout = function(){
   const TTL_MS = 30000;
   let cache = null; // {promise, inflight, ts}
 
-  async function rawGetConfig(_attempt=1){
-    try{
-      const data = await gasUnAppel(`${GS_URL}?action=getConfig`, 'getConfig', _attempt);
-      if(!data || !data.ok) throw new Error((data && data.error) || 'Erreur serveur');
-      return data;
-    }catch(err){
-      if(err.reessayable && _attempt < 2){
-        await new Promise(r=>setTimeout(r, 1500));
-        return rawGetConfig(_attempt + 1);
-      }
-      if(err.httpStatus)
-        throw new Error(`Google a répondu HTTP ${err.httpStatus} — réessaie dans quelques secondes.`);
-      if(err.message==='timeout')
-        throw new Error(`Aucune réponse de Google après ${GAS_TIMEOUT_MS/1000}s — la connexion est peut-être instable, réessaie.`);
-      throw err;
-    }
+  async function rawGetConfig(){
+    const data = await window.gasAppel(`${GS_URL}?action=getConfig`, 'getConfig');
+    if(!data || !data.ok) throw new Error((data && data.error) || 'Erreur serveur');
+    return data;
   }
 
   // force:true = ignore le cache terminé. Un appel déjà en vol est toujours réutilisé.

@@ -68,6 +68,9 @@ jobs:
       - name: Tests e2e (index + admin, tous les onglets)
         run: node e2e.test.js
 
+      - name: Politique d'appel GAS (plafonds, reprises, doublage)
+        run: node reseau.test.js
+
   deploy:
     needs: [test, e2e]
     environment:
