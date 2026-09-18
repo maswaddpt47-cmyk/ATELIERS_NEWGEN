@@ -755,7 +755,17 @@ const GAS_RETRYABLE_HTTP = [404, 408, 429, 500, 502, 503, 504];
 // Le distinguo mobile/PC est retiré : le journal montre le même phénomène
 // sur poste fixe et sur Android (confirmé par l'utilisateur le 18/09/2026).
 const GAS_TIMEOUT_LECTURE_MS  = 12000;
-const GAS_TIMEOUT_ECRITURE_MS = 20000;
+// Écriture simple : même plafond qu'une lecture. Le 20 s d'origine était
+// calibré sur le cas le plus lourd (saveMany), alors qu'un saveEntry répond
+// en 2 à 4 s quand la livraison passe (18/09/2026 : 2.8 s et 3.5 s en
+// production). Résultat, une écriture perdue coûtait 20 s d'attente avant
+// même la première reprise. Rejouer est sans danger : actionSaveEntry
+// retrouve sa ligne par _id et la remplace.
+const GAS_TIMEOUT_ECRITURE_MS = 12000;
+// saveMany écrit N ateliers d'affilée, chacun avec sa lecture de feuille :
+// légitimement long, et le couper trop tôt ferait repartir tout le lot.
+const GAS_TIMEOUT_ECRITURE_LOT_MS = 25000;
+const GAS_ACTIONS_LOT = new Set(['saveMany']);
 const GAS_HEDGE_MS            = 7000;   // délai avant de doubler une lecture
 const GAS_TENTATIVES_LECTURE  = 3;
 const GAS_TENTATIVES_ECRITURE = 2;
@@ -864,7 +874,9 @@ const GAS_SANS_DOUBLON = new Set(['checkPassword','logLogin','logAccesIndex']);
 window.gasAppel = async function(url, action, opts){
   const o = opts || {};
   const ecriture   = !!o.ecriture;
-  const plafond    = ecriture ? GAS_TIMEOUT_ECRITURE_MS : GAS_TIMEOUT_LECTURE_MS;
+  const plafond    = !ecriture
+    ? GAS_TIMEOUT_LECTURE_MS
+    : (GAS_ACTIONS_LOT.has(action) ? GAS_TIMEOUT_ECRITURE_LOT_MS : GAS_TIMEOUT_ECRITURE_MS);
   const pause      = ecriture ? GAS_PAUSE_ECRITURE_MS   : GAS_PAUSE_LECTURE_MS;
   const doubler    = !ecriture && !GAS_SANS_DOUBLON.has(action);
   const tentatives = ecriture ? GAS_TENTATIVES_ECRITURE : GAS_TENTATIVES_LECTURE;

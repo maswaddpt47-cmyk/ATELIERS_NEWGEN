@@ -151,6 +151,23 @@ const CAS = [
     verifier: r => r.ok === true && r.appels.total === 2 && r.appels.max === 1,
   },
   {
+    // Une écriture simple ne doit plus attendre le plafond du cas le plus
+    // lourd : coupée à 12 s, reprise aussitôt. Le seuil de 16 s échouerait si
+    // quelqu'un remettait saveEntry sur le plafond long (20 s → ~21 s ici).
+    nom: 'saveEntry perdu : coupé à 12 s, pas au plafond des lots',
+    plan: [{ delai: null }, { delai: 200 }],
+    action: "gasAppel(URL,'saveEntry',{ecriture:true})",
+    verifier: r => r.ok === true && r.ms > 11000 && r.ms < 16000,
+  },
+  {
+    // saveMany écrit N ateliers d'affilée : il doit garder le plafond long,
+    // sinon un import de lot repartirait de zéro en cours de route.
+    nom: 'saveMany lent : laissé finir au-delà de 12 s',
+    plan: [{ delai: 15000 }],
+    action: "gasAppel(URL,'saveMany',{ecriture:true})",
+    verifier: r => r.ok === true && r.appels.total === 1 && r.ms > 14000,
+  },
+  {
     // Rejoue le pire tirage relevé dans le journal de production du
     // 18/09/2026 : un appel jamais livré, puis un 404 qui met 26 s à venir,
     // puis une réponse saine. L'ancienne politique (35 s de plafond, une
