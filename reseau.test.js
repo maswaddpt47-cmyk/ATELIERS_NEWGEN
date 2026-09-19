@@ -144,9 +144,14 @@ const CAS = [
     verifier: r => r.ok === true && r.appels.total === 2,
   },
   {
-    nom: 'écriture : jamais deux appels en vol en même temps',
+    // L'appel ne déclare RIEN : c'est gasAppel qui reconnaît saveEntry via
+    // GAS_ACTIONS_ECRITURE et refuse de la doubler. Ce test échouerait si
+    // cette liste redevenait une option à passer par l'appelant — un oubli
+    // suffirait alors à faire deux appendRow concurrents, donc un atelier en
+    // double.
+    nom: 'écriture reconnue sans rien déclarer : jamais deux appels en vol',
     plan: [{ delai: 150, status: 404 }, { delai: 150 }],
-    action: "gasAppel(URL,'saveEntry',{ecriture:true})",
+    action: "gasAppel(URL,'saveEntry')",
     verifier: r => r.ok === true && r.appels.max === 1 && r.appels.total === 2,
   },
   {
@@ -177,7 +182,7 @@ const CAS = [
     // quelqu'un remettait saveEntry sur le plafond long (20 s → ~21 s ici).
     nom: 'saveEntry perdu : coupé à 12 s, pas au plafond des lots',
     plan: [{ delai: null }, { delai: 200 }],
-    action: "gasAppel(URL,'saveEntry',{ecriture:true})",
+    action: "gasAppel(URL,'saveEntry')",
     verifier: r => r.ok === true && r.ms > 11000 && r.ms < 16000,
   },
   {
@@ -185,7 +190,7 @@ const CAS = [
     // sinon un import de lot repartirait de zéro en cours de route.
     nom: 'saveMany lent : laissé finir au-delà de 12 s',
     plan: [{ delai: 15000 }],
-    action: "gasAppel(URL,'saveMany',{ecriture:true})",
+    action: "gasAppel(URL,'saveMany')",
     verifier: r => r.ok === true && r.appels.total === 1 && r.ms > 14000,
   },
   {

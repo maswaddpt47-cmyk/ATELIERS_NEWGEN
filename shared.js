@@ -766,6 +766,27 @@ const GAS_TIMEOUT_ECRITURE_MS = 12000;
 // légitimement long, et le couper trop tôt ferait repartir tout le lot.
 const GAS_TIMEOUT_ECRITURE_LOT_MS = 25000;
 const GAS_ACTIONS_LOT = new Set(['saveMany']);
+// Actions qui MODIFIENT l'état côté GAS. C'est la couche réseau qui décide,
+// à partir du nom de l'action, et non l'appelant via une option : une
+// écriture n'est jamais doublée (deux appels en parallèle pourraient tous
+// deux conclure « ligne absente » et faire chacun leur appendRow), et faire
+// dépendre cette garantie d'un `{ecriture:true}` que l'appelant doit penser
+// à passer, c'est la faire reposer sur la vigilance. Un futur
+// `gasAppel(url,'saveEntry')` écrit sans l'option aurait été doublé, donc
+// susceptible de créer un atelier en double.
+// Repris d'ateliers-cd47_NextStep (GAS_ACTIONS_ECRITURE), qui avait placé la
+// décision au bon endroit dès le départ.
+// À ne pas confondre avec WRITE_ACTIONS plus bas, qui répond à une autre
+// question — « faut-il joindre un token ? » : getLogs exige un token sans
+// rien modifier, logLogin écrit une ligne sans exiger de token.
+const GAS_ACTIONS_ECRITURE = new Set([
+  'saveEntry','saveMany','delete',
+  'saveLists','saveConfig','setConfig','saveVisibility','saveColors',
+  'saveEmails','saveCompte','resetPassword','setPassword','selfSetPassword',
+  // Écrivent une ligne dans Logs_Connexion : doubler fabriquerait de fausses
+  // connexions dans le journal.
+  'logLogin','logAccesIndex'
+]);
 const GAS_HEDGE_MS            = 7000;   // délai avant de doubler une lecture
 const GAS_TENTATIVES_LECTURE  = 3;
 const GAS_TENTATIVES_ECRITURE = 2;
@@ -885,7 +906,9 @@ function gasLectureDoublee(url, action, numero, plafond){
 //    de 5, précisément les jours où le réseau va mal.
 //  - logLogin / logAccesIndex ajoutent une ligne dans Logs_Connexion : doubler
 //    fabriquerait de fausses connexions dans le journal.
-const GAS_SANS_DOUBLON = new Set(['checkPassword','logLogin','logAccesIndex']);
+// logLogin et logAccesIndex n'ont plus à figurer ici : elles sont désormais
+// déclarées dans GAS_ACTIONS_ECRITURE, et une écriture n'est jamais doublée.
+const GAS_SANS_DOUBLON = new Set(['checkPassword']);
 // Les actions de journalisation ont d'abord été limitées à une seule
 // tentative, au motif que personne n'attend leur résultat. Mauvais arbitrage,
 // visible dès le premier relevé (18/09/2026 22:32:21 : « logLogin bloqué —
@@ -897,11 +920,11 @@ const GAS_SANS_DOUBLON = new Set(['checkPassword','logLogin','logAccesIndex']);
 // Politique d'appel unique, partagée par apiFetch, fetchAll et fetchConfig —
 // les trois recopiaient jusqu'ici la même logique de reprise, avec des
 // plafonds qui divergeaient à chaque retouche.
-// opts.ecriture=true : appel séquentiel, jamais doublé (cf. note sur
-// appendRow plus haut).
-window.gasAppel = async function(url, action, opts){
-  const o = opts || {};
-  const ecriture   = !!o.ecriture;
+// Le régime (lecture doublée / écriture séquentielle) se déduit de l'action
+// via GAS_ACTIONS_ECRITURE — l'appelant n'a rien à déclarer, donc rien à
+// oublier.
+window.gasAppel = async function(url, action){
+  const ecriture   = GAS_ACTIONS_ECRITURE.has(action);
   const plafond    = !ecriture
     ? GAS_TIMEOUT_LECTURE_MS
     : (GAS_ACTIONS_LOT.has(action) ? GAS_TIMEOUT_ECRITURE_LOT_MS : GAS_TIMEOUT_ECRITURE_MS);
@@ -1249,7 +1272,11 @@ window.onLogout = function(){
   };
 
   window.apiFetch = async function apiFetch(action, body={}, _attempt=1){
-    const isWrite = WRITE_ACTIONS.has(action);
+    // « Faut-il joindre un token ? » — question distincte de « est-ce une
+    // écriture ? », que tranche GAS_ACTIONS_ECRITURE dans la couche réseau.
+    // Les deux listes ne se recouvrent pas : getLogs exige un token sans rien
+    // modifier, logLogin écrit une ligne sans exiger de token.
+    const exigeToken = WRITE_ACTIONS.has(action);
     const isAdmin = window.location.pathname.indexOf('admin.html') > -1;
 
     const params = new URLSearchParams({action});
@@ -1257,7 +1284,7 @@ window.onLogout = function(){
 
     // Injecter le token sur les écritures admin
     // Les conseillers (sans token) peuvent saveEntry/saveMany/delete
-    if(isWrite){
+    if(exigeToken){
       const token = window.authToken.get();
       if(token){
         params.set('token', token);
@@ -1280,9 +1307,9 @@ window.onLogout = function(){
     // Plafonds et reprises : gasAppel (voir la note de révision du 18/09/2026
     // en tête de ce fichier). Le paramètre _attempt est conservé pour ne pas
     // casser les appelants qui le passent encore, mais il ne sert plus : la
-    // boucle de reprise vit désormais dans gasAppel, qui distingue lecture
-    // (doublée) et écriture (séquentielle).
-    return window.gasAppel(url, action, {ecriture:isWrite});
+    // boucle de reprise vit désormais dans gasAppel, qui déduit seul le
+    // régime (lecture doublée / écriture séquentielle) du nom de l'action.
+    return window.gasAppel(url, action);
   };
 })();
 
