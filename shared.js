@@ -1114,12 +1114,40 @@ function totalJourParConseiller(items){
 // Jours consécutifs en conflit fusionnés en un seul bloc (dateFin étendue)
 // pour ne pas répéter les mêmes conseillers sur chaque jour d'un même
 // chevauchement — tous les conseillers d'un bloc sont en conflit entre eux.
+// Jour de semaine ISO (0=dimanche...6=samedi), indépendant du fuseau (parse
+// manuel plutôt que new Date(dateIso) qui interprète 'YYYY-MM-DD' en UTC).
+function estWeekend(dateIso){
+  const[y,m,j]=dateIso.split('-').map(Number);
+  const jourSemaine=new Date(y,m-1,j).getDay();
+  return jourSemaine===0||jourSemaine===6;
+}
+// Jour ouvré précédent/suivant le plus proche (saute samedi/dimanche) — sert
+// de valeur par défaut au prélèvement/retour matériel quand le champ n'est
+// pas renseigné : le retrait/dépôt du matériel a lieu un jour ouvré, jamais
+// le week-end. Ex. atelier un lundi → prélèvement par défaut le vendredi.
+function veilleOuvree(dateIso){
+  let d=addJoursIso(dateIso,-1);
+  while(estWeekend(d))d=addJoursIso(d,-1);
+  return d;
+}
+function lendemainOuvre(dateIso){
+  let d=addJoursIso(dateIso,1);
+  while(estWeekend(d))d=addJoursIso(d,1);
+  return d;
+}
 // Période réelle d'indisponibilité : du prélèvement (peut précéder la date
-// de l'atelier) au retour. Repli sur la date de l'atelier de chaque côté si
-// le champ est vide (rétrocompatible).
+// de l'atelier) au retour. Repli indépendant sur chaque champ quand il n'est
+// pas renseigné : veille/lendemain ouvrés de la date de l'atelier (jamais un
+// jour de week-end) — le matériel est concrètement retiré/rendu un jour
+// ouvré. Miroir logic.js. Aligné sur ateliers-cd47_NextStep le 19/09/2026
+// (auparavant : repli simple sur la date de l'atelier des deux côtés).
 function periodePretMateriel(e){
-  const debut=(e.date_prelevement_materiel&&e.date_prelevement_materiel<e.date)?e.date_prelevement_materiel:e.date;
-  const fin=(e.date_retour_materiel&&e.date_retour_materiel>e.date)?e.date_retour_materiel:e.date;
+  const debut=e.date_prelevement_materiel
+    ?((e.date_prelevement_materiel<e.date)?e.date_prelevement_materiel:e.date)
+    :veilleOuvree(e.date);
+  const fin=e.date_retour_materiel
+    ?((e.date_retour_materiel>e.date)?e.date_retour_materiel:e.date)
+    :lendemainOuvre(e.date);
   return{debut,fin};
 }
 function findOrdinateursConflicts(entries,stock=STOCK_ORDINATEURS){
