@@ -127,6 +127,31 @@ confirmé sur ateliers-cd47_NextStep le 16/09/2026, porté ici en garde-fou
 préventif — `scripts/check-cache-busting.js`, vérifié en CI). Vérifier ce
 point avant de conclure qu'un correctif ne marche pas.
 
+## 4ter. PWA & service worker
+
+Source canonique : `MD-LIB/pwa-service-worker.md`. Les deux pages sont
+installables en PWA depuis le 19/09/2026 (`manifest-app.json`,
+`manifest-admin.json`, `icons/`, `sw.js`). Prolonge directement la règle 4bis :
+un service worker est le seul code du projet qui **survit au déploiement
+suivant**, puisqu'il reste installé sur l'appareil.
+
+- **`sw.js` ne met rien en cache et n'intercepte rien, volontairement.** Le
+  versioning est déjà assuré par le `?v=N` ci-dessus ; un service worker en
+  cache-first recréerait l'incident du 16/09/2026 en pire, son cache ne
+  partant pas avec les données de navigation.
+- **Jamais de `respondWith()`.** La requête serait ré-émise depuis le contexte
+  du service worker, hors de portée des mocks réseau de `e2e.test.js`,
+  `appels.test.js` et `reseau.test.js`. Le symptôme ne ressemble pas à sa
+  cause : on croit à une régression de l'authentification.
+- **Enregistrement sur `load`**, en fin de `<body>`, avec un `catch` vide.
+- ⚠️ **En mode installé, il n'y a plus de barre d'adresse, donc plus de
+  rechargement forcé.** Le `?v=N` protège `shared.js`, `app.js` et les CSS,
+  **pas `index.html`/`admin.html` eux-mêmes**. Sortie de secours à connaître :
+  désinstaller/réinstaller l'application, ou vider les données du site.
+- Après toute modification de `sw.js` : relancer les suites navigateur **sur
+  les vraies pages** (une page de test nue n'enregistre pas le service
+  worker, donc ne prouve rien).
+
 ## 5. Backend GAS
 
 Le script Google Apps Script (URL dans `shared.js` → `GS_URL`) n'est pas
