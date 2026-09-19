@@ -1,120 +1,71 @@
 # Règles de travail — ATELIERS_NEWGEN
 
-## 1. Git pull systématique avant toute intervention
+> Avant d'ajouter une règle ici, lire `MD-LIB/hygiene-instructions.md` : une
+> contrainte formulable en test doit devenir un test, pas un paragraphe de
+> plus. Ce fichier est passé de 298 à 229 lignes le 19/09/2026 ; le laisser
+> regrossir, c'est le rendre moins appliqué, pas mieux.
 
-Avant de lire, modifier ou créer le moindre fichier du projet, toujours exécuter :
+## 1. Workflow git
+
+1. **`git pull origin main` avant de lire ou modifier le moindre fichier**,
+   même si le repo semble à jour. L'oubli est une cause récurrente
+   d'écrasement de travail entre deux sessions.
+2. Appliquer les modifications, tests selon la section 2.
+3. **Un commit par modification logique**, jamais de commit fourre-tout.
+   Message : `type: description courte`, avec `feat`, `fix`, `refactor`,
+   `style`, `docs` ou `chore`.
+4. Pousser sur `main` : `git push origin main`.
+
+**Branche imposée par la plateforme.** Claude Code sur le web impose parfois
+une branche dédiée (`claude/…`). Dans ce cas, merger dans `main` et pousser à
+la fin de chaque session — le déploiement GitHub Pages ne se déclenche que
+sur `main`, une branche de feature seule reste invisible en production :
 
 ```bash
-git pull origin main
+git checkout main && git merge <branche> --no-ff && git push origin main
 ```
 
-Ne jamais sauter cette étape, même si le repo semble à jour. L'objectif est de ne jamais écraser les modifications apportées entre deux sessions.
+## 2. Tests
 
-## 2. Un commit par modification, message conventionnel
+| Runner | Ce qu'il vérifie |
+|---|---|
+| `node --test utils.test.js` | `utils.js` — dates, ICS, communes |
+| `node --test logic.test.js` | `logic.js` — KPI, validation, filtres, matériel |
+| `node --test contract.test.js` | format des données envoyées à GAS |
+| `node sandbox.test.js` | `utils.js`+`logic.js` chargent dans un navigateur |
+| `node e2e.test.js` | les deux pages s'ouvrent, chaque onglet répond, sans erreur JS |
+| `node reseau.test.js` | politique d'appel GAS : plafonds, reprises, doublage |
+| `node appels.test.js` | nombre d'appels GAS émis à l'ouverture et après écriture |
 
-Chaque modification doit faire l'objet d'un commit séparé. Pas de commit fourre-tout.
+Les quatre runners navigateur exigent `npm ci` et un Chromium (préinstallé en
+local, sinon `npx playwright install chromium`).
 
-Format du message :
-```
-type: description courte de ce qui a changé
-```
+**Quand lancer quoi**
 
-Types autorisés : `feat`, `fix`, `refactor`, `style`, `docs`, `chore`
+- `node --check` sur tout fichier touché : **systématique**. C'est lui qui
+  attrape la casse au chargement (point-virgule manquant, IIFE cassée) qui
+  laisse les deux pages blanches alors que les suites Node passent.
+- `utils.js`, `logic.js` ou le format entry modifiés → les trois suites Node.
+- `gasAppel`, `gasUnAppel`, `gasLectureDoublee` ou une constante `GAS_*`
+  modifiée → **`reseau.test.js`** (~40 s). Il verrouille notamment qu'une
+  écriture n'est jamais doublée : deux `saveEntry` en vol en même temps
+  peuvent tous deux conclure « ligne absente » et faire chacun leur
+  `appendRow`, soit un atelier en double dans le classeur.
+- Effets de démarrage d'`app.js`/`admin_app.js`, chemin d'écriture ou
+  `addLog` modifiés → **`appels.test.js`**.
+- Changement mineur (texte, style, élément UI sans logique) → pas besoin de
+  relancer `sandbox`/`e2e` localement, la CI s'en charge à chaque push.
 
-Exemples :
-- `feat: ajouter export PDF dans la vue historique`
-- `fix: corriger le calcul des présents dans bingo`
-- `refactor: extraire logique calendrier dans admin_config.js`
+**Règles de décision**
 
-## 3. Tests unitaires — règle obligatoire
+- Test qui échoue après une correction de bug → corriger le code, pas le test.
+- Test qui échoue après un changement intentionnel → mettre à jour test et
+  code dans le même commit.
+- Ne jamais supprimer ni désactiver un test pour faire passer un commit.
+- **La CI bloque le déploiement si un test échoue.** Un push cassé ne déploie
+  jamais.
 
-Deux fichiers de tests, un runner par fichier (Node.js natif, sans dépendance) :
-
-| Fichier source | Fichier de tests | Runner |
-|---|---|---|
-| `utils.js` — fonctions bas niveau (dates, ICS, communes) | `utils.test.js` | `node --test utils.test.js` |
-| `logic.js` — logique métier (KPI, validation, filtres, matériel) | `logic.test.js` | `node --test logic.test.js` |
-| Format des données envoyées à GAS | `contract.test.js` | `node --test contract.test.js` |
-
-**Quand intervenir :**
-Si la session touche à la logique métier (parsing, calcul, normalisation, validation, export),
-vérifier les trois suites avant de commiter.
-
-### Tests navigateur (Playwright, job `e2e` de la CI)
-
-| Fichier de tests | Ce qu'il vérifie | Runner |
-|---|---|---|
-| `sandbox.test.js` | `utils.js` + `logic.js` se chargent dans un navigateur, globals présents | `node sandbox.test.js` |
-| `e2e.test.js` | `index.html` et `admin.html` se chargent et chaque onglet s'ouvre sans erreur JS (GAS et CDN mockés) | `node e2e.test.js` |
-| `reseau.test.js` | Politique d'appel GAS de `shared.js` (plafonds, reprises, doublage des lectures) avec un `fetch` qui rejoue les pannes de production | `node reseau.test.js` |
-| `appels.test.js` | Compte les appels GAS réellement émis à l'ouverture et après une écriture — échoue si un appel supprimé réapparaît | `node appels.test.js` |
-
-**`reseau.test.js` est à relancer dès qu'on touche à `gasAppel`,
-`gasUnAppel`, `gasLectureDoublee` ou aux constantes `GAS_*` de `shared.js`.**
-Il dure ~30 s (deux cas attendent volontairement un délai réel) et vérifie
-notamment qu'une **écriture n'est jamais doublée** — deux `saveEntry` en vol
-en même temps peuvent tous deux conclure « ligne absente » et faire chacun
-leur `appendRow`, soit un atelier en double dans le classeur.
-
-Ces deux runners exigent `npm ci` (React UMD servi depuis `node_modules`) et un
-Chromium : celui préinstallé en local, sinon `npx playwright install chromium`.
-
-**Pourquoi ils sont indispensables :** les trois suites Node ne testent que des
-fonctions pures. Elles passent même quand `shared.js` lève une erreur au
-chargement et laisse les deux pages blanches — un point-virgule manquant devant
-une IIFE suffit. Seul le job `e2e` voit ce genre de casse, et il bloque le
-déploiement avant qu'elle n'atteigne GitHub Pages.
-
-**À exécuter avant tout commit touchant `shared.js`, `app.js` ou `admin_app.js`.**
-
-**Économie de tokens/quota — pas par défaut sur les changements mineurs :**
-`node --check` (syntaxe) reste systématique dans tous les cas — c'est lui qui
-attrape la classe de bug (point-virgule manquant, IIFE cassée) qui justifiait
-`e2e` à l'origine. Mais `sandbox.test.js`/`e2e.test.js` ne sont **pas**
-à relancer par défaut pour un changement mineur (texte, style, ajout d'un
-élément UI sans nouvelle logique) — l'utilisateur vérifie lui-même en direct,
-et la CI relance `e2e` à chaque push de toute façon (bloque le déploiement si
-ça casse). À exécuter localement avant de commiter dès que le changement
-touche à un comportement : nouveau flux d'authentification, nouvelle action
-GAS, changement d'état/de flux, ou en cas de doute — demander à l'utilisateur
-si l'un des deux n'est pas sûr du niveau de risque.
-
-**Après toute modification de `utils.js` ou `logic.js` :**
-1. Modifier la fonction
-2. Exécuter le runner correspondant
-3. Commiter le fichier source + le fichier de tests ensemble si un test a dû être mis à jour
-
-**Si le format d'un entry change (nouveau champ, type modifié) :**
-Mettre à jour `contract.test.js` dans le même commit.
-
-**Règle de décision :**
-- Test qui échoue après une **correction de bug** → corriger le code, pas le test.
-- Test qui échoue après un **changement intentionnel** → mettre à jour le test ET le code dans le même commit.
-- Ne jamais supprimer ou désactiver un test pour faire passer le commit.
-
-**La CI bloque le déploiement si un test échoue.** Un push cassé ne déploie jamais.
-
-## 4. Ordre d'intervention à respecter
-
-Pour chaque session de travail :
-
-1. `git pull origin main`
-2. Appliquer les modifications
-3. Si `utils.js`, `logic.js` ou le format entry change : exécuter les runners avant de commiter
-4. Committer chaque modification séparément avec message conventionnel
-5. Pousser sur `main` : `git push origin main`
-
-**Important — branche imposée par la plateforme :**
-Claude Code sur le web impose parfois une branche de travail dédiée (ex. `claude/code-review-*`).
-Dans ce cas, merger systématiquement dans `main` et pousser à la fin de chaque session :
-```bash
-git checkout main
-git merge <branche> --no-ff
-git push origin main
-```
-Le déploiement GitHub Pages ne se déclenche que sur `main`. Travailler uniquement sur une branche de feature rend les changements invisibles en production.
-
-## 4bis. Cache-busting obligatoire
+## 3. Cache-busting obligatoire
 
 `index.html` et `admin.html` chargent `app.css`/`admin.css`, `utils.js`,
 `shared.js`, `app.js`/`admin_app.js`/`admin_config.js`/`xlsxstyle.js` avec un
@@ -127,11 +78,11 @@ confirmé sur ateliers-cd47_NextStep le 16/09/2026, porté ici en garde-fou
 préventif — `scripts/check-cache-busting.js`, vérifié en CI). Vérifier ce
 point avant de conclure qu'un correctif ne marche pas.
 
-## 4ter. PWA & service worker
+## 4. PWA & service worker
 
 Source canonique : `MD-LIB/pwa-service-worker.md`. Les deux pages sont
 installables en PWA depuis le 19/09/2026 (`manifest-app.json`,
-`manifest-admin.json`, `icons/`, `sw.js`). Prolonge directement la règle 4bis :
+`manifest-admin.json`, `icons/`, `sw.js`). Prolonge directement la règle 3 :
 un service worker est le seul code du projet qui **survit au déploiement
 suivant**, puisqu'il reste installé sur l'appareil.
 
@@ -162,17 +113,10 @@ déploiement confirmé — voir `gas/README.md` pour la procédure.
 
 ### Limite connue — la réponse n'est pas lente, elle est perdue
 
-Confirmé les 15-16/09/2026 sur ateliers-cd47_NextStep (captures croisées
-Journal client + Exécutions Apps Script) : des appels (`checkPassword`,
-`getComptes`) mesurés à 23-25 s côté navigateur, alors que l'exécution
-`doGet` correspondante (même horodatage) dure moins de 2 s côté serveur.
-L'écart se situe dans l'acheminement de la réponse après exécution
-(redirection `/exec`), pas dans le script — Google Workspace ne signalait
-aucun incident sur Apps Script à ce moment-là.
-
-**Confirmé sur NEWGEN le 18/09/2026** (journal Admin, PC *et* Android, 221
-ateliers), avec une précision qui change la conduite à tenir — le
-comportement est **bimodal**, pas « lent » :
+**Mesuré** les 15-16/09/2026 sur NextStep puis le 18/09/2026 sur NEWGEN
+(journal Admin, PC *et* Android, 221 ateliers), captures croisées Journal
+client / Exécutions Apps Script. Le comportement est **bimodal**, pas
+« lent » :
 
 | Livraison réussie | Livraison ratée |
 |---|---|
@@ -181,54 +125,41 @@ comportement est **bimodal**, pas « lent » :
 | `checkPassword` ok en **2.7 s** | `getAll` bloqué, abandonné après **35 s** |
 
 Un 404 authentique revient en ~200 ms. **Un 404 au bout de 27 s signifie que
-la réponse a été perdue en chemin, pas qu'elle arrive en retard** — au-delà
-d'une dizaine de secondes, continuer d'attendre ne la fera jamais venir.
+la réponse est perdue, pas en retard** — l'exécution `doGet` correspondante
+dure moins de 2 s côté serveur. Au-delà d'une dizaine de secondes, attendre
+ne la fera jamais venir. La cause est dans l'acheminement (redirection
+`/exec`), hors de portée du code ; seuls ses effets s'atténuent côté client.
 
-Conséquences pratiques, à ne pas réapprendre à chaque session :
+Conséquences, à ne pas réapprendre à chaque session :
 
-- **Ne pas conclure « GAS est lent » ni « le classeur est trop gros »** sur
-  un appel long : quand la livraison passe, 221 ateliers reviennent en 1 s.
-  Le volume et le code GAS ne sont pas en cause.
-- **Ne pas rallonger les plafonds côté client.** C'est l'erreur qui a coûté
-  le plus cher : le plafond à 35 s transformait chaque livraison ratée en
-  35 s d'écran d'attente (séquence du 18/09 à 20:34 : 84 s pour se
-  connecter, dont 51 d'attente pure sur des appels morts ; à 15:12 : deux
-  `getAll` bloqués d'affilée = 70 s). Plafonds actuels : 12 s en lecture,
-  20 s en écriture, verrouillés par `reseau.test.js`.
-- **Atténuable côté frontend, pas corrigible à la source.** C'est la seule
-  correction de la note d'origine, qui disait « non corrigible par une
-  modification du code GAS ou frontend » : la cause reste hors de portée,
-  mais couper tôt et relancer (lectures doublées à partir de 7 s) ramène le
-  pire tirage de 70 s à ~20 s, et le cas courant à 1-3 s. Voir la note de
-  révision en tête de `shared.js`.
-- **La panne frappe par fenêtres de temps, pas par appel.** Journal du
-  18/09/2026 à 22:10 (premier relevé avec la nouvelle politique) : les trois
-  appels d'ouverture (`getAll`, `getConfig`, `getComptes`) meurent dans la
-  même seconde, et leurs trois doublons réussissent dans la même seconde,
-  en 6,5 s chacun. Conséquence directe : **plus on lance d'appels en même
-  temps, plus on risque de tout perdre d'un coup** — d'où `appels.test.js`,
-  qui échoue si un appel supprimé réapparaît. Avant d'ajouter un appel GAS
-  au démarrage, vérifier que l'information ne voyage pas déjà dans `getAll`
-  (drapeau maintenance, listes, visibilité, couleurs, stock...).
-- **Rejouer une écriture est sûr, et c'est vérifié en production.** Le
-  frontend génère toujours l'`_id` avant l'envoi (`handleSubmit`), et
-  `actionSaveEntry` retrouve la ligne par cet `_id` pour la remplacer plutôt
-  que d'en créer une. Cas réel du 18/09/2026 à 22:31 : `saveEntry #1`
-  abandonné à 20 s, `#2` réussi — **aucun doublon dans la feuille**, confirmé
-  par l'utilisateur dans Historique. C'est ce qui autorise des plafonds
-  courts sur les écritures. La limite, elle, tient toujours : elles restent
-  **séquentielles, jamais doublées**, car deux appels en parallèle pourraient
-  tous deux conclure « ligne absente » et faire chacun leur `appendRow`.
+- **Ne pas conclure « GAS est lent » ni « le classeur est trop gros »** sur un
+  appel long : quand la livraison passe, 221 ateliers reviennent en 1 s.
+- **Ne jamais rallonger les plafonds.** L'erreur la plus coûteuse : à 35 s,
+  chaque livraison ratée devenait 35 s d'écran d'attente — 84 s relevées pour
+  une seule connexion, dont 51 d'attente pure sur des appels déjà morts.
+  Plafonds actuels : 12 s en lecture, 12 s en écriture, 25 s pour `saveMany`.
+  **Verrouillés par `reseau.test.js`** : si un de ses cas échoue, c'est qu'on
+  est en train de refaire l'erreur.
+- **La panne frappe par fenêtres de temps, pas par appel.** Le 18/09 à 22:10,
+  les trois appels d'ouverture meurent dans la même seconde et leurs trois
+  doublons réussissent dans la même seconde. Donc moins d'appels simultanés =
+  moins de chances de tout perdre d'un coup. Avant d'ajouter un appel au
+  démarrage, vérifier que l'info ne voyage pas déjà dans `getAll` (drapeau
+  maintenance, listes, visibilité, couleurs, stock). **`appels.test.js`**
+  échoue si un appel supprimé réapparaît.
+- **Rejouer une écriture est sûr** — vérifié en production le 18/09 : le
+  client génère l'`_id` avant l'envoi et `actionSaveEntry` retrouve la ligne
+  pour la remplacer (`saveEntry #1` abandonné, `#2` réussi, aucun doublon
+  constaté dans la feuille). Mais les écritures restent **séquentielles,
+  jamais doublées** : deux appels en parallèle pourraient tous deux conclure
+  « ligne absente » et faire chacun leur `appendRow`.
 - **Après une écriture, ne jamais recharger pour relire.** `actionSaveEntry`
   invalide le cache `getAll` juste avant de rendre la main : le `loadData()`
-  qui suivait repartait donc systématiquement de la feuille, au tarif maximum,
-  pour relire ce qu'on venait soi-même d'écrire. Les écritures s'appliquent
-  désormais localement (`appliquerEntree` / `retirerEntree` dans app.js et
-  admin_app.js, `onEntryUpdated` côté vues). L'écran reflète ce qu'on a
-  envoyé ; le prochain rechargement réel resynchronise.
-- Les Exécutions Apps Script n'affichent jamais le nom des actions
-  (`checkPassword`, `getAll`...), seulement `doGet` — comparer par
-  horodatage.
+  qui suivait relisait la feuille entière, au tarif maximum, pour retrouver ce
+  qu'on venait d'écrire. Les écritures s'appliquent localement
+  (`appliquerEntree`/`retirerEntree`, prop `onEntryUpdated` côté vues).
+- Les Exécutions Apps Script n'affichent que `doGet`, jamais le nom de
+  l'action — comparer par horodatage avec `window.__gasLog`.
 
 ## 6. Routine RGPD & sécurité des accès/données
 

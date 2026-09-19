@@ -341,14 +341,10 @@ function App(){
 
   React.useEffect(()=>{loadCommunes47().catch(()=>{});},[]);
 
-  // getAll part dès le montage, en parallèle de getComptes/getConfig
-  // ci-dessous. Un chaînage séquentiel a été essayé puis retiré : sa
-  // justification ("GAS n'exécute qu'une requête à la fois par projet")
-  // n'a pas résisté aux logs Exécutions Apps Script (deux doGet observés se
-  // chevauchant dans le temps) — et le chaînage a un risque asymétrique
-  // (si getAll traîne ou échoue, getComptes/getConfig n'ont plus leur
-  // chance de réussir en parallèle pendant ce temps). Reste en parallèle
-  // tant qu'aucune preuve ne justifie de les enchaîner.
+  // getAll part dès le montage, en parallèle des autres appels : GAS
+  // n'exécute PAS une requête à la fois par projet (doGet observés se
+  // chevauchant dans les Exécutions Apps Script). Les enchaîner ferait
+  // dépendre chaque appel du sort du précédent, sans rien y gagner.
   React.useEffect(()=>{
     if(isFirstLoad.current){isFirstLoad.current=false;loadData();}
     else{setSeenIds(new Set());loadData();}

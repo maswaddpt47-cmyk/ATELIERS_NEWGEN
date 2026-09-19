@@ -671,89 +671,31 @@ function FadeItem({children,delay=0,style={}}){
 }
 
 const GS_URL = 'https://script.google.com/macros/s/AKfycbwsNMoPSEIMss4kG0V13PWSr1mKEo34IFMWClxJuXkUvZ7Cgo-OWY0ud1lQtrUBqDbP/exec';
-// ── Politique d'appel GAS : un seul appel, jamais de retry sur simple lenteur ─
-// Fait mesuré (Network + onglet Logs, en production) : /exec met 12 à 16 s à
-// répondre en temps d'exécution réel — « exec?action=getConfig… 15.87 s »,
-// « exec?action=getAll… 12.63 s ». Ce n'est pas un cold start (le script n'a
-// pas le temps de se rendormir entre deux appels rapprochés) : GAS répond à
-// cette vitesse de façon systématique, très probablement parce que le
-// classeur est relu en entier sans cache côté serveur (voir les correctifs
-// GAS transmis séparément).
+// ── Politique d'appel GAS ──────────────────────────────────────────────────
+// MESURÉ le 18/09/2026 (journal Admin, PC et Android, 221 ateliers) : la
+// livraison Apps Script est BIMODALE, pas lente. Livrée, une réponse arrive en
+// 1 à 3 s (getAll 1.1 s, getComptes 1.8 s, checkPassword 2.7 s). Perdue, elle
+// part en HTTP 404 ou en blocage au bout de 26 à 35 s — or un 404 authentique
+// revient en ~200 ms, et l'exécution doGet correspondante dure moins de 2 s
+// côté serveur. Un 404 à 27 s veut dire que la réponse N'EXISTE PLUS : elle
+// s'est perdue sur la redirection /exec → googleusercontent.
 //
-// Erreur corrigée ici, dans le code lui-même : la version précédente doublait
-// chaque appel lent en supposant qu'il restait coincé sur une redirection
-// morte. Sur un appel qui met simplement 12-16 s à s'exécuter, doubler ne
-// fait qu'ajouter un deuxième appel réseau identique — sans aucune garantie
-// qu'il revienne plus vite, et avec plusieurs onglets ouverts, chacun avec
-// son propre rafraîchissement automatique, le volume total d'appels grossit
-// à chaque doublage. C'est le « de plus en plus lent » observé.
+// D'où toute la politique ci-dessous, et son interdit central :
+// NE JAMAIS RALLONGER CES PLAFONDS. Attendre ne récupère aucune réponse
+// perdue, ça ne fait qu'allonger l'écran d'attente — à 35 s, une connexion a
+// été relevée à 84 s, dont 51 d'attente pure sur des appels déjà morts.
+// Les valeurs et les comportements sont verrouillés par reseau.test.js : si
+// un de ses cas échoue, c'est qu'on est en train de refaire l'erreur.
 //
-// Règle désormais : un seul appel réseau, sans limite de temps côté client
-// (attendre 16 s ne coûte rien si c'est le temps réel qu'il faut). On ne
-// retente QUE sur un échec de transport franc — fetch() qui lève une
-// exception avant même d'atteindre Google (réseau coupé, DNS, etc.) — jamais
-// parce que la réponse met du temps à arriver. Toute réponse HTTP, même une
-// erreur, s'affiche avec un bouton Réessayer manuel : aucun deuxième appel ne
-// part sans que l'utilisateur ne le demande.
-// Observé en production (Network) : deux phénomènes distincts coexistent.
-//   1. /exec (redirection 302) met 12-16 s — c'est le temps d'exécution GAS
-//      réel, systématique, qu'aucun retry ne peut raccourcir.
-//   2. La livraison du contenu ensuite (302 → …/echo) a SES PROPRES ratés
-//      ponctuels, indépendants de la durée d'exécution : un même appel a été
-//      vu échouer en 404 après 25,8 s puis réussir en 280 ms à la tentative
-//      suivante. C'est ce second phénomène, et uniquement lui, qui justifie
-//      un retry — une seule fois, en séquence (jamais en parallèle : on
-//      attend l'échec avant de retenter, pour ne jamais avoir deux appels en
-//      vol en même temps).
+// Lectures  : coupées tôt, plusieurs tentatives, et appel DOUBLÉ passé un
+//             délai plutôt que d'attendre un échec (une exécution GAS de plus
+//             coûte 1 à 3 s, pas 30).
+// Écritures : mêmes plafonds courts, mais SÉQUENTIELLES et jamais doublées.
+//             Rejouer est sûr (actionSaveEntry retrouve sa ligne par _id,
+//             toujours généré côté client — vérifié en production), mais deux
+//             appels EN PARALLÈLE pourraient tous deux conclure « ligne
+//             absente » et faire chacun leur appendRow.
 const GAS_RETRYABLE_HTTP = [404, 408, 429, 500, 502, 503, 504];
-
-// ── RÉVISION 18/09/2026 — la politique ci-dessus est corrigée par la mesure ─
-// Les commentaires qui précèdent supposaient que les appels longs étaient des
-// appels EN COURS D'EXÉCUTION ("attendre 16 s ne coûte rien si c'est le temps
-// réel qu'il faut"). Le journal de production du 18/09/2026 (onglet Logs
-// Admin, PC et Android) dit le contraire :
-//
-//   getAll      ok en 1.1 s   getComptes  ok en 1.8 s
-//   getConfig   ok en 2.3 s   checkPassword ok en 2.7 s
-//   ... sur 221 ateliers chargés — donc ni le volume ni le script GAS.
-//
-//   getAll      HTTP 404 en 27.3 s      getConfig   HTTP 404 en 29.8 s
-//   getComptes  HTTP 404 en 26.5 s      saveEntry   HTTP 404 en 32.3 s
-//   getAll      bloqué — abandonné après 35 s (deux fois de suite)
-//
-// Un 404 authentique revient en ~200 ms. Un 404 au bout de 27 s n'est pas une
-// réponse tardive : c'est la redirection /exec → googleusercontent dont la
-// cible a expiré avant d'avoir été suivie. La réponse n'est pas lente, elle
-// est PERDUE. Au-delà d'une dizaine de secondes, attendre n'apporte donc
-// rien — on attend une réponse qui n'existe plus.
-//
-// Coût réel de l'ancienne politique, séquence relevée le 18/09 à 20:34 :
-//   20:34:43 checkPassword #1 part
-//   20:35:18 bloqué — abandonné après 35 s          → 35 s perdues
-//   20:35:20 #2 part (après la pause de 1,5 s)
-//   20:35:36 HTTP 404 en 16,2 s                     → 16 s perdues
-//   20:35:40 l'utilisateur reclique, #1 repart
-//   20:36:07 ok en 27 s
-//   = 84 s pour se connecter, dont 51 d'attente pure sur des appels morts.
-// Même schéma à 15:12 : getAll #1 bloqué 35 s PUIS #2 bloqué 35 s = 70 s
-// d'écran d'attente avant la moindre donnée.
-//
-// Nouvelle règle : couper tôt, reprendre vite, et sur les lectures doubler
-// l'appel plutôt que d'attendre son échec. Ce n'est PAS le retour du doublage
-// systématique retiré autrefois (celui-là partait du principe que l'appel
-// était lent parce que GAS calculait — faux, cf. mesures ci-dessus) : ici on
-// ne double que ce qui n'a pas répondu dans le délai où une réponse saine
-// arrive, et une exécution GAS de plus coûte 1 à 3 s, pas 30.
-//
-// Lectures  : coupées à 12 s, 3 tentatives, appel doublé à partir de 7 s.
-// Écritures : coupées à 20 s (saveMany légitimement plus long), 2 tentatives
-//             SÉQUENTIELLES, jamais doublées — actionSaveEntry retrouve sa
-//             ligne par _id (toujours généré côté client avant l'envoi, cf.
-//             handleSubmit), donc rejouer est sans risque, mais deux appels
-//             EN PARALLÈLE pourraient tous deux conclure "ligne absente" et
-//             faire chacun leur appendRow.
-// Le distinguo mobile/PC est retiré : le journal montre le même phénomène
-// sur poste fixe et sur Android (confirmé par l'utilisateur le 18/09/2026).
 const GAS_TIMEOUT_LECTURE_MS  = 12000;
 // Écriture simple : même plafond qu'une lecture. Le 20 s d'origine était
 // calibré sur le cas le plus lourd (saveMany), alors qu'un saveEntry répond
@@ -1215,7 +1157,7 @@ const NAV_DEFAULT_COLOR = '#197d89';
 let CONSEILLER_COLORS = {'Cynthia Pineau':'#7C3AED','Corentin Tual':'#2563EB','Michel Aswad':'#059669','Eva Capelle':'#DB2777'};
 function conseillerColor(c){return(c&&CONSEILLER_COLORS[c])||'#6B7280';}
 function applyColors(colors){if(colors&&typeof colors==='object')Object.assign(CONSEILLER_COLORS,colors);}
-// v10.0 : todayLocal() en heure locale (évite le bug UTC après 22h/23h en France)
+// todayLocal() en heure locale (évite le bug UTC après 22h/23h en France)
 function todayLocal(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 const isPasse = e=>e.date<todayLocal()&&e.statut==='Réalisé';
 const isRetard = e=>e.statut==='Planifié'&&e.date<todayLocal();
@@ -1226,7 +1168,7 @@ function badgePill(statut,retard){
   return CE('span',{className:'badge-pill '+cls},statut);
 }
 const STATUT_COLORS={'Planifié':'#3b82f6','Réalisé':'#22c55e','Annulé':'#ef4444','Reporté':'#f97316','Non réalisé':'#94a3b8'};
-// v10.0 : constante partagée — évite la duplication dans VueHistorique et VueCalendrier
+// constante partagée — évite la duplication dans VueHistorique et VueCalendrier
 const CLOTURE_PRESETS=[
   {label:'✅ Réalisé',    statut:'Réalisé',     bg:'#16a34a',color:'#fff'},
   {label:'❌ Annulé',     statut:'Annulé',      bg:'#dc2626',color:'#fff'},
@@ -1274,7 +1216,7 @@ window.onLogout = function(){
   sessionStorage.removeItem('gs_conseiller');
 };
 
-// ── API v11.0 — AbortController + token auth (GET uniquement — GAS ne supporte pas CORS preflight POST) ──
+// ── API — AbortController + token auth (GET uniquement — GAS ne supporte pas CORS preflight POST) ──
 (function(){
 
   // Actions d'écriture qui exigent un token (admin uniquement)
@@ -1761,7 +1703,6 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
   );
 }
 
-// Login — supprimé v10.0 (remplacé par AdminLogin dans admin.html)
 
 // ═══════════════════════════════════════════════════════════
 // VUE SAISIE — v9.1 : mode unique + mode lot (cycle)
@@ -2353,7 +2294,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
   const BORDER_COLOR={'Planifié':'#3b82f6','Réalisé':'#22c55e','Annulé':'#ef4444','Reporté':'#f59e0b','Non réalisé':'#94a3b8'};
 
   // v9.0 : clôture rapide — preset statuts finaux
-  // CLOTURE_PRESETS — v10.0 : défini globalement dans shared.js
+  // CLOTURE_PRESETS : défini globalement dans shared.js
 
   return CE('div',null,
     // KPI strip v2
@@ -2654,7 +2595,7 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
   const monthStr=`${yr}-${String(mo+1).padStart(2,'0')}`;
   const MOIS_LONG=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   const JOURS_COURT=['Lun','Mar','Mer','Jeu','Ven'];
-  // CLOTURE_PRESETS — v10.0 : défini globalement dans shared.js
+  // CLOTURE_PRESETS : défini globalement dans shared.js
 
   // Entrées du mois filtrées par conseiller
   const monthEntries=React.useMemo(()=>{
@@ -2904,7 +2845,7 @@ function mkGrad(c1,c2,dir='v'){
   const[x1,y1,x2,y2]=dir==='v'?[0,0,0,1]:[0,0,1,0];
   return new window.echarts.graphic.LinearGradient(x1,y1,x2,y2,[{offset:0,color:c1},{offset:1,color:c2}]);
 }
-// ── v15.0 : Style graphiques GDIN ────────────────────────────
+// ── Style graphiques GDIN ────────────────────────────
 const EC_TT={backgroundColor:'#111827',borderColor:'#374151',textStyle:{color:'#f1f5f9',fontSize:12},extraCssText:'border-radius:8px;padding:10px 14px;box-shadow:none'};
 const EC_GRID={top:24,right:8,bottom:48,left:28,containLabel:true};
 const EC_AXIS_LABEL={color:'#94a3b8',fontSize:10};
@@ -3149,11 +3090,11 @@ function VueGraphiques({entries}){
   const byMoisPresents={};passes.forEach(e=>{const m=e.date?e.date.slice(0,7):'?';if(m<todayYM)byMoisPresents[m]=(byMoisPresents[m]||0)+(parseInt(e.presents)||0);});
   const dataMoisPresents=Object.keys(byMoisPresents).sort().map(k=>({label:fmtML(k),value:byMoisPresents[k],tip:`${fmtML(k)} : ${byMoisPresents[k]} présent(s)`}));
 
-  // v10.0 : Inscrits vs Présents par mois
+  // Inscrits vs Présents par mois
   const byMoisDual={};passes.forEach(e=>{const m=e.date?e.date.slice(0,7):'?';if(m<todayYM){if(!byMoisDual[m])byMoisDual[m]={inscrits:0,presents:0};byMoisDual[m].inscrits+=(parseInt(e.inscrits)||0);byMoisDual[m].presents+=(parseInt(e.presents)||0);}});
   const dataDual=Object.keys(byMoisDual).sort().map(k=>({label:fmtML(k),...byMoisDual[k]}));
 
-  // v10.0 : Répartition AM / PM (uniquement entrées avec ampm ou horaire renseigné)
+  // Répartition AM / PM (uniquement entrées avec ampm ou horaire renseigné)
   const withAmPm=filtered.filter(e=>e.ampm==='AM'||e.ampm==='PM'||(e.horaire&&!isNaN(parseInt(e.horaire))));
   const amCount=withAmPm.filter(e=>e.ampm==='AM'||(!e.ampm&&parseInt(e.horaire)<12)).length;
   const pmCount=withAmPm.filter(e=>e.ampm==='PM'||(!e.ampm&&parseInt(e.horaire)>=12)).length;
@@ -3980,7 +3921,7 @@ function VuePowerBI({entries, conseillers: conseillersList}){
     );
   }
 
-  // ── v15.0 : Style PBI aligné sur GDIN ────────────────────
+  // ── Style PBI aligné sur GDIN ────────────────────
   const ecTT={backgroundColor:'#111827',borderColor:'#374151',textStyle:{color:'#f1f5f9',fontSize:11},extraCssText:'border-radius:8px;padding:10px 14px;box-shadow:none'};
   const _ecAPN={axisPointer:{type:'none'}};
   // Pas de dégradé — couleurs solides pour fiabilité mobile

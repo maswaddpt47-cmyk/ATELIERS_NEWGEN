@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Garde-fou CI — CLAUDE.md, section 5bis "Cache-busting obligatoire".
+// Garde-fou CI — CLAUDE.md, section 3 "Cache-busting obligatoire".
 //
 // Si un commit modifie le contenu d'un fichier JS/CSS local versionné par
 // ?v=N, la page HTML qui le charge doit voir son ?v= incrémenté dans le
