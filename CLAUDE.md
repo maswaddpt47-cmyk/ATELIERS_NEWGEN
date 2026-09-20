@@ -5,6 +5,10 @@
 > plus. Ce fichier est passé de 298 à 229 lignes le 19/09/2026 ; le laisser
 > regrossir, c'est le rendre moins appliqué, pas mieux.
 
+> **Voir `CHANTIERS.md`** pour l'état du travail en cours (décisions en
+> attente, chantiers ouverts) — ce que la session en cours sait mais qu'une
+> future session ne devinera pas.
+
 ## 1. Workflow git
 
 1. **`git pull origin main` avant de lire ou modifier le moindre fichier**,
