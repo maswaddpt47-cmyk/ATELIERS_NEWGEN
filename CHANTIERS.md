@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **20/09/2026**, commit de référence `0f960a4`.
+État au **20/09/2026**, commit de référence `82fb531`.
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
 `MD-LIB/hygiene-instructions.md`).
@@ -16,13 +16,21 @@ opposées**, et personne n'a arbitré :
 |---|---|---|
 | Stratégie | lectures **doublées** à partir de 7 s | **file d'attente**, un appel en vol à la fois |
 | Statut de l'hypothèse | efficacité constatée (3 sauvetages relevés le 18/09) | « HYPOTHÈSE NON VÉRIFIÉE », écrit dans son propre code |
-| Mesure disponible | 54 % de pertes le 19/09 entre 12:43 et 14:32 | **aucune à ce jour** |
+| Mesure disponible | 54 % de pertes le 19/09 entre 12:43 et 14:32 | une seule, **d'attribution incertaine** (voir ci-dessous) |
 
-**Ce qui bloque :** on n'a jamais réussi à mesurer NextStep. Les captures du
-19/09 attribuées aux deux sites venaient en réalité toutes de NEWGEN — les
-deux applis sont visuellement identiques (même nav `#197d89`, même sidebar).
+**Ce qui bloque :** aucune mesure NextStep fiable. L'origine des captures du
+19/09 est **contestée** — l'utilisateur les attribue aux deux sites, Claude
+les attribuait toutes à NEWGEN ; les deux applis sont visuellement identiques
+(même nav `#197d89`, même sidebar) et aucun élément de la capture ne tranche.
 Le Journal des opérations porte depuis une pastille NEWGEN / NEXTSTEP pour
-lever l'ambiguïté.
+lever l'ambiguïté : seules les mesures postérieures à cette pastille comptent.
+
+**Élément à ne pas perdre**, consigné dans le `CHANTIERS.md` de NextStep :
+un relevé du 19/09 vers 09:30 (attribution incertaine, antérieure à la
+pastille) montre `getComptes #1` abandonné à 12 s **alors qu'il était seul en
+vol** — la file avait sérialisé, `getAll` était terminé depuis 12 s, donc
+aucune rafale. Si ce relevé vient bien de NextStep, il contredit directement
+l'hypothèse qui justifie sa file d'attente. À refaire proprement.
 
 **Comment trancher.** Console (F12) sur l'Admin de chaque site, après quelques
 jours d'usage :
