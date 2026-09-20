@@ -97,6 +97,19 @@ déploiement.
 → À faire **au prochain déploiement GAS réel**, quand le fichier doit de
 toute façon être recollé dans l'éditeur.
 
+## 6. Vérifications terrain en attente (PWA, 19/09/2026)
+
+Deux points livrés le 19/09 mais jamais vérifiés en dehors des tests
+automatisés (qui ne peuvent pas les couvrir) :
+
+- **Installabilité PWA** : confirmer sur un Android réel que "Installer
+  l'application" apparaît bien pour `index.html` et `admin.html` (manifest +
+  icônes + service worker déployés — voir `MD-LIB/pwa-service-worker.md`).
+- **Lisibilité des couleurs de la Frise du parc** : les barres de
+  `FriseMateriel` (`shared.js`) sont colorées par conum depuis le 19/09 —
+  pas de vérification visuelle du contraste texte/fond pour chaque
+  conseiller existant.
+
 ---
 
 ## Points à ne pas défaire
@@ -113,3 +126,7 @@ Chacun a coûté cher à établir et est verrouillé par un test :
   `GAS_ACTIONS_ECRITURE` — ne pas repasser ça en option d'appelant.
 - **`sw.js` ne met rien en cache et n'intercepte rien.** Voir la section 4 du
   `CLAUDE.md`.
+- **`periodePretMateriel` retombe sur la veille/lendemain ouvrés** (jamais
+  un jour de week-end) quand les dates de prélèvement/retour ne sont pas
+  saisies — alignée sur NextStep le 19/09/2026. Ne pas revenir au repli
+  "jour même de l'atelier".
