@@ -105,7 +105,7 @@ déploiement.
 → À faire **au prochain déploiement GAS réel**, quand le fichier doit de
 toute façon être recollé dans l'éditeur.
 
-## 7. ⚠️ Piège — la logique du stock est dupliquée dans `shared.js`
+## 6. ⚠️ Piège — la logique du stock est dupliquée dans `shared.js`
 
 Découvert le 21/09/2026 en corrigeant le cumul du jour de retour.
 `periodePretMateriel`, `findOrdinateursConflicts`, `getPretsMateriel`,
@@ -124,7 +124,7 @@ chargé avant lui dans les deux pages. C'est un argument de plus pour la piste
 `gas-client.js` du §6 de NextStep — le même principe appliqué à la couche
 matériel.
 
-## 8. Vérifications terrain en attente (PWA, 19/09/2026)
+## 7. Vérifications terrain en attente (PWA, 19/09/2026)
 
 Deux points livrés le 19/09 mais jamais vérifiés en dehors des tests
 automatisés (qui ne peuvent pas les couvrir) :
