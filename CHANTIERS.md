@@ -1,9 +1,24 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **21/09/2026**, commit de référence `37a7721`.
+État au **21/09/2026** (soir), commit de référence `a7575a4`.
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
 `MD-LIB/hygiene-instructions.md`).
+
+Pour faire contredire une proposition par une autre session : `AGORA.md`
+(section 8 du `CLAUDE.md`). Mis en place le 21/09/2026, un cycle complet
+effectué — AG-001 a corrigé le protocole du banc avant la série.
+
+> **Prochaine action, 22/09/2026 au matin — avant 11h.** Le banc a été revu
+> le 21/09 au soir et est prêt ; il n'a **jamais été ouvert dans un
+> navigateur** depuis ces modifications. Dans l'ordre :
+> 1. Ouvrir `banc/`, lancer 10 min, vérifier que **file et doublage sont à
+>    égalité** dans le résumé et que « 📋 Copier pour Claude » produit bien les
+>    blocs *effet PARALLELISME* et *effet DOUBLAGE*.
+> 2. **Vider**, puis lancer la vraie série : backend NEWGEN, intervalle 2 min,
+>    plafond 800 (ou 1200 si série sur deux jours), démarrage avant 11h.
+> 3. Coller la sortie « Copier pour Claude » ici ou dans une session — le
+>    résultat se lit avec le seuil de conclusion du §1, pas à l'œil.
 
 ---
 
@@ -200,6 +215,11 @@ automatisés (qui ne peuvent pas les couvrir) :
   `FriseMateriel` (`shared.js`) sont colorées par conum depuis le 19/09 —
   pas de vérification visuelle du contraste texte/fond pour chaque
   conseiller existant.
+- **Le banc revu le 21/09 n'a pas été ouvert** (5 commits : `b648e4d`,
+  `c7cee6c`, `a7575a4`). Vérifié seulement par `node --check` et par des tests
+  de logique en isolation — alternance équilibrée après rechargement,
+  agrégation par appel, six scénarios d'erreur réseau. À confirmer à l'écran
+  avant la série : cf. le bandeau en tête de ce fichier.
 
 ---
 
@@ -228,6 +248,12 @@ Chacun a coûté cher à établir et est verrouillé par un test :
   l'alternance sur `file` à chaque reprise (20 salves sur 20 dans le pire cas),
   et lui faisait hériter de toutes les salves d'après-interruption. Le bouton
   Vider le remet à zéro — les deux vont ensemble.
+- **Le banc ne réessaie que sur `RETRYABLE_HTTP` + timeout/coupure réseau.**
+  Un 403 **et une réponse non-JSON** (les deux formes d'un quota Apps Script
+  épuisé, cf. `shared.js:798-801`) font rendre la main, comme en production.
+  Ne pas remettre un `reessayable = true` inconditionnel : le `catch` de fin
+  de chaîne écrasait la décision prise en amont et rendait le filtrage
+  inopérant — le piège est de ne corriger que le `then`.
 - **Ne jamais mélanger deux backends dans un journal de banc ; mélanger deux
   jours est au contraire souhaitable.** Les stratégies alternant salve après
   salve, chacune subit les mêmes fenêtres de panne : cumuler deux journées est
