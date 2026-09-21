@@ -32,8 +32,34 @@ vol** — la file avait sérialisé, `getAll` était terminé depuis 12 s, donc
 aucune rafale. Si ce relevé vient bien de NextStep, il contredit directement
 l'hypothèse qui justifie sa file d'attente. À refaire proprement.
 
-**Comment trancher.** Console (F12) sur l'Admin de chaque site, après quelques
-jours d'usage :
+**Comment trancher — le banc de mesure (21/09/2026).** La méthode qui figurait
+ici (console F12 sur l'Admin de chaque site après quelques jours d'usage) ne
+pouvait pas conclure : la panne frappe par fenêtres de temps et les deux
+applis ne sont ni utilisées aux mêmes heures, ni branchées sur le même
+déploiement Apps Script — sans compter que leurs journaux étaient mélangés
+jusqu'à cette date. Remplacée par un banc qui rejoue les **deux stratégies en
+alternance**, depuis un seul poste, contre un seul backend :
+
+**https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/banc/** — voir
+`ATELIERS_NEWGEN/banc/README.md` pour la méthode, les limites et la lecture
+des résultats.
+
+Série prévue le 22/09/2026 : backend NEWGEN, intervalle 3 min, plafond 800
+appels, démarrage avant 11h pour couvrir la fenêtre 11h-15h (la plus
+dégradée). Résultat attendu dans ce fichier une fois la mesure faite.
+
+⚠️ Le quota Apps Script se compte **par compte Google**, pas par script : ne
+pas viser le backend de production pendant les heures de travail de l'équipe.
+
+**Piste ouverte par le relevé du 21/09** (132 appels, tous projets confondus,
+donc non attribuable) : les pertes se concentrent très fortement selon
+l'heure — 0 % à 10h et 16h, 68 % à 12h, 65 % à 13h, 55 % à 15h. Si le banc
+confirme ce profil, la stratégie d'appel devient secondaire : ce serait la
+charge de l'infrastructure Apps Script aux heures ouvrées, et le proxy
+deviendrait le seul vrai levier.
+
+_Méthode précédente, conservée pour mémoire :_ console (F12) sur l'Admin,
+après quelques jours d'usage :
 
 ```js
 (() => {
