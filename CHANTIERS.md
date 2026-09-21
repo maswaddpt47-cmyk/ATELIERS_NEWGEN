@@ -51,6 +51,33 @@ l'argument d'alignement l'emporte et NextStep sert de référence.
 identiques par ailleurs, c'est aujourd'hui une expérience propre à une seule
 variable. L'aligner maintenant détruirait le seul moyen de savoir.
 
+## ⚠️ Origine commune — les deux applis partagent leur `localStorage`
+
+Découvert le 21/09/2026. GitHub Pages sert les deux projets depuis la **même
+origine** (`maswaddpt47-cmyk.github.io`), et `localStorage` est cloisonné par
+origine, **pas par chemin**. Les deux applis utilisaient les mêmes clés.
+
+**Ce que ça invalide** : toutes les mesures de journal antérieures au
+21/09/2026 mélangent les deux projets. Le §1 attend « une mesure NextStep
+fiable » — on sait maintenant qu'aucune ne pouvait l'être, et que la pastille
+NEXTSTEP/NEWGEN ajoutée le 19/09 ne pouvait pas le révéler : elle nomme
+l'appli qui **affiche** la liste, pas celle qui a **émis** l'appel. C'est
+l'explication de l'attribution contestée des captures du 19/09.
+
+**Corrigé** : le journal est cloisonné (`adm_logs_nextstep` /
+`adm_logs_newgen`). Les lignes écrites sous l'ancienne clé `adm_logs` ne sont
+pas reprises — elles mélangent les deux projets, elles ne sont pas
+exploitables. Elles restent dans le navigateur tant qu'on ne vide pas les
+données du site.
+
+**Reste à faire** : les préférences sont toujours partagées —
+`adm_conseiller`, `adm_dark`, `adm_sidebar_pinned`, `f_annee`, `cal_moisDeb`,
+`cal_moisFin`, `sidebar_pinned`. Se connecter sur une appli change donc le
+conseiller sélectionné ou le thème de l'autre. Jamais signalé comme un bug à
+ce jour, mais c'est la même cause. Correction : préfixer ces clés comme pour
+le journal, en migrant l'existant pour ne pas réinitialiser les préférences
+des conseillers.
+
 ## 2. Mesure en attente — le proxy se justifie-t-il ?
 
 Relevé du 19/09 sur NEWGEN : **54 % de pertes** sur ~70 appels, avec deux
