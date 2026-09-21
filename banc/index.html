@@ -68,12 +68,14 @@
     <button id="csv" class="sec">Export CSV</button>
     <button id="raz" class="sec">Vider</button>
   </div>
+  <div class="etat" id="veille" style="color:#6d28d9"></div>
   <div class="etat" id="etat">À l'arrêt. Laisse cet onglet ouvert : une salve toutes les 3 min, en alternant les deux stratégies.</div>
 </div>
 
 <div class="card">
   <h2 style="font-size:14px;margin:0 0 10px">Résumé</h2>
   <table id="resume"><tbody><tr><td style="color:#94a3b8">Aucune salve enregistrée.</td></tr></tbody></table>
+  <div id="trous" style="display:none;margin-top:10px;padding:8px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:12px;color:#78350f"></div>
 </div>
 
 <div class="card">
@@ -109,6 +111,42 @@ var CLE    = 'banc_gas_salves';
 var salves = [];
 try { salves = JSON.parse(localStorage.getItem(CLE) || '[]'); } catch(e) { salves = []; }
 var minuteur = null, enCours = false, compteur = 0, appelsSalve = 0;
+var verrou = null;
+
+// ── Wake Lock : empêcher l'écran de s'éteindre pendant la mesure ──────────
+// Le verrou est relâché par le navigateur dès que l'onglet cesse d'être
+// visible : on le reprend au retour, sinon une mise en arrière-plan le perd
+// définitivement. Ne dispense pas de désactiver la veille système, que cette
+// API ne couvre pas.
+function prendreVerrou(){
+  if (!('wakeLock' in navigator)) return Promise.resolve(false);
+  return navigator.wakeLock.request('screen').then(function(v){
+    verrou = v;
+    v.addEventListener('release', function(){ verrou = null; });
+    return true;
+  }, function(){ return false; });
+}
+function lacherVerrou(){
+  if (verrou) { try { verrou.release(); } catch(e) {} verrou = null; }
+}
+document.addEventListener('visibilitychange', function(){
+  if (enCours && document.visibilityState === 'visible' && !verrou) prendreVerrou();
+});
+
+// ── Trous dans la série ───────────────────────────────────────────────────
+// Entre deux salves, l'écart attendu vaut l'intervalle programmé. Au-delà de
+// 2,5 fois, le banc ne tournait pas : veille, onglet gelé par le navigateur,
+// fenêtre fermée. Une série trouée reste exploitable, mais il faut le savoir
+// pour ne pas lire la répartition horaire comme si elle était continue.
+function trous(){
+  var liste = [], manque = 0;
+  for (var i = 1; i < salves.length; i++){
+    var attendu = (salves[i-1].interv || 3) * 60000;
+    var ecart = new Date(salves[i].iso) - new Date(salves[i-1].iso);
+    if (ecart > attendu * 2.5) { liste.push({ avant: salves[i-1], apres: salves[i], ms: ecart }); manque += ecart - attendu; }
+  }
+  return { n: liste.length, manqueMin: Math.round(manque/60000), liste: liste };
+}
 
 // ── Un appel réseau, avec plafond ─────────────────────────────────────────
 function unAppel(url, ctrl) {
@@ -205,6 +243,7 @@ function enregistrer(mode, cible, r) {
   salves.push({
     iso: new Date().toISOString(), heure: new Date().toLocaleTimeString('fr-FR'),
     mode: mode, cible: cible, duree: r.duree, appels: r.appels,
+    interv: parseInt(document.getElementById('interv').value, 10) || 3,
     reussies: r.reussies, echouees: r.echouees
   });
   if (salves.length > 2000) salves.shift();
@@ -266,6 +305,14 @@ function rendre() {
       + '<td class="num">' + appels.toFixed(1) + '</td></tr>';
   });
   res.innerHTML = lignes;
+  var tr = trous();
+  var info = document.getElementById('trous');
+  if (tr.n) {
+    info.style.display = '';
+    info.textContent = '\u26a0 ' + tr.n + ' interruption' + (tr.n > 1 ? 's' : '') + ' dans la série (environ '
+      + tr.manqueMin + ' min sans mesure) — veille, onglet mis en arrière-plan ou fenêtre fermée. '
+      + 'Les salves déjà enregistrées restent valables.';
+  } else info.style.display = 'none';
 }
 
 document.getElementById('go').onclick = function(){
@@ -273,10 +320,17 @@ document.getElementById('go').onclick = function(){
   this.disabled = true;
   document.getElementById('stop').disabled = false;
   document.getElementById('cible').disabled = true;
+  prendreVerrou().then(function(ok){
+    document.getElementById('veille').textContent = ok
+      ? '\ud83d\udd12 Écran maintenu allumé pendant la mesure. La veille système, elle, reste à désactiver dans Windows.'
+      : '\u26a0 Ce navigateur refuse de maintenir l\u2019écran allumé : désactive la veille dans les réglages, et garde cette fenêtre visible.';
+  });
   unCycle();
 };
 document.getElementById('stop').onclick = function(){
   enCours = false;
+  lacherVerrou();
+  document.getElementById('veille').textContent = '';
   clearTimeout(minuteur);
   this.disabled = true;
   document.getElementById('go').disabled = false;
@@ -310,6 +364,8 @@ function resumeTexte(){
       + (mediane(d)/1000).toFixed(1) + 's | ' + (p90/1000).toFixed(1) + 's | '
       + (d[d.length-1]/1000).toFixed(1) + 's | ' + ap.toFixed(1));
   });
+  var tr = trous();
+  if (tr.n) l.push('INTERRUPTIONS : ' + tr.n + ' (environ ' + tr.manqueMin + ' min sans mesure) — la repartition horaire ci-dessous est trouee');
   l.push('');
   l.push('pertes par heure (heure: incompletes/total) :');
   var parH = {};

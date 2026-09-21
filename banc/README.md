@@ -29,6 +29,16 @@ toutes les 3 minutes, en alternant file d'attente et lectures doublées. Une
 salve simule l'ouverture d'une application : 3 lectures.
 
 - Les mesures survivent au rechargement (`localStorage`, 2000 salves max).
+- Au démarrage, la page demande au navigateur de **garder l'écran allumé**
+  (Wake Lock). Ça ne couvre pas la veille système, à désactiver à part. Le
+  verrou est relâché quand l'onglet passe en arrière-plan et repris au retour.
+- **Les interruptions sont signalées** : un écart de plus de 2,5 fois
+  l'intervalle entre deux salves (veille, onglet gelé par le navigateur,
+  fenêtre fermée) apparaît en bandeau et dans la sortie texte. Une série
+  trouée reste exploitable — mais sa répartition horaire ne doit pas être lue
+  comme si elle était continue.
+- **Vider le journal entre deux séries** (bouton « Vider ») : une série qui
+  mélange deux backends ou deux périodes ne veut rien dire.
 - **📋 Copier pour Claude** met dans le presse-papier un résumé compact
   (agrégats par stratégie, répartition horaire des pertes, 15 dernières
   salves) — c'est ce qu'il faut coller dans une conversation, pas le CSV brut.
