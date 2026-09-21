@@ -245,6 +245,26 @@ function periodePretMateriel(e) {
     : lendemainOuvre(e.date);
   return { debut, fin };
 }
+// Le retour du matériel a lieu le matin (règle métier confirmée par
+// l'utilisateur le 21/09/2026) : le jour du retour, les machines sont de
+// nouveau disponibles pour un autre conseiller qui les prélève le même jour.
+// Un retour le 29 et un prélèvement le 29 se passent les mêmes ordinateurs,
+// ils ne mobilisent pas deux fois le stock. L'occupation du stock va donc de
+// `debut` INCLUS à `fin` EXCLU — alors que la barre de la frise, elle, reste
+// dessinée jusqu'au jour du retour inclus : c'est bien ce jour-là qu'on
+// rapporte le matériel, même s'il ne le réserve plus.
+// Exception : un prêt d'une seule journée (debut === fin, prélèvement et
+// retour saisis le jour de l'atelier) occupe bien ce jour-là, sinon il
+// disparaîtrait purement et simplement du cumul.
+// Le cas d'un MÊME conseiller qui enchaîne deux ateliers dos-à-dos est traité
+// séparément, par le max de totalJourParConseiller.
+function finOccupationMateriel(debut, fin) {
+  return fin > debut ? addJoursIso(fin, -1) : fin;
+}
+function occupeLeJourMateriel(p, jour) {
+  return jour >= p.debut && jour <= finOccupationMateriel(p.debut, p.fin);
+}
+
 function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
   const parJour = {};
   (entries || []).forEach(e => {
@@ -262,8 +282,9 @@ function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
     // Garde-fou : une date de prélèvement/retour saisie à la main peut être
     // erronée (année oubliée, inversion jour/mois...) — on plafonne à 90
     // jours pour ne jamais boucler indéfiniment sur une période aberrante.
+    const finOcc = finOccupationMateriel(debut, fin);
     let d = debut, garde = 0;
-    while (d <= fin && garde < 90) {
+    while (d <= finOcc && garde < 90) {
       (parJour[d] = parJour[d] || []).push({
         _id: e._id, conseiller: e.conseiller, qte,
         commune: e.commune || '', lieu: e.lieu || '',
@@ -319,7 +340,7 @@ function getPretsMateriel(entries) {
 function totauxParJourMateriel(prets, jours) {
   const totaux = {};
   (jours || []).forEach(j => {
-    totaux[j] = totalJourParConseiller((prets || []).filter(p => j >= p.debut && j <= p.fin));
+    totaux[j] = totalJourParConseiller((prets || []).filter(p => occupeLeJourMateriel(p, j)));
   });
   return totaux;
 }
@@ -340,6 +361,7 @@ if (typeof module !== 'undefined') {
     isEntryRetard, isEntryPasse,
     applyFilters,
     findMobileClassConflicts,
+    finOccupationMateriel, occupeLeJourMateriel,
     STOCK_ORDINATEURS, totalJourParConseiller, findOrdinateursConflicts, periodePretMateriel,
     getPretsMateriel, totauxParJourMateriel,
     estConflitPasse,

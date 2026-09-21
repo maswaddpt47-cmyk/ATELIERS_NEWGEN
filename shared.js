@@ -1142,6 +1142,19 @@ function periodePretMateriel(e){
     :lendemainOuvre(e.date);
   return{debut,fin};
 }
+// Le retour du matériel a lieu le matin (règle métier confirmée par
+// l'utilisateur le 21/09/2026) : le jour du retour, les machines sont de
+// nouveau disponibles pour un autre conseiller qui les prélève le même jour.
+// L'occupation du stock va de `debut` INCLUS à `fin` EXCLU, alors que la
+// barre de la frise reste dessinée jusqu'au retour inclus. Exception : un
+// prêt d'une seule journée (debut === fin) occupe bien ce jour-là. Miroir
+// logic.js — les deux copies doivent rester identiques.
+function finOccupationMateriel(debut,fin){
+  return fin>debut?addJoursIso(fin,-1):fin;
+}
+function occupeLeJourMateriel(p,jour){
+  return jour>=p.debut&&jour<=finOccupationMateriel(p.debut,p.fin);
+}
 function findOrdinateursConflicts(entries,stock=STOCK_ORDINATEURS){
   const parJour={};
   (entries||[]).forEach(e=>{
@@ -1153,8 +1166,9 @@ function findOrdinateursConflicts(entries,stock=STOCK_ORDINATEURS){
     // s'ajuste dès qu'une saisie ultérieure précise le nombre réel.
     const qte=parseInt(e.nb_ordinateurs)||1;
     const{debut,fin}=periodePretMateriel(e);
+    const finOcc=finOccupationMateriel(debut,fin);
     let d=debut,garde=0;
-    while(d<=fin&&garde<90){
+    while(d<=finOcc&&garde<90){
       (parJour[d]=parJour[d]||[]).push({_id:e._id,conseiller:e.conseiller,qte,commune:e.commune||'',lieu:e.lieu||'',dateDebut:debut,dateFin:fin});
       d=addJoursIso(d,1);garde++;
     }
@@ -1192,7 +1206,7 @@ function getPretsMateriel(entries){
 }
 function totauxParJourMateriel(prets,jours){
   const totaux={};
-  (jours||[]).forEach(j=>{totaux[j]=totalJourParConseiller((prets||[]).filter(p=>j>=p.debut&&j<=p.fin));});
+  (jours||[]).forEach(j=>{totaux[j]=totalJourParConseiller((prets||[]).filter(p=>occupeLeJourMateriel(p,j)));});
   return totaux;
 }
 
@@ -3580,7 +3594,10 @@ function FriseMateriel({entries,onEdit}){
       CE('div',{style:{display:'flex',flexDirection:'column',gap:colWidth<32?3:6}},
         pretsVisibles.map(p=>{
           const debutIdx=colIdx(p.debut),finIdx=colIdx(p.fin),atelierIdx=colIdx(p.dateAtelier);
-          const conflit=(jours.slice(debutIdx,finIdx+1)).some(d=>(totaux[d]||0)>STOCK_ORDINATEURS);
+          // Le marquage ⚠️ suit l'occupation réelle, pas la barre dessinée : le
+          // jour du retour est affiché mais ne réserve plus le stock, il ne doit
+          // donc pas faire passer ce prêt en conflit.
+          const conflit=jours.filter(d=>occupeLeJourMateriel(p,d)).some(d=>(totaux[d]||0)>STOCK_ORDINATEURS);
           // Barre teintée dans la couleur du conum (même couleur que le
           // libellé à gauche et que partout ailleurs dans l'appli), plutôt
           // qu'un bleu/rouge générique — identifier qui réserve quoi d'un
@@ -3602,7 +3619,7 @@ function FriseMateriel({entries,onEdit}){
       )
     );
   }
-  const legende=CE('div',{style:{fontSize:10,color:'#94a3b8',marginBottom:8}},'▼ = jour de l\'atelier (entre le prélèvement et le retour de la barre)');
+  const legende=CE('div',{style:{fontSize:10,color:'#94a3b8',marginBottom:8}},'▼ = jour de l\'atelier (entre le prélèvement et le retour de la barre) · le jour du retour ne réserve plus le stock (retour le matin)');
   return CE(React.Fragment,null,
     CE('div',{className:'card',style:{maxWidth:'100%',margin:'0 auto 16px',overflowX:'auto'}},
       CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4,flexWrap:'wrap',gap:8}},
