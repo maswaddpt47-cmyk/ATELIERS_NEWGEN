@@ -58,18 +58,6 @@ confirme ce profil, la stratégie d'appel devient secondaire : ce serait la
 charge de l'infrastructure Apps Script aux heures ouvrées, et le proxy
 deviendrait le seul vrai levier.
 
-_Méthode précédente, conservée pour mémoire :_ console (F12) sur l'Admin,
-après quelques jours d'usage :
-
-```js
-(() => {
-  const L = JSON.parse(localStorage.getItem('adm_logs')||'[]').map(e=>e.msg).filter(m=>m&&m.startsWith('GAS '));
-  const ko = L.filter(m=>/404|bloqué|réseau/.test(m)).length;
-  const ok = L.filter(m=>/— ok en/.test(m)).map(m=>parseFloat(m.match(/ok en ([\d.]+)/)[1])).sort((a,b)=>a-b);
-  console.log(`${location.pathname} | appels ${L.length} | échecs ${ko} (${Math.round(ko/L.length*100)}%) | médiane ${ok[Math.floor(ok.length/2)]}s | doublons ${L.filter(m=>/#\d+b /.test(m)).length}`);
-})()
-```
-
 Puis harmoniser les deux projets sur le gagnant. Si les ratios se tiennent,
 l'argument d'alignement l'emporte et NextStep sert de référence.
 
