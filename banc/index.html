@@ -115,7 +115,12 @@ var CLE    = 'banc_gas_salves';
 
 var salves = [];
 try { salves = JSON.parse(localStorage.getItem(CLE) || '[]'); } catch(e) { salves = []; }
-var minuteur = null, enCours = false, compteur = 0, appelsSalve = 0;
+// compteur suit le nombre de salves déjà faites, PAS zéro : les salves
+// survivent au rechargement (localStorage), donc repartir de zéro ferait
+// retomber l'alternance sur 'file' à chaque reprise — la stratégie file
+// hériterait de toutes les salves d'après-interruption, qui n'ont aucune
+// raison d'être représentatives. Remis à 0 par le bouton Vider uniquement.
+var minuteur = null, enCours = false, compteur = salves.length, appelsSalve = 0;
 var verrou = null;
 
 // ── Wake Lock : empêcher l'écran de s'éteindre pendant la mesure ──────────
@@ -442,6 +447,7 @@ document.getElementById('csv').onclick = function(){
 document.getElementById('raz').onclick = function(){
   if (!confirm('Effacer les ' + salves.length + ' salves enregistrées ?')) return;
   salves = [];
+  compteur = 0;   // sinon la nouvelle série hérite de la parité de l'ancienne
   try { localStorage.removeItem(CLE); } catch(e) {}
   rendre();
 };
