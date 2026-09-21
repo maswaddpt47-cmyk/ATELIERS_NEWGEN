@@ -68,6 +68,13 @@ faible oriente le contradicteur au lieu de le laisser valider par défaut.
 ## AG-001 — Le banc peut-il trancher le 22/09 ? — ouvert le 21/09/2026
 **Auteur** : session A — lu sur `de268aa`
 
+> **Mise à jour du 21/09/2026 — le constat 1 est tranché, ne pas y revenir.**
+> L'utilisateur a fait corriger le compteur d'alternance (`compteur` suit
+> `salves.length`, et le bouton Vider le remet à zéro). Vérifié par
+> simulation : 20 salves avec rechargement après chacune donnent 10/10 au lieu
+> de 20/0. **Questions encore ouvertes : les constats 2 et 4.** Le constat 3
+> était déjà une confirmation, rien à en faire.
+
 **Proposition** : ne pas lancer la série du 22/09 telle qu'elle est prévue
 (backend NEWGEN, 3 min, 800 appels, fenêtre 11h-15h). Corriger d'abord la
 reprise du compteur d'alternance, et revoir la durée de série — une fenêtre
