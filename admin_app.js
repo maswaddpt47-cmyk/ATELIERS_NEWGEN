@@ -238,10 +238,21 @@ function App(){
   // À ne pas confondre avec ce qui EFFACE réellement le journal : il vit
   // dans le navigateur, donc un vidage des données de navigation le supprime
   // — c'est normal, et sans effet sur la traçabilité réelle, qui est dans la
+// ⚠️ Les deux applis (NextStep et NEWGEN) sont servies depuis la MÊME origine
+// GitHub Pages — maswaddpt47-cmyk.github.io — et localStorage est cloisonné
+// par origine, pas par chemin. Une clé identique des deux côtés les fait donc
+// écrire l'une sur l'autre. Constaté le 21/09/2026 : « Tout effacer » depuis
+// un journal faisait remonter les lignes de l'autre appli, et les deux
+// journaux n'en formaient qu'un seul. La pastille NEXTSTEP/NEWGEN ne pouvait
+// pas le révéler — elle nomme l'appli qui AFFICHE la liste, pas celle qui a
+// émis l'appel, d'où des mesures attribuées au mauvais projet.
+// Les préférences (adm_conseiller, adm_dark, f_annee, sidebar…) restent
+// partagées à ce jour : même cause, chantier séparé.
+const LOGS_KEY = 'adm_logs_newgen';
   // feuille Logs_Connexion côté GAS.
   function lireLogsStockes(){
     try{
-      const raw=JSON.parse(localStorage.getItem('adm_logs')||'[]');
+      const raw=JSON.parse(localStorage.getItem(LOGS_KEY)||'[]');
       return Array.isArray(raw)?raw:[];
     }catch(_){return[];}
   }
@@ -257,14 +268,14 @@ function App(){
       .filter(e=>{const k=e.id||(e.ts+'|'+e.msg);if(vus.has(k))return false;vus.add(k);return true;})
       .sort((a,b)=>(b.ts||0)-(a.ts||0))
       .slice(0,200);
-    try{localStorage.setItem('adm_logs',JSON.stringify(nl));}catch(_){}
+    try{localStorage.setItem(LOGS_KEY,JSON.stringify(nl));}catch(_){}
     return nl;
   }
   function addLog(msg,type='info'){
     const entry={id:Date.now()+'_'+Math.random().toString(36).slice(2,8),msg,type,t:new Date().toLocaleTimeString('fr-FR'),ts:Date.now()};
     setLogs(l=>ecrireLogs([entry,...l]));
   }
-  function clearLogs(){setLogs([]);try{localStorage.removeItem('adm_logs');}catch(_){}}
+  function clearLogs(){setLogs([]);try{localStorage.removeItem(LOGS_KEY);}catch(_){}}
   function purgeLogs(){ setLogs(l=>ecrireLogs(l)); }
 
   // ── Session expirante ──────────────────────────────
