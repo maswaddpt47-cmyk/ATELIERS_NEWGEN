@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banc de mesure GAS — file d'attente vs lectures doublées</title>
+<style>
+  body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;padding:16px;background:#f8fafc;color:#1a202c;font-size:14px}
+  h1{font-size:18px;margin:0 0 4px}
+  .sous{color:#64748b;font-size:12px;margin-bottom:16px}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:14px}
+  label{font-size:12px;color:#475569;display:block;margin-bottom:3px}
+  select,input{padding:6px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:13px;font-family:inherit}
+  button{padding:7px 14px;border-radius:6px;border:1px solid #3b82f6;background:#eff6ff;color:#1d4ed8;font-weight:600;cursor:pointer;font-size:13px}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button.stop{border-color:#dc2626;background:#fef2f2;color:#b91c1c}
+  button.sec{border-color:#cbd5e0;background:#fff;color:#334155;font-weight:500}
+  .ligne{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+  table{border-collapse:collapse;width:100%;font-size:12px}
+  th,td{text-align:left;padding:5px 8px;border-bottom:1px solid #f1f5f9}
+  th{color:#64748b;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .ko{color:#b91c1c;font-weight:600}
+  .ok{color:#15803d}
+  .mode-file{color:#7c3aed;font-weight:600}
+  .mode-doub{color:#0891b2;font-weight:600}
+  .avert{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:12px;color:#78350f;margin-bottom:14px}
+  .etat{font-size:12px;color:#475569;margin-top:8px}
+  .journal{max-height:340px;overflow:auto}
+</style>
+</head>
+<body>
+
+<h1>Banc de mesure GAS</h1>
+<div class="sous">File d'attente (NextStep) contre lectures doublées (NEWGEN), mesurées dans les mêmes fenêtres de temps, sur le même backend.</div>
+
+<div class="avert">
+  <strong>Pourquoi ce banc.</strong> Comparer les deux applications en production ne compare pas les deux stratégies : la panne de livraison frappe
+  par fenêtres de temps (mesuré le 18/09/2026), et les deux applis ne sont ni utilisées aux mêmes heures ni branchées sur le même déploiement Apps
+  Script. Ici les deux stratégies sont rejouées en alternance, depuis le même appareil, contre <em>un seul</em> GAS — tout ce qui n'est pas la
+  stratégie est neutralisé.<br><br>
+  <strong>Ne change pas de cible en cours de mesure</strong> : une série ne vaut que sur un seul backend.<br>
+  <strong>Hypothèse assumée</strong> : la perte de livraison frappe indépendamment du poids de la réponse, donc <code>getConfig</code> (léger) est
+  représentatif. Non prouvé — indices seulement (getAll, getComptes et getConfig tombent indifféremment ; 221 ateliers reviennent en 1 s quand la
+  livraison passe).
+</div>
+
+<div class="card">
+  <div class="ligne">
+    <div>
+      <label for="cible">Backend visé</label>
+      <select id="cible">
+        <option value="newgen">NEWGEN (bac d'essai)</option>
+        <option value="nextstep">NextStep (production — charge réelle)</option>
+      </select>
+    </div>
+    <div>
+      <label for="interv">Intervalle entre salves (min)</label>
+      <input id="interv" type="number" min="1" max="60" value="3" style="width:70px">
+    </div>
+    <div>
+      <label for="lectures">Lectures par salve</label>
+      <input id="lectures" type="number" min="1" max="6" value="3" style="width:70px">
+    </div>
+    <button id="go">▶ Démarrer</button>
+    <button id="stop" class="stop" disabled>■ Arrêter</button>
+    <button id="copie" class="sec">📋 Copier pour Claude</button>
+    <button id="csv" class="sec">Export CSV</button>
+    <button id="raz" class="sec">Vider</button>
+  </div>
+  <div class="etat" id="etat">À l'arrêt. Laisse cet onglet ouvert : une salve toutes les 3 min, en alternant les deux stratégies.</div>
+</div>
+
+<div class="card">
+  <h2 style="font-size:14px;margin:0 0 10px">Résumé</h2>
+  <table id="resume"><tbody><tr><td style="color:#94a3b8">Aucune salve enregistrée.</td></tr></tbody></table>
+</div>
+
+<div class="card">
+  <h2 style="font-size:14px;margin:0 0 10px">Journal des salves</h2>
+  <div class="journal">
+    <table id="journal">
+      <thead><tr><th>Heure</th><th>Stratégie</th><th class="num">Durée</th><th class="num">Appels réseau</th><th>Résultat</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ── Paramètres, copiés à l'identique des deux implémentations ──────────────
+// NEWGEN shared.js : GAS_HEDGE_MS, GAS_TENTATIVES_LECTURE, GAS_PAUSE_LECTURE_MS,
+// GAS_TIMEOUT_LECTURE_MS, GAS_BUDGET_TOTAL_MS. NextStep : mêmes plafonds, mais
+// _gasQueue sérialise tous les appels et aucune lecture n'est doublée.
+// Si un de ces nombres change dans shared.js, le corriger ici aussi, sinon le
+// banc mesure une stratégie qui n'est plus celle du produit.
+var PLAFOND_MS   = 12000;
+var HEDGE_MS     = 7000;
+var TENTATIVES   = 3;
+var PAUSE_MS     = 300;
+var BUDGET_MS    = 45000;
+
+var URLS = {
+  newgen:   'https://script.google.com/macros/s/AKfycbwsNMoPSEIMss4kG0V13PWSr1mKEo34IFMWClxJuXkUvZ7Cgo-OWY0ud1lQtrUBqDbP/exec',
+  nextstep: 'https://script.google.com/macros/s/AKfycbx_YutREW-ucdGKXiHB7Y2hgUMHBJqAF0NprMrXB9p4_dEHPxrWk7nsXxCLDcJBDDHPEw/exec'
+};
+var ACTION = 'getConfig';   // lecture légère, sans token (cf. §4 des CHANTIERS)
+var CLE    = 'banc_gas_salves';
+
+var salves = [];
+try { salves = JSON.parse(localStorage.getItem(CLE) || '[]'); } catch(e) { salves = []; }
+var minuteur = null, enCours = false, compteur = 0, appelsSalve = 0;
+
+// ── Un appel réseau, avec plafond ─────────────────────────────────────────
+function unAppel(url, ctrl) {
+  appelsSalve++;
+  var t0 = Date.now();
+  var chien = setTimeout(function(){ ctrl.abort(); }, PLAFOND_MS);
+  return fetch(url + '?action=' + ACTION + '&_t=' + Date.now(), { signal: ctrl.signal })
+    .then(function(res){
+      clearTimeout(chien);
+      if (!res.ok) { var e = new Error('HTTP ' + res.status); e.reessayable = true; throw e; }
+      return res.json().then(function(){ return Date.now() - t0; });
+    })
+    .catch(function(err){
+      clearTimeout(chien);
+      if (ctrl.inutile) { var a = new Error('annulé'); a.inutile = true; throw a; }
+      var e2 = new Error(ctrl.signal.aborted ? 'timeout' : err.message);
+      e2.reessayable = true;
+      throw e2;
+    });
+}
+
+// ── Stratégie NEWGEN : lecture doublée à 7 s, premier arrivé gagne ────────
+function lectureDoublee(url) {
+  return new Promise(function(resolve, reject){
+    var fini = false, partis = 1, echecs = 0, derniere = null, minuteurDoublon = null, ctrls = [];
+    function arreterLesAutres(sauf){
+      ctrls.forEach(function(c){ if (c !== sauf && !c.signal.aborted) { c.inutile = true; c.abort(); } });
+    }
+    function gagner(ms, ctrl){
+      if (fini) return;
+      fini = true; clearTimeout(minuteurDoublon); arreterLesAutres(ctrl); resolve(ms);
+    }
+    function perdre(err){
+      if (fini || (err && err.inutile)) return;
+      echecs++; derniere = err;
+      if (echecs >= partis) { fini = true; clearTimeout(minuteurDoublon); reject(derniere); }
+    }
+    function lancer(){
+      var ctrl = new AbortController();
+      ctrls.push(ctrl);
+      unAppel(url, ctrl).then(function(ms){ gagner(ms, ctrl); }, perdre);
+    }
+    lancer();
+    minuteurDoublon = setTimeout(function(){
+      if (fini) return;
+      partis = 2; lancer();
+    }, HEDGE_MS);
+  });
+}
+
+// ── Boucle de tentatives, commune aux deux stratégies ─────────────────────
+function avecTentatives(url, doubler) {
+  var t0 = Date.now(), n = 0, derniere = null;
+  function essayer() {
+    n++;
+    var p = doubler ? lectureDoublee(url) : unAppel(url, new AbortController());
+    return p.catch(function(err){
+      derniere = err;
+      if (!err.reessayable) throw err;
+      if (n >= TENTATIVES) throw err;
+      if (Date.now() - t0 + PAUSE_MS >= BUDGET_MS) throw err;
+      return new Promise(function(r){ setTimeout(r, PAUSE_MS); }).then(essayer);
+    });
+  }
+  return essayer();
+}
+
+// ── Une salve = l'ouverture d'une application (N lectures) ────────────────
+// File : tout est sérialisé (_gasQueue de NextStep), y compris les reprises.
+// Doublage : les N lectures partent ensemble, chacune doublée à 7 s (NEWGEN).
+function salve(mode, url, nbLectures) {
+  appelsSalve = 0;
+  var t0 = Date.now();
+  var suivi = { reussies: 0, echouees: 0 };
+  function bilan() {
+    return { duree: Date.now() - t0, appels: appelsSalve, reussies: suivi.reussies, echouees: suivi.echouees };
+  }
+  function une() {
+    return avecTentatives(url, mode === 'doublage')
+      .then(function(){ suivi.reussies++; }, function(){ suivi.echouees++; });
+  }
+  if (mode === 'file') {
+    var chaine = Promise.resolve();
+    for (var i = 0; i < nbLectures; i++) chaine = chaine.then(une);
+    return chaine.then(bilan);
+  }
+  var toutes = [];
+  for (var j = 0; j < nbLectures; j++) toutes.push(une());
+  return Promise.all(toutes).then(bilan);
+}
+
+// ── Pilotage ──────────────────────────────────────────────────────────────
+function enregistrer(mode, cible, r) {
+  salves.push({
+    iso: new Date().toISOString(), heure: new Date().toLocaleTimeString('fr-FR'),
+    mode: mode, cible: cible, duree: r.duree, appels: r.appels,
+    reussies: r.reussies, echouees: r.echouees
+  });
+  if (salves.length > 2000) salves.shift();
+  try { localStorage.setItem(CLE, JSON.stringify(salves)); } catch(e) {}
+  rendre();
+}
+
+function unCycle() {
+  var cible = document.getElementById('cible').value;
+  var nb = parseInt(document.getElementById('lectures').value, 10) || 3;
+  // Alternance stricte : chaque stratégie échantillonne les mêmes plages
+  // horaires. Les lancer simultanément les ferait s'influencer l'une l'autre.
+  var mode = (compteur++ % 2 === 0) ? 'file' : 'doublage';
+  document.getElementById('etat').textContent = 'Salve en cours — ' + (mode === 'file' ? 'file d’attente' : 'lectures doublées') + '…';
+  salve(mode, URLS[cible], nb).then(function(r){
+    enregistrer(mode, cible, r);
+    if (enCours) {
+      var min = parseInt(document.getElementById('interv').value, 10) || 3;
+      document.getElementById('etat').textContent = 'En marche — prochaine salve dans ' + min + ' min (' + salves.length + ' salves enregistrées).';
+      minuteur = setTimeout(unCycle, min * 60000);
+    }
+  });
+}
+
+function mediane(xs) {
+  if (!xs.length) return 0;
+  var t = xs.slice().sort(function(a,b){ return a-b; });
+  return t[Math.floor(t.length/2)];
+}
+
+function rendre() {
+  var tb = document.querySelector('#journal tbody');
+  tb.innerHTML = '';
+  salves.slice(-60).reverse().forEach(function(s){
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + s.heure + '</td>'
+      + '<td class="' + (s.mode === 'file' ? 'mode-file' : 'mode-doub') + '">' + (s.mode === 'file' ? 'file' : 'doublage') + '</td>'
+      + '<td class="num">' + (s.duree/1000).toFixed(1) + ' s</td>'
+      + '<td class="num">' + s.appels + '</td>'
+      + '<td class="' + (s.echouees ? 'ko' : 'ok') + '">' + (s.echouees ? s.echouees + ' lecture(s) perdue(s)' : 'complète') + '</td>';
+    tb.appendChild(tr);
+  });
+
+  var res = document.querySelector('#resume tbody');
+  if (!salves.length) { res.innerHTML = '<tr><td style="color:#94a3b8">Aucune salve enregistrée.</td></tr>'; return; }
+  var lignes = '<tr><th>Stratégie</th><th class="num">Salves</th><th class="num">Salves incomplètes</th>'
+             + '<th class="num">Durée médiane</th><th class="num">Pire durée</th><th class="num">Appels réseau / salve</th></tr>';
+  ['file','doublage'].forEach(function(m){
+    var s = salves.filter(function(x){ return x.mode === m; });
+    if (!s.length) return;
+    var ko = s.filter(function(x){ return x.echouees > 0; }).length;
+    var durees = s.map(function(x){ return x.duree; });
+    var appels = s.reduce(function(a,x){ return a + x.appels; }, 0) / s.length;
+    lignes += '<tr><td class="' + (m === 'file' ? 'mode-file' : 'mode-doub') + '">' + (m === 'file' ? 'file d’attente' : 'lectures doublées') + '</td>'
+      + '<td class="num">' + s.length + '</td>'
+      + '<td class="num ' + (ko ? 'ko' : '') + '">' + ko + ' (' + Math.round(ko/s.length*100) + ' %)</td>'
+      + '<td class="num">' + (mediane(durees)/1000).toFixed(1) + ' s</td>'
+      + '<td class="num">' + (Math.max.apply(null, durees)/1000).toFixed(1) + ' s</td>'
+      + '<td class="num">' + appels.toFixed(1) + '</td></tr>';
+  });
+  res.innerHTML = lignes;
+}
+
+document.getElementById('go').onclick = function(){
+  enCours = true;
+  this.disabled = true;
+  document.getElementById('stop').disabled = false;
+  document.getElementById('cible').disabled = true;
+  unCycle();
+};
+document.getElementById('stop').onclick = function(){
+  enCours = false;
+  clearTimeout(minuteur);
+  this.disabled = true;
+  document.getElementById('go').disabled = false;
+  document.getElementById('cible').disabled = false;
+  document.getElementById('etat').textContent = 'À l’arrêt — ' + salves.length + ' salves enregistrées.';
+};
+// Sortie compacte destinée à être collée dans une conversation : le CSV
+// brut de 500 salves est illisible et coûteux à lire. On donne les agrégats
+// par stratégie, la répartition horaire des pertes (la panne frappe par
+// fenêtres de temps, c'est l'information qui décide), et les 15 dernières
+// salves pour garder du concret.
+function resumeTexte(){
+  if (!salves.length) return 'Banc GAS : aucune salve enregistrée.';
+  var cibles = {}; salves.forEach(function(s){ cibles[s.cible] = 1; });
+  var l = [];
+  l.push('BANC GAS — ' + salves.length + ' salves');
+  l.push('backend(s) : ' + Object.keys(cibles).join(' + ') + (Object.keys(cibles).length > 1 ? '  <<< SERIE MELANGEE, NON COMPARABLE' : ''));
+  var loc = function(iso){ var d = new Date(iso); return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR').slice(0,5); };
+  l.push('periode (heure locale) : ' + loc(salves[0].iso) + ' -> ' + loc(salves[salves.length-1].iso));
+  l.push('parametres : plafond ' + (PLAFOND_MS/1000) + 's, doublon a ' + (HEDGE_MS/1000) + 's, ' + TENTATIVES + ' tentatives, budget ' + (BUDGET_MS/1000) + 's');
+  l.push('');
+  l.push('strategie | salves | incompletes | mediane | p90 | pire | appels/salve');
+  ['file','doublage'].forEach(function(m){
+    var s = salves.filter(function(x){ return x.mode === m; });
+    if (!s.length) return;
+    var ko = s.filter(function(x){ return x.echouees > 0; }).length;
+    var d = s.map(function(x){ return x.duree; }).sort(function(a,b){ return a-b; });
+    var p90 = d[Math.min(d.length-1, Math.floor(d.length*0.9))];
+    var ap = s.reduce(function(a,x){ return a + x.appels; }, 0) / s.length;
+    l.push(m + ' | ' + s.length + ' | ' + ko + ' (' + Math.round(ko/s.length*100) + '%) | '
+      + (mediane(d)/1000).toFixed(1) + 's | ' + (p90/1000).toFixed(1) + 's | '
+      + (d[d.length-1]/1000).toFixed(1) + 's | ' + ap.toFixed(1));
+  });
+  l.push('');
+  l.push('pertes par heure (heure: incompletes/total) :');
+  var parH = {};
+  salves.forEach(function(s){
+    // Heure LOCALE, pas UTC : l'heure affichée dans le journal l'est aussi,
+    // et deux heures d'écart en été feraient désigner la mauvaise fenêtre.
+    var h = ('0' + new Date(s.iso).getHours()).slice(-2);
+    parH[h] = parH[h] || {ko:0, n:0};
+    parH[h].n++; if (s.echouees) parH[h].ko++;
+  });
+  l.push(Object.keys(parH).sort().map(function(h){ return h + 'h:' + parH[h].ko + '/' + parH[h].n; }).join('  '));
+  l.push('');
+  l.push('15 dernieres salves (heure, strategie, duree, appels, perdues) :');
+  salves.slice(-15).forEach(function(s){
+    l.push('  ' + s.heure + ' ' + s.mode + ' ' + (s.duree/1000).toFixed(1) + 's ' + s.appels + ' ' + s.echouees);
+  });
+  return l.join('\n');
+}
+
+document.getElementById('copie').onclick = function(){
+  var txt = resumeTexte();
+  var bouton = this;
+  function fini(ok){
+    bouton.textContent = ok ? '\u2713 Copié' : '\u26a0 Copie refusée — voir la console';
+    if (!ok) console.log(txt);
+    setTimeout(function(){ bouton.textContent = '\ud83d\udccb Copier pour Claude'; }, 2500);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function(){ fini(true); }, function(){ fini(false); });
+  } else { fini(false); }
+};
+
+document.getElementById('csv').onclick = function(){
+  var l = ['horodatage;strategie;backend;duree_ms;appels_reseau;lectures_reussies;lectures_perdues'];
+  salves.forEach(function(s){ l.push([s.iso,s.mode,s.cible,s.duree,s.appels,s.reussies,s.echouees].join(';')); });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([l.join('\n')], {type:'text/csv'}));
+  a.download = 'banc-gas-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+};
+document.getElementById('raz').onclick = function(){
+  if (!confirm('Effacer les ' + salves.length + ' salves enregistrées ?')) return;
+  salves = [];
+  try { localStorage.removeItem(CLE); } catch(e) {}
+  rendre();
+};
+
+rendre();
+</script>
+</body>
+</html>
