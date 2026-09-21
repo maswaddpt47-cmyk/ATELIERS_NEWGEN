@@ -60,8 +60,14 @@ rien. La sortie signale une série mélangée.
 - `getConfig` est une action de lecture **sans token** (cf. `CHANTIERS.md` §4).
   Le banc n'aggrave rien — l'endpoint est déjà ouvert — mais quand ce chantier
   sera traité, le banc devra suivre ou être retiré.
-- Le banc consomme des exécutions Apps Script : ~7 appels toutes les 3 min,
-  soit ~140/h. À arrêter une fois la mesure faite.
+- **Le banc consomme du quota Apps Script.** Un cycle ne lance qu'une salve
+  (les stratégies alternent), soit ~4 appels toutes les 3 min ≈ **80/h**, et
+  chaque `doGet` compte dans le temps d'exécution quotidien du script (90 min
+  par jour sur un compte Google gratuit, 6 h sur Workspace). À ~2 s par
+  exécution, une journée de 8 h de mesure consomme ~20 min de ce quota —
+  supportable, mais **à ne pas laisser tourner en permanence**, surtout en
+  visant le backend de production. Espacer à 5 ou 10 min en cas de doute, et
+  arrêter le banc une fois la série faite.
 
 ## Ce que le banc ne mesure pas
 
