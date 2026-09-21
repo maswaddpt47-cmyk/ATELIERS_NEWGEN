@@ -6,6 +6,9 @@
 > réactualiser **à chaque avancée**, pas en fin de session : une session peut
 > s'interrompre sans préavis.
 >
+> **Contradiction d'une proposition par une autre session :
+> [`AGORA.md`](AGORA.md)** — quand la déclencher, section 8.
+>
 > Avant d'ajouter une règle ici, lire `MD-LIB/hygiene-instructions.md` : une
 > contrainte formulable en test doit devenir un test, pas un paragraphe de
 > plus. Ce fichier est passé de 298 à 229 lignes le 19/09/2026 ; le laisser
@@ -239,3 +242,44 @@ Extrait du guide de collaboration multi-projets, adapté pour ce dépôt.
 
 7. Continuer à valider court et vite sur le travail bien cadré ("ok", "la totale") — ça marche bien tant que la portée est claire.
 8. Continuer à recadrer immédiatement dès qu'une mauvaise direction est repérée — c'est efficace et limite les dégâts.
+
+## 8. AGORA — demander la contradiction d'une autre session
+
+Espace d'échange entre sessions Claude : [`AGORA.md`](AGORA.md). Règle
+complète et justification : `MD-LIB/agora.md`.
+
+**Ne pas déclencher au ressenti.** La confiance de Claude est mal calibrée :
+elle est la plus haute là où il raisonne sur ce qu'il n'a pas vérifié. Le
+déclenchement se fait sur des faits constatables dans le diff.
+
+**Soumettre un bloc dès qu'un de ces six critères est rempli :**
+
+1. la décision **ferme une porte** — schéma de données, format `localStorage`,
+   nouvelle dépendance, contrat entre `shared.js` et les applis ;
+2. **deux options envisagées, une seule écrite**, sans arbitrage extérieur ;
+3. **trois itérations sans résolution** sur le même problème (cf. règle 10) ;
+4. proposition de **défaire un existant dont la raison n'est pas retrouvée**
+   (le cas `keepAlive` supprimé puis remis) ;
+5. la proposition **contredit une note datée** de `CLAUDE.md`, `CHANTIERS.md`
+   ou un commentaire de décision ;
+6. **coût irréversible côté usager** — perte de données, migration, rupture
+   d'une PWA déjà installée.
+
+**N'y vont pas :** un changement de rendu pur (règle 17), un correctif
+localisé appuyé sur une preuve, tout ce qui se défait en un commit.
+
+**Comment :** écrire le bloc, le committer **sur `main` immédiatement**
+(exception assumée au workflow de branche de la section 1 — c'est du texte,
+ça ne peut rien casser), puis annoncer en une ligne, sur le modèle du
+signalement RGPD : `⚖️ AGORA : critère N — <sujet>. Bloc AG-00N commité.`
+avec la phrase à coller dans l'autre session. **Soumettre d'office sans
+demander l'autorisation, et ne jamais bloquer dessus** : rien ne garantit
+qu'une réponse arrive. Soumettre **au moment du choix**, pas après
+l'implémentation — devant du code déjà écrit, le contradicteur valide par
+biais de statu quo.
+
+**En réponse à un bloc :** ne pas refaire la proposition, chercher ce qui
+manque. Verdict `confirmé` (en disant ce qui n'a pas pu être vérifié),
+`amendé` (le cas le plus utile) ou `contredit`. **Sans `fichier:ligne`,
+mesure ou log, la réponse ne compte pas.** L'utilisateur tranche, pas le
+contradicteur.
