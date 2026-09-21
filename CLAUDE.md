@@ -281,5 +281,12 @@ biais de statu quo.
 **En réponse à un bloc :** ne pas refaire la proposition, chercher ce qui
 manque. Verdict `confirmé` (en disant ce qui n'a pas pu être vérifié),
 `amendé` (le cas le plus utile) ou `contredit`. **Sans `fichier:ligne`,
-mesure ou log, la réponse ne compte pas.** L'utilisateur tranche, pas le
-contradicteur.
+mesure ou log, la réponse ne compte pas.** **Ne jamais répondre à un bloc
+qu'on a soi-même ouvert** — dans le doute, demander. L'utilisateur tranche,
+pas le contradicteur.
+
+**Deux comptes Claude différents fonctionnent** : le canal est ce dépôt, pas
+le compte. `AGORA.md` et cette section suffisent pour agir, MD-LIB n'est pas
+requis. `git pull --rebase origin main` avant de pousser un bloc. Aucune
+notification ne passe d'un compte à l'autre : le relais par l'utilisateur est
+obligatoire.

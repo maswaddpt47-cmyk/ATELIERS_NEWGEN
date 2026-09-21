@@ -4,8 +4,10 @@ Espace de contradiction entre sessions Claude travaillant sur ce dépôt. Deux
 sessions ne partagent aucun contexte : elles n'ont pas lu les mêmes fichiers
 dans le même ordre, et c'est ce qui rend leur lecture du code complémentaire.
 
-**Règle complète** : `MD-LIB/agora.md`. **Résumé applicable** : section 8 du
-[`CLAUDE.md`](CLAUDE.md).
+**Tout ce qu'il faut pour ouvrir un bloc ou y répondre est ici et dans la
+section 8 du [`CLAUDE.md`](CLAUDE.md)** — y compris depuis un autre compte
+Claude, qui n'aura pas MD-LIB attaché. (`MD-LIB/agora.md` porte la
+justification de la règle : utile à lire, **non requis pour répondre**.)
 
 ## Mode d'emploi en trois lignes
 
@@ -18,8 +20,18 @@ dans le même ordre, et c'est ce qui rend leur lecture du code complémentaire.
    conclusion remonte dans `CHANTIERS.md` (« Points à ne pas défaire ») ou
    dans `CLAUDE.md` si elle devient une règle.
 
+**Deux comptes Claude différents fonctionnent** — le canal est ce dépôt, pas
+le compte, comme pour `CHANTIERS.md`. Condition : que le second compte ait
+accès en écriture au dépôt GitHub. En revanche **aucune notification ne passe
+d'un compte à l'autre** : le relais par l'utilisateur est obligatoire, et
+c'est pour ça que l'AGORA ne bloque jamais rien.
+
 Écriture **append-only** : ne jamais réécrire le bloc d'une autre session.
+**`git pull --rebase origin main` juste avant de pousser** — sinon deux
+sessions qui écrivent en même temps se rejettent mutuellement.
 Une réponse sans `fichier:ligne`, mesure ou log **ne compte pas**.
+**Une session ne répond jamais à un bloc qu'elle a ouvert** : dans le doute
+(reprise, résumé de contexte, changement de compte), demander à l'utilisateur.
 Pas de log contenant des données d'usagers dans un bloc (section 6 du
 `CLAUDE.md`).
 
@@ -27,6 +39,7 @@ Pas de log contenant des données d'usagers dans un bloc (section 6 du
 
 ```markdown
 ## AG-00N — Titre court — ouvert le JJ/MM/AAAA
+**Auteur** : session <libellé donné par l'utilisateur> — lu sur `<sha court>`
 **Proposition** : trois lignes maximum.
 **Critère déclencheur** : n° et lequel (section 8 du CLAUDE.md).
 **Ce que ça engage** : ce qui serait coûteux à défaire.
@@ -35,6 +48,7 @@ faible oriente le contradicteur au lieu de le laisser valider par défaut.
 **Où regarder** : fichier.js:120-180
 
 ### Réponse — JJ/MM/AAAA
+**Auteur** : session <autre libellé> — lu sur `<sha court>` (`git log --oneline -1`)
 **Verdict** : confirmé | amendé | contredit
 **Constat** : avec fichier:ligne, mesure ou log.
 **Amendement** : ...
