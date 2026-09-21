@@ -56,7 +56,7 @@
     </div>
     <div>
       <label for="interv">Intervalle entre salves (min)</label>
-      <input id="interv" type="number" min="1" max="60" value="3" style="width:70px">
+      <input id="interv" type="number" min="1" max="60" value="2" style="width:70px">
     </div>
     <div>
       <label for="lectures">Lectures par salve</label>
@@ -74,7 +74,7 @@
   </div>
   <div class="etat" id="quota" style="color:#b45309"></div>
   <div class="etat" id="veille" style="color:#6d28d9"></div>
-  <div class="etat" id="etat">À l'arrêt. Laisse cet onglet ouvert : une salve toutes les 3 min, en alternant les deux stratégies.</div>
+  <div class="etat" id="etat">À l'arrêt. Laisse cet onglet ouvert : une salve toutes les 2 min, en alternant les deux stratégies.</div>
 </div>
 
 <div class="card">
@@ -123,6 +123,46 @@ try { salves = JSON.parse(localStorage.getItem(CLE) || '[]'); } catch(e) { salve
 var minuteur = null, enCours = false, compteur = salves.length, appelsSalve = 0;
 var verrou = null;
 
+// Sort de CHAQUE appel de la salve en cours : {r:'i'|'d' (initial|doublon),
+// t: n° de tentative, e:'ok'|'ko'|'an' (annulé parce qu'un autre a gagné),
+// ms: durée}. Sans ce détail, le premier appel du bras doublage — qui part
+// seul en parallèle, le doublon n'arrivant qu'à HEDGE_MS — est une mesure
+// « parallèle non doublé » produite puis perdue : l'effet du parallélisme et
+// celui du doublage ne sont alors plus séparables. ~30 octets par appel.
+var detailSalve = [];
+function noter(meta, issue, ms) {
+  if (meta) detailSalve.push({ r: meta.rang, t: meta.tentative, e: issue, ms: ms });
+}
+
+// Détection du ralentissement des minuteurs par le navigateur (onglet caché).
+// Le détecteur de trous ne surveille que l'intervalle entre salves, avec un
+// seuil de 2,5× : un onglet throttlé passe dessous sans être vu, alors que
+// les minuteurs qui décident de la stratégie sont COURTS — le doublon à 7 s
+// et le chien de garde à 12 s. S'ils glissent, le bras doublage cesse de
+// doubler et le banc mesure deux fois la même stratégie, sans rien signaler.
+// pireRetard : pire dérive d'un minuteur de 5 s depuis la salve précédente,
+// intervalle inter-salves compris (c'est là que le navigateur throttle le
+// plus). retardDoublon : dérive réelle du minuteur de HEDGE_MS.
+var SENTINELLE_MS = 5000, SEUIL_THROTTLE_MS = 2000;
+var pireRetard = 0, retardDoublon = 0, sentinelle = null, cacheePendantSalve = false;
+function lancerSentinelle() {
+  var t = Date.now();
+  sentinelle = setTimeout(function(){
+    var r = Date.now() - t - SENTINELLE_MS;
+    if (r > pireRetard) pireRetard = r;
+    if (enCours) lancerSentinelle();
+  }, SENTINELLE_MS);
+}
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'hidden') cacheePendantSalve = true;
+});
+function estThrottlee(s) {
+  return (s.retard || 0) > SEUIL_THROTTLE_MS || (s.retardDoublon || 0) > SEUIL_THROTTLE_MS;
+}
+// Agrégats lus sur les salves non throttlées uniquement : une salve dont les
+// minuteurs ont dérivé n'a pas joué la stratégie qu'elle annonce.
+function valides() { return salves.filter(function(x){ return !estThrottlee(x); }); }
+
 // ── Wake Lock : empêcher l'écran de s'éteindre pendant la mesure ──────────
 // Le verrou est relâché par le navigateur dès que l'onglet cesse d'être
 // visible : on le reprend au retour, sinon une mise en arrière-plan le perd
@@ -151,7 +191,7 @@ document.addEventListener('visibilitychange', function(){
 function trous(){
   var liste = [], manque = 0;
   for (var i = 1; i < salves.length; i++){
-    var attendu = (salves[i-1].interv || 3) * 60000;
+    var attendu = (salves[i-1].interv || 2) * 60000;
     var ecart = new Date(salves[i].iso) - new Date(salves[i-1].iso);
     if (ecart > attendu * 2.5) { liste.push({ avant: salves[i-1], apres: salves[i], ms: ecart }); manque += ecart - attendu; }
   }
@@ -159,7 +199,7 @@ function trous(){
 }
 
 // ── Un appel réseau, avec plafond ─────────────────────────────────────────
-function unAppel(url, ctrl) {
+function unAppel(url, ctrl, meta) {
   appelsSalve++;
   var t0 = Date.now();
   var chien = setTimeout(function(){ ctrl.abort(); }, PLAFOND_MS);
@@ -167,11 +207,12 @@ function unAppel(url, ctrl) {
     .then(function(res){
       clearTimeout(chien);
       if (!res.ok) { var e = new Error('HTTP ' + res.status); e.reessayable = true; throw e; }
-      return res.json().then(function(){ return Date.now() - t0; });
+      return res.json().then(function(){ noter(meta, 'ok', Date.now() - t0); return Date.now() - t0; });
     })
     .catch(function(err){
       clearTimeout(chien);
-      if (ctrl.inutile) { var a = new Error('annulé'); a.inutile = true; throw a; }
+      if (ctrl.inutile) { noter(meta, 'an', Date.now() - t0); var a = new Error('annulé'); a.inutile = true; throw a; }
+      noter(meta, 'ko', Date.now() - t0);
       var e2 = new Error(ctrl.signal.aborted ? 'timeout' : err.message);
       e2.reessayable = true;
       throw e2;
@@ -179,7 +220,7 @@ function unAppel(url, ctrl) {
 }
 
 // ── Stratégie NEWGEN : lecture doublée à 7 s, premier arrivé gagne ────────
-function lectureDoublee(url) {
+function lectureDoublee(url, tentative) {
   return new Promise(function(resolve, reject){
     var fini = false, partis = 1, echecs = 0, derniere = null, minuteurDoublon = null, ctrls = [];
     function arreterLesAutres(sauf){
@@ -194,15 +235,19 @@ function lectureDoublee(url) {
       echecs++; derniere = err;
       if (echecs >= partis) { fini = true; clearTimeout(minuteurDoublon); reject(derniere); }
     }
-    function lancer(){
+    function lancer(rang){
       var ctrl = new AbortController();
       ctrls.push(ctrl);
-      unAppel(url, ctrl).then(function(ms){ gagner(ms, ctrl); }, perdre);
+      unAppel(url, ctrl, { rang: rang, tentative: tentative })
+        .then(function(ms){ gagner(ms, ctrl); }, perdre);
     }
-    lancer();
+    lancer('i');
+    var tProg = Date.now();
     minuteurDoublon = setTimeout(function(){
+      var derive = Date.now() - tProg - HEDGE_MS;
+      if (derive > retardDoublon) retardDoublon = derive;
       if (fini) return;
-      partis = 2; lancer();
+      partis = 2; lancer('d');
     }, HEDGE_MS);
   });
 }
@@ -212,7 +257,8 @@ function avecTentatives(url, doubler) {
   var t0 = Date.now(), n = 0, derniere = null;
   function essayer() {
     n++;
-    var p = doubler ? lectureDoublee(url) : unAppel(url, new AbortController());
+    var p = doubler ? lectureDoublee(url, n)
+                    : unAppel(url, new AbortController(), { rang: 'i', tentative: n });
     return p.catch(function(err){
       derniere = err;
       if (!err.reessayable) throw err;
@@ -229,6 +275,8 @@ function avecTentatives(url, doubler) {
 // Doublage : les N lectures partent ensemble, chacune doublée à 7 s (NEWGEN).
 function salve(mode, url, nbLectures) {
   appelsSalve = 0;
+  detailSalve = [];
+  retardDoublon = 0;
   var t0 = Date.now();
   var suivi = { reussies: 0, echouees: 0 };
   function bilan() {
@@ -271,9 +319,13 @@ function enregistrer(mode, cible, r) {
   salves.push({
     iso: new Date().toISOString(), heure: new Date().toLocaleTimeString('fr-FR'),
     mode: mode, cible: cible, duree: r.duree, appels: r.appels,
-    interv: parseInt(document.getElementById('interv').value, 10) || 3,
-    reussies: r.reussies, echouees: r.echouees
+    interv: parseInt(document.getElementById('interv').value, 10) || 2,
+    reussies: r.reussies, echouees: r.echouees,
+    detail: detailSalve.slice(),
+    retard: Math.max(0, pireRetard), retardDoublon: Math.max(0, retardDoublon),
+    cachee: cacheePendantSalve
   });
+  pireRetard = 0; cacheePendantSalve = false;
   if (salves.length > 2000) salves.shift();
   try { localStorage.setItem(CLE, JSON.stringify(salves)); } catch(e) {}
   rendre();
@@ -297,7 +349,7 @@ function unCycle() {
       return;
     }
     if (enCours) {
-      var min = parseInt(document.getElementById('interv').value, 10) || 3;
+      var min = parseInt(document.getElementById('interv').value, 10) || 2;
       document.getElementById('etat').textContent = 'En marche — prochaine salve dans ' + min + ' min (' + salves.length + ' salves enregistrées).';
       minuteur = setTimeout(unCycle, min * 60000);
     }
@@ -325,10 +377,11 @@ function rendre() {
 
   var res = document.querySelector('#resume tbody');
   if (!salves.length) { res.innerHTML = '<tr><td style="color:#94a3b8">Aucune salve enregistrée.</td></tr>'; return; }
+  var bonnes = valides(), ecartees = salves.length - bonnes.length;
   var lignes = '<tr><th>Stratégie</th><th class="num">Salves</th><th class="num">Salves incomplètes</th>'
              + '<th class="num">Durée médiane</th><th class="num">Pire durée</th><th class="num">Appels réseau / salve</th></tr>';
   ['file','doublage'].forEach(function(m){
-    var s = salves.filter(function(x){ return x.mode === m; });
+    var s = bonnes.filter(function(x){ return x.mode === m; });
     if (!s.length) return;
     var ko = s.filter(function(x){ return x.echouees > 0; }).length;
     var durees = s.map(function(x){ return x.duree; });
@@ -340,6 +393,10 @@ function rendre() {
       + '<td class="num">' + (Math.max.apply(null, durees)/1000).toFixed(1) + ' s</td>'
       + '<td class="num">' + appels.toFixed(1) + '</td></tr>';
   });
+  if (ecartees) {
+    lignes += '<tr><td colspan="6" class="ko">\u26a0 ' + ecartees + ' salve(s) écartée(s) : minuteurs ralentis de plus de '
+      + (SEUIL_THROTTLE_MS/1000) + ' s (onglet en arrière-plan). Elles n\u2019ont pas joué la stratégie annoncée.</td></tr>';
+  }
   res.innerHTML = lignes;
   majQuota();
   var tr = trous();
@@ -362,6 +419,8 @@ document.getElementById('go').onclick = function(){
       ? '\ud83d\udd12 Écran maintenu allumé pendant la mesure. La veille système, elle, reste à désactiver dans Windows.'
       : '\u26a0 Ce navigateur refuse de maintenir l\u2019écran allumé : désactive la veille dans les réglages, et garde cette fenêtre visible.';
   });
+  pireRetard = 0; cacheePendantSalve = false;
+  lancerSentinelle();
   unCycle();
 };
 document.getElementById('stop').onclick = function(){
@@ -369,6 +428,7 @@ document.getElementById('stop').onclick = function(){
   lacherVerrou();
   document.getElementById('veille').textContent = '';
   clearTimeout(minuteur);
+  clearTimeout(sentinelle);
   this.disabled = true;
   document.getElementById('go').disabled = false;
   document.getElementById('cible').disabled = false;
@@ -390,9 +450,11 @@ function resumeTexte(){
   l.push('appels GAS emis : ' + appelsCumules() + ' (~' + Math.round(appelsCumules()*SEC_PAR_EXEC/60) + ' min de quota Apps Script)');
   l.push('parametres : plafond ' + (PLAFOND_MS/1000) + 's, doublon a ' + (HEDGE_MS/1000) + 's, ' + TENTATIVES + ' tentatives, budget ' + (BUDGET_MS/1000) + 's');
   l.push('');
+  var bonnes = valides(), ecartees = salves.length - bonnes.length;
+  if (ecartees) l.push('SALVES ECARTEES (minuteurs ralentis > ' + (SEUIL_THROTTLE_MS/1000) + 's) : ' + ecartees + ' — exclues de tout ce qui suit');
   l.push('strategie | salves | incompletes | mediane | p90 | pire | appels/salve');
   ['file','doublage'].forEach(function(m){
-    var s = salves.filter(function(x){ return x.mode === m; });
+    var s = bonnes.filter(function(x){ return x.mode === m; });
     if (!s.length) return;
     var ko = s.filter(function(x){ return x.echouees > 0; }).length;
     var d = s.map(function(x){ return x.duree; }).sort(function(a,b){ return a-b; });
@@ -407,7 +469,7 @@ function resumeTexte(){
   l.push('');
   l.push('pertes par heure (heure: incompletes/total) :');
   var parH = {};
-  salves.forEach(function(s){
+  bonnes.forEach(function(s){
     // Heure LOCALE, pas UTC : l'heure affichée dans le journal l'est aussi,
     // et deux heures d'écart en été feraient désigner la mauvaise fenêtre.
     var h = ('0' + new Date(s.iso).getHours()).slice(-2);
@@ -415,6 +477,34 @@ function resumeTexte(){
     parH[h].n++; if (s.echouees) parH[h].ko++;
   });
   l.push(Object.keys(parH).sort().map(function(h){ return h + 'h:' + parH[h].ko + '/' + parH[h].n; }).join('  '));
+  l.push('');
+  // Sépare les deux ingrédients que le bras 'doublage' mélange : le premier
+  // appel de chaque lecture y part en parallèle SANS doublon (celui-ci
+  // n'arrive qu'à HEDGE_MS), c'est donc une observation « parallèle non
+  // doublé » comparable à l'appel unique du bras 'file'.
+  var prem = { file: {n:0, ko:0}, doublage: {n:0, ko:0} }, sauve = {n:0, ok:0};
+  bonnes.forEach(function(s){
+    (s.detail || []).forEach(function(a){
+      if (a.r === 'i' && a.t === 1) {
+        prem[s.mode].n++;
+        if (a.e !== 'ok') prem[s.mode].ko++;
+      }
+      if (s.mode === 'doublage' && a.r === 'd') { sauve.n++; if (a.e === 'ok') sauve.ok++; }
+    });
+  });
+  if (prem.file.n || prem.doublage.n) {
+    l.push('');
+    l.push('effet PARALLELISME (1er appel de chaque lecture, 1re tentative) :');
+    l.push('  file (1 appel en vol)      : ' + prem.file.ko + '/' + prem.file.n
+      + (prem.file.n ? ' (' + Math.round(prem.file.ko/prem.file.n*100) + '%)' : ''));
+    l.push('  doublage (N appels en vol) : ' + prem.doublage.ko + '/' + prem.doublage.n
+      + (prem.doublage.n ? ' (' + Math.round(prem.doublage.ko/prem.doublage.n*100) + '%)' : ''));
+    l.push('effet DOUBLAGE (doublons partis, donc 1er appel non revenu a 7s) :');
+    l.push('  doublons partis : ' + sauve.n + ' — lectures sauvees par le doublon : ' + sauve.ok
+      + (sauve.n ? ' (' + Math.round(sauve.ok/sauve.n*100) + '%)' : ''));
+    l.push('  (3 appels d\u2019une meme salve sont dans la meme fenetre de panne :');
+    l.push('   ce ne sont pas 3 observations independantes, lire ces taux comme indicatifs)');
+  }
   l.push('');
   l.push('15 dernieres salves (heure, strategie, duree, appels, perdues) :');
   salves.slice(-15).forEach(function(s){

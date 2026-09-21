@@ -25,8 +25,13 @@ contre un seul GAS**. Tout ce qui n'est pas la stratégie est neutralisé.
 ## Utilisation
 
 Ouvrir la page, choisir le backend, **laisser l'onglet ouvert**. Une salve
-toutes les 3 minutes, en alternant file d'attente et lectures doublées. Une
+toutes les 2 minutes, en alternant file d'attente et lectures doublées. Une
 salve simule l'ouverture d'une application : 3 lectures.
+
+**L'intervalle est un délai *entre* salves, pas une cadence** : la salve
+suivante n'est programmée qu'une fois la précédente terminée, deux salves ne
+se chevauchent donc jamais. C'est ce qui permet de descendre à 2 min sans
+risque — et il le faut : voir « Quelle durée de série » ci-dessous.
 
 - Les mesures survivent au rechargement (`localStorage`, 2000 salves max).
 - Au démarrage, la page demande au navigateur de **garder l'écran allumé**
@@ -37,8 +42,17 @@ salve simule l'ouverture d'une application : 3 lectures.
   fenêtre fermée) apparaît en bandeau et dans la sortie texte. Une série
   trouée reste exploitable — mais sa répartition horaire ne doit pas être lue
   comme si elle était continue.
-- **Vider le journal entre deux séries** (bouton « Vider ») : une série qui
-  mélange deux backends ou deux périodes ne veut rien dire.
+- **Ne jamais mélanger deux backends dans un même journal** (bouton
+  « Vider » avant de changer de cible). En revanche **mélanger deux jours sur
+  le même backend est souhaitable** : chaque stratégie subit les mêmes
+  fenêtres de panne puisqu'elles alternent salve après salve, et cumuler deux
+  journées dans la même tranche horaire est le moyen le moins coûteux
+  d'atteindre une taille de série concluante. Ne pas vider entre les deux.
+- **Des salves peuvent être écartées automatiquement** : si les minuteurs du
+  navigateur ont dérivé de plus de 2 s (onglet en arrière-plan), la salve n'a
+  pas joué la stratégie qu'elle annonce — le doublon à 7 s peut ne pas être
+  parti du tout. Ces salves restent dans le journal mais sont exclues de tous
+  les agrégats, et leur nombre est affiché.
 - **📋 Copier pour Claude** met dans le presse-papier un résumé compact
   (agrégats par stratégie, répartition horaire des pertes, 15 dernières
   salves) — c'est ce qu'il faut coller dans une conversation, pas le CSV brut.
@@ -47,15 +61,78 @@ salve simule l'ouverture d'une application : 3 lectures.
 ⚠️ **Ne pas changer de backend en cours de série** : elle ne vaudrait plus
 rien. La sortie signale une série mélangée.
 
+## Quelle durée de série — à lire avant de lancer
+
+Les salves alternant une à une, chaque paire (file, doublage) tombe dans la
+même fenêtre de panne : le plan est **apparié**, et le test à lire est
+**McNemar sur les paires consécutives**, pas une comparaison de deux groupes
+indépendants. Cet appariement est une bonne nouvelle — la corrélation
+temporelle devient conservatrice au lieu d'être trompeuse — mais il ne crée
+pas de la puissance là où il n'y a pas assez de salves.
+
+Puissance estimée par simulation le 21/09/2026 (modèle en blocs de 20-60 min
+calé sur le relevé horaire du 21/09, écart vrai 36 % → 16 % de salves
+incomplètes) :
+
+| Durée de série (intervalle 2 min) | salves / bras | chance de conclure |
+|---|---|---|
+| 2 h | 30 | ~40 % *(extrapolé, non simulé)* |
+| 4 h (11h-15h) | 60 | ~74 % (McNemar ~84 %) |
+| 4 h × 2 jours cumulés | 120 | ~97 % |
+
+**Une série de 4 h laisse donc environ une chance sur quatre de ne rien
+conclure alors qu'un écart réel existe.** Si le résultat tombe dans la zone
+« non concluant », prolonger le **même** journal un second jour sur la même
+tranche horaire plutôt que de recommencer.
+
+⚠️ **Dans ce cas, relever le plafond d'arrêt automatique avant de lancer le
+second jour.** Il se compte sur le **cumul du journal**, pas sur la journée :
+à 2 min, 4 h consomment déjà ~540 appels, donc le plafond par défaut de 800
+couperait la seconde journée en plein milieu. Passer à **1200** pour deux
+journées (~40 min de quota Apps Script au total, à comparer aux 90 min/jour
+d'un compte Google gratuit). Le plafond reste à 800 par défaut : c'est un
+garde-fou, on le relève sciemment, pas par habitude.
+
+⚠️ Ces chiffres viennent d'une **simulation**, pas du terrain : ils dépendent
+du modèle de fenêtres de panne retenu. À réviser dès qu'une vraie série
+existe.
+
 ## Comment lire le résultat
+
+**Seuil de conclusion, à appliquer avant d'interpréter quoi que ce soit :**
+ne conclure « les deux stratégies se valent » que si l'intervalle de confiance
+à 95 % de la différence **appariée** exclut 10 points. Sinon, la mention à
+écrire est **« non concluant, série trop courte »** — pas « comparable ».
+Une absence de résultat n'est pas une observation.
 
 | Ce qu'on observe | Ce qu'on en conclut |
 |---|---|
-| Taux de salves incomplètes comparable, durées très différentes | La file ne protège de rien et coûte en attente → aligner sur le doublage |
-| Le doublage perd nettement moins de salves | Idem, conclusion renforcée |
-| La file perd moins de salves que le doublage | L'hypothèse de NextStep tient → aligner sur la file |
+| Écart apparié significatif en faveur du doublage | Aligner NextStep sur le doublage |
+| Écart apparié significatif en faveur de la file | L'hypothèse de NextStep tient → aligner sur la file |
+| Écart non significatif, IC à 95 % **excluant** 10 points | Les deux se valent → l'argument d'alignement tranche, NextStep sert de référence |
+| Écart non significatif, IC à 95 % **incluant** 10 points | **Non concluant** — prolonger la série, ne rien décider |
+| Les deux bras perdent **autant et énormément** (proche de 100 % en fenêtre) | La panne est **totale par fenêtre** : aucune stratégie d'appel n'y peut rien, et le proxy du §3 devient le seul levier. À ne pas confondre avec « la file ne protège de rien » |
 | Taux global sous ~15 % | Ne rien construire de plus, l'appli est utilisable (§2) |
 | Taux durablement au-dessus de 30-40 % | Le proxy du §3 se justifie |
+
+### Séparer le parallélisme du doublage — sans troisième bras
+
+Le bras « doublage » mélange deux ingrédients : les lectures partent
+**ensemble**, et chacune est **doublée** à 7 s. Mais le premier appel de
+chaque lecture part seul, le doublon n'arrivant qu'à `HEDGE_MS` : c'est donc
+déjà une observation « parallèle, non doublé », directement comparable à
+l'appel unique du bras « file ». La sortie « 📋 Copier pour Claude » expose
+les deux séparément :
+
+- **effet PARALLELISME** — échecs du 1<sup>er</sup> appel, 1<sup>re</sup>
+  tentative : file (1 appel en vol) contre doublage (N appels en vol) ;
+- **effet DOUBLAGE** — part des doublons partis qui ont sauvé la lecture.
+
+Un troisième bras réel coûterait un tiers des salves de chaque bras, donc la
+question principale — c'est pour ça qu'il n'y en a pas. En contrepartie, les
+3 appels d'une même salve sont dans la même fenêtre de panne : **ce ne sont
+pas 3 observations indépendantes**, et ces deux taux ne sont décidables qu'en
+série longue. Les lire comme indicatifs.
 
 ## Limites, à ne pas oublier en lisant les chiffres
 
@@ -64,9 +141,20 @@ rien. La sortie signale une série mélangée.
   `getAll`. Indices en ce sens seulement (getAll, getComptes et getConfig
   tombent indifféremment ; 221 ateliers reviennent en 1 s quand ça passe).
 - Un seul appareil, un seul réseau : ne dit rien d'un mobile en 4G ailleurs.
+- ⚠️ **Divergence connue, non corrigée au 21/09/2026** : le banc réessaie sur
+  **tout** code HTTP en erreur, alors que les deux produits ne réessaient que
+  sur `GAS_RETRYABLE_HTTP` (`[404,408,429,500,502,503,504]`, identique dans
+  NEWGEN `shared.js:708` et NextStep `shared.js:524`). Sans effet tant que les
+  pertes sont des 404 — mais si le déploiement renvoie un 403 ou une page HTML
+  (le cas typique du quota épuisé), le banc réessaiera là où la production
+  rend la main, gonflant durées et compte d'appels au moment précis où on lit
+  les chiffres.
 - Les constantes (plafond 12 s, doublon à 7 s, 3 tentatives, budget 45 s) sont
   **recopiées** de `shared.js`. Si elles changent là-bas, les corriger ici,
   sinon le banc mesure une stratégie qui n'est plus celle du produit.
+  Vérifiées conformes aux **deux** produits le 21/09/2026 (NEWGEN
+  `shared.js:709,742,743,745,747` ; NextStep `shared.js:543-545,563-566,570`,
+  qui n'a aucun `HEDGE` — c'est bien la différence de stratégie, pas un oubli).
 - `getConfig` est une action de lecture **sans token** (cf. `CHANTIERS.md` §4).
   Le banc n'aggrave rien — l'endpoint est déjà ouvert — mais quand ce chantier
   sera traité, le banc devra suivre ou être retiré.
@@ -77,7 +165,8 @@ rien. La sortie signale une série mélangée.
   page affiche la consommation estimée et **s'arrête d'elle-même** au plafond
   d'appels demandé (800 par défaut, soit ~27 min de quota).
 - **Le banc consomme du quota Apps Script.** Un cycle ne lance qu'une salve
-  (les stratégies alternent), soit ~4 appels toutes les 3 min ≈ **80/h**, et
+  (les stratégies alternent), soit ~4,5 appels toutes les 2 min ≈ **135/h**
+  (~4 toutes les 3 min ≈ 80/h à l'ancien réglage), et
   chaque `doGet` compte dans le temps d'exécution quotidien du script (90 min
   par jour sur un compte Google gratuit, 6 h sur Workspace). À ~2 s par
   exécution, une journée de 8 h de mesure consomme ~20 min de ce quota —
