@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **20/09/2026**, commit de référence `82fb531`.
+État au **21/09/2026**, commit de référence `37a7721`.
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
 `MD-LIB/hygiene-instructions.md`).
@@ -105,7 +105,26 @@ déploiement.
 → À faire **au prochain déploiement GAS réel**, quand le fichier doit de
 toute façon être recollé dans l'éditeur.
 
-## 6. Vérifications terrain en attente (PWA, 19/09/2026)
+## 7. ⚠️ Piège — la logique du stock est dupliquée dans `shared.js`
+
+Découvert le 21/09/2026 en corrigeant le cumul du jour de retour.
+`periodePretMateriel`, `findOrdinateursConflicts`, `getPretsMateriel`,
+`totauxParJourMateriel` et `totalJourParConseiller` existent **deux fois** :
+dans `logic.js` (celui que testent les suites Node) et dans `shared.js`
+(celui que les pages chargent réellement — `logic.js` n'est pas référencé par
+`index.html`/`admin.html`, seulement par les tests).
+
+**Corriger `logic.js` seul laisse l'application sur l'ancien calcul, avec
+toutes les suites au vert.** C'est le pire cas possible : le test confirme un
+correctif qui n'atteint jamais l'utilisateur. Vérifier systématiquement les
+deux copies sur tout changement touchant le matériel.
+
+NextStep n'a pas cette duplication : son `shared.js` consomme `logic.js`,
+chargé avant lui dans les deux pages. C'est un argument de plus pour la piste
+`gas-client.js` du §6 de NextStep — le même principe appliqué à la couche
+matériel.
+
+## 8. Vérifications terrain en attente (PWA, 19/09/2026)
 
 Deux points livrés le 19/09 mais jamais vérifiés en dehors des tests
 automatisés (qui ne peuvent pas les couvrir) :
