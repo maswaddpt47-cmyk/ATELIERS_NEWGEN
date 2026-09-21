@@ -32,11 +32,14 @@ c'est pour ça que l'AGORA ne bloque jamais rien.
 **`git pull --rebase origin main` juste avant de pousser** — sinon deux
 sessions qui écrivent en même temps se rejettent mutuellement.
 Une réponse sans `fichier:ligne`, mesure ou log **ne compte pas**.
-**Une session ne répond jamais à un bloc qu'elle a ouvert** : dans le doute
-(reprise, résumé de contexte, changement de compte), demander à l'utilisateur.
-Les deux comptes poussant sous la même identité GitHub, `git log` ne départage
-pas les auteurs — le champ `Auteur` est la seule distinction, d'où le libellé
-dans la phrase de relais.
+**Une session ne répond jamais à un bloc qu'elle a ouvert.** Avant de
+répondre, comparer le trailer `Claude-Session:` du commit qui a déposé le bloc
+(`git log -1 --format=%B <sha du bloc>`) à celui de la session courante : il
+distingue deux sessions **même sous une identité GitHub unique** (mesuré le
+21/09/2026 sur GDINV2, bloc AG-001 et sa réponse). Le champ `Auteur` n'est
+qu'un libellé de lecture, attribué à l'oral au relais et qui ne survit pas à un
+compactage de contexte — pas une preuve. Quand le trailer est absent (commit
+fait à la main, session sans cette consigne), demander à l'utilisateur.
 Pas de log contenant des données d'usagers dans un bloc (section 6 du
 `CLAUDE.md`).
 
