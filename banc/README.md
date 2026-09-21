@@ -141,14 +141,16 @@ série longue. Les lire comme indicatifs.
   `getAll`. Indices en ce sens seulement (getAll, getComptes et getConfig
   tombent indifféremment ; 221 ateliers reviennent en 1 s quand ça passe).
 - Un seul appareil, un seul réseau : ne dit rien d'un mobile en 4G ailleurs.
-- ⚠️ **Divergence connue, non corrigée au 21/09/2026** : le banc réessaie sur
-  **tout** code HTTP en erreur, alors que les deux produits ne réessaient que
-  sur `GAS_RETRYABLE_HTTP` (`[404,408,429,500,502,503,504]`, identique dans
-  NEWGEN `shared.js:708` et NextStep `shared.js:524`). Sans effet tant que les
-  pertes sont des 404 — mais si le déploiement renvoie un 403 ou une page HTML
-  (le cas typique du quota épuisé), le banc réessaiera là où la production
-  rend la main, gonflant durées et compte d'appels au moment précis où on lit
-  les chiffres.
+- La décision de réessayer est alignée sur les produits depuis le 21/09/2026 :
+  seuls `[404,408,429,500,502,503,504]` (`GAS_RETRYABLE_HTTP`, identique dans
+  NEWGEN `shared.js:708` et NextStep `shared.js:524`) et les timeouts/coupures
+  réseau sont réessayés. Un 403 **et une réponse non-JSON** — les deux formes
+  que prend un quota Apps Script épuisé — font rendre la main, comme dans
+  `shared.js:798-801`. Sans cet alignement, le banc aurait noté des durées et
+  un nombre d'appels que la production n'aurait jamais eus, au moment précis
+  où on lit les chiffres, et aurait triplé sa consommation alors que le quota
+  est déjà à sec. **Cette liste fait partie des constantes recopiées** : la
+  resynchroniser avec `shared.js` comme les autres.
 - Les constantes (plafond 12 s, doublon à 7 s, 3 tentatives, budget 45 s) sont
   **recopiées** de `shared.js`. Si elles changent là-bas, les corriger ici,
   sinon le banc mesure une stratégie qui n'est plus celle du produit.

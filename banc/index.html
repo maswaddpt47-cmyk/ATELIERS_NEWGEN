@@ -96,7 +96,8 @@
 <script>
 // ── Paramètres, copiés à l'identique des deux implémentations ──────────────
 // NEWGEN shared.js : GAS_HEDGE_MS, GAS_TENTATIVES_LECTURE, GAS_PAUSE_LECTURE_MS,
-// GAS_TIMEOUT_LECTURE_MS, GAS_BUDGET_TOTAL_MS. NextStep : mêmes plafonds, mais
+// GAS_TIMEOUT_LECTURE_MS, GAS_BUDGET_TOTAL_MS, GAS_RETRYABLE_HTTP.
+// NextStep : mêmes plafonds et même liste de codes réessayables, mais
 // _gasQueue sérialise tous les appels et aucune lecture n'est doublée.
 // Si un de ces nombres change dans shared.js, le corriger ici aussi, sinon le
 // banc mesure une stratégie qui n'est plus celle du produit.
@@ -105,6 +106,13 @@ var HEDGE_MS     = 7000;
 var TENTATIVES   = 3;
 var PAUSE_MS     = 300;
 var BUDGET_MS    = 45000;
+// Codes qui méritent un nouvel essai : erreurs temporaires seulement. Un 403
+// ou une page HTML d'erreur — ce que renvoie Apps Script quand le quota est
+// épuisé — fait rendre la main aux deux produits. Réessayer dessus ferait
+// noter au banc des durées et un nombre d'appels que la production n'aurait
+// jamais eus, au moment précis où on lit les chiffres, et triplerait sa
+// consommation alors que le quota est déjà à sec.
+var RETRYABLE_HTTP = [404, 408, 429, 500, 502, 503, 504];
 
 var URLS = {
   newgen:   'https://script.google.com/macros/s/AKfycbwsNMoPSEIMss4kG0V13PWSr1mKEo34IFMWClxJuXkUvZ7Cgo-OWY0ud1lQtrUBqDbP/exec',
@@ -206,15 +214,28 @@ function unAppel(url, ctrl, meta) {
   return fetch(url + '?action=' + ACTION + '&_t=' + Date.now(), { signal: ctrl.signal })
     .then(function(res){
       clearTimeout(chien);
-      if (!res.ok) { var e = new Error('HTTP ' + res.status); e.reessayable = true; throw e; }
-      return res.json().then(function(){ noter(meta, 'ok', Date.now() - t0); return Date.now() - t0; });
+      if (!res.ok) {
+        var e = new Error('HTTP ' + res.status);
+        e.reessayable = RETRYABLE_HTTP.indexOf(res.status) > -1;
+        throw e;
+      }
+      // Réponse non-JSON (page HTML d'erreur Apps Script, déploiement cassé) :
+      // shared.js:798-801 rend la main sans réessayer. C'est le chemin le plus
+      // probable d'un quota épuisé — plus probable que le 403.
+      return res.json().then(
+        function(){ noter(meta, 'ok', Date.now() - t0); return Date.now() - t0; },
+        function(){ var j = new Error('réponse non-JSON'); j.reessayable = false; throw j; }
+      );
     })
     .catch(function(err){
       clearTimeout(chien);
       if (ctrl.inutile) { noter(meta, 'an', Date.now() - t0); var a = new Error('annulé'); a.inutile = true; throw a; }
       noter(meta, 'ko', Date.now() - t0);
       var e2 = new Error(ctrl.signal.aborted ? 'timeout' : err.message);
-      e2.reessayable = true;
+      // Ne pas écraser la décision prise plus haut (code HTTP hors liste,
+      // réponse non-JSON). Défaut true : timeout et coupure réseau se
+      // réessaient, comme dans shared.js:785.
+      e2.reessayable = (typeof err.reessayable === 'boolean') ? err.reessayable : true;
       throw e2;
     });
 }
