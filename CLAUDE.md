@@ -287,6 +287,9 @@ mesure ou log, la réponse ne compte pas.** **Ne jamais répondre à un bloc
 qu'on a soi-même ouvert** — dans le doute, demander. L'utilisateur tranche,
 pas le contradicteur.
 
+**Une entrée « décision à trancher » dans `CHANTIERS.md` est par définition un
+candidat** : au moment de l'écrire, dire pourquoi on ouvre un bloc ou non.
+
 **Deux comptes Claude différents fonctionnent** : le canal est ce dépôt, pas
 le compte. `AGORA.md` et cette section suffisent pour agir, MD-LIB n'est pas
 requis. `git pull --rebase origin main` avant de pousser un bloc. Aucune

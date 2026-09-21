@@ -13,9 +13,7 @@ justification de la règle : utile à lire, **non requis pour répondre**.)
 
 1. Une session dépose un bloc ci-dessous, le commite **sur `main` tout de
    suite** (sinon l'autre session ne le voit pas), et donne à l'utilisateur la
-   phrase à coller ailleurs : « pull, lis AGORA.md, réponds à AG-00N, **tu es
-   la session B** » — le libellé fait partie de la phrase, le contradicteur ne
-   peut le deviner de nulle part.
+   phrase à coller ailleurs : « pull, lis AGORA.md, réponds à AG-00N ».
 2. L'autre session pull, lit le bloc **puis le code concerné**, ajoute sa
    réponse sous le bloc, commite sur `main`.
 3. L'utilisateur tranche. Le bloc tranché **sort de ce fichier** ; sa
@@ -53,6 +51,8 @@ Pas de log contenant des données d'usagers dans un bloc (section 6 du
 **Ce que ça engage** : ce qui serait coûteux à défaire.
 **Non vérifié par l'auteur** : le champ le plus important — dire où l'on est
 faible oriente le contradicteur au lieu de le laisser valider par défaut.
+**Si personne ne répond, je fais quoi ?** — si c'est « je continue pareil », le
+bloc n'avait pas lieu d'être.
 **Où regarder** : fichier.js:120-180
 
 ### Réponse — JJ/MM/AAAA
