@@ -221,7 +221,7 @@ function App(){
   const[filtreConseiller,setFiltreConseiller] = React.useState(null);
   const[editingId,setEditingId]    = React.useState(null);
   const[prefillData,setPrefillData] = React.useState(null);
-  const[annee,setAnneeState]       = React.useState(()=>localStorage.getItem('f_annee')||String(new Date().getFullYear()));
+  const[annee,setAnneeState]       = React.useState(()=>localStorage.getItem(lsKey('f_annee'))||String(new Date().getFullYear()));
   const[visibility,setVisibility]   = React.useState({saisie:true,historique:true,dashboard:true,carte:true,bingo:true,calendrier:false,agenda:false,roadmap:false,gestion_ordi:true});
   const[lists,setLists]            = React.useState({
     statuts:[...STATUTS_DEFAULT],conseillers:[...CONSEILLERS_DEFAULT],
@@ -231,9 +231,9 @@ function App(){
   const[online,setOnline]          = React.useState(navigator.onLine);
   const[showPicker,setShowPicker]   = React.useState(false);
   const[inactifsSet,setInactifsSet] = React.useState(new Set());
-  const[sidebarPinned,setSidebarPinned] = React.useState(()=>localStorage.getItem('sidebar_pinned')==='1');
-  const[darkMode,setDarkMode]=React.useState(()=>localStorage.getItem('f_dark')==='1');
-  React.useEffect(()=>{document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');localStorage.setItem('f_dark',darkMode?'1':'0');},[darkMode]);
+  const[sidebarPinned,setSidebarPinned] = React.useState(()=>localStorage.getItem(lsKey('sidebar_pinned'))==='1');
+  const[darkMode,setDarkMode]=React.useState(()=>localStorage.getItem(lsKey('f_dark'))==='1');
+  React.useEffect(()=>{document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');localStorage.setItem(lsKey('f_dark'),darkMode?'1':'0');},[darkMode]);
 
   // Un token peut déjà être présent en sessionStorage au chargement (login
   // précédent dans cet onglet, ou déjà connecté sur admin.html — sessionStorage
@@ -249,7 +249,7 @@ function App(){
   },[]);
 
   // ── Helpers ───────────────────────────────────────────────────
-  function setAnnee(v){ localStorage.setItem('f_annee',v); setAnneeState(v); }
+  function setAnnee(v){ localStorage.setItem(lsKey('f_annee'),v); setAnneeState(v); }
   function resetConseiller(){ setFiltreConseiller(null); }
   function handleLogout(){
     if(!window.confirm('Se déconnecter ?'))return;
@@ -259,7 +259,7 @@ function App(){
     setShowPicker(false);
     setView('accueil');
   }
-  function togglePin(){ setSidebarPinned(p=>{ const n=!p; localStorage.setItem('sidebar_pinned',n?'1':'0'); return n; }); }
+  function togglePin(){ setSidebarPinned(p=>{ const n=!p; localStorage.setItem(lsKey('sidebar_pinned'),n?'1':'0'); return n; }); }
 
   const isFirstLoad=React.useRef(true);
   const errorRef=React.useRef(null);
@@ -272,7 +272,7 @@ function App(){
 
     // ── Cache localStorage : afficher les données précédentes immédiatement ──
     if(!silent && attempt === 1){
-      const cacheKey = `ateliers_cache_${annee}`;
+      const cacheKey = lsKey(`ateliers_cache_${annee}`);
       try{
         const cached = localStorage.getItem(cacheKey);
         if(cached){
@@ -303,7 +303,7 @@ function App(){
         };
         setLists(nl);STATUTS=[...nl.statuts];CONSEILLERS=[...nl.conseillers];PUBLICS=[...nl.publics];MATERIELS=[...nl.materiels];
         // Mettre à jour le cache
-        try{ localStorage.setItem(`ateliers_cache_${annee}`, JSON.stringify({entries:incoming,lists:nl})); }catch(_){}
+        try{ localStorage.setItem(lsKey(`ateliers_cache_${annee}`), JSON.stringify({entries:incoming,lists:nl})); }catch(_){}
       }
       if(data.visibility) setVisibility(v=>({...v,...data.visibility}));
       if(data.conseiller_colors) applyColors(data.conseiller_colors);

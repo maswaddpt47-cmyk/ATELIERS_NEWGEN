@@ -202,7 +202,7 @@ function verifier(nom, condition, detail) {
     await marquer(B, 'MARQUEUR_B1'); await B.waitForTimeout(300);
     await marquer(A, 'MARQUEUR_A2'); await A.waitForTimeout(500);  // A écrit APRÈS B
 
-    const msgs = JSON.parse(await A.evaluate(() => localStorage.getItem('adm_logs_newgen') || '[]'))
+    const msgs = JSON.parse(await A.evaluate(() => localStorage.getItem('newgen:adm_logs') || '[]'))
       .map(e => e.msg || '');
     verifier(
       'admin — deux onglets ne s’écrasent pas le journal',
