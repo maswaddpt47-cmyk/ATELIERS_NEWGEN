@@ -44,9 +44,32 @@ alternance**, depuis un seul poste, contre un seul backend :
 `ATELIERS_NEWGEN/banc/README.md` pour la méthode, les limites et la lecture
 des résultats.
 
-Série prévue le 22/09/2026 : backend NEWGEN, intervalle 3 min, plafond 800
-appels, démarrage avant 11h pour couvrir la fenêtre 11h-15h (la plus
-dégradée). Résultat attendu dans ce fichier une fois la mesure faite.
+Série prévue le 22/09/2026 : backend NEWGEN, **intervalle 2 min** (pas 3),
+plafond 800 appels, démarrage avant 11h pour couvrir la fenêtre 11h-15h (la
+plus dégradée). Résultat attendu dans ce fichier une fois la mesure faite.
+
+**Le protocole a été revu le 21/09/2026 après contradiction entre sessions
+(AG-001).** Ce qui change, et pourquoi :
+
+- **2 min au lieu de 3** : à 3 min, la fenêtre de 4 h ne donnait que 40 salves
+  par stratégie, soit ~56 % de chances de détecter un écart réel de 20 points.
+  À 2 min : 60 par bras, ~74 %. L'intervalle est un délai *entre* salves, pas
+  une cadence — aucun risque de chevauchement.
+- **Ne conclure « les deux se valent » que si l'intervalle de confiance à 95 %
+  de la différence appariée exclut 10 points.** Sinon écrire « non concluant,
+  série trop courte ». Le test à lire est McNemar sur les paires consécutives
+  (les salves alternent une à une, le plan est apparié). Une absence de
+  résultat n'est pas une observation — c'est le piège que la première version
+  du tableau de lecture du `banc/README.md` tendait.
+- **Si le 22/09 est non concluant : prolonger le même journal un second jour**
+  sur la même tranche horaire (120 salves/bras ≈ 97 %). Ne pas vider entre les
+  deux, et **relever le plafond à 1200** — il se compte sur le cumul du
+  journal, 800 couperait la seconde journée en plein milieu.
+- **Le banc sépare désormais l'effet du parallélisme de celui du doublage**
+  sans troisième bras (voir « Points à ne pas défaire »).
+
+⚠️ Chiffres de puissance issus d'une **simulation**, pas du terrain. À réviser
+dès qu'une vraie série existe.
 
 ⚠️ Le quota Apps Script se compte **par compte Google**, pas par script : ne
 pas viser le backend de production pendant les heures de travail de l'équipe.
@@ -194,6 +217,21 @@ Chacun a coûté cher à établir et est verrouillé par un test :
   `GAS_ACTIONS_ECRITURE` — ne pas repasser ça en option d'appelant.
 - **`sw.js` ne met rien en cache et n'intercepte rien.** Voir la section 4 du
   `CLAUDE.md`.
+- **Le banc n'a pas besoin d'un troisième bras « parallèle non doublé ».** Il
+  existe déjà : dans le bras doublage, le premier appel de chaque lecture part
+  seul, le doublon n'arrivant qu'à 7 s. Il suffit de ne pas jeter le sort de
+  chaque appel à l'agrégation, ce que `banc/index.html` enregistre depuis le
+  21/09/2026. Un vrai troisième bras coûterait un tiers des salves de chaque
+  bras, donc la question principale.
+- **Le compteur d'alternance du banc suit `salves.length`, jamais 0.** Les
+  salves survivent au rechargement : repartir de zéro faisait retomber
+  l'alternance sur `file` à chaque reprise (20 salves sur 20 dans le pire cas),
+  et lui faisait hériter de toutes les salves d'après-interruption. Le bouton
+  Vider le remet à zéro — les deux vont ensemble.
+- **Ne jamais mélanger deux backends dans un journal de banc ; mélanger deux
+  jours est au contraire souhaitable.** Les stratégies alternant salve après
+  salve, chacune subit les mêmes fenêtres de panne : cumuler deux journées est
+  le moyen le moins cher d'atteindre une série concluante.
 - **`periodePretMateriel` retombe sur la veille/lendemain ouvrés** (jamais
   un jour de week-end) quand les dates de prélèvement/retour ne sont pas
   saisies — alignée sur NextStep le 19/09/2026. Ne pas revenir au repli
