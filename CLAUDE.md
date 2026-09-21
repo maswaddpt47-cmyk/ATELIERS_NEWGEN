@@ -272,7 +272,9 @@ localisé appuyé sur une preuve, tout ce qui se défait en un commit.
 (exception assumée au workflow de branche de la section 1 — c'est du texte,
 ça ne peut rien casser), puis annoncer en une ligne, sur le modèle du
 signalement RGPD : `⚖️ AGORA : critère N — <sujet>. Bloc AG-00N commité.`
-avec la phrase à coller dans l'autre session. **Soumettre d'office sans
+avec la phrase à coller dans l'autre session, **libellé de session compris**
+(« …réponds à AG-00N, tu es la session B ») : les deux comptes poussant sous
+la même identité GitHub, c'est la seule chose qui distingue les auteurs. **Soumettre d'office sans
 demander l'autorisation, et ne jamais bloquer dessus** : rien ne garantit
 qu'une réponse arrive. Soumettre **au moment du choix**, pas après
 l'implémentation — devant du code déjà écrit, le contradicteur valide par

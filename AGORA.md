@@ -13,7 +13,9 @@ justification de la règle : utile à lire, **non requis pour répondre**.)
 
 1. Une session dépose un bloc ci-dessous, le commite **sur `main` tout de
    suite** (sinon l'autre session ne le voit pas), et donne à l'utilisateur la
-   phrase à coller ailleurs : « pull, lis AGORA.md, réponds à AG-00N ».
+   phrase à coller ailleurs : « pull, lis AGORA.md, réponds à AG-00N, **tu es
+   la session B** » — le libellé fait partie de la phrase, le contradicteur ne
+   peut le deviner de nulle part.
 2. L'autre session pull, lit le bloc **puis le code concerné**, ajoute sa
    réponse sous le bloc, commite sur `main`.
 3. L'utilisateur tranche. Le bloc tranché **sort de ce fichier** ; sa
@@ -32,6 +34,9 @@ sessions qui écrivent en même temps se rejettent mutuellement.
 Une réponse sans `fichier:ligne`, mesure ou log **ne compte pas**.
 **Une session ne répond jamais à un bloc qu'elle a ouvert** : dans le doute
 (reprise, résumé de contexte, changement de compte), demander à l'utilisateur.
+Les deux comptes poussant sous la même identité GitHub, `git log` ne départage
+pas les auteurs — le champ `Auteur` est la seule distinction, d'où le libellé
+dans la phrase de relais.
 Pas de log contenant des données d'usagers dans un bloc (section 6 du
 `CLAUDE.md`).
 
