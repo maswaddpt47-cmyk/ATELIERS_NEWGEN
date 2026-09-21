@@ -62,12 +62,17 @@
       <label for="lectures">Lectures par salve</label>
       <input id="lectures" type="number" min="1" max="6" value="3" style="width:70px">
     </div>
+    <div>
+      <label for="plafond">Arrêt auto après (appels GAS)</label>
+      <input id="plafond" type="number" min="50" max="5000" step="50" value="800" style="width:90px">
+    </div>
     <button id="go">▶ Démarrer</button>
     <button id="stop" class="stop" disabled>■ Arrêter</button>
     <button id="copie" class="sec">📋 Copier pour Claude</button>
     <button id="csv" class="sec">Export CSV</button>
     <button id="raz" class="sec">Vider</button>
   </div>
+  <div class="etat" id="quota" style="color:#b45309"></div>
   <div class="etat" id="veille" style="color:#6d28d9"></div>
   <div class="etat" id="etat">À l'arrêt. Laisse cet onglet ouvert : une salve toutes les 3 min, en alternant les deux stratégies.</div>
 </div>
@@ -239,6 +244,24 @@ function salve(mode, url, nbLectures) {
 }
 
 // ── Pilotage ──────────────────────────────────────────────────────────────
+// Le quota Apps Script se compte en TEMPS D'EXÉCUTION par compte Google —
+// 90 min/jour sur un compte gratuit, 6 h sur Workspace — et il est partagé
+// par tous les scripts de ce compte. Une longue série sur un backend peut
+// donc épuiser le quota de l'autre, et casser la production. On affiche la
+// consommation estimée et on s'arrête tout seul au plafond demandé.
+var SEC_PAR_EXEC = 2;   // durée typique d'un doGet, mesurée côté Exécutions
+
+function appelsCumules() {
+  return salves.reduce(function(a, s){ return a + s.appels; }, 0);
+}
+function majQuota() {
+  var n = appelsCumules();
+  var min = Math.round(n * SEC_PAR_EXEC / 60);
+  document.getElementById('quota').textContent =
+    n + ' appels GAS émis depuis le début de la série — environ ' + min
+    + ' min de temps d\u2019exécution Apps Script consommé (plafond du compte : 90 min/jour en gratuit, 6 h en Workspace).';
+}
+
 function enregistrer(mode, cible, r) {
   salves.push({
     iso: new Date().toISOString(), heure: new Date().toLocaleTimeString('fr-FR'),
@@ -260,6 +283,14 @@ function unCycle() {
   document.getElementById('etat').textContent = 'Salve en cours — ' + (mode === 'file' ? 'file d’attente' : 'lectures doublées') + '…';
   salve(mode, URLS[cible], nb).then(function(r){
     enregistrer(mode, cible, r);
+    var plafond = parseInt(document.getElementById('plafond').value, 10) || 0;
+    if (enCours && plafond && appelsCumules() >= plafond) {
+      document.getElementById('stop').click();
+      document.getElementById('etat').textContent =
+        'Arrêt automatique : plafond de ' + plafond + ' appels atteint (' + salves.length + ' salves). '
+        + 'Le quota Apps Script est partagé entre les scripts d\u2019un même compte Google.';
+      return;
+    }
     if (enCours) {
       var min = parseInt(document.getElementById('interv').value, 10) || 3;
       document.getElementById('etat').textContent = 'En marche — prochaine salve dans ' + min + ' min (' + salves.length + ' salves enregistrées).';
@@ -305,6 +336,7 @@ function rendre() {
       + '<td class="num">' + appels.toFixed(1) + '</td></tr>';
   });
   res.innerHTML = lignes;
+  majQuota();
   var tr = trous();
   var info = document.getElementById('trous');
   if (tr.n) {
@@ -350,6 +382,7 @@ function resumeTexte(){
   l.push('backend(s) : ' + Object.keys(cibles).join(' + ') + (Object.keys(cibles).length > 1 ? '  <<< SERIE MELANGEE, NON COMPARABLE' : ''));
   var loc = function(iso){ var d = new Date(iso); return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR').slice(0,5); };
   l.push('periode (heure locale) : ' + loc(salves[0].iso) + ' -> ' + loc(salves[salves.length-1].iso));
+  l.push('appels GAS emis : ' + appelsCumules() + ' (~' + Math.round(appelsCumules()*SEC_PAR_EXEC/60) + ' min de quota Apps Script)');
   l.push('parametres : plafond ' + (PLAFOND_MS/1000) + 's, doublon a ' + (HEDGE_MS/1000) + 's, ' + TENTATIVES + ' tentatives, budget ' + (BUDGET_MS/1000) + 's');
   l.push('');
   l.push('strategie | salves | incompletes | mediane | p90 | pire | appels/salve');

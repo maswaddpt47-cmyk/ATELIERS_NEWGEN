@@ -70,6 +70,12 @@ rien. La sortie signale une série mélangée.
 - `getConfig` est une action de lecture **sans token** (cf. `CHANTIERS.md` §4).
   Le banc n'aggrave rien — l'endpoint est déjà ouvert — mais quand ce chantier
   sera traité, le banc devra suivre ou être retiré.
+- ⚠️ **Le quota Apps Script se compte par COMPTE Google, pas par script** :
+  le temps d'exécution quotidien (90 min en gratuit, 6 h en Workspace) est
+  partagé par tous les scripts d'un même compte. Une longue série visant un
+  backend peut donc épuiser le quota de l'autre et casser la production. La
+  page affiche la consommation estimée et **s'arrête d'elle-même** au plafond
+  d'appels demandé (800 par défaut, soit ~27 min de quota).
 - **Le banc consomme du quota Apps Script.** Un cycle ne lance qu'une salve
   (les stratégies alternent), soit ~4 appels toutes les 3 min ≈ **80/h**, et
   chaque `doGet` compte dans le temps d'exécution quotidien du script (90 min
