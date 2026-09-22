@@ -273,6 +273,23 @@ prémisses est fausse et il laisse un trou d'observation.
   Exécutions sous la main).
 
 
+### Tranché le 22/09/2026 — décision : les deux amendements, avant le déploiement
+Décision de l'utilisateur, sur la convergence des réponses de 01GzrtQV et
+01DLmVWx :
+- **`keepAlive` ne prend plus le verrou de script.** L'anti-empilement passe
+  par un drapeau `CacheService` (`keepalive_en_cours`, TTL 360 s). Versions
+  NextStep **v10.18.0** (`2b9f52a`) et NEWGEN **v11.37** (`0a05377`). Ce sont
+  elles qu'il faut déployer, pas v10.17.0 / v11.36.
+- **Les refus serveur (`ok:false`) sont journalisés** avec le motif
+  `serveur : <message>` et comptés à part dans `resumeLogsTexte` : ni pertes,
+  ni durées livrées (NextStep `719f084`, NEWGEN `8c6fe6f`).
+- Le verrou d'écriture (20 s, un seul verrou par `saveMany`) reste tel quel.
+  Surveillance après déploiement : dans les **Exécutions**, les `doGet`
+  d'écriture d'environ 20 s.
+
+Reste non vérifié : que la plateforme libère le verrou de script quand elle
+arrête une exécution de force.
+
 ## AG-005 — Ce que le relevé NextStep du 22/09 prouve, et ce qu'il ne prouve pas — ouvert le 22/09/2026
 **Auteur** : session 01Dq1xi3 — lu sur `81e5210`
 **Proposition** : j'ai tiré quatre conclusions d'un résumé de journal de
