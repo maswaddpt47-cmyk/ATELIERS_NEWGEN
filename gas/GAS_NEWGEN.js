@@ -1,5 +1,42 @@
 
-// ── GAS Backend v11.34 ────────────────────────────────────────
+// ── GAS Backend v11.35 ────────────────────────────────────────
+// ⚠️ CETTE COPIE EST EN AVANCE SUR LA PRODUCTION (22/09/2026).
+//    v11.35 n'est PAS déployée. Le déploiement se fait à la main
+//    (script.google.com → coller ce fichier → publier une version), voir
+//    gas/README.md. Tant que ce bandeau est là, le verrou d'écriture décrit
+//    ci-dessous n'existe pas en ligne. Le retirer une fois le déploiement
+//    confirmé, pas avant.
+//
+// v11.35 : SÉCURITÉ DONNÉES — verrou serveur sur les trois actions qui
+//          modifient la feuille Ateliers (saveEntry, saveMany, delete), via
+//          LockService.getScriptLock().waitLock(20 s) et releaseLock() en
+//          finally. Jusqu'ici seul keepAlive prenait un verrou ; les
+//          écritures, aucun. NEWGEN doublant déjà ses lectures, rien ne
+//          garantissait la sérialisation même dans un seul onglet. Deux
+//          risques réels :
+//            - deux saveEntry simultanés sur le même _id peuvent tous deux
+//              conclure « ligne absente » et faire chacun leur appendRow
+//              (atelier en double) ;
+//            - deux delete simultanés : le second a lu son index AVANT la
+//              suppression du premier, toutes les lignes suivantes ont
+//              décalé d'un rang → il supprime ou écrase l'atelier voisin.
+//          Constaté dans l'analyse AG-003 (AGORA.md), verdict « amendé ».
+//          saveMany prend UN seul verrou pour tout le lot (pas un par
+//          entrée) et renvoie l'erreur du verrou si elle survient — sans
+//          cela il aurait renvoyé {ok:true} sans avoir rien écrit.
+//          ⚠️ Contention connue, propre à ce fichier : keepAlive prend le
+//          MÊME script lock (tryLock(0), L~1000). Apps Script n'offre pas de
+//          verrou nommé, les deux partagent donc le verrou de script. Sens
+//          keepAlive → écriture : sans gravité, keepAlive abandonne
+//          immédiatement (tryLock(0)). Sens écriture → keepAlive : une
+//          écriture peut attendre la fin d'un keepAlive en cours, soit
+//          ~1-2 s mesurées, au pire 20 s. Fenêtre estimée à moins de 1 %
+//          (un keepAlive de ~2 s toutes les 5 min) — HYPOTHÈSE NON VÉRIFIÉE,
+//          à recouper dans les Exécutions après déploiement si des écritures
+//          paraissent anormalement lentes.
+//          Rejouer une écriture reste sûr : le client génère l'_id avant
+//          l'envoi, actionSaveEntry retrouve la ligne au lieu d'en créer
+//          une seconde.
 // v11.34 : AJOUT — date_prelevement_materiel (date de retrait du matériel,
 //          peut précéder la date de l'atelier — ex. retrait le mardi pour
 //          un atelier le vendredi). Traité comme date_retour_materiel :
@@ -568,7 +605,41 @@ function _actionGetAllFresh(p) {
     return {ok:true, entries:entries, lists:lists, visibility:visibility, conseiller_colors:conseiller_colors, emails:emails, stockOrdinateurs:stockOrdinateurs, materielsCaches:materielsCaches};
   } catch(err) { return {ok:false, error:String(err)}; }
 }
-function actionSaveEntry(p) {
+// ── Verrou d'écriture ─────────────────────────────────────────
+// Sérialise côté SERVEUR les trois actions qui modifient la feuille
+// Ateliers (saveEntry, saveMany, delete). Jusqu'ici rien ne les protégeait :
+// la sérialisation vivait côté client (file d'attente d'un seul onglet), donc
+// elle ne voyait pas les autres onglets ni les autres postes. Deux exécutions
+// simultanées peuvent :
+//   - conclure toutes les deux « ligne absente » pour le même _id et faire
+//     chacune leur appendRow → atelier en double ;
+//   - se croiser sur un deleteRow : la seconde a lu son index AVANT la
+//     suppression de la première, toutes les lignes suivantes ont décalé
+//     d'un rang, elle supprime ou écrase l'atelier voisin.
+// waitLock (et non tryLock) : une écriture doit attendre son tour, pas être
+// abandonnée. Au-delà du délai on renvoie une erreur explicite — le client
+// rejoue sans risque, il génère l'_id avant l'envoi.
+// 20 s : volontairement au-delà du plafond client en écriture (12 s), pour
+// couvrir un saveMany en cours (plafond client 25 s) qui tiendrait le verrou.
+// Ce n'est PAS un rallongement de plafond au sens de CLAUDE.md : aucun écran
+// d'attente ne s'allonge côté usager, le client abandonne toujours à 12 s. Si
+// le serveur finit après cet abandon, l'écriture est bien appliquée et le
+// rejeu du client la retrouve par son _id au lieu d'en créer une seconde.
+var ECRITURE_LOCK_MS = 20000;
+function _avecVerrouEcriture(fn) {
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(ECRITURE_LOCK_MS);
+  } catch (e) {
+    return {ok:false, error:'Écriture concurrente en cours, réessayez'};
+  }
+  try {
+    return fn();
+  } finally {
+    try { lock.releaseLock(); } catch (_) {}
+  }
+}
+function _saveEntryInterne(p) {
   var d = p;
   if (p.entry) { try { d = typeof p.entry === 'string' ? JSON.parse(p.entry) : p.entry; } catch(_) { d = p; } }
   var sh = _ss().getSheetByName(SHEET_NAME);
@@ -597,17 +668,26 @@ function actionSaveEntry(p) {
   _invalidateCache();
   return {ok:true, _id:id};
 }
+function actionSaveEntry(p) {
+  return _avecVerrouEcriture(function() { return _saveEntryInterne(p); });
+}
 function actionSaveMany(p) {
   var entries = p.entries;
   if (typeof entries === 'string') { try { entries = JSON.parse(entries); } catch(_) { return {ok:false, error:'JSON invalide'}; } }
   if (!Array.isArray(entries)) return {ok:false, error:'entries doit être un tableau'};
   var errors = [];
-  entries.forEach(function(entry, idx) { try { actionSaveEntry({entry:entry}); } catch(e) { errors.push({idx:idx, error:String(e)}); } });
+  // Un seul verrou pour tout le lot (et non un par entrée) : moins d'attente,
+  // et le lot ne peut pas s'entrelacer avec une autre écriture.
+  var verrou = _avecVerrouEcriture(function() {
+    entries.forEach(function(entry, idx) { try { _saveEntryInterne({entry:entry}); } catch(e) { errors.push({idx:idx, error:String(e)}); } });
+    return {ok:true};
+  });
+  if (!verrou.ok) return verrou;  // verrou non obtenu : rien n'a été écrit
   _invalidateCache();
   if (errors.length > 0) return {ok:false, error:'Erreurs batch: ' + JSON.stringify(errors)};
   return {ok:true, count:entries.length};
 }
-function actionDelete(p) {
+function _deleteInterne(p) {
   var sh = _ss().getSheetByName(SHEET_NAME);
   if (!sh) return {ok:false, error:'Feuille introuvable'};
   var id = p._id || ''; if (!id) return {ok:false, error:'ID manquant'};
@@ -627,6 +707,9 @@ function actionDelete(p) {
     }
   }
   return {ok:false, error:'Entrée introuvable'};
+}
+function actionDelete(p) {
+  return _avecVerrouEcriture(function() { return _deleteInterne(p); });
 }
 function actionSaveLists(p) {
   var lists = p.lists ? (typeof p.lists === 'string' ? JSON.parse(p.lists) : p.lists) : {};
