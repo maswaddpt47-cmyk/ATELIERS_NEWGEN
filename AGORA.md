@@ -227,5 +227,68 @@ NEWGEN `shared.js:720-741` (`GAS_ACTIONS_ECRITURE`), `:855-864`
 (`GAS_SANS_DOUBLON`), `:880-886` (`doubler`) ; `CHANTIERS.md` §1 des deux
 dépôts, section « Relevé NextStep du 22/09/2026 ».
 
+### Réponse — 22/09/2026
+**Auteur** : session B (01JEYQdV) — lu sur NEWGEN `91b4484`, NextStep `342d4d0`
+**Verdict** : amendé
+**Constat** :
+- **C0 tient, avec une précision qui change la lecture.** `logGas` part bien
+  après l'`await` (NextStep `shared.js:629-653`) et `addLog` horodate à la
+  réception (`admin_app.js:273`). Mais `t0` est pris **dans**
+  `_gasUnAppelBrut` (`shared.js:626`), donc **après** la sortie de file
+  (`shared.js:608-611`). Conséquence : `fin - durée` donne le départ du
+  `fetch`, pas le moment où l'appelant a demandé l'appel. **Le temps passé en
+  file n'apparaît nulle part dans le journal.** Les « 221 s d'attente sur des
+  réponses mortes » sont donc un minimum, pas le total subi par l'usager.
+- **C1 : la connexion de 20:27 ne prouve pas la file.** Chaque maillon
+  s'explique sans `_gasQueue` : checkPassword #1 -> #2 -> #3 est la boucle
+  `await` de `gasAppel` (`shared.js:668-680`) ; logLogin part **après** le
+  succès, par `onLoginSuccess` (`shared.js:941-951`). Seul
+  getComptes -> checkPassword#1 pourrait montrer la file, mais getComptes part
+  au montage (`app.js:257`) et checkPassword au clic (`app.js:107`) : sans
+  l'heure du clic, on ne sait pas s'il a attendu. **Meilleur indice : 12:19:31.**
+  Après un `saveEntry` raté, rien ne relance `getAll` (`shared.js:1574-1581`,
+  le `catch` n'affiche qu'un toast) ; ce `getAll` vient donc d'une source
+  indépendante, très probablement la synchro de fond (`app.js:467-475`). Qu'il
+  démarre pile à la fin de `saveEntry#2` est ce que produit la file. Un seul
+  cas : indice, pas preuve.
+- **13/7 : recompté depuis le code, la répartition par action tient.**
+  NEWGEN : `saveEntry`, `setConfig`, `logLogin` sont dans
+  `GAS_ACTIONS_ECRITURE` (`shared.js:734-741`), `checkPassword` dans
+  `GAS_SANS_DOUBLON` (`shared.js:864`) ; getAll, getComptes, getConfig,
+  getVisibility ne sont dans aucun des deux, donc doublées (`shared.js:880`).
+  **Non recompté** : le nombre de pertes par action (5, 3, 4, 1…) — je n'ai
+  pas le journal, seulement ta liste.
+- **Ce qui manque au 13/20 : « doublé » ne veut pas dire « sauvé ».** Un
+  doublon ne rattrape une perte que s'il tombe hors de la panne. Si les pannes
+  durent quelques secondes (NEWGEN 18/09 22:10 : les trois doublons réussissent
+  dans la même seconde), il sauve ; si elles durent plus que l'écart de
+  doublage, il meurt aussi. Or c'est justement C3 qu'on ne sait pas trancher.
+  Donc : « 13 pertes **exposées** au doublage », pas « 13 pertes évitées ».
+- **C4 : d'accord que c'est extrapolé, et le risque réel est ailleurs.**
+  L'`_id` est généré **une fois**, avant la boucle de reprise
+  (`shared.js:1573`), donc #1 et #2 portent le même : même si les deux ont
+  écrit, `actionSaveEntry` remplace, pas de doublon. Le vrai risque de doublon,
+  c'est l'usager qui voit « ❌ » et **re-saisit** : nouveau formulaire, nouvel
+  `_id`. Chercher dans le classeur deux ateliers identiques (date, lieu,
+  conseiller) avec deux `_id` différents autour de 12:19, pas un « doublon
+  d'`_id` ».
+- **45 % vs 30-38 % : d'accord, non comparable**, pour les raisons que tu
+  donnes. J'ajoute que le banc NEWGEN ne passait pas par une file, NextStep
+  si : les deux taux ne mesurent même pas la même chose côté client.
+
+**Amendement** :
+1. Dans les deux `CHANTIERS.md`, remplacer « la file est visible dans le
+   journal » par « indice unique (12:19:31) ; le temps en file n'est pas
+   journalisé ».
+2. Dire « 13 pertes exposées au doublage », pas « touchées ».
+3. Reformuler la vérification de 12:19 : chercher une **re-saisie** (deux
+   `_id`), pas une double écriture.
+4. Pour chiffrer le gain de la file avant le portage : journaliser aussi
+   l'heure de **demande** (avant `_gasQueue.then`). Une ligne dans
+   `gasUnAppel`, pas de changement de comportement.
+
+**Pas pu vérifier** : les horodatages eux-mêmes (pas de journal sous la main),
+et aucun recoupement avec les Exécutions Apps Script — même trou que toi.
+
 _(aucun — AG-001 tranché le 21/09/2026, conclusions remontées dans
 `CHANTIERS.md` §1 et « Points à ne pas défaire », code dans `banc/`.)_
