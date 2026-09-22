@@ -89,6 +89,30 @@ production. **Le retirer seulement quand l'utilisateur confirme « déployé ».
 ⚖️ Le verrou lui-même fait l'objet d'**AG-004** (contention avec `keepAlive`,
 délai de 20 s) — ouvert pour surveillance, pas bloquant.
 
+### Relevé NextStep du 22/09/2026 — l'angle mort n° 1 d'AG-003 se referme
+
+44 appels sur le **backend NextStep**, 11:31 -> 20:27, usage réel (pas
+d'alternance contrôlée) : **20 perdus, 45 %**, médiane des réponses livrées
+3,5 s, **221 s d'attente sur des réponses mortes**. Le banc relevait 30-38 %
+sur le backend NEWGEN : **NextStep n'est pas meilleur, il est au moins aussi
+touché.** C'est l'indice qui manquait à AG-003 — un indice, pas une mesure
+appariée.
+
+⚠️ **Le portage ne touchera que 13 des 20 pertes.** `shared.js:880-886` :
+`doubler = !ecriture && !GAS_SANS_DOUBLON.has(action)`. Doublées : getAll 5,
+getComptes 3, getConfig 4, getVisibility 1 — **13**. Jamais doublées, par
+conception : saveEntry 3, checkPassword 2, setConfig 1, logLogin 1 — **7**.
+**Enregistrer un atelier ne sera pas plus rapide** : le gain porte sur
+l'ouverture et la navigation. Le second gain vient du retrait de la file
+(NextStep), pas du doublage.
+
+Confirmation de la fenêtre de panne : six créneaux (11:31, 11:38, 11:40,
+11:49, 12:18, 20:27) tuent **tout** ce qu'ils contiennent et rien en dehors —
+même comportement qu'ici le 18/09.
+
+Détail complet et relevé brut : `CHANTIERS.md` d'ateliers-cd47_NextStep, même
+section.
+
 ### Puis seulement : porter le doublage
 
 **Ne pas porter tant que le déploiement du verrou n'est pas confirmé en
