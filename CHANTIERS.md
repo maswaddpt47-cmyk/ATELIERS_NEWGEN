@@ -111,6 +111,45 @@ gagne pas le *doublage*, mais elle gagne le *retrait de la file* : `_gasQueue`
 sérialise tous les appels côté NextStep, donc une écriture derrière une lecture
 morte attend 12 s avant de partir. Gain non chiffré.
 
+### 🔴 Premier relevé avec le compteur de sauvetages — 22/09/2026 au soir
+
+26 appels journalisés, 19 perdus. **Le compteur donne 8 doublons partis, 2 qui
+ont sauvé la lecture, 6 morts avec leur jumeau — 25 % de sauvetages.** Le banc
+du matin en annonçait 42 %.
+
+**Taux de pertes réel : 21/28, soit 75 %** — pas 73 %. Les 2 originaux
+rattrapés par leur doublon n'apparaissent pas dans le journal (voir
+ci-dessous), il faut les rajouter des deux côtés de la fraction.
+
+**Pourquoi les 6 doublons sont morts : la panne dure plus longtemps que le
+délai de doublage.** Départs reconstruits (`fin - durée`) :
+
+| 22:41:13 | `getAll#1` `getConfig#1` `getComptes#1` — **trois en parallèle** |
+|---|---|
+| 22:41:20 | les trois jumeaux, exactement `GAS_HEDGE_MS` plus tard |
+| 22:41:27 | `logLogin#1` |
+| 22:41:32 | `getAll#2` `getConfig#2` |
+| 22:41:39 | `getAll#2b` |
+| 22:41:52 | dernier mort |
+
+**39 secondes de panne continue, rien ne passe.** Celle de 11:36:51 -> 11:37:41
+dure **50 secondes**. Un doublon lancé à +7 s tombe en plein dedans : il ne
+pouvait pas sauver. **Le doublage rattrape une perte isolée, pas une fenêtre
+de 40 secondes.**
+
+⚠️ **À ne pas sur-interpréter : 8 doublons, c'est un échantillon minuscule**,
+contre 249 salves pour le banc. Ce relevé ne réfute pas le banc, il montre un
+régime que le banc n'avait pas isolé. **Ce qu'il faut en retenir pour le
+portage : le gain annoncé (26 s -> 12 s en médiane) suppose des pertes
+isolées. Sur une fenêtre de 40 s, le portage ne changera rien.** À rassembler
+sur plusieurs jours avant de trancher — et à soumettre à l'AGORA au moment de
+décider du portage, pas maintenant.
+
+Note au passage : les trois appels de 22:41:13 partent **ensemble**, ce qui
+confirme une fois de plus que NEWGEN n'a pas de file. Et `logLogin` (2/2
+perdus) comme `checkPassword` (3/4) ne sont jamais doublés — le doublage ne
+les protégera jamais.
+
 ⚠️ **Troisième raison, trouvée le 22/09/2026, de ne PAS comparer les deux
 taux — et elle est structurelle.** Quand l'un des deux appels doublés aboutit,
 `gasLectureDoublee` **annule** l'autre, et un appel annulé n'est **pas
