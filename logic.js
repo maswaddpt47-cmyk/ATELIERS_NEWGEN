@@ -210,7 +210,13 @@ function normalizeMatLabel(s) {
 // répéter les mêmes conseillers sur chaque jour d'un même chevauchement de
 // plusieurs jours. Chaque conseiller d'un bloc est en conflit avec tous les
 // autres conseillers du même bloc.
-const STOCK_ORDINATEURS = 10;
+// let (pas const) : écrasée par la config GAS (stockOrdinateurs renvoyé par
+// getAll) dans loadData, et modifiable depuis le panneau Admin. shared.js —
+// la copie réellement servie aux pages — l'a toujours déclarée en let ;
+// ce const-ci n'avait aucun effet tant que logic.js n'était chargé que par
+// les tests, mais aurait fait échouer la mise à jour en silence le jour où
+// une page l'aurait référencé (22/09/2026).
+let STOCK_ORDINATEURS = 10;
 // Cumul du jour à partir d'une liste d'items {conseiller, qte} — au max par
 // conseiller, pas en somme : un même conseiller qui enchaîne deux ateliers
 // dos-à-dos (retour du premier = prélèvement du second, sans repasser par

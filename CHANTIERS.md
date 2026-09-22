@@ -253,13 +253,6 @@ Le retirer du panneau Admin plutôt que de le dupliquer : deux champs qui
 écrivent la même clé de config finiront par afficher deux valeurs
 différentes.
 
-**Aligner `STOCK_ORDINATEURS` entre les deux copies.** `logic.js:213` le
-déclare `const`, `shared.js:1113` le déclare `let`. Sans effet aujourd'hui —
-les pages chargent `shared.js`, pas `logic.js` (cf. §6) — mais le jour où
-`logic.js` serait référencé dans un HTML, le champ Admin cesserait
-silencieusement de fonctionner : l'écriture sur une `const` échoue sans
-bruit hors mode strict. NextStep a `let` des deux côtés.
-
 ---
 
 ## Points à ne pas défaire
