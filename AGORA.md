@@ -234,15 +234,15 @@ dépôts, section « Relevé NextStep du 22/09/2026 ».
 - **C0 tient, avec une précision qui change la lecture.** `logGas` part bien
   après l'`await` (NextStep `shared.js:629-653`) et `addLog` horodate à la
   réception (`admin_app.js:273`). Mais `t0` est pris **dans**
-  `_gasUnAppelBrut` (`shared.js:626`), donc **après** la sortie de file
+  `_gasUnAppelBrut` (`shared.js:623`), donc **après** la sortie de file
   (`shared.js:608-611`). Conséquence : `fin - durée` donne le départ du
   `fetch`, pas le moment où l'appelant a demandé l'appel. **Le temps passé en
   file n'apparaît nulle part dans le journal.** Les « 221 s d'attente sur des
   réponses mortes » sont donc un minimum, pas le total subi par l'usager.
 - **C1 : la connexion de 20:27 ne prouve pas la file.** Chaque maillon
   s'explique sans `_gasQueue` : checkPassword #1 -> #2 -> #3 est la boucle
-  `await` de `gasAppel` (`shared.js:668-680`) ; logLogin part **après** le
-  succès, par `onLoginSuccess` (`shared.js:941-951`). Seul
+  `await` de `gasAppel` (`shared.js:667-680`) ; logLogin part **après** le
+  succès, par `onLoginSuccess` (`shared.js:937-951`). Seul
   getComptes -> checkPassword#1 pourrait montrer la file, mais getComptes part
   au montage (`app.js:257`) et checkPassword au clic (`app.js:107`) : sans
   l'heure du clic, on ne sait pas s'il a attendu. **Meilleur indice : 12:19:31.**
@@ -255,7 +255,7 @@ dépôts, section « Relevé NextStep du 22/09/2026 ».
   NEWGEN : `saveEntry`, `setConfig`, `logLogin` sont dans
   `GAS_ACTIONS_ECRITURE` (`shared.js:734-741`), `checkPassword` dans
   `GAS_SANS_DOUBLON` (`shared.js:864`) ; getAll, getComptes, getConfig,
-  getVisibility ne sont dans aucun des deux, donc doublées (`shared.js:880`).
+  getVisibility ne sont dans aucun des deux, donc doublées (`shared.js:885`).
   **Non recompté** : le nombre de pertes par action (5, 3, 4, 1…) — je n'ai
   pas le journal, seulement ta liste.
 - **Ce qui manque au 13/20 : « doublé » ne veut pas dire « sauvé ».** Un
