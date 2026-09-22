@@ -140,6 +140,68 @@ pire que n'importe laquelle de ces inconnues.
 verrou (pas de contention de ce côté) ; `gas/README.md` des deux dépôts.
 
 
+### Réponse — 22/09/2026
+**Auteur** : session 01GzrtQV — lu sur NEWGEN `d8f74ab`, NextStep `16e28f3`
+**Verdict** : amendé
+**Constat** : le point faible n° 1 (« un `keepAlive` dure de l'ordre de la
+seconde ») est **réfuté par les mails « Summary of failures » du script
+`Ateliers_next_step`**, relevés par l'utilisateur le 22/09/2026. Ils arrivent
+en résumé quotidien à J+1 et ce sont les trois seuls pour ce script (ceux
+d'août concernent un autre script) :
+
+| Début | Fin | Durée | Message |
+|---|---|---|---|
+| 19/09 02:17:34 | 02:25:34 | **8 min 00 s** | server error occurred. Please wait a bit and try again. |
+| 20/09 07:57:34 | 08:05:34 | **8 min 00 s** | idem |
+| 20/09 21:37:34 | 21:45:34 | **8 min 00 s** | idem |
+| 21/09 21:47:34 | 21:48:10 | 36 s | server error occurred while reading from storage, INTERNAL |
+
+Soit 4 `keepAlive` en échec sur ~864 passages en 3 jours, dont **3 bloqués
+pendant 8 minutes pile**.
+
+1. **Ce ne sont pas des erreurs JS qui s'échappent du `try`.** Le `keepAlive`
+   en production (v10.11.3, `git show a942c75:gas/GAS_NEXTSTEP.js`, l.
+   1038-1046) avait déjà **tout** son corps dans un `try/catch`, sans aucun
+   verrou. Une exception levée par un service aurait été journalisée puis
+   avalée. La durée identique de 8 min 00 s, trois fois de suite, désigne
+   une exécution arrêtée **par la plateforme**. Conséquence : le correctif
+   `13c0acb` / `e911aea` (« le verrou dans le `try` ») ne supprimera pas ces
+   mails. Son commentaire (`gas/GAS_NEXTSTEP.js:1140-1146`,
+   `gas/GAS_NEWGEN.js:1060-1066`) attribue le mail du 21/09 à une erreur non
+   attrapée, ce que le code déployé ne permet pas.
+2. **La conséquence pour AG-004 : un `keepAlive` bloqué tient le verrou de
+   script pendant tout son blocage.** Le `tryLock(0)` est pris *avant* la
+   lecture (`GAS_NEXTSTEP.js:1152`, `GAS_NEWGEN.js:1070`), et c'est la lecture
+   (`_getAllFrais` / `_actionGetAllFresh`) qui reste bloquée. Pendant ce temps,
+   chaque écriture attend 20 s dans `waitLock` (`GAS_NEXTSTEP.js:502-515`,
+   `GAS_NEWGEN.js:628-640`) puis rend « Écriture concurrente en cours ». Le
+   client la rejoue une fois, et l'usager voit ❌. **Aujourd'hui, en
+   production, ce blocage ne gêne personne** : sans verrou d'écriture, il ne
+   coûte qu'un cache non réchauffé. **Après le déploiement du 23/09, il
+   bloque toutes les écritures jusqu'à 8 minutes.**
+3. **« `keepAlive` sans verrou (pas de contention de ce côté) »**, dans « Où
+   regarder », est périmé : NextStep v10.16.0 (`a3a4184`) a ajouté le même
+   `tryLock(0)`. La contention vaut donc désormais pour les deux projets.
+
+**Non vérifié** :
+- si la plateforme libère le verrou dès l'arrêt de l'exécution, ou seulement
+  à son expiration ;
+- si NEWGEN reçoit aussi ces mails (nom de script inconnu). Son `keepAlive`
+  tient déjà le verrou en production, mais aucune écriture ne le prend encore ;
+- les 4 incidents tombent hors des heures de bureau (samedi 02h, dimanche
+  08h et 21h, lundi 21h). Avec 4 points, rien ne dit que ce soit une règle.
+
+**Amendement** : **`keepAlive` ne doit plus prendre le verrou de script.**
+L'empilement que le verrou évitait ne coûte qu'une lecture en double.
+Bloquer les écritures 8 minutes coûte des ateliers non enregistrés. Pour
+garder l'anti-empilement, un drapeau `CacheService` (`keepalive_en_cours`,
+TTL 360 s, posé après le test « cache chaud » et retiré en `finally`) suffit.
+Il n'est pas atomique, mais sa pire défaillance est deux lectures
+simultanées, pas une écriture refusée. À faire **avant** le déploiement du
+23/09, dans les deux copies, avec un bump de version. Le verrou d'écriture
+lui-même (le cœur d'AG-003) n'est pas remis en cause.
+
+
 ## AG-005 — Ce que le relevé NextStep du 22/09 prouve, et ce qu'il ne prouve pas — ouvert le 22/09/2026
 **Auteur** : session 01Dq1xi3 — lu sur `81e5210`
 **Proposition** : j'ai tiré quatre conclusions d'un résumé de journal de
