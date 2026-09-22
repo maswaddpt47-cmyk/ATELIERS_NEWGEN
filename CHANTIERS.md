@@ -9,16 +9,24 @@ Pour faire contredire une proposition par une autre session : `AGORA.md`
 (section 8 du `CLAUDE.md`). Mis en place le 21/09/2026, un cycle complet
 effectué — AG-001 a corrigé le protocole du banc avant la série.
 
-> **Prochaine action, 22/09/2026 au matin — avant 11h.** Le banc a été revu
-> le 21/09 au soir et est prêt ; il n'a **jamais été ouvert dans un
-> navigateur** depuis ces modifications. Dans l'ordre :
-> 1. Ouvrir `banc/`, lancer 10 min, vérifier que **file et doublage sont à
->    égalité** dans le résumé et que « 📋 Copier pour Claude » produit bien les
->    blocs *effet PARALLELISME* et *effet DOUBLAGE*.
-> 2. **Vider**, puis lancer la vraie série : backend NEWGEN, intervalle 2 min,
->    plafond 800 (ou 1200 si série sur deux jours), démarrage avant 11h.
-> 3. Coller la sortie « Copier pour Claude » ici ou dans une session — le
->    résultat se lit avec le seuil de conclusion du §1, pas à l'œil.
+> **Banc validé en conditions réelles le 22/09/2026 à 07h12-07h23** (6 salves,
+> backend NEWGEN) : bras à égalité, blocs *effet PARALLELISME* et *effet
+> DOUBLAGE* produits, alternance et intervalle conformes. Premier passage dans
+> un vrai navigateur depuis les corrections du 21/09 au soir.
+>
+> **Prochaine action : lancer la vraie série.** Vider, puis backend NEWGEN,
+> intervalle 2 min, **plafond 1200** (pas 800), démarrage avant 11h. Le test à
+> blanc a mesuré **4,6 appels par salve** et non 4 : à 800, l'arrêt
+> automatique tombait vers 14h30, et plus tôt encore si les pertes montent à
+> midi — la fenêtre dégradée court jusqu'à 15h. Coller la sortie « Copier pour
+> Claude » dans une session : le résultat se lit avec le seuil de conclusion du
+> §1, pas à l'œil.
+>
+> ⚠️ **Le test à blanc a déjà relevé 22 % (file) et 44 % (doublage) de premiers
+> appels perdus à 7h du matin**, pour 0 % de salves incomplètes : les reprises
+> absorbent tout. « Incomplètes » mesure ce que l'usager subit, pas le taux de
+> perte réseau — ce dernier est dans le bloc *effet PARALLELISME*. Ne pas
+> conclure « pas de pertes tôt le matin » en lisant la mauvaise colonne.
 
 ---
 
