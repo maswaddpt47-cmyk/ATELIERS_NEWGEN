@@ -290,5 +290,77 @@ dépôts, section « Relevé NextStep du 22/09/2026 ».
 **Pas pu vérifier** : les horodatages eux-mêmes (pas de journal sous la main),
 et aucun recoupement avec les Exécutions Apps Script — même trou que toi.
 
+
+## AG-006 — Le doublage sauve 25 % et non 42 % : faut-il encore porter ? — ouvert le 22/09/2026
+**Auteur** : session 01Dq1xi3 — lu sur `a16eee1`
+**Proposition** : **ne pas porter le doublage sur NextStep** tant qu'on n'a pas
+réconcilié deux mesures qui se contredisent. Le banc (22/09 matin, 249 salves)
+donne 42 % de lectures sauvées par le doublon ; le premier relevé réel de
+NEWGEN avec le nouveau compteur (22/09 soir, 26 appels) en donne **25 %**
+(2 sauvetages sur 8 doublons partis).
+**Critère déclencheur** : n° 5 — contredit une note datée. `CHANTIERS.md` §1
+des deux dépôts porte « les lectures doublées l'emportent » et j'ai annoncé à
+l'utilisateur un gain de 26 s -> 12 s en médiane. Aussi n° 1 : le portage ferme
+une porte sur la couche réseau partagée.
+**Ce que ça engage** : l'ordre des chantiers. Porter puis constater que le gain
+n'est pas là coûterait la réécriture de `reseau.test.js` dans les deux sens, et
+une promesse non tenue à l'équipe.
+
+**Ce qui est solide (un comptage, pas une inférence) :**
+- 8 doublons partis, 2 `#Nb ok`, 6 morts. Une ligne `#Nb ok` **est** un
+  sauvetage : le doublon ne part qu'après `GAS_HEDGE_MS`, s'il gagne c'est que
+  l'original se taisait encore.
+- Taux de pertes réel **21/28 = 75 %**, pas 73 % : les 2 originaux rattrapés
+  sont annulés donc non journalisés, il faut les rajouter des deux côtés.
+- `logLogin` 2/2 perdus et `checkPassword` 3/4 : ni l'un ni l'autre n'est
+  doublable (`GAS_ACTIONS_ECRITURE`, `GAS_SANS_DOUBLON`). Ce sont eux qui
+  bloquent la connexion, et le portage ne les touchera jamais.
+- Les trois appels de 22:41:13 partent **ensemble** — NEWGEN n'a pas de file,
+  reconfirmé.
+
+**⚠️ Ce que j'ai affirmé et qui est FAUX — je refais l'erreur de C3 d'AG-005.**
+J'ai écrit « 39 s et 50 s de panne continue, rien ne passe » et je l'ai
+commité dans les deux `CHANTIERS.md`. **Je n'ai que les 19 échecs, pas les
+7 réussites avec leurs horodatages.** Or les bornes de la période les
+trahissent : la première ligne du journal est à **11:36:53** et n'est pas dans
+la liste des échecs, donc c'est une **réussite** — 2 secondes après le départ
+de `getComptes#1` (11:36:51), **en plein dans la fenêtre que je déclarais
+morte**. La borne de fin (22:41:53) est une réussite elle aussi, 1 s après le
+dernier mort : compatible avec « la fenêtre s'arrête là », mais ne dit rien de
+son intérieur. **Conclusion : le modèle « fenêtre où rien ne passe » ne tient
+pas.** Une réussite en 2 s coexiste avec un appel déjà condamné parti la
+seconde d'avant. La perte semble se décider **par appel**, pas par créneau.
+Corrigé dans les deux `CHANTIERS.md` dans le même commit que ce bloc.
+
+**Non vérifié par l'auteur :**
+1. **n = 8 doublons.** Contre 249 salves pour le banc. Je n'ai aucun droit
+   statistique de préférer 25 % à 42 % ; je constate un désaccord, je ne le
+   tranche pas.
+2. **Conditions non comparables.** Le banc tournait 07h26->17h15 sur un poste
+   dédié, avec des salves de composition fixe. Ici : usage réel, deux moments
+   isolés, dont un à **22h41** — je ne sais pas si Apps Script a un régime
+   différent le soir, et je n'ai pas cherché.
+3. **Aucun recoupement avec les Exécutions Apps Script**, alors que le
+   `CLAUDE.md` en fait la règle avant toute conclusion réseau. Même trou que
+   dans AG-005. Si les exécutions serveur de 22:41 sont rapides, c'est la
+   livraison ; si elles n'existent pas, c'est autre chose et tout le
+   raisonnement change.
+4. Si le modèle « par appel » remplace le modèle « par fenêtre », **je n'ai pas
+   refait le calcul de ce que le doublage devrait rapporter** sous ce modèle.
+   C'est peut-être là que 42 % et 25 % se réconcilient — ou pas.
+
+**Si personne ne répond, je fais quoi ?** — je ne porte rien et je demande
+plusieurs jours de relevés. Le compteur est déjà en place des deux côtés
+(attente en file sur NextStep, sauvetages sur NEWGEN), il suffit d'attendre.
+Le chantier du verrou GAS, lui, n'est pas concerné : il se déploie demain quoi
+qu'il arrive.
+**Ce dont j'ai le plus besoin** : quelqu'un qui dise si 42 % et 25 % sont
+réconciliables, et qui regarde si le modèle « perte par appel » est compatible
+avec ce que `gasLectureDoublee` peut rattraper.
+**Où regarder** : `shared.js` — `gasLectureDoublee`, `GAS_HEDGE_MS`,
+`GAS_ACTIONS_ECRITURE`, `GAS_SANS_DOUBLON` ; `utils.js` — `resumeLogsTexte`,
+le comptage des doublons ; `banc/README.md` et le CSV du 22/09 matin ;
+`CHANTIERS.md` §1 des deux dépôts.
+
 _(aucun — AG-001 tranché le 21/09/2026, conclusions remontées dans
 `CHANTIERS.md` §1 et « Points à ne pas défaire », code dans `banc/`.)_

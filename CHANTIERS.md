@@ -132,10 +132,19 @@ délai de doublage.** Départs reconstruits (`fin - durée`) :
 | 22:41:39 | `getAll#2b` |
 | 22:41:52 | dernier mort |
 
-**39 secondes de panne continue, rien ne passe.** Celle de 11:36:51 -> 11:37:41
-dure **50 secondes**. Un doublon lancé à +7 s tombe en plein dedans : il ne
-pouvait pas sauver. **Le doublage rattrape une perte isolée, pas une fenêtre
-de 40 secondes.**
+⚠️ **Corrigé le 22/09/2026 (AG-006) — j'avais d'abord écrit ici « 39 s et 50 s
+de panne continue, rien ne passe ». C'est faux, et c'est exactement l'erreur
+que la session B m'avait déjà signalée en C3 d'AG-005.** Le résumé ne donne que
+les 19 échecs, pas les 7 réussites avec leurs heures. Or les bornes de la
+période les trahissent : la première ligne du journal est à **11:36:53**,
+absente de la liste des échecs, donc **réussie** — 2 secondes après le départ
+de `getComptes#1` (11:36:51), **en plein dans la fenêtre que je déclarais
+morte**. La borne de fin (22:41:53) est une réussite aussi, 1 s après le
+dernier mort.
+**Ce qu'on peut dire à la place** : une lecture aboutit en 2 s pendant qu'un
+appel parti la seconde d'avant est déjà condamné. **La perte semble se décider
+par appel, pas par créneau** — et si c'est le cas, l'explication « le doublon
+tombe dans le trou » ne suffit pas à expliquer les 6 morts. Ouvert en AG-006.
 
 ⚠️ **À ne pas sur-interpréter : 8 doublons, c'est un échantillon minuscule**,
 contre 249 salves pour le banc. Ce relevé ne réfute pas le banc, il montre un
