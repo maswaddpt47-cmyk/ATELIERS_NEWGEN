@@ -98,7 +98,10 @@ sur le backend NEWGEN : **NextStep n'est pas meilleur, il est au moins aussi
 touché.** C'est l'indice qui manquait à AG-003 — un indice, pas une mesure
 appariée.
 
-⚠️ **Le portage ne touchera que 13 des 20 pertes.** `shared.js:880-886` :
+⚠️ **13 des 20 pertes sont *exposées* au doublage — exposées, pas sauvées**
+(amendé par AG-005) : un doublon ne rattrape une perte que s'il part hors de
+la panne. Si la panne dure plus que l'écart de doublage (7 s), le jumeau meurt
+aussi. Combien sont réellement sauvées : inconnu. `shared.js:880-886` :
 `doubler = !ecriture && !GAS_SANS_DOUBLON.has(action)`. Doublées : getAll 5,
 getComptes 3, getConfig 4, getVisibility 1 — **13**. Jamais doublées, par
 conception : saveEntry 3, checkPassword 2, setConfig 1, logLogin 1 — **7**.
