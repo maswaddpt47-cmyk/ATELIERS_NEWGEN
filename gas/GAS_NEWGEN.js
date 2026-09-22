@@ -1,7 +1,7 @@
 
-// ── GAS Backend v11.35 ────────────────────────────────────────
+// ── GAS Backend v11.36 ────────────────────────────────────────
 // ⚠️ CETTE COPIE EST EN AVANCE SUR LA PRODUCTION (22/09/2026).
-//    v11.35 n'est PAS déployée. Le déploiement se fait à la main
+//    v11.35 et v11.36 ne sont PAS déployées. Le déploiement se fait à la main
 //    (script.google.com → coller ce fichier → publier une version), voir
 //    gas/README.md. Tant que ce bandeau est là, le verrou d'écriture décrit
 //    ci-dessous n'existe pas en ligne. Le retirer une fois le déploiement
@@ -1057,9 +1057,17 @@ function ajouterColonnesPretMateriel() {
 //     d'attendre — jamais deux exécutions empilées dans la file GAS.
 //  4. Le cache est désormais segmenté (100 Ko/clé n'est plus une limite).
 function keepAlive() {
-  var lock = LockService.getScriptLock();
-  if (!lock.tryLock(0)) { Logger.log('keepAlive : exécution déjà en cours, passage sauté.'); return; }
+  // TOUT est dans le try, y compris la prise du verrou. Raison concrète :
+  // le 21/09/2026 à 21:47:34, le keepAlive de NextStep — même structure — a
+  // échoué après 36 s sur « server error occurred while reading from storage,
+  // Error code INTERNAL », et Apps Script en a envoyé un mail « Summary of
+  // failures ». Une tâche de fond dont personne n'attend le résultat ne doit
+  // jamais remonter d'erreur : elle génère du bruit, et le passage suivant
+  // repassera dans 5 min.
+  var lock = null;
   try {
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(0)) { Logger.log('keepAlive : exécution déjà en cours, passage sauté.'); lock = null; return; }
     var year = String(new Date().getFullYear());
     if (_lireCacheGetAll(year)) { Logger.log('keepAlive : cache ' + year + ' déjà chaud.'); return; }
     var t0 = new Date().getTime();
@@ -1069,7 +1077,7 @@ function keepAlive() {
   } catch (err) {
     Logger.log('keepAlive error: ' + err);
   } finally {
-    lock.releaseLock();
+    if (lock) { try { lock.releaseLock(); } catch (_) {} }
   }
 }
 function testerSecuriteDoGet() {
