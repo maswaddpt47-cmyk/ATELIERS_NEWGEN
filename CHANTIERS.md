@@ -231,6 +231,37 @@ automatisés (qui ne peuvent pas les couvrir) :
 
 ---
 
+## À faire après la série du banc (22/09/2026)
+
+Reporté à la demande de l'utilisateur : ne rien pousser d'inutile pendant la
+mesure. Aucun de ces points n'a d'effet en production aujourd'hui.
+
+**Déplacer le champ « Stock ordinateurs » du panneau Admin vers l'onglet
+Gestion ordi.** Il est aujourd'hui la 8ᵉ section du panneau Admin, entre
+« Vérification cohérence » et « Mode Maintenance » — introuvable en pratique,
+constaté le 22/09. Sa place logique est à côté de la Frise et des conflits
+qu'il pilote.
+
+⚠️ **Ne pas le déplacer tel quel.** `VueGestionOrdi` vit dans `shared.js` et
+est servi **aussi par `index.html`**, qui n'a aucune notion de rôle admin.
+Le champ doit arriver par une prop fournie **uniquement par `admin_app.js`
+quand le rôle est admin** ; `app.js` ne la passe jamais. Sans cette garde,
+n'importe quel conseiller modifierait le stock de toute l'équipe depuis le
+frontend conseillers.
+
+Le retirer du panneau Admin plutôt que de le dupliquer : deux champs qui
+écrivent la même clé de config finiront par afficher deux valeurs
+différentes.
+
+**Aligner `STOCK_ORDINATEURS` entre les deux copies.** `logic.js:213` le
+déclare `const`, `shared.js:1113` le déclare `let`. Sans effet aujourd'hui —
+les pages chargent `shared.js`, pas `logic.js` (cf. §6) — mais le jour où
+`logic.js` serait référencé dans un HTML, le champ Admin cesserait
+silencieusement de fonctionner : l'écriture sur une `const` échoue sans
+bruit hors mode strict. NextStep a `let` des deux côtés.
+
+---
+
 ## Points à ne pas défaire
 
 Chacun a coûté cher à établir et est verrouillé par un test :
