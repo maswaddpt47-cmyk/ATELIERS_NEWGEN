@@ -102,13 +102,17 @@ appariée.
 `doubler = !ecriture && !GAS_SANS_DOUBLON.has(action)`. Doublées : getAll 5,
 getComptes 3, getConfig 4, getVisibility 1 — **13**. Jamais doublées, par
 conception : saveEntry 3, checkPassword 2, setConfig 1, logLogin 1 — **7**.
-**Enregistrer un atelier ne sera pas plus rapide** : le gain porte sur
-l'ouverture et la navigation. Le second gain vient du retrait de la file
-(NextStep), pas du doublage.
+**Nuance, corrigée le 22/09/2026 (AG-005)** — la première version disait
+« enregistrer un atelier ne sera pas plus rapide », c'était faux. L'écriture ne
+gagne pas le *doublage*, mais elle gagne le *retrait de la file* : `_gasQueue`
+sérialise tous les appels côté NextStep, donc une écriture derrière une lecture
+morte attend 12 s avant de partir. Gain non chiffré.
 
-Confirmation de la fenêtre de panne : six créneaux (11:31, 11:38, 11:40,
-11:49, 12:18, 20:27) tuent **tout** ce qu'ils contiennent et rien en dehors —
-même comportement qu'ici le 18/09.
+⚠️ **Deux affirmations retirées le 22/09/2026 (AG-005)** : la « confirmation »
+des fenêtres de panne (le résumé ne donnait que les échecs, pas les réussites —
+et un appel a manifestement réussi dans un créneau), et la comparaison directe
+45 % / 30-38 % (par appel reprises comprises d'un côté, par salve de l'autre :
+bases non communes). **L'angle mort n° 1 d'AG-003 est entamé, pas refermé.**
 
 Détail complet et relevé brut : `CHANTIERS.md` d'ateliers-cd47_NextStep, même
 section.

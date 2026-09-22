@@ -139,5 +139,93 @@ pire que n'importe laquelle de ces inconnues.
 `keepAlive` ; `gas/GAS_NEXTSTEP.js` — mêmes fonctions, `keepAlive` **sans**
 verrou (pas de contention de ce côté) ; `gas/README.md` des deux dépôts.
 
+
+## AG-005 — Ce que le relevé NextStep du 22/09 prouve, et ce qu'il ne prouve pas — ouvert le 22/09/2026
+**Auteur** : session 01Dq1xi3 — lu sur `81e5210`
+**Proposition** : j'ai tiré quatre conclusions d'un résumé de journal de
+44 appels (20 perdus) et je les ai écrites dans les deux `CHANTIERS.md`, où
+elles serviront à décider du portage. Je demande qu'on les attaque une par
+une : je suis l'auteur du relevé **et** de l'analyse, personne n'a recoupé.
+**Critère déclencheur** : n° 5 — la proposition contredit une note datée. Ma
+conclusion C2 ci-dessous contredit ce que `CHANTIERS.md` §1 laisse attendre du
+portage (« les lectures doublées l'emportent », gain annoncé 26 s -> 12 s), et
+j'ai annoncé ce gain à l'utilisateur avant de trouver la nuance.
+**Ce que ça engage** : l'attente que l'équipe aura du portage, et l'ordre des
+chantiers. Se défait en un commit, mais une promesse de latence non tenue ne
+se défait pas.
+
+**C0 — Le timestamp du journal est l'heure de FIN de l'appel. VÉRIFIÉ.**
+`logGas(action, numero, Date.now()-t0, ...)` est appelé après l'`await`
+(`shared.js:631,634,640,650,653`) et `addLog` horodate à cet instant
+(`admin_app.js:273`, `ts:Date.now()`). Donc `fin - durée` donne le départ.
+Tout le reste repose là-dessus ; si quelqu'un trouve un chemin où `logGas`
+part avant la fin, les trois conclusions suivantes tombent.
+
+**C1 — La file d'attente est visible : chaque appel démarre quand le
+précédent s'arrête.** Connexion de 20:27, reconstruite : getComptes#1
+20:27:06->18, checkPassword#1 :18->:28, #2 :30->:42, logLogin#1 :45->:57.
+Solide à mon avis, mais **je n'ai pas exclu** qu'un autre mécanisme
+(`await` en série dans l'appelant) produise le même enchaînement sans que
+`_gasQueue` y soit pour quelque chose. À vérifier dans le code appelant, pas
+dans le journal.
+
+**C2 — « Le portage ne rendra pas la saisie d'atelier plus rapide. »
+JE ME SUIS TROMPÉ, et c'est la raison principale de ce bloc.**
+La moitié vraie : le doublage ne touche pas les écritures —
+`doubler = !ecriture && !GAS_SANS_DOUBLON.has(action)` (`shared.js:880-886`),
+et `saveEntry` est dans `GAS_ACTIONS_ECRITURE`. Sur les 20 pertes, 13 sont
+doublables (getAll 5, getComptes 3, getConfig 4, getVisibility 1) et 7 ne le
+sont pas (saveEntry 3, checkPassword 2, setConfig 1, logLogin 1).
+**La moitié fausse** : j'en ai conclu que l'écriture ne gagnerait rien. Or le
+portage retire aussi `_gasQueue`, qui sérialise **tous** les appels. Une
+écriture mise en file derrière une lecture morte attend 12 s avant même de
+partir. Visible dans le relevé : `getAll#1` de 12:19:31 démarre exactement
+quand `saveEntry#2` s'achève. **L'écriture ne gagne pas le doublage, mais
+elle gagne de ne plus attendre les morts.** Je n'ai pas chiffré ce gain.
+
+**C3 — « Les six fenêtres tuent tout ce qu'elles contiennent et rien en
+dehors. » NON SOUTENU par ce que j'ai reçu.** On ne m'a donné que les 20
+échecs, pas les 24 réussites avec leurs horodatages. Je ne peux donc pas dire
+ce qui s'est passé *dans* une fenêtre. Pire, ma propre reconstruction offre un
+contre-exemple : entre `getComptes#1` (fin 11:38:17) et `getComptes#2` (départ
+11:38:29) il y a 12 s que rien n'explique, sinon un appel **réussi à
+l'intérieur de la fenêtre**. La forme « par fenêtres » vient du relevé NEWGEN
+du 18/09, pas de celui-ci — je l'ai plaquée.
+
+**C4 — « L'écriture de 12:19 a quand même écrit sa ligne. » EXTRAPOLÉ.**
+Le fait vérifié en prod le 18/09 portait sur un **404** (le serveur a répondu,
+donc il a exécuté). Ici c'est « bloqué — abandonné après 12 s » : aucune
+réponse, donc rien ne dit que `doGet` a tourné. Les deux modes sont traités
+comme un seul dans mon analyse. Conséquence pratique : j'ai demandé à
+l'utilisateur d'aller chercher un doublon dans le classeur sur la foi de cette
+extrapolation.
+
+**Non vérifié, en plus de ce qui précède — le point le plus faible :**
+**la comparaison « NextStep 45 %, NEWGEN 30-38 % » n'a pas de base commune.**
+Les 45 % sont par **appel**, en usage réel, **reprises comprises** : un appel
+qui meurt puis réussit au rejeu compte une perte *et* une réussite, ce qui
+gonfle mécaniquement le taux. Les chiffres du banc étaient par **salve**
+(18,4 % / 4,0 %), sur des salves de composition fixe, en alternance
+contrôlée. Je les ai mis côte à côte dans les deux `CHANTIERS.md` comme s'ils
+se comparaient. **Si ce point tombe, l'angle mort n° 1 d'AG-003 ne se referme
+pas** et le portage perd son seul indice côté NextStep.
+Autres inconnues : 44 appels sur une journée, un seul poste, aucun contrôle ;
+et je n'ai pas recoupé un seul de ces horodatages avec les Exécutions Apps
+Script, alors que le `CLAUDE.md` en fait la règle avant toute conclusion
+réseau.
+
+**Si personne ne répond, je fais quoi ?** — C2 et C3 sont déjà corrigés dans
+les deux `CHANTIERS.md` (je ne laisse pas une erreur connue en place en
+attendant une réponse). C1 et C0 je les garde. Pour C4 et pour la comparaison
+45 %/30-38 %, je laisse la mention « non comparable » et je ne m'en sers pas
+pour décider du portage : ce sera le déploiement réel qui tranchera.
+**Ce dont j'ai le plus besoin** : quelqu'un qui recompte les 13/20 à partir du
+code plutôt que de ma liste, et qui dise si C1 tient sans `_gasQueue`.
+**Où regarder** : NextStep `shared.js:621-653` (`_gasUnAppelBrut`, où part le
+log), `:606-615` (`_gasQueue`), `admin_app.js:272-275` et `:359-363` (journal) ;
+NEWGEN `shared.js:720-741` (`GAS_ACTIONS_ECRITURE`), `:855-864`
+(`GAS_SANS_DOUBLON`), `:880-886` (`doubler`) ; `CHANTIERS.md` §1 des deux
+dépôts, section « Relevé NextStep du 22/09/2026 ».
+
 _(aucun — AG-001 tranché le 21/09/2026, conclusions remontées dans
 `CHANTIERS.md` §1 et « Points à ne pas défaire », code dans `banc/`.)_
