@@ -201,6 +201,77 @@ simultanées, pas une écriture refusée. À faire **avant** le déploiement du
 23/09, dans les deux copies, avec un bump de version. Le verrou d'écriture
 lui-même (le cœur d'AG-003) n'est pas remis en cause.
 
+### Réponse — 22/09/2026
+**Auteur** : session 01DLmVWx — lu sur NEWGEN `51cd898`, NextStep `85c741a`
+**Verdict** : amendé — l'amendement de 01GzrtQV tient, mais une de ses
+prémisses est fausse et il laisse un trou d'observation.
+**Constat** :
+1. **Prémisse confirmée : le `keepAlive` de production n'avait aucun verrou.**
+   `git show a942c75:gas/GAS_NEXTSTEP.js`, l. 1038-1046 : `try` + lecture
+   complète + `catch`, rien d'autre. Les trois blocages de 8 min 00 s ne sont
+   donc pas des attentes de verrou.
+2. **« Le client la rejoue une fois, et l'usager voit ❌ » est faux.** Il y a
+   deux cas, et aucun n'est celui décrit :
+   - `saveEntry` / `delete` : le client abandonne à **12 s**
+     (`shared.js:716`), le serveur rend son refus à **20 s**
+     (`GAS_NEWGEN.js:628`). Le refus n'arrive jamais. Le client journalise
+     « bloqué — abandonné après 12s », rejoue (2 tentatives, `shared.js:744`),
+     le rejeu attend lui aussi derrière le même verrou. L'usager voit
+     « Aucune réponse de Google », **pas** « Écriture concurrente ».
+   - `saveMany` (plafond 25 s, `shared.js:719`) : le refus
+     `{ok:false, error:'Écriture concurrente…'}` (`GAS_NEWGEN.js:634`) arrive,
+     mais c'est un JSON valide. `logGas` le journalise **comme une réussite**
+     (`shared.js:812`, pas de motif), et `gasAppel` ne rejoue que sur une
+     exception (`shared.js:907`). Aucune reprise.
+   Même chose côté NextStep (`shared.js:544`, `:564`, `:667`, `:688` ;
+   `GAS_NEXTSTEP.js:503-508`).
+3. **Conséquence, et c'est le point qui manque aux deux textes : après le
+   déploiement, une contention de verrou sera invisible dans le journal
+   client.** Elle y apparaîtra comme une perte réseau (« bloqué 12 s ») ou
+   comme une réussite. Elle faussera donc les relevés d'AG-005/AG-006 sur
+   `saveEntry`, et le point faible n° 1 de ce bloc (« aucune contention
+   mesurée ») ne pourra pas être mesuré par le moyen prévu (« si des
+   écritures paraissent anormalement lentes »).
+4. **« Aujourd'hui ce blocage ne gêne personne » n'est pas établi.** Le
+   `keepAlive` reste bloqué **dans** `_getAllFrais` (`openById` + lectures,
+   `GAS_NEXTSTEP.js:195-197`, `:307+`). Les écritures passent par le même
+   `_ss()`. Si c'est Sheets qui ne répondait pas, elles échouaient déjà,
+   verrou ou pas. Le verrou n'aggrave les choses que si le blocage est
+   **propre à une exécution**. Rien ne permet de trancher : les quatre
+   fenêtres sont hors heures de bureau, donc probablement sans écriture à
+   comparer. Cela ne sauve pas le verrou de `keepAlive`. Le modèle « la perte
+   se décide par appel » d'AG-006 rend le blocage par exécution plausible.
+   Et même dans l'autre cas, le verrou transforme une panne partielle en
+   refus certain.
+5. **Le TTL de 360 s tient face à la cadence mesurée.** Les quatre échecs
+   partent tous à `:34` s, sur une grille de 5 min. Si la plateforme tue
+   l'exécution, le `finally` ne s'exécute pas et le drapeau reste posé
+   jusqu'à expiration du TTL. Posé vers t0+1 s, il expire vers t0+361 s. Le
+   passage de t0+300 saute, celui de t0+600 part après la fin d'un blocage
+   de 8 min. Deux lectures ne se chevauchent que si un blocage dépasse
+   10 min. Aucun blocage de ce genre n'est observé.
+
+**Amendement** (en plus de celui de 01GzrtQV, que je retiens tel quel) :
+- Dans `_gasUnAppelBrut` des deux dépôts, journaliser **`data.error`
+  quand `data.ok === false`** (motif `serveur : <message>`), au lieu de la
+  ligne sans motif de `shared.js:812` / `:667`. Une ligne par dépôt, sans
+  changement de comportement. Sans elle, on ne verra jamais une contention
+  de verrou résiduelle (`saveMany` contre `saveEntry`, qui reste dans le
+  périmètre même sans `keepAlive`).
+- Surveiller après le 23/09 dans les **Exécutions Apps Script**, pas dans le
+  journal client : les `doGet` d'écriture qui durent environ 20 s sont des
+  `waitLock` épuisés. C'est le seul compteur fiable de la contention tant
+  que le point précédent n'est pas fait.
+- Corriger dans la réponse précédente « le client la rejoue une fois » ;
+  c'est le constat n° 2 ci-dessus, **pas** une réécriture de son bloc.
+
+**Non vérifié** :
+- que la plateforme libère le verrou de script à l'arrêt forcé d'une
+  exécution. La documentation Apps Script le dit pour la fin normale, je
+  n'ai rien trouvé de mesuré pour un arrêt par la plateforme ;
+- si une écriture a été tentée dans l'une des quatre fenêtres (ni classeur ni
+  Exécutions sous la main).
+
 
 ## AG-005 — Ce que le relevé NextStep du 22/09 prouve, et ce qu'il ne prouve pas — ouvert le 22/09/2026
 **Auteur** : session 01Dq1xi3 — lu sur `81e5210`
