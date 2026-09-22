@@ -68,5 +68,29 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-002 — La finesse AM/PM ne vaut que pour un prêt d'une seule journée — ouvert le 22/09/2026
+**Auteur** : session 01Dq1xi3 — lu sur `315e218`
+**Proposition** : `occupeCreneauMateriel` ne restreint l'occupation à une
+demi-journée que si `debut === fin`. Dès qu'un prêt court sur plusieurs jours,
+il occupe AM et PM de chaque jour, y compris ceux des extrémités.
+**Critère déclencheur** : n° 1 — ferme une porte. C'est le contrat de calcul
+partagé entre `logic.js` et `shared.js`, dans les deux applis.
+**Ce que ça engage** : tout code qui lira `demi` sur un prêt multi-jours. Et
+le choix inverse (appliquer l'AM/PM aux extrémités d'un prêt long) serait
+coûteux à rattraper une fois des conflits arbitrés sur cette base.
+**Non vérifié par l'auteur** : le cas réel « prélèvement la veille au soir,
+atelier le lendemain matin, retour le surlendemain » n'a été confronté à
+aucune donnée de production. Je suppose qu'un conseiller qui garde le
+matériel une nuit le mobilise aussi les demi-journées d'extrémité, sans
+l'avoir demandé à l'utilisateur. Deuxième point non vérifié : le repli
+« demi inconnue → journée entière » peut faire réapparaître des alertes sur
+les entrées importées sans `ampm`, dont je ne connais pas le volume.
+**Si personne ne répond, je fais quoi ?** — je laisse en l'état : le
+comportement est prudent (il sur-réserve plutôt que de sous-réserver) et se
+change en une ligne.
+**Où regarder** : `logic.js` — `occupeCreneauMateriel`, `demiJourneeAtelier` ;
+`shared.js` — la copie miroir et la frise.
+
+
 _(aucun — AG-001 tranché le 21/09/2026, conclusions remontées dans
 `CHANTIERS.md` §1 et « Points à ne pas défaire », code dans `banc/`.)_

@@ -266,7 +266,15 @@ Chacun a coûté cher à établir et est verrouillé par un test :
   jours est au contraire souhaitable.** Les stratégies alternant salve après
   salve, chacune subit les mêmes fenêtres de panne : cumuler deux journées est
   le moyen le moins cher d'atteindre une série concluante.
-- **`periodePretMateriel` retombe sur la veille/lendemain ouvrés** (jamais
-  un jour de week-end) quand les dates de prélèvement/retour ne sont pas
-  saisies — alignée sur NextStep le 19/09/2026. Ne pas revenir au repli
-  "jour même de l'atelier".
+- **`periodePretMateriel` retombe sur la date de l'atelier**, des deux côtés,
+  quand les dates de prélèvement/retour ne sont pas saisies (22/09/2026,
+  confirmé par l'utilisateur : le matériel est pris et rendu le jour même).
+  Remplace le repli veille/lendemain ouvrés du 19/09, qui était une hypothèse
+  et étendait chaque atelier sans dates à trois jours, fabriquant des
+  chevauchements que personne n'avait sur le terrain.
+- **L'occupation se compte à la demi-journée** (AM/PM) : deux ateliers le même
+  jour, l'un le matin l'autre l'après-midi, ne se disputent pas le matériel.
+  Deux limites à ne pas rogner : la finesse ne vaut que pour un prêt d'**une
+  seule journée** (au-delà, le matériel dort ailleurs et reste immobilisé en
+  continu), et une demi-journée **inconnue réserve la journée entière** — une
+  alerte de trop coûte moins cher qu'un conflit matériel passé sous silence.
