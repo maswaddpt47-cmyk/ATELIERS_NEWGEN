@@ -139,6 +139,10 @@ function resumeLogsTexte(logs, appli){
     lus.push({
       action: m[1], essai: m[2], motif: m[3], sec: parseFloat(m[4]),
       ko: m[3].indexOf('ok') !== 0,
+      // Le doublon d'une lecture porte le numero de son jumeau suivi de 'b'
+      // (gasLectureDoublee, shared.js). C'est la seule trace du doublage dans
+      // le journal, et elle suffit a le mesurer — voir plus bas.
+      doublon: /b$/.test(m[2]),
       heure: l.t || (d ? d.toLocaleTimeString('fr-FR') : '?'),
       h: d ? ('0' + d.getHours()).slice(-2) : '??',
       jour: d ? d.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'}) : ''
@@ -162,6 +166,27 @@ function resumeLogsTexte(logs, appli){
   l.push('perdus : ' + ko.length + '/' + lus.length + ' (' + Math.round(ko.length/lus.length*100) + '%)');
   l.push('durees livrees : mediane ' + med.toFixed(1) + 's | p90 ' + p90.toFixed(1) + 's');
   l.push('temps passe a attendre des reponses mortes : ' + Math.round(perdu) + 's');
+  // ── Ce que rapporte le doublage, et pourquoi le taux ci-dessus trompe ──
+  // Quand l'un des deux appels aboutit, gasLectureDoublee ANNULE l'autre, et
+  // un appel annule n'est pas journalise (shared.js, branche ctrl.inutile).
+  // Consequence, relevee le 22/09/2026 : si le doublon gagne, l'original
+  // perdu DISPARAIT du journal. Le taux de pertes affiche ci-dessus est donc
+  // SOUS-ESTIME ici, alors qu'il est complet sur ateliers-cd47_NextStep, qui
+  // ne double pas. Ne jamais comparer les deux taux directement.
+  // En contrepartie, chaque ligne « #Nb ok » est une lecture que le doublage a
+  // sauvee : le doublon n'est lance qu'au bout de GAS_HEDGE_MS, et s'il gagne
+  // c'est que l'original n'avait toujours pas repondu.
+  var doublons = lus.filter(function(x){ return x.doublon; });
+  if(doublons.length){
+    var sauves = doublons.filter(function(x){ return !x.ko; }).length;
+    l.push('doublons partis : ' + doublons.length
+      + ' — ' + sauves + ' ont sauve la lecture, ' + (doublons.length - sauves)
+      + ' sont morts comme leur jumeau');
+    l.push('  (chaque doublon gagnant masque un original perdu : le taux de'
+      + ' pertes ci-dessus est un minimum)');
+  }else{
+    l.push('doublons partis : aucun — toutes les lectures ont repondu avant le doublage');
+  }
   l.push('');
   l.push('par action (perdus/total) : ' + grouper('action'));
   l.push('par heure  (perdus/total) : ' + grouper('h'));

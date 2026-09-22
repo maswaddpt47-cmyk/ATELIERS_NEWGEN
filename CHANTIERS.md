@@ -111,6 +111,20 @@ gagne pas le *doublage*, mais elle gagne le *retrait de la file* : `_gasQueue`
 sérialise tous les appels côté NextStep, donc une écriture derrière une lecture
 morte attend 12 s avant de partir. Gain non chiffré.
 
+⚠️ **Troisième raison, trouvée le 22/09/2026, de ne PAS comparer les deux
+taux — et elle est structurelle.** Quand l'un des deux appels doublés aboutit,
+`gasLectureDoublee` **annule** l'autre, et un appel annulé n'est **pas
+journalisé** (`shared.js`, branche `ctrl.inutile`). Donc **si le doublon
+gagne, l'original perdu disparaît du journal.** Le taux de pertes de NEWGEN
+est mécaniquement sous-estimé, celui de NextStep est complet (pas de
+doublage). Les deux chiffres ne mesurent pas la même chose, quelle que soit la
+méthode de comptage.
+**En contrepartie, la trace est exploitable** : le doublon porte le numéro de
+son jumeau suivi de `b`, et une ligne `#Nb ok` **est** une lecture sauvée (le
+doublon ne part qu'après `GAS_HEDGE_MS` ; s'il gagne, c'est que l'original se
+taisait encore). `resumeLogsTexte` compte désormais ces sauvetages —
+l'équivalent NEWGEN de la mesure d'attente en file ajoutée côté NextStep.
+
 ⚠️ **Deux affirmations retirées le 22/09/2026 (AG-005)** : la « confirmation »
 des fenêtres de panne (le résumé ne donnait que les échecs, pas les réussites —
 et un appel a manifestement réussi dans un créneau), et la comparaison directe

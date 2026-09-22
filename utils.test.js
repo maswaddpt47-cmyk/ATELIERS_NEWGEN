@@ -344,6 +344,33 @@ describe('normalizeHoraire — cas limites', () => {
 // Parsing du format écrit par logGas. Il cassera silencieusement le jour où ce
 // format changera : c'est précisément ce que ces deux cas verrouillent.
 describe('resumeLogsTexte', () => {
+  // Le doublage ne laisse qu'une trace dans le journal : le numero suffixe
+  // 'b'. Deux choses verrouillees ici, parce qu'aucune ne se voit a l'oeil :
+  //  - « #1b ok » = une lecture sauvee (le doublon ne part qu'apres
+  //    GAS_HEDGE_MS, s'il gagne c'est que l'original se taisait encore) ;
+  //  - l'original perdu n'apparait PAS dans ce cas, il a ete annule sans
+  //    journalisation — donc le taux de pertes affiche est un minimum.
+  it('compte les lectures sauvees par le doublage', () => {
+    const ts = (h, m, sec) => new Date(2026, 8, 22, h, m, sec).getTime();
+    const j = [
+      { t: '10:00:09', ts: ts(10,0,9),  type: 'ok',  msg: 'GAS getAll #1b — ok en 1.9 s' },
+      { t: '10:01:19', ts: ts(10,1,19), type: 'err', msg: 'GAS getConfig #1b — bloqué — abandonné après 12s en 12.0 s' },
+      { t: '10:01:07', ts: ts(10,1,7),  type: 'err', msg: 'GAS getConfig #1 — bloqué — abandonné après 12s en 12.0 s' },
+      { t: '10:02:02', ts: ts(10,2,2),  type: 'ok',  msg: 'GAS getComptes #1 — ok en 1.1 s' },
+    ];
+    const txt = resumeLogsTexte(j, 'NEWGEN');
+    assert.match(txt, /doublons partis : 2 — 1 ont sauve la lecture, 1 sont morts/);
+    assert.match(txt, /le taux de pertes ci-dessus est un minimum/);
+    // getAll #1b compte comme une reussite, pas comme une perte.
+    assert.match(txt, /perdus : 2\/4/);
+  });
+
+  it('dit quand aucun doublon n a ete lance', () => {
+    const j = [{ t: '10:00:00', ts: new Date(2026,8,22,10,0,0).getTime(),
+                 type: 'ok', msg: 'GAS getAll #1 — ok en 1.2 s' }];
+    assert.match(resumeLogsTexte(j, 'NEWGEN'), /doublons partis : aucun/);
+  });
+
   // Lignes réelles du Journal Admin NextStep, 21/09/2026 — 3 connexions.
   const JOURNAL = [
     ['12:06:52', 'GAS getAll #2 — ok en 1.2 s'],
