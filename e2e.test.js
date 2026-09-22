@@ -147,10 +147,10 @@ window.L = {
   popup: () => ({ setLatLng:()=>({setContent:()=>({openOn:()=>{}})})}),
 };
 `;
-  await ctx.route('**cdnjs.cloudflare.com/ajax/libs/leaflet/**/*.js', route => {
+  await ctx.route('**/vendor/leaflet-*/leaflet.js', route => {
     route.fulfill({ status:200, contentType:'application/javascript; charset=utf-8', body: LEAFLET_STUB });
   });
-  await ctx.route('**cdnjs.cloudflare.com/ajax/libs/leaflet/**/*.css', route => {
+  await ctx.route('**/vendor/leaflet-*/leaflet.css', route => {
     route.fulfill({ status:200, contentType:'text/css; charset=utf-8', body: '' });
   });
   // Stub echarts minimal
@@ -168,6 +168,7 @@ window.L = {
   });
   // Intercepter les tiles Leaflet et autres ressources externes silencieusement
   await ctx.route('**/tile.openstreetmap.org/**', route => route.abort());
+  await ctx.route('**/tile.openstreetmap.fr/**', route => route.abort());
   await ctx.route('**/tiles.stadiamaps.com/**', route => route.abort());
 
   await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 });
