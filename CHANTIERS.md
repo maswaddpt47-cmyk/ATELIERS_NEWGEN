@@ -146,13 +146,42 @@ appel parti la seconde d'avant est déjà condamné. **La perte semble se décid
 par appel, pas par créneau** — et si c'est le cas, l'explication « le doublon
 tombe dans le trou » ne suffit pas à expliquer les 6 morts. Ouvert en AG-006.
 
-⚠️ **À ne pas sur-interpréter : 8 doublons, c'est un échantillon minuscule**,
-contre 249 salves pour le banc. Ce relevé ne réfute pas le banc, il montre un
-régime que le banc n'avait pas isolé. **Ce qu'il faut en retenir pour le
-portage : le gain annoncé (26 s -> 12 s en médiane) suppose des pertes
-isolées. Sur une fenêtre de 40 s, le portage ne changera rien.** À rassembler
-sur plusieurs jours avant de trancher — et à soumettre à l'AGORA au moment de
-décider du portage, pas maintenant.
+### AG-006 tranché le 22/09/2026 — les deux chiffres ne se contredisent pas
+
+**Deux sessions (B et C) ont répondu séparément, sans se voir, et sont
+arrivées aux mêmes quatre constats.** Ma proposition de geler le portage est
+**rejetée**. Ce qu'il faut retenir, et ne pas réapprendre :
+
+1. **25 % et 42 % n'ont pas le même dénominateur.** Le banc comptait les
+   doublons **annulés** dans le total (`banc/index.html:232` et `:513`), la
+   production ne les journalisait pas du tout (`shared.js`, branche
+   `ctrl.inutile`). Le banc calculait `ok/(ok+ko+annulés)`, la production
+   `ok/(ok+ko)`. Corrigé depuis : la production journalise l'annulation sous
+   un motif distinct, exclu des deux comptes.
+2. **Le taux de sauvetage n'est pas une propriété de la stratégie : il suit
+   ≈ 1 − pertes ambiantes.** Ce soir-là, 75 % de pertes → 25 % de sauvetages
+   est exactement la valeur attendue si les pertes sont indépendantes. Le
+   relevé ne dit rien d'autre que « ce soir-là, 3 appels sur 4 mouraient ».
+3. **2/8 ne contredit pas statistiquement 42 %** : Wilson 95 % = [7 % ; 59 %],
+   binomial exact P(X ≤ 2 | 8 ; 0,42) = 0,275. Et les 8 ne sont pas
+   indépendants — trois partent dans la même seconde.
+4. **Le portage a été tranché sur le McNemar apparié** (χ² = 10,32), qui ne
+   suppose aucun modèle de panne. Ce relevé ne compare pas deux stratégies, il
+   en observe une seule dans un épisode à 75 %. Il ne peut donc ni le
+   confirmer ni le réfuter.
+
+**Ce qui était vraiment faux, c'est la promesse, pas le portage** : « 26 s ->
+12 s en médiane » vaut **au régime du banc (30-38 % de pertes)**. À 75 %,
+aucune stratégie d'appel côté client ne tient 12 s — le levier est alors le
+proxy (§3), pas le client. À dire à l'équipe conditionné au régime, ou pas du
+tout.
+
+**Et le relevé du soir plaide *pour* le retrait de la file, pas contre** : à
+taux de pertes élevé, chaque appel mort dans `_gasQueue` bloque les suivants
+12 s. Plus les pertes montent, plus la file coûte cher.
+
+**Mesure à suivre après portage** : le taux de connexions ressenties en échec
+(seuil 15 %, §2), **pas** le taux de sauvetage.
 
 Note au passage : les trois appels de 22:41:13 partent **ensemble**, ce qui
 confirme une fois de plus que NEWGEN n'a pas de file. Et `logLogin` (2/2
@@ -333,9 +362,15 @@ automatisés (qui ne peuvent pas les couvrir) :
   mesure de 249 salves, McNemar χ² = 10,32). La file d'attente laissait 18 %
   des connexions échouer et 10 % dépasser 60 s ; le doublage tombe à 4 % et
   aucune. Le parallélisme coûte bien 7,5 points de pertes supplémentaires —
-  l'hypothèse de NextStep n'était pas fausse — mais le doublon en rattrape
-  42 %, ce qui l'efface largement. Ne pas revenir à la sérialisation sans une
-  mesure au moins équivalente.
+  l'hypothèse de NextStep n'était pas fausse — mais le doublon en rattrapait
+  **42 % au régime du 22/09 matin (30-38 % de pertes)**, ce qui l'efface
+  largement. ⚠️ **Ce 42 % n'est pas une constante** (AG-006) : le taux de
+  sauvetage suit ≈ 1 − pertes ambiantes. Le soir du 22/09, à 75 % de pertes,
+  il tombe mécaniquement à 25 % sans que la stratégie ait changé. **Le lire
+  toujours avec le taux de pertes du même relevé.** Ne pas revenir à la
+  sérialisation sans une mesure au moins équivalente — et noter qu'à taux de
+  pertes élevé la file coûte *plus* cher, pas moins : chaque appel mort y
+  bloque les suivants 12 s.
 - **Les pertes ne dépendent pas de l'heure.** Sur une journée complète et un
   journal cloisonné, elles sont réparties de 07h à 17h sans pic de midi.
   L'idée que l'infrastructure Apps Script saturerait aux heures ouvrées, née

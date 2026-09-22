@@ -774,7 +774,16 @@ window.gasUnAppel = async function(url, action, numero, timeoutMs, ctrlFourni){
     res = await fetch(url, {signal:ctrl.signal});
   }catch(err){
     if(ctrl.inutile){
-      // Le jumeau a répondu : ce n'est ni un échec ni une information utile.
+      // Le jumeau a répondu : ce n'est PAS un échec. Journalisé quand même
+      // depuis le 22/09/2026 (AG-006), sous un motif distinct que
+      // resumeLogsTexte exclut des pertes et admin_app affiche en neutre.
+      // Pourquoi : sans cette ligne, un doublon annulé est invisible, et le
+      // taux de sauvetage de la production se calcule sur ok/(ok+ko) alors que
+      // celui du banc se calcule sur ok/(ok+ko+annulés) — deux définitions
+      // comparées l'une à l'autre pendant une journée entière. Le motif reste
+      // distinct de 'ok' pour ne pas gonfler les réussites : l'appel n'a rien
+      // rapporté, c'est son jumeau qui a servi.
+      logGas(action, numero, Date.now()-t0, 'annulé — le jumeau a répondu');
       throw Object.assign(new Error('doublon inutile'), {reessayable:false, inutile:true});
     }
     if(ctrl.signal.aborted){

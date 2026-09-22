@@ -138,7 +138,10 @@ function resumeLogsTexte(logs, appli){
     var d = l.ts ? new Date(l.ts) : null;
     lus.push({
       action: m[1], essai: m[2], motif: m[3], sec: parseFloat(m[4]),
-      ko: m[3].indexOf('ok') !== 0,
+      // 'annulé' : le jumeau a repondu, l'appel a ete arrete. Ni reussite ni
+      // perte — il sort des deux comptes (AG-006).
+      annule: m[3].indexOf('annulé') === 0,
+      ko: m[3].indexOf('ok') !== 0 && m[3].indexOf('annulé') !== 0,
       // Le doublon d'une lecture porte le numero de son jumeau suivi de 'b'
       // (gasLectureDoublee, shared.js). C'est la seule trace du doublage dans
       // le journal, et elle suffit a le mesurer — voir plus bas.
@@ -150,7 +153,7 @@ function resumeLogsTexte(logs, appli){
   });
   if(!lus.length) return 'JOURNAL ' + appli + ' : ' + gas.length + ' lignes GAS, aucune au format attendu.';
   var ko = lus.filter(function(x){ return x.ko; });
-  var okSec = lus.filter(function(x){ return !x.ko; }).map(function(x){ return x.sec; }).sort(function(a,b){ return a-b; });
+  var okSec = lus.filter(function(x){ return !x.ko && !x.annule; }).map(function(x){ return x.sec; }).sort(function(a,b){ return a-b; });
   var med = okSec.length ? okSec[Math.floor(okSec.length/2)] : 0;
   var p90 = okSec.length ? okSec[Math.min(okSec.length-1, Math.floor(okSec.length*0.9))] : 0;
   var perdu = ko.reduce(function(a,x){ return a + x.sec; }, 0);
@@ -163,7 +166,9 @@ function resumeLogsTexte(logs, appli){
   var l = [];
   l.push('JOURNAL ' + appli + ' — ' + lus.length + ' appels GAS');
   l.push('periode (heure locale) : ' + prem.jour + ' ' + prem.heure + ' -> ' + der.jour + ' ' + der.heure);
-  l.push('perdus : ' + ko.length + '/' + lus.length + ' (' + Math.round(ko.length/lus.length*100) + '%)');
+  var reels = lus.filter(function(x){ return !x.annule; });
+  l.push('perdus : ' + ko.length + '/' + reels.length + ' (' + Math.round(ko.length/reels.length*100) + '%)'
+    + (reels.length !== lus.length ? '  [+' + (lus.length-reels.length) + ' doublons annules, hors compte]' : ''));
   l.push('durees livrees : mediane ' + med.toFixed(1) + 's | p90 ' + p90.toFixed(1) + 's');
   l.push('temps passe a attendre des reponses mortes : ' + Math.round(perdu) + 's');
   // ── Ce que rapporte le doublage, et pourquoi le taux ci-dessus trompe ──
@@ -178,14 +183,32 @@ function resumeLogsTexte(logs, appli){
   // c'est que l'original n'avait toujours pas repondu.
   var doublons = lus.filter(function(x){ return x.doublon; });
   if(doublons.length){
-    var sauves = doublons.filter(function(x){ return !x.ko; }).length;
-    l.push('doublons partis : ' + doublons.length
-      + ' — ' + sauves + ' ont sauve la lecture, ' + (doublons.length - sauves)
-      + ' sont morts comme leur jumeau');
-    l.push('  (chaque doublon gagnant masque un original perdu : le taux de'
-      + ' pertes ci-dessus est un minimum)');
+    var sauves = doublons.filter(function(x){ return !x.ko && !x.annule; }).length;
+    var dAnnules = doublons.filter(function(x){ return x.annule; }).length;
+    // « non annules » et non « partis » : un doublon annule par un original
+    // tardif ne comptait pas, ce qui rendait ce taux incomparable a celui du
+    // banc, calcule lui sur ok/(ok+ko+annules) — AG-006, amendements 2 et 3.
+    l.push('doublons non annules : ' + (doublons.length - dAnnules)
+      + ' — ' + sauves + ' ont sauve la lecture, '
+      + (doublons.length - dAnnules - sauves) + ' en echec'
+      + (dAnnules ? '  (+' + dAnnules + ' annules, le jumeau avait repondu)' : ''));
+    // Le taux de sauvetage n'est pas une constante de la strategie : si les
+    // pertes etaient independantes, un doublon reussirait avec la probabilite
+    // 1 - p. Le rapport des deux dit lequel des deux modeles colle :
+    // proche de 1 = pertes independantes, nettement < 1 = pertes correlees
+    // dans le temps, et c'est la que le doublage rapporte le moins.
+    var base = doublons.length - dAnnules;
+    if(base){
+      var tauxSauv = sauves / base;
+      var attendu = 1 - (ko.length / reels.length);
+      l.push('  taux de sauvetage ' + Math.round(tauxSauv*100) + '%'
+        + ' vs ' + Math.round(attendu*100) + '% attendu si les pertes etaient independantes'
+        + (attendu > 0 ? '  (rapport ' + (tauxSauv/attendu).toFixed(2) + ')' : ''));
+      l.push('  a lire avec le taux de pertes du meme releve, jamais seul :'
+        + ' il suit 1 - pertes, ce n est pas une constante du doublage');
+    }
   }else{
-    l.push('doublons partis : aucun — toutes les lectures ont repondu avant le doublage');
+    l.push('doublons non annules : aucun — toutes les lectures ont repondu avant le doublage');
   }
   l.push('');
   l.push('par action (perdus/total) : ' + grouper('action'));

@@ -359,16 +359,37 @@ describe('resumeLogsTexte', () => {
       { t: '10:02:02', ts: ts(10,2,2),  type: 'ok',  msg: 'GAS getComptes #1 — ok en 1.1 s' },
     ];
     const txt = resumeLogsTexte(j, 'NEWGEN');
-    assert.match(txt, /doublons partis : 2 — 1 ont sauve la lecture, 1 sont morts/);
-    assert.match(txt, /le taux de pertes ci-dessus est un minimum/);
+    assert.match(txt, /doublons non annules : 2 — 1 ont sauve la lecture, 1 en echec/);
     // getAll #1b compte comme une reussite, pas comme une perte.
     assert.match(txt, /perdus : 2\/4/);
+    // Le taux de sauvetage se lit contre 1 - pertes : 2/4 perdus -> 50%
+    // attendu si les pertes etaient independantes, 1/2 observe -> rapport 1.
+    assert.match(txt, /taux de sauvetage 50% vs 50% attendu/);
+  });
+
+  // AG-006 : un doublon annule (son jumeau a repondu avant lui) n'est ni une
+  // reussite ni une perte. Sans cette exclusion, le taux de sauvetage de la
+  // production se calculait sur ok/(ok+ko) alors que celui du banc se
+  // calculait sur ok/(ok+ko+annules) — deux definitions comparees entre elles.
+  it('sort les doublons annules des deux comptes', () => {
+    const at = (sec) => new Date(2026, 8, 22, 10, 0, sec).getTime();
+    const j = [
+      { t: '10:00:20', ts: at(20), type: 'info', msg: 'GAS getAll #1b — annulé — le jumeau a répondu en 4.0 s' },
+      { t: '10:00:19', ts: at(19), type: 'ok',   msg: 'GAS getAll #1 — ok en 10.5 s' },
+      { t: '10:00:10', ts: at(10), type: 'err',  msg: 'GAS getConfig #1 — bloqué — abandonné après 12s en 12.0 s' },
+    ];
+    const txt = resumeLogsTexte(j, 'NEWGEN');
+    // 1 perte sur 2 appels reels : l'annule ne gonfle aucun des deux cotes.
+    assert.match(txt, /perdus : 1\/2 \(50%\)/);
+    assert.match(txt, /\[\+1 doublons annules, hors compte\]/);
+    assert.match(txt, /doublons non annules : 0/);
+    assert.match(txt, /\(\+1 annules, le jumeau avait repondu\)/);
   });
 
   it('dit quand aucun doublon n a ete lance', () => {
     const j = [{ t: '10:00:00', ts: new Date(2026,8,22,10,0,0).getTime(),
                  type: 'ok', msg: 'GAS getAll #1 — ok en 1.2 s' }];
-    assert.match(resumeLogsTexte(j, 'NEWGEN'), /doublons partis : aucun/);
+    assert.match(resumeLogsTexte(j, 'NEWGEN'), /doublons non annules : aucun/);
   });
 
   // Lignes réelles du Journal Admin NextStep, 21/09/2026 — 3 connexions.

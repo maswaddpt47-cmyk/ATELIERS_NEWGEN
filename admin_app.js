@@ -378,7 +378,11 @@ const LOGS_KEY = lsKey('adm_logs');
   React.useEffect(()=>{
     window.gasLogHook=e=>addLog(
       `GAS ${e.action} #${e.attempt} — ${e.issue} en ${(e.ms/1000).toFixed(1)} s`,
-      e.issue==='ok'?'ok':'err'
+      // 'annulé' n'est ni une réussite ni un échec : l'appel a été arrêté
+      // parce que son jumeau avait répondu. Le peindre en rouge ferait croire
+      // à une panne (constaté le 18/09/2026, avant qu'il cesse d'être
+      // journalisé du tout).
+      e.issue==='ok' ? 'ok' : (e.issue.indexOf('annulé')===0 ? 'info' : 'err')
     );
     return()=>{window.gasLogHook=null;};
   },[]);
