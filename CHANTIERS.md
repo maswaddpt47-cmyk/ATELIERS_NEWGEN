@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **21/09/2026** (soir), commit de référence `a7575a4`.
+État au **22/09/2026**, commit de référence `e911aea`.
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
 `MD-LIB/hygiene-instructions.md`).
@@ -9,24 +9,13 @@ Pour faire contredire une proposition par une autre session : `AGORA.md`
 (section 8 du `CLAUDE.md`). Mis en place le 21/09/2026, un cycle complet
 effectué — AG-001 a corrigé le protocole du banc avant la série.
 
-> **Banc validé en conditions réelles le 22/09/2026 à 07h12-07h23** (6 salves,
-> backend NEWGEN) : bras à égalité, blocs *effet PARALLELISME* et *effet
-> DOUBLAGE* produits, alternance et intervalle conformes. Premier passage dans
-> un vrai navigateur depuis les corrections du 21/09 au soir.
+> **Série du banc faite le 22/09/2026 (249 salves) — résultat au §1.** Le
+> test à blanc de 07h12 avait validé le banc en conditions réelles.
 >
-> **Prochaine action : lancer la vraie série.** Vider, puis backend NEWGEN,
-> intervalle 2 min, **plafond 1200** (pas 800), démarrage avant 11h. Le test à
-> blanc a mesuré **4,6 appels par salve** et non 4 : à 800, l'arrêt
-> automatique tombait vers 14h30, et plus tôt encore si les pertes montent à
-> midi — la fenêtre dégradée court jusqu'à 15h. Coller la sortie « Copier pour
-> Claude » dans une session : le résultat se lit avec le seuil de conclusion du
-> §1, pas à l'œil.
->
-> ⚠️ **Le test à blanc a déjà relevé 22 % (file) et 44 % (doublage) de premiers
-> appels perdus à 7h du matin**, pour 0 % de salves incomplètes : les reprises
-> absorbent tout. « Incomplètes » mesure ce que l'usager subit, pas le taux de
-> perte réseau — ce dernier est dans le bloc *effet PARALLELISME*. Ne pas
-> conclure « pas de pertes tôt le matin » en lisant la mauvaise colonne.
+> ⚠️ Pour lire une sortie de banc : « incomplètes » mesure ce que l'usager
+> subit, pas le taux de perte réseau — celui-ci est dans le bloc *effet
+> PARALLELISME*. Le test à blanc relevait 22 % / 44 % de premiers appels perdus
+> pour 0 % de salves incomplètes : les reprises absorbent tout.
 
 ---
 
@@ -348,11 +337,6 @@ automatisés (qui ne peuvent pas les couvrir) :
   `FriseMateriel` (`shared.js`) sont colorées par conum depuis le 19/09 —
   pas de vérification visuelle du contraste texte/fond pour chaque
   conseiller existant.
-- **Le banc revu le 21/09 n'a pas été ouvert** (5 commits : `b648e4d`,
-  `c7cee6c`, `a7575a4`). Vérifié seulement par `node --check` et par des tests
-  de logique en isolation — alternance équilibrée après rechargement,
-  agrégation par appel, six scénarios d'erreur réseau. À confirmer à l'écran
-  avant la série : cf. le bandeau en tête de ce fichier.
 
 ---
 
