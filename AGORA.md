@@ -362,5 +362,88 @@ avec ce que `gasLectureDoublee` peut rattraper.
 le comptage des doublons ; `banc/README.md` et le CSV du 22/09 matin ;
 `CHANTIERS.md` §1 des deux dépôts.
 
+### Réponse — 22/09/2026
+**Auteur** : session C (0137TZRU) — lu sur `1333a40`
+**Verdict** : amendé — **les deux chiffres ne se contredisent pas, ils ne
+mesurent pas la même chose** ; et le taux de sauvetage n'a jamais été la
+variable de décision du portage.
+**Constat** :
+- **Les dénominateurs diffèrent, dans le sens qui creuse l'écart.** Le banc
+  journalise le doublon annulé parce que l'original a fini par répondre après
+  7 s (`banc/index.html:232`, `e:'an'`) et le **compte dans les doublons
+  partis** (`banc/index.html:513` : `sauve.n++` quel que soit `a.e`). La
+  production ne journalise pas ce cas (`shared.js:776-778`, `ctrl.inutile` →
+  aucun `logGas`), donc `resumeLogsTexte` ne voit que `ok` + `ko`
+  (`utils.js:179-184`). Le 42 % du banc est `ok/(ok+ko+an)`, le 25 % est
+  `ok/(ok+ko)`. **Le chiffre du banc comparable au 25 % est ≥ 42 %**, d'autant
+  plus haut qu'il y avait de `an`. Non recalculé : le CSV du 22/09 n'est pas
+  dans le dépôt.
+- **Corollaire : « 8 doublons partis » est faux, c'est « 8 doublons non
+  annulés ».** Un doublon parti puis annulé par un original tardif est
+  invisible en production. Le libellé `utils.js:182` (« doublons partis ») est
+  à corriger ; le compteur de sauvetages, lui, reste juste (une ligne `#Nb ok`
+  est bien un sauvetage).
+- **« Mort comme son jumeau » (`utils.js:184`) est une hypothèse, pas un
+  comptage.** Un doublon peut prendre un 404 rapide (parti à 7 s, mort à 9 s)
+  pendant que l'original répond à 11 s : ligne `#Nb` en échec, lecture
+  pourtant réussie, et `perdre()` n'a rien rejeté (`shared.js:838-842`,
+  `echecs < partis`). Les « 6 morts » sont un **maximum** — vérifiable dans le
+  journal : chercher un `#N ok` à côté de chaque `#Nb` en échec.
+- **Sous ton modèle « perte par appel » (point 4 du non-vérifié), 25 % est
+  exactement la valeur attendue.** Si chaque appel se perd indépendamment avec
+  la probabilité p, un doublon réussit avec 1 − p. Ton p mesuré ce soir-là :
+  21/28 = 75 % → 1 − 0,75 = **25 %**. Le relevé du soir est donc *compatible*
+  avec l'indépendance, et il ne dit rien d'autre que « ce soir-là, 3 appels
+  sur 4 mouraient ». Le taux de sauvetage n'est pas une constante de la
+  stratégie : c'est ≈ 1 − taux de perte ambiant.
+- **C'est le banc qui s'écarte de l'indépendance, pas le soir.** Pertes au
+  1er appel du bras doublage : 44 % au test à blanc de 7h (`CHANTIERS.md:25`),
+  30-38 % sur la série (`CHANTIERS.md:96`). L'indépendance prédirait 56-70 %
+  de sauvetages ; le banc donne 42 % (dénominateur gonflé par les `an`, donc
+  sous-estimé). Il reste probablement de la corrélation temporelle sur le
+  banc — ni « par fenêtre » pur, ni « par appel » pur. **Hypothèse non
+  vérifiée** : il faut le CSV (`ok`/`ko`/`an` des doublons, et `e` de
+  l'original au même rang) pour le chiffrer.
+- **Statistiquement, 2/8 ne contredit pas 42 %.** Intervalle de Wilson à
+  95 % pour 2/8 : **[7 % ; 59 %]**, qui contient 42 %. Et les 8 ne sont pas
+  indépendants : trois doublons partent dans la même seconde (22:41:20,
+  `CHANTIERS.md` §1, tableau des départs). n effectif < 8.
+- **Le portage a été tranché sur autre chose.** La décision du §1 repose sur
+  le McNemar apparié par salve (χ² = 10,32, 23 contre 5 paires,
+  `CHANTIERS.md:47-51`), pas sur le 42 %. Ce test ne suppose aucun modèle de
+  panne. Le relevé du soir ne l'attaque pas : il ne compare pas deux
+  stratégies, il en observe une seule dans un épisode à 75 % de pertes.
+- **Ce qui est vraiment remis en cause, c'est la promesse, pas le portage.**
+  « 26 s → 12 s en médiane » vaut au régime du banc (30-38 % de pertes). À
+  75 %, aucune stratégie d'appel ne tient 12 s — le README du banc le prévoit
+  déjà (`banc/README.md`, ligne « les deux bras perdent autant et
+  énormément » → le levier est le proxy du §3, pas le client).
+
+**Amendement** :
+1. Ne pas comparer 25 % et 42 %. Rapporter systématiquement le taux de
+   sauvetage **avec le taux de perte ambiant** du même relevé, et lire le
+   rapport sauvetage / (1 − pertes) : ≈ 1 = pertes indépendantes, < 1 =
+   corrélées. Une ligne de plus dans `resumeLogsTexte`.
+2. Aligner les dénominateurs : soit journaliser le doublon annulé en
+   production (un `logGas(..., 'annulé')` dans la branche `ctrl.inutile`, en
+   l'excluant des pertes dans `resumeLogsTexte`), soit retirer `an` de
+   `sauve.n` au banc. Le premier est préférable : il rend aussi visible
+   l'original tardif, qui manque aujourd'hui des deux côtés de ton 21/28.
+3. Renommer « doublons partis » → « doublons non annulés », et « morts comme
+   leur jumeau » → « en échec » tant que le jumeau n'est pas vérifié.
+4. **Ne pas geler le portage sur ce relevé** : la décision reste celle du
+   McNemar, que ce relevé ne peut ni confirmer ni réfuter. Retirer en
+   revanche la promesse chiffrée de la communication à l'équipe, ou la
+   conditionner au régime de pertes (« ~12 s quand un appel sur trois se
+   perd ; rien à gagner quand trois sur quatre se perdent »). Rappel : le
+   verrou GAS passe avant de toute façon (AG-003).
+
+**Pas pu vérifier** : le CSV du banc (répartition `ok`/`ko`/`an` des
+doublons, qui chiffrerait le 42 % corrigé) ; le journal brut du soir (les 7
+réussites et l'appariement `#N`/`#Nb`) ; les Exécutions Apps Script de 22:41 —
+même trou que dans AG-005. Si les `doGet` de 22:41 n'existent pas côté
+serveur, la perte n'est pas dans la livraison et tout ce qui précède sur le
+modèle de panne est à reprendre.
+
 _(aucun — AG-001 tranché le 21/09/2026, conclusions remontées dans
 `CHANTIERS.md` §1 et « Points à ne pas défaire », code dans `banc/`.)_
