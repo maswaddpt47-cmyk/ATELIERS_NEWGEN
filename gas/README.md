@@ -2,9 +2,11 @@
 
 ## ⏳ EN ATTENTE DE DÉPLOIEMENT — préparé le 22/09/2026
 
-**Ce fichier est en avance sur la production** : **v11.35** (verrou
-d'écriture serveur) n'est pas déployée. Correctif de **sécurité des
-données**, pas de confort — il **n'accélère rien**.
+**Ce fichier est en avance sur la production.** Version à déployer :
+**v11.37**. Elle contient v11.35 (verrou d'écriture serveur), v11.36 et v11.37
+(`keepAlive` ne prend plus le verrou, AG-004). Toute copie plus ancienne
+récupérée plus tôt est périmée. Correctif de **sécurité des données**, pas de
+confort — il **n'accélère rien**.
 
 | | Avant | Après |
 |---|---|---|
@@ -12,11 +14,10 @@ données**, pas de confort — il **n'accélère rien**.
 | Deux `delete` simultanés | le second peut supprimer **l'atelier voisin** (index décalé) | impossible |
 | Latence de connexion | inchangée | **inchangée** |
 
-⚠️ Point à surveiller propre à NEWGEN : `keepAlive` prend le **même** verrou
-de script (Apps Script n'a pas de verrou nommé). Une écriture peut donc
-attendre la fin d'un `keepAlive` en cours — ~1-2 s mesurées côté serveur,
-fenêtre estimée à moins de 1 %. **Hypothèse non vérifiée** : à recouper dans
-les Exécutions après déploiement si une écriture paraît anormalement lente.
+`keepAlive` ne partage **plus** le verrou de script (v11.37). Les mails
+« Summary of failures » de NextStep montrent trois `keepAlive` bloqués
+**8 min** par la plateforme les 19-20/09/2026 : avec le verrou, chaque
+blocage aurait refusé toutes les écritures pendant 8 min.
 
 ### Marche à suivre (≈ 3 min)
 
@@ -29,7 +30,11 @@ les Exécutions après déploiement si une écriture paraît anormalement lente.
 4. Menu **Exécuter** → `testerSecuriteDoGet` → Exécuter, puis **Journal
    d'exécution** : vérifier que tout est en ✅.
 5. Test réel : enregistrer un atelier, puis en supprimer un.
-6. Me dire « déployé » — je retire alors les bandeaux ⚠️ en tête du fichier.
+6. Les jours suivants, dans **Exécutions** : une exécution `doGet`
+   d'écriture qui dure **≈ 20 s** est un `waitLock` épuisé, donc une
+   écriture refusée pour cause de verrou (AG-004). Côté journal Admin, un
+   refus serveur apparaît désormais avec le motif `serveur : …`.
+7. Me dire « déployé » — je retire alors les bandeaux ⚠️ en tête du fichier.
 
 ### Si ça se passe mal
 

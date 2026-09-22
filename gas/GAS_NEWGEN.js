@@ -1,7 +1,10 @@
 
-// ── GAS Backend v11.36 ────────────────────────────────────────
+// ── GAS Backend v11.37 ────────────────────────────────────────
+// v11.37 : keepAlive ne prend plus le verrou de script (AG-004 tranché le
+//          22/09/2026). Anti-empilement par drapeau CacheService. Voir le
+//          commentaire au-dessus de keepAlive.
 // ⚠️ CETTE COPIE EST EN AVANCE SUR LA PRODUCTION (22/09/2026).
-//    v11.35 et v11.36 ne sont PAS déployées. Le déploiement se fait à la main
+//    v11.35, v11.36 et v11.37 ne sont PAS déployées. Le déploiement se fait à la main
 //    (script.google.com → coller ce fichier → publier une version), voir
 //    gas/README.md. Tant que ce bandeau est là, le verrou d'écriture décrit
 //    ci-dessous n'existe pas en ligne. Le retirer une fois le déploiement
@@ -24,16 +27,8 @@
 //          saveMany prend UN seul verrou pour tout le lot (pas un par
 //          entrée) et renvoie l'erreur du verrou si elle survient — sans
 //          cela il aurait renvoyé {ok:true} sans avoir rien écrit.
-//          ⚠️ Contention connue, propre à ce fichier : keepAlive prend le
-//          MÊME script lock (tryLock(0), L~1000). Apps Script n'offre pas de
-//          verrou nommé, les deux partagent donc le verrou de script. Sens
-//          keepAlive → écriture : sans gravité, keepAlive abandonne
-//          immédiatement (tryLock(0)). Sens écriture → keepAlive : une
-//          écriture peut attendre la fin d'un keepAlive en cours, soit
-//          ~1-2 s mesurées, au pire 20 s. Fenêtre estimée à moins de 1 %
-//          (un keepAlive de ~2 s toutes les 5 min) — HYPOTHÈSE NON VÉRIFIÉE,
-//          à recouper dans les Exécutions après déploiement si des écritures
-//          paraissent anormalement lentes.
+//          keepAlive ne partage PAS ce verrou (v11.37, AG-004 tranché) : un
+//          keepAlive bloqué 8 min l'aurait tenu 8 min.
 //          Rejouer une écriture reste sûr : le client génère l'_id avant
 //          l'envoi, actionSaveEntry retrouve la ligne au lieu d'en créer
 //          une seconde.
@@ -1056,20 +1051,27 @@ function ajouterColonnesPretMateriel() {
 //     précédent) tourne encore, on ABANDONNE tout de suite plutôt que
 //     d'attendre — jamais deux exécutions empilées dans la file GAS.
 //  4. Le cache est désormais segmenté (100 Ko/clé n'est plus une limite).
+// v11.37 (22/09/2026, AG-004 tranché) — keepAlive NE PREND PLUS le verrou de
+// script (le point 3 ci-dessus, tryLock(0), est retiré). Les mails « Summary
+// of failures » de NextStep (même structure) montrent trois keepAlive bloqués
+// 8 min 00 s les 19-20/09, arrêtés par la plateforme. Avec le verrou pris
+// AVANT la lecture, un tel blocage aurait tenu le verrou des écritures
+// (v11.35) pendant 8 min : chaque saveEntry/delete refusé.
+// L'anti-empilement passe par un drapeau CacheService. Pas atomique : sa pire
+// défaillance est deux lectures simultanées, jamais une écriture refusée.
+// TTL 360 s : si la plateforme tue l'exécution, le finally ne s'exécute pas ;
+// le drapeau expire alors avant le 2e passage suivant (grille de 5 min).
+var KEEPALIVE_DRAPEAU = 'keepalive_en_cours';
+var KEEPALIVE_DRAPEAU_S = 360;
 function keepAlive() {
-  // TOUT est dans le try, y compris la prise du verrou. Raison concrète :
-  // le 21/09/2026 à 21:47:34, le keepAlive de NextStep — même structure — a
-  // échoué après 36 s sur « server error occurred while reading from storage,
-  // Error code INTERNAL », et Apps Script en a envoyé un mail « Summary of
-  // failures ». Une tâche de fond dont personne n'attend le résultat ne doit
-  // jamais remonter d'erreur : elle génère du bruit, et le passage suivant
-  // repassera dans 5 min.
-  var lock = null;
+  var cache = null, pose = false;
   try {
-    lock = LockService.getScriptLock();
-    if (!lock.tryLock(0)) { Logger.log('keepAlive : exécution déjà en cours, passage sauté.'); lock = null; return; }
     var year = String(new Date().getFullYear());
     if (_lireCacheGetAll(year)) { Logger.log('keepAlive : cache ' + year + ' déjà chaud.'); return; }
+    cache = CacheService.getScriptCache();
+    if (cache.get(KEEPALIVE_DRAPEAU)) { Logger.log('keepAlive : passage précédent encore en cours, sauté.'); return; }
+    cache.put(KEEPALIVE_DRAPEAU, '1', KEEPALIVE_DRAPEAU_S);
+    pose = true;
     var t0 = new Date().getTime();
     var result = _actionGetAllFresh({year: year});
     if (result.ok) _cacherGetAll(year, result);
@@ -1077,7 +1079,7 @@ function keepAlive() {
   } catch (err) {
     Logger.log('keepAlive error: ' + err);
   } finally {
-    if (lock) { try { lock.releaseLock(); } catch (_) {} }
+    if (pose) { try { cache.remove(KEEPALIVE_DRAPEAU); } catch (_) {} }
   }
 }
 function testerSecuriteDoGet() {
