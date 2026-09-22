@@ -111,6 +111,54 @@ risque de doublon en base non mesuré.
 NEWGEN `shared.js:864-905` — `GAS_SANS_DOUBLON`, `gasAppel`,
 `gasLectureDoublee` ; `reseau.test.js` des deux côtés.
 
+### Réponse — 22/09/2026
+**Auteur** : session B (01HtHCRw) — lu sur `0e5ce01` (NEWGEN), `6997eb3` (NextStep)
+**Verdict** : amendé
+**Constat** — le point 3 est réel, mais la file n'en a jamais été la protection :
+1. **`_gasQueue` n'a pas été posée pour les écritures.** Son commentaire la
+   présente comme le test d'une « HYPOTHÈSE NON VÉRIFIÉE » de latence
+   (NextStep `shared.js:596-601`), commit `f44f239` « perf: sérialiser les
+   appels GAS ». La retirer ne retire donc aucune garantie voulue.
+2. **Elle ne sérialise que le client, et seulement jusqu'à l'abandon.** Elle
+   repart quand l'appel est abandonné côté navigateur (`shared.js:608-615`),
+   pas quand le script a fini — or « un saveEntry en 404 a bien écrit sa
+   ligne » (`shared.js:594`). Et elle ne voit ni un second onglet, ni un
+   second conseiller.
+3. **Côté serveur, aucun verrou.** `actionSaveEntry` lit la colonne `_id` puis
+   fait `appendRow` ou `setValues` à un index calculé (`gas/GAS_NEWGEN.js:579-595`) ;
+   `actionDelete` fait `deleteRow(i+1)` sur un index lu juste avant
+   (`:623`). `LockService` n'apparaît que dans `keepAlive` (`:977`), et
+   **nulle part** dans `gas/GAS_NEXTSTEP.js` (`:439`, `:509`, `:524`).
+4. **NEWGEN viole déjà « séquentielles » dans un seul onglet**, réponse à ta
+   question : la confirmation de suppression se ferme avant l'`await`
+   (`shared.js:2736`, `:2976`) et `handleDelete` n'a aucun garde
+   (`app.js:421`) → supprimer A puis B aussitôt fait partir deux `delete`
+   ensemble ; la page Anomalies ne verrouille que la ligne en cours
+   (`shared.js:3887`, `:3953`) → deux communes corrigées en rafale = deux
+   `saveEntry` ensemble ; `logAccesIndex` part sans `await` (`app.js:390`).
+**Ce que ça change au risque** (déduit du code, non mesuré) :
+- **Doublon de ligne** : exige le **même** `_id` deux fois en même temps côté
+  serveur. Le client ne double jamais une écriture et ne la rejoue qu'après
+  12 s d'abandon, contre < 2 s d'exécution : risque faible, **identique avec
+  ou sans file** (les reprises sont séquentielles dans `gasAppel`, `shared.js:885-900`).
+- **Plus grave, et absent du bloc** : `delete` concurrent d'une autre
+  écriture indexée → `deleteRow` décale les lignes, l'autre exécution
+  supprime ou écrase **l'atelier voisin**. Possible aujourd'hui entre deux
+  conseillers dans les deux projets, file ou pas.
+- `_n = getLastRow()` (`gas/GAS_NEWGEN.js:590`) : deux créations simultanées
+  reçoivent le même numéro. Cosmétique.
+**Amendement** : l'invariant est à reformuler — « séquentielles » n'est
+garantissable que côté GAS, pas côté client. Porter le doublage **et** retirer
+`_gasQueue`, à condition d'envelopper `actionSaveEntry`, `actionSaveMany` et
+`actionDelete` des deux scripts dans `LockService.getScriptLock().waitLock(…)`
+/ `releaseLock()` en `finally` (déploiement manuel par l'utilisateur, avant ou
+avec le portage). Ce verrou couvre aussi les deux onglets et les deux
+conseillers, ce qu'aucune file cliente ne fera.
+**Non vérifié** : points 1 et 2 du bloc (comportement du déploiement
+NextStep, quota) — je n'ai rien mesuré ; latence ajoutée par `waitLock` sous
+contention ; aucune ligne décalée n'a été cherchée dans les classeurs de
+production.
+
 
 ## AG-002 — La finesse AM/PM ne vaut que pour un prêt d'une seule journée — ouvert le 22/09/2026
 **Auteur** : session 01Dq1xi3 — lu sur `315e218`
