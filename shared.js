@@ -1074,18 +1074,34 @@ function filterMaterielsVisibles(materiels,caches,selectionnes){
 // endroits le m\u00eame jour. Regroupe par date les entr\u00e9es non-Annul\u00e9 qui le
 // r\u00e9servent, ne garde que les dates o\u00f9 2+ conseillers distincts l'ont pris.
 // Port\u00e9 depuis ateliers-cd47_NextStep (commit 5e135ae, 16/09/2026).
-function findMobileClassConflicts(entries){
-  const parDate={};
-  (entries||[]).forEach(e=>{
-    if(e.statut==='Annul\u00e9')return;
-    if(!e.date)return;
-    if(!matIncludes(e.materiel,'Classe mobile'))return;
-    (parDate[e.date]=parDate[e.date]||[]).push(e);
+function findMobileClassConflicts(entries) {
+  const parCreneau = {};
+  entries.forEach(e => {
+    if (e.statut === 'Annulé') return;
+    if (!e.date) return;
+    if (!matIncludes(e.materiel,'Classe mobile')) return;
+    const demi = demiJourneeAtelier(e);
+    (demi ? [demi] : ['AM', 'PM']).forEach(d => {
+      const k = e.date + '|' + d;
+      (parCreneau[k] = parCreneau[k] || []).push(e);
+    });
   });
-  return Object.keys(parDate)
-    .map(date=>({date,entries:parDate[date]}))
-    .filter(g=>new Set(g.entries.map(e=>e.conseiller)).size>=2)
-    .sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  // Un seul groupe par DATE, portant la ou les demi-journées en conflit.
+  // Sans ce regroupement, un atelier sans ampm — qui compte dans les deux
+  // demi-journées — produirait deux fois le même conflit à l'écran.
+  const parDate = {};
+  Object.keys(parCreneau).sort().forEach(k => {
+    const items = parCreneau[k];
+    if (new Set(items.map(e => e.conseiller)).size < 2) return;
+    const date = k.split('|')[0];
+    (parDate[date] = parDate[date] || []).push({ demi: k.split('|')[1], items });
+  });
+  return Object.keys(parDate).sort().map(date => {
+    const parts = parDate[date];
+    const vus = new Set(), entriesBloc = [];
+    parts.forEach(p => p.items.forEach(e => { if (!vus.has(e)) { vus.add(e); entriesBloc.push(e); } }));
+    return { date, demi: parts.map(p => p.demi).join('+'), entries: entriesBloc };
+  });
 }
 // Miroir logique dans logic.js (findOrdinateursConflicts, testé). Contrairement
 // à findMobileClassConflicts (même jour, matériel indivisible), ici la
@@ -1128,88 +1144,180 @@ function lendemainOuvre(dateIso){
   while(estWeekend(d))d=addJoursIso(d,1);
   return d;
 }
-// Période réelle d'indisponibilité : du prélèvement (peut précéder la date
-// de l'atelier) au retour. Repli indépendant sur chaque champ quand il n'est
-// pas renseigné : veille/lendemain ouvrés de la date de l'atelier (jamais un
-// jour de week-end) — le matériel est concrètement retiré/rendu un jour
-// ouvré. Miroir logic.js. Aligné sur ateliers-cd47_NextStep le 19/09/2026
-// (auparavant : repli simple sur la date de l'atelier des deux côtés).
-function periodePretMateriel(e){
-  const debut=e.date_prelevement_materiel
-    ?((e.date_prelevement_materiel<e.date)?e.date_prelevement_materiel:e.date)
-    :veilleOuvree(e.date);
-  const fin=e.date_retour_materiel
-    ?((e.date_retour_materiel>e.date)?e.date_retour_materiel:e.date)
-    :lendemainOuvre(e.date);
-  return{debut,fin};
+// Demi-journée d'un atelier : 'AM', 'PM', ou null quand on ne peut pas
+// trancher. Le champ ampm est obligatoire à la saisie depuis longtemps, mais
+// les entrées importées ou antérieures peuvent ne pas l'avoir : on retombe
+// alors sur l'horaire (même repli que le dashboard, shared.js), puis sur null
+// — et null réserve la journée entière, jamais l'inverse : mieux vaut une
+// alerte de trop qu'un conflit matériel non signalé.
+function demiJourneeAtelier(e) {
+  const v = String((e && e.ampm) || '').trim().toUpperCase();
+  if (v === 'AM' || v === 'PM') return v;
+  const h = parseInt((e && e.horaire) || '', 10);
+  if (!isNaN(h) && h >= 0 && h <= 23) return h < 12 ? 'AM' : 'PM';
+  return null;
 }
-// Le retour du matériel a lieu le matin (règle métier confirmée par
-// l'utilisateur le 21/09/2026) : le jour du retour, les machines sont de
-// nouveau disponibles pour un autre conseiller qui les prélève le même jour.
-// L'occupation du stock va de `debut` INCLUS à `fin` EXCLU, alors que la
-// barre de la frise reste dessinée jusqu'au retour inclus. Exception : un
-// prêt d'une seule journée (debut === fin) occupe bien ce jour-là. Miroir
-// logic.js — les deux copies doivent rester identiques.
-function finOccupationMateriel(debut,fin){
-  return fin>debut?addJoursIso(fin,-1):fin;
+
+// Période réelle d'indisponibilité du matériel pour un atelier : du
+// prélèvement (peut précéder la date de l'atelier — ex. retrait le mardi
+// pour un atelier le vendredi) au retour.
+// Repli quand un champ n'est pas renseigné : **la date de l'atelier**, des
+// deux côtés. Le matériel est alors pris et rendu le jour même — c'est le
+// fonctionnement réel confirmé par l'utilisateur le 22/09/2026. Ce repli
+// remplace celui de la veille/lendemain ouvrés (19/09/2026), qui était une
+// hypothèse : il étendait chaque atelier sans dates saisies à trois jours et
+// fabriquait des chevauchements qui n'existent pas sur le terrain.
+function periodePretMateriel(e) {
+  const debut = e.date_prelevement_materiel
+    ? ((e.date_prelevement_materiel < e.date) ? e.date_prelevement_materiel : e.date)
+    : e.date;
+  const fin = e.date_retour_materiel
+    ? ((e.date_retour_materiel > e.date) ? e.date_retour_materiel : e.date)
+    : e.date;
+  return { debut, fin };
 }
-function occupeLeJourMateriel(p,jour){
-  return jour>=p.debut&&jour<=finOccupationMateriel(p.debut,p.fin);
+
+// Le retour du matériel a lieu le matin (confirmé le 21/09/2026) : le jour du
+// retour, les machines sont de nouveau disponibles pour un autre conseiller
+// qui les prélève le même jour. L'occupation va donc de `debut` INCLUS à
+// `fin` EXCLU — sauf pour un prêt d'une seule journée, qui occupe bien ce
+// jour-là, sinon il disparaîtrait du cumul.
+function finOccupationMateriel(debut, fin) {
+  return fin > debut ? addJoursIso(fin, -1) : fin;
 }
-function findOrdinateursConflicts(entries,stock=STOCK_ORDINATEURS){
-  const parJour={};
-  (entries||[]).forEach(e=>{
-    if(e.statut==='Annulé')return;
-    if(!e.date)return;
-    if(!matIncludes(e.materiel,'Classe mobile'))return;
-    // Classe mobile cochée sans nombre saisi ⇒ on suppose au moins 1
-    // ordinateur (jamais 0) : la barre/le conflit apparaît dès la coche, et
-    // s'ajuste dès qu'une saisie ultérieure précise le nombre réel.
-    const qte=parseInt(e.nb_ordinateurs)||1;
-    const{debut,fin}=periodePretMateriel(e);
-    const finOcc=finOccupationMateriel(debut,fin);
-    let d=debut,garde=0;
-    while(d<=finOcc&&garde<90){
-      (parJour[d]=parJour[d]||[]).push({_id:e._id,conseiller:e.conseiller,qte,commune:e.commune||'',lieu:e.lieu||'',dateDebut:debut,dateFin:fin});
-      d=addJoursIso(d,1);garde++;
+
+// Occupation à la DEMI-JOURNÉE (confirmé le 22/09/2026) : deux ateliers le
+// même jour, l'un le matin l'autre l'après-midi, ne se disputent pas le
+// matériel — le premier rend à midi, le second prend l'après-midi.
+// Cette finesse ne vaut que pour un prêt d'une seule journée : dès que le
+// matériel dort ailleurs une nuit, il est immobilisé en continu, y compris
+// les demi-journées intermédiaires.
+function occupeCreneauMateriel(p, jour, demi) {
+  if (jour < p.debut || jour > finOccupationMateriel(p.debut, p.fin)) return false;
+  if (p.debut === p.fin && p.demi) return demi === p.demi;
+  return true;
+}
+
+function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
+  const parCreneau = {};
+  (entries || []).forEach(e => {
+    if (e.statut === 'Annulé') return;
+    if (!e.date) return;
+    if (!matIncludes(e.materiel,'Classe mobile')) return;
+    // Classe mobile cochée sans quantité renseignée (entrées historiques
+    // antérieures au champ obligatoire, ou import) → on suppose 1 ordinateur
+    // plutôt que d'exclure l'entrée : sinon elle disparaît silencieusement
+    // de la frise/Gantt alors qu'elle réserve bien la Classe mobile ce
+    // jour-là (même principe que ATELIERS_NEWGEN, confirmé en prod le
+    // 18/09/2026 — conseillers manquants dans le Gantt malgré des conflits).
+    const qte = parseInt(e.nb_ordinateurs) || 1;
+    const { debut, fin } = periodePretMateriel(e);
+    const pret = { _id: e._id, conseiller: e.conseiller, qte,
+      commune: e.commune || '', lieu: e.lieu || '',
+      dateDebut: debut, dateFin: fin, demi: demiJourneeAtelier(e), debut, fin };
+    // Garde-fou : une date de prélèvement/retour saisie à la main peut être
+    // erronée (année oubliée, inversion jour/mois...) — on plafonne à 90
+    // jours pour ne jamais boucler indéfiniment sur une période aberrante.
+    const finOcc = finOccupationMateriel(debut, fin);
+    let d = debut, garde = 0;
+    while (d <= finOcc && garde < 90) {
+      ['AM', 'PM'].forEach(demi => {
+        if (occupeCreneauMateriel(pret, d, demi)) {
+          (parCreneau[d + '|' + demi] = parCreneau[d + '|' + demi] || []).push(pret);
+        }
+      });
+      d = addJoursIso(d, 1);
+      garde++;
     }
   });
-  const joursConflit=Object.keys(parJour)
-    .map(date=>({date,entries:parJour[date],total:totalJourParConseiller(parJour[date])}))
-    .filter(g=>g.total>stock)
-    .sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
-  const blocs=[];
-  joursConflit.forEach(g=>{
-    const dernier=blocs[blocs.length-1];
-    if(dernier&&addJoursIso(dernier.dateFin,1)===g.date){
-      dernier.dateFin=g.date;
-      dernier.total=Math.max(dernier.total,g.total);
-      g.entries.forEach(e=>{if(!dernier._vus.has(e._id)){dernier._vus.add(e._id);dernier.entries.push(e);}});
-    }else{
-      blocs.push({date:g.date,dateFin:g.date,total:g.total,entries:[...g.entries],_vus:new Set(g.entries.map(e=>e._id))});
+
+  // Un JOUR est en conflit dès qu'une de ses deux demi-journées dépasse le
+  // stock. Le bloc porte le total le plus élevé et nomme la ou les
+  // demi-journées concernées : « 11 demandés (après-midi) » se corrige
+  // autrement que « 11 demandés toute la journée ».
+  const joursConflit = [];
+  const datesVues = {};
+  Object.keys(parCreneau).forEach(k => { datesVues[k.split('|')[0]] = true; });
+  Object.keys(datesVues).sort().forEach(date => {
+    const parts = ['AM', 'PM'].map(demi => {
+      const items = parCreneau[date + '|' + demi] || [];
+      return { demi, items, total: totalJourParConseiller(items) };
+    }).filter(p => p.total > stock);
+    if (!parts.length) return;
+    // Déduplication par RÉFÉRENCE et non par _id : le même prêt est poussé
+    // dans les deux demi-journées, et toutes les entrées n'ont pas d'_id
+    // (import, saisie en lot avant attribution).
+    const vus = new Set();
+    const entriesBloc = [];
+    parts.forEach(p => p.items.forEach(it => {
+      if (!vus.has(it)) { vus.add(it); entriesBloc.push(it); }
+    }));
+    joursConflit.push({
+      date,
+      entries: entriesBloc,
+      total: Math.max.apply(null, parts.map(p => p.total)),
+      demi: parts.map(p => p.demi).join('+'),
+    });
+  });
+
+  const blocs = [];
+  joursConflit.forEach(g => {
+    const dernier = blocs[blocs.length - 1];
+    if (dernier && addJoursIso(dernier.dateFin, 1) === g.date && dernier.demi === g.demi) {
+      dernier.dateFin = g.date;
+      dernier.total = Math.max(dernier.total, g.total);
+      g.entries.forEach(e => { if (!dernier._vus.has(e)) { dernier._vus.add(e); dernier.entries.push(e); } });
+    } else {
+      blocs.push({ date: g.date, dateFin: g.date, total: g.total, demi: g.demi, entries: [...g.entries], _vus: new Set(g.entries) });
     }
   });
-  return blocs.map(({_vus,...b})=>b);
+  return blocs.map(({ _vus, ...b }) => b);
 }
-// Miroir logic.js. Liste tous les prêts Classe mobile (pas seulement les
-// jours en conflit) — sert à la frise, où on veut voir tous les prêts pour
-// repérer les chevauchements visuellement.
-function getPretsMateriel(entries){
-  return (entries||[])
-    .filter(e=>e.statut!=='Annulé'&&e.date&&matIncludes(e.materiel,'Classe mobile'))
-    .map(e=>{
-      const{debut,fin}=periodePretMateriel(e);
-      // Même hypothèse par défaut que findOrdinateursConflicts : au moins 1
-      // ordinateur supposé si le nombre n'est pas encore renseigné.
-      return{_id:e._id,conseiller:e.conseiller,qte:parseInt(e.nb_ordinateurs)||1,commune:e.commune||'',lieu:e.lieu||'',thematique:e.thematique||'',dateAtelier:e.date,debut,fin};
+
+// Liste tous les prêts Classe mobile (période prélèvement → retour), pas
+// seulement les jours en conflit (findOrdinateursConflicts ne renvoie que
+// ça) — sert à la frise/Gantt où on veut voir tous les prêts pour repérer
+// les chevauchements visuellement, pas uniquement ceux déjà détectés en
+// dépassement de stock.
+function getPretsMateriel(entries) {
+  return (entries || [])
+    .filter(e => e.statut !== 'Annulé' && e.date
+      && matIncludes(e.materiel,'Classe mobile'))
+    .map(e => {
+      const { debut, fin } = periodePretMateriel(e);
+      return {
+        _id: e._id, conseiller: e.conseiller, qte: parseInt(e.nb_ordinateurs) || 1,
+        commune: e.commune || '', lieu: e.lieu || '', thematique: e.thematique || '',
+        dateAtelier: e.date, debut, fin, demi: demiJourneeAtelier(e),
+      };
     })
-    .sort((a,b)=>a.debut<b.debut?-1:a.debut>b.debut?1:0);
+    .sort((a, b) => a.debut < b.debut ? -1 : a.debut > b.debut ? 1 : 0);
 }
-function totauxParJourMateriel(prets,jours){
-  const totaux={};
-  (jours||[]).forEach(j=>{totaux[j]=totalJourParConseiller((prets||[]).filter(p=>occupeLeJourMateriel(p,j)));});
+
+// Cumul des ordinateurs réservés pour chaque DEMI-JOURNÉE de `jours` :
+// { '2026-09-30': { AM: 10, PM: 11 } }. C'est le détail que la frise montre
+// en infobulle et sur lequel se décide la couleur de la case.
+function totauxParDemiJourneeMateriel(prets, jours) {
+  const totaux = {};
+  (jours || []).forEach(j => {
+    totaux[j] = {
+      AM: totalJourParConseiller((prets || []).filter(p => occupeCreneauMateriel(p, j, 'AM'))),
+      PM: totalJourParConseiller((prets || []).filter(p => occupeCreneauMateriel(p, j, 'PM'))),
+    };
+  });
   return totaux;
 }
+
+// Cumul par jour = le maximum des deux demi-journées. C'est ce que la case de
+// la frise affiche : la pointe de la journée, celle qui décide du dépassement.
+// Sommer les deux compterait deux fois un prêt qui court toute la journée.
+function totauxParJourMateriel(prets, jours) {
+  const detail = totauxParDemiJourneeMateriel(prets, jours);
+  const totaux = {};
+  Object.keys(detail).forEach(j => { totaux[j] = Math.max(detail[j].AM, detail[j].PM); });
+  return totaux;
+}
+
 
 let STATUTS     = [...STATUTS_DEFAULT];
 let CONSEILLERS = [...CONSEILLERS_DEFAULT];
@@ -3485,7 +3593,11 @@ function fmtPeriode(debut,fin){return debut===fin?fmtDate(debut):fmtDate(debut)+
 // Miroir logic.js. Un conflit devient "historique" une fois sa période
 // entièrement passée — plus rien à arbitrer une fois l'atelier passé.
 function estConflitPasse(conflit,today){return (conflit.dateFin||conflit.date)<today;}
-function titreConflitOrdi(g){return '📅 '+fmtPeriode(g.date,g.dateFin)+' — jusqu\'à '+g.total+' ordinateurs demandés sur '+STOCK_ORDINATEURS+' en stock';}
+// 'AM' | 'PM' | 'AM+PM' → libellé lisible. Le créneau change la correction à
+// apporter : un dépassement l'après-midi seulement se règle en déplaçant un
+// atelier le matin, pas en renonçant à du matériel.
+function libelleDemi(d){return d==='AM'?'le matin':d==='PM'?'l\'après-midi':'toute la journée';}
+function titreConflitOrdi(g){return '📅 '+fmtPeriode(g.date,g.dateFin)+' '+libelleDemi(g.demi)+' — jusqu\'à '+g.total+' ordinateurs demandés sur '+STOCK_ORDINATEURS+' en stock';}
 // findMobileClassConflicts pousse l'entry brute dans chaque groupe : nb_
 // ordinateurs/date_retour_materiel sont déjà là, pas besoin de les recalculer.
 function itemConflitMobile(onEdit){
@@ -3554,7 +3666,10 @@ function FriseMateriel({entries,onEdit}){
   const jourFin=jours[jours.length-1];
   const prets=React.useMemo(()=>getPretsMateriel(entries),[entries]);
   const pretsVisibles=React.useMemo(()=>prets.filter(p=>p.fin>=jourDebut&&p.debut<=jourFin).sort((a,b)=>a.debut<b.debut?-1:a.debut>b.debut?1:0),[prets,jourDebut,jourFin]);
-  const totaux=React.useMemo(()=>totauxParJourMateriel(prets,jours),[prets,jours]);
+  // Détail par demi-journée : c'est lui qui décide du dépassement, la case
+  // n'affichant que la pointe de la journée (le max des deux).
+  const detail=React.useMemo(()=>totauxParDemiJourneeMateriel(prets,jours),[prets,jours]);
+  const totaux=React.useMemo(()=>{const t={};Object.keys(detail).forEach(j=>{t[j]=Math.max(detail[j].AM,detail[j].PM);});return t;},[detail]);
   // Index (0-based) d'un jour dans la fenêtre visible, clampé aux bornes —
   // une barre qui déborde de la fenêtre est simplement tronquée à l'affichage.
   const colIdx=d=>d<jourDebut?0:d>jourFin?jours.length-1:jours.indexOf(d);
@@ -3587,8 +3702,10 @@ function FriseMateriel({entries,onEdit}){
       // Ligne stock cumulé
       CE('div',{className:printable?'frise-grid-row':undefined,style:{display:'grid',gridTemplateColumns:gridTemplate,gap:1,marginBottom:6}},
         CE('div',{style:{fontSize:tailleTexte+1,fontWeight:700,color:'#718096',alignSelf:'center'}},'Stock ('+STOCK_ORDINATEURS+')'),
-        jours.map(d=>{const t=totaux[d]||0;const depasse=t>STOCK_ORDINATEURS;
-          return CE('div',{key:d,title:t+' ordinateur(s) réservé(s)',style:{height:colWidth<32?14:22,background:t===0?'#f1f5f9':depasse?'#dc2626':'#86efac',borderRadius:2,fontSize:tailleTexte,color:depasse?'#fff':'#166534',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}},t>0?t:'');
+        jours.map(d=>{const dt=detail[d]||{AM:0,PM:0};const t=Math.max(dt.AM,dt.PM);
+          const depasse=t>STOCK_ORDINATEURS;
+          const quand=dt.AM===dt.PM?'':' (matin '+dt.AM+' · après-midi '+dt.PM+')';
+          return CE('div',{key:d,title:t+' ordinateur(s) réservé(s)'+quand,style:{height:colWidth<32?14:22,background:t===0?'#f1f5f9':depasse?'#dc2626':'#86efac',borderRadius:2,fontSize:tailleTexte,color:depasse?'#fff':'#166534',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}},t>0?t:'');
         })
       ),
       // Une ligne par prêt
@@ -3598,7 +3715,8 @@ function FriseMateriel({entries,onEdit}){
           // Le marquage ⚠️ suit l'occupation réelle, pas la barre dessinée : le
           // jour du retour est affiché mais ne réserve plus le stock, il ne doit
           // donc pas faire passer ce prêt en conflit.
-          const conflit=jours.filter(d=>occupeLeJourMateriel(p,d)).some(d=>(totaux[d]||0)>STOCK_ORDINATEURS);
+          const conflit=jours.some(d=>['AM','PM'].some(dm=>
+            occupeCreneauMateriel(p,d,dm)&&((detail[d]&&detail[d][dm])||0)>STOCK_ORDINATEURS));
           // Barre teintée dans la couleur du conum (même couleur que le
           // libellé à gauche et que partout ailleurs dans l'appli), plutôt
           // qu'un bleu/rouge générique — identifier qui réserve quoi d'un
@@ -3620,7 +3738,7 @@ function FriseMateriel({entries,onEdit}){
       )
     );
   }
-  const legende=CE('div',{style:{fontSize:10,color:'#94a3b8',marginBottom:8}},'▼ = jour de l\'atelier (entre le prélèvement et le retour de la barre) · le jour du retour ne réserve plus le stock (retour le matin)');
+  const legende=CE('div',{style:{fontSize:10,color:'#94a3b8',marginBottom:8}},'▼ = jour de l\'atelier (entre le prélèvement et le retour de la barre) · le jour du retour ne réserve plus le stock (retour le matin) · un prêt d\'une seule journée ne réserve que sa demi-journée (AM/PM)');
   return CE(React.Fragment,null,
     CE('div',{className:'card',style:{maxWidth:'100%',margin:'0 auto 16px',overflowX:'auto'}},
       CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4,flexWrap:'wrap',gap:8}},
@@ -3712,7 +3830,7 @@ function VueGestionOrdi({entries,onEdit}){
     BlocConflits({
       groupes:conflitsMobile, vide:'Aucun conflit Classe mobile',
       bg:'#fff7ed', border:'#fed7aa', titreColor:'#9a3412',
-      renderTitre:g=>'📅 '+fmtDate(g.date)+' — Classe mobile réservée par '+g.entries.length+' conseillers',
+      renderTitre:g=>'📅 '+fmtDate(g.date)+' '+libelleDemi(g.demi)+' — Classe mobile réservée par '+g.entries.length+' conseillers',
       renderItem:itemConflitMobile(onEdit)
     }),
     CE('div',{style:{margin:'20px 0 8px',fontSize:12,fontWeight:700,color:'#991b1b'}},'Stock ordinateurs'),
