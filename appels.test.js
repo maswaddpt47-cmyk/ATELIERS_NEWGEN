@@ -85,6 +85,9 @@ async function preparer(browser) {
   await ctx.route('**/vendor/leaflet-*/leaflet.js',  r => r.fulfill({ status:200, contentType:MIME['.js'], body:STUBS.leaflet }));
   await ctx.route('**/vendor/leaflet-*/leaflet.css', r => r.fulfill({ status:200, contentType:MIME['.css'], body:'' }));
   await ctx.route('**cdnjs.cloudflare.com/ajax/libs/echarts/**',       r => r.fulfill({ status:200, contentType:MIME['.js'], body:STUBS.echarts }));
+  // geo.api.gouv.fr : coordonnees (fetchGPSCommune) et contours de communes.
+  // Jamais intercepte jusqu'ici — un vrai appel sortait pendant les suites.
+  await ctx.route('**/geo.api.gouv.fr/**', r => r.abort());
   await ctx.route('**/tile.openstreetmap.org/**', r => r.abort());
   await ctx.route('**/tile.openstreetmap.fr/**', r => r.abort());
   await ctx.route('**/tiles.stadiamaps.com/**',   r => r.abort());

@@ -167,6 +167,9 @@ window.L = {
     });
   });
   // Intercepter les tiles Leaflet et autres ressources externes silencieusement
+  // geo.api.gouv.fr : coordonnees (fetchGPSCommune) et contours de communes.
+  // Jamais intercepte jusqu'ici — un vrai appel sortait pendant les suites.
+  await ctx.route('**/geo.api.gouv.fr/**', route => route.abort());
   await ctx.route('**/tile.openstreetmap.org/**', route => route.abort());
   await ctx.route('**/tile.openstreetmap.fr/**', route => route.abort());
   await ctx.route('**/tiles.stadiamaps.com/**', route => route.abort());
