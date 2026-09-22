@@ -68,6 +68,50 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-003 — Porter les lectures doublées sur NextStep, et retirer sa file d'attente — ouvert le 22/09/2026
+**Auteur** : session 01Dq1xi3 — lu sur `76e8174`
+**Proposition** : la mesure du 22/09 tranche le §1 en faveur du doublage.
+Porter `gasLectureDoublee` sur NextStep et **supprimer `_gasQueue`** : les deux
+mécanismes sont incompatibles, un doublon mis en file derrière son jumeau ne
+partirait qu'après l'abandon de celui-ci.
+**Critère déclencheur** : n° 1 (ferme une porte — contrat de la couche réseau,
+partagé par les deux applis) et n° 6 (coût côté usager : l'écriture d'un
+atelier passe par là).
+**Ce que ça engage** : la stratégie d'appel de la production. Revenir en
+arrière après des semaines d'usage voudrait dire réécrire `reseau.test.js` et
+reperdre la mesure qui a servi à trancher.
+**Mesure à l'appui** : 124 paires appariées, backend NEWGEN, 07h26→17h15.
+McNemar χ² = 10,32 (significatif à 1 %) ; salves incomplètes 18,4 % (file)
+contre 4,0 % (doublage) ; durée appariée +11,8 s pour la file, IC95
+[+7,8 ; +15,9] ; 10 % des salves file dépassent 60 s, aucune côté doublage.
+**Non vérifié par l'auteur** — trois angles morts, le troisième est le plus
+sérieux :
+1. La série mesure le **backend NEWGEN**. Rien ne prouve que le déploiement
+   Apps Script de NextStep se comporte pareil. Indice seulement : 39 % de
+   pertes relevées sur NextStep le 22/09 au matin, cohérent avec les 30-38 %
+   d'ici.
+2. Le doublage coûte **+26 % d'appels** (5,4 contre 4,3 par salve). Sur le
+   quota Apps Script d'un compte qui héberge déjà deux scripts, je n'ai pas
+   chiffré ce que ça donne à l'échelle d'une équipe entière.
+3. **`_gasQueue` de NextStep sérialise TOUS les appels, écritures comprises.**
+   Le retirer supprime cette sérialisation. NEWGEN garantit qu'une écriture
+   n'est jamais *doublée* (`doubler = !ecriture`, `shared.js:885`) mais **rien
+   n'y sérialise deux écritures concurrentes** — la garantie repose sur le
+   fait que l'interface n'en lance qu'une à la fois. Or le `CLAUDE.md` des
+   deux projets inscrit « les écritures restent séquentielles ET jamais
+   doublées » comme invariant, au motif que deux `appendRow` concurrents
+   créent un atelier en double. **Je ne sais pas si NEWGEN respecte
+   réellement cet invariant, ou s'il ne l'a jamais violé par chance.** À
+   vérifier avant de retirer la file : un `saveMany` suivi d'un `saveEntry`,
+   ou deux onglets, suffisent-ils à faire partir deux écritures ensemble ?
+**Si personne ne répond, je fais quoi ?** — je ne porte rien. Sans réponse sur
+le point 3, le portage échangerait un problème de latence mesuré contre un
+risque de doublon en base non mesuré.
+**Où regarder** : NextStep `shared.js` — `_gasQueue`, `gasUnAppel` ;
+NEWGEN `shared.js:864-905` — `GAS_SANS_DOUBLON`, `gasAppel`,
+`gasLectureDoublee` ; `reseau.test.js` des deux côtés.
+
+
 ## AG-002 — La finesse AM/PM ne vaut que pour un prêt d'une seule journée — ouvert le 22/09/2026
 **Auteur** : session 01Dq1xi3 — lu sur `315e218`
 **Proposition** : `occupeCreneauMateriel` ne restreint l'occupation à une
