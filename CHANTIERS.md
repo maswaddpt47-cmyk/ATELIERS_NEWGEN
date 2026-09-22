@@ -30,86 +30,37 @@ effectué — AG-001 a corrigé le protocole du banc avant la série.
 
 ---
 
-## 1. Décision à trancher — parallélisme contre sérialisation
+## 1. Tranché le 22/09/2026 — les lectures doublées l'emportent
 
-**Les deux projets jumeaux tournent en production sur des stratégies
-opposées**, et personne n'a arbitré :
+**La question ouverte depuis le 18/09 est close.** Série du banc : 249 salves,
+backend NEWGEN, 07h26→17h15, les deux stratégies en alternance sur le même
+backend et le même poste.
 
-| | NEWGEN | NextStep |
+| | file d'attente | lectures doublées |
 |---|---|---|
-| Stratégie | lectures **doublées** à partir de 7 s | **file d'attente**, un appel en vol à la fois |
-| Statut de l'hypothèse | efficacité constatée (3 sauvetages relevés le 18/09) | « HYPOTHÈSE NON VÉRIFIÉE », écrit dans son propre code |
-| Mesure disponible | 54 % de pertes le 19/09 entre 12:43 et 14:32 | une seule, **d'attribution incertaine** (voir ci-dessous) |
+| Salves incomplètes | **23/125 — 18,4 %** | **5/124 — 4,0 %** |
+| Durée médiane | 26,0 s | 11,9 s |
+| Salves > 30 s | 45 % | 15 % |
+| Salves > 60 s | **10 %** | **0 %** |
+| Appels par salve | 4,3 | 5,4 |
 
-**Ce qui bloque :** aucune mesure NextStep fiable. L'origine des captures du
-19/09 est **contestée** — l'utilisateur les attribue aux deux sites, Claude
-les attribuait toutes à NEWGEN ; les deux applis sont visuellement identiques
-(même nav `#197d89`, même sidebar) et aucun élément de la capture ne tranche.
-Le Journal des opérations porte depuis une pastille NEWGEN / NEXTSTEP pour
-lever l'ambiguïté : seules les mesures postérieures à cette pastille comptent.
+**Test apparié sur 124 paires consécutives** (celui qu'exige
+`banc/README.md`) : McNemar χ² = **10,32**, significatif à 1 % — 23 paires où
+seule la file échoue contre 5 où seul le doublage échoue. Différence de durée
+appariée : **+11,8 s pour la file**, IC95 [+7,8 ; +15,9], la file perdant dans
+73 % des paires.
 
-**Élément à ne pas perdre**, consigné dans le `CHANTIERS.md` de NextStep :
-un relevé du 19/09 vers 09:30 (attribution incertaine, antérieure à la
-pastille) montre `getComptes #1` abandonné à 12 s **alors qu'il était seul en
-vol** — la file avait sérialisé, `getAll` était terminé depuis 12 s, donc
-aucune rafale. Si ce relevé vient bien de NextStep, il contredit directement
-l'hypothèse qui justifie sa file d'attente. À refaire proprement.
+⚖️ **Portage en attente d'AG-003** (`AGORA.md`). Rien n'est implémenté : le
+retrait de `_gasQueue` supprimerait aussi la sérialisation des **écritures** de
+NextStep, et rien ne prouve que NEWGEN respecte l'invariant « écritures
+séquentielles ET jamais doublées » inscrit dans les deux `CLAUDE.md`. Ce point
+doit être tranché avant, sous peine d'échanger une latence mesurée contre un
+risque de doublon en base non mesuré.
 
-**Comment trancher — le banc de mesure (21/09/2026).** La méthode qui figurait
-ici (console F12 sur l'Admin de chaque site après quelques jours d'usage) ne
-pouvait pas conclure : la panne frappe par fenêtres de temps et les deux
-applis ne sont ni utilisées aux mêmes heures, ni branchées sur le même
-déploiement Apps Script — sans compter que leurs journaux étaient mélangés
-jusqu'à cette date. Remplacée par un banc qui rejoue les **deux stratégies en
-alternance**, depuis un seul poste, contre un seul backend :
-
-**https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/banc/** — voir
-`ATELIERS_NEWGEN/banc/README.md` pour la méthode, les limites et la lecture
-des résultats.
-
-Série prévue le 22/09/2026 : backend NEWGEN, **intervalle 2 min** (pas 3),
-plafond 800 appels, démarrage avant 11h pour couvrir la fenêtre 11h-15h (la
-plus dégradée). Résultat attendu dans ce fichier une fois la mesure faite.
-
-**Le protocole a été revu le 21/09/2026 après contradiction entre sessions
-(AG-001).** Ce qui change, et pourquoi :
-
-- **2 min au lieu de 3** : à 3 min, la fenêtre de 4 h ne donnait que 40 salves
-  par stratégie, soit ~56 % de chances de détecter un écart réel de 20 points.
-  À 2 min : 60 par bras, ~74 %. L'intervalle est un délai *entre* salves, pas
-  une cadence — aucun risque de chevauchement.
-- **Ne conclure « les deux se valent » que si l'intervalle de confiance à 95 %
-  de la différence appariée exclut 10 points.** Sinon écrire « non concluant,
-  série trop courte ». Le test à lire est McNemar sur les paires consécutives
-  (les salves alternent une à une, le plan est apparié). Une absence de
-  résultat n'est pas une observation — c'est le piège que la première version
-  du tableau de lecture du `banc/README.md` tendait.
-- **Si le 22/09 est non concluant : prolonger le même journal un second jour**
-  sur la même tranche horaire (120 salves/bras ≈ 97 %). Ne pas vider entre les
-  deux, et **relever le plafond à 1200** — il se compte sur le cumul du
-  journal, 800 couperait la seconde journée en plein milieu.
-- **Le banc sépare désormais l'effet du parallélisme de celui du doublage**
-  sans troisième bras (voir « Points à ne pas défaire »).
-
-⚠️ Chiffres de puissance issus d'une **simulation**, pas du terrain. À réviser
-dès qu'une vraie série existe.
-
-⚠️ Le quota Apps Script se compte **par compte Google**, pas par script : ne
-pas viser le backend de production pendant les heures de travail de l'équipe.
-
-**Piste ouverte par le relevé du 21/09** (132 appels, tous projets confondus,
-donc non attribuable) : les pertes se concentrent très fortement selon
-l'heure — 0 % à 10h et 16h, 68 % à 12h, 65 % à 13h, 55 % à 15h. Si le banc
-confirme ce profil, la stratégie d'appel devient secondaire : ce serait la
-charge de l'infrastructure Apps Script aux heures ouvrées, et le proxy
-deviendrait le seul vrai levier.
-
-Puis harmoniser les deux projets sur le gagnant. Si les ratios se tiennent,
-l'argument d'alignement l'emporte et NextStep sert de référence.
-
-⚠️ Ne pas harmoniser **avant** d'avoir mesuré : les deux applis étant
-identiques par ailleurs, c'est aujourd'hui une expérience propre à une seule
-variable. L'aligner maintenant détruirait le seul moyen de savoir.
+⚠️ **Incompatibilité à ne pas oublier au moment du portage** : on ne peut pas
+porter le doublage sans retirer la file. Un doublon mis en file derrière son
+propre jumeau ne partirait qu'après l'abandon de celui-ci — le mécanisme
+serait inopérant.
 
 ## ⚠️ Origine commune — les deux applis partagent leur `localStorage`
 
@@ -138,15 +89,24 @@ ce jour, mais c'est la même cause. Correction : préfixer ces clés comme pour
 le journal, en migrant l'existant pour ne pas réinitialiser les préférences
 des conseillers.
 
-## 2. Mesure en attente — le proxy se justifie-t-il ?
+## 2. Le proxy se justifie-t-il ? — répondu à moitié le 22/09/2026
 
-Relevé du 19/09 sur NEWGEN : **54 % de pertes** sur ~70 appels, avec deux
-chargements terminés en écran d'erreur après trois tentatives. Mais le 18/09
-au soir on était plutôt à 30 %, et à 12:44 le 19/09 les quatre appels sont
-passés sans un raté. **On ne sait pas si 54 % est représentatif.**
+La série du banc donne les deux chiffres, et ils ne disent pas la même chose :
 
-- Taux qui retombe sous ~15 % → ne rien construire, l'appli est utilisable.
-- Taux durablement au-dessus de 30-40 % → le proxy (§3) se justifie.
+- **Taux de perte par appel : 30 à 38 %** (premier appel, première tentative
+  — 30 % quand un seul appel est en vol, 38 % quand plusieurs partent
+  ensemble). Dans la fourchette « 30-40 % » qui justifiait le proxy.
+- **Taux d'échec ressenti avec le doublage : 4 %.** Sous le seuil des ~15 %
+  en dessous duquel le `banc/README.md` dit « ne rien construire de plus,
+  l'appli est utilisable ».
+
+**Lecture retenue : le doublage d'abord, le proxy ensuite et sans urgence.**
+Le doublage divise les échecs par cinq pour le coût d'un fichier déjà écrit ;
+le proxy demande un hébergement qu'on n'a toujours pas (§3). Ce qui resterait
+à gagner après le portage, c'est la latence — 11,9 s de médiane, ça reste
+lent — pas la fiabilité.
+
+À rouvrir si, après le portage, le taux ressenti remonte au-dessus de 15 %.
 
 ## 3. Chantier conditionnel — proxy pour supprimer la perte
 
@@ -232,6 +192,18 @@ automatisés (qui ne peuvent pas les couvrir) :
 ---
 
 ## Points à ne pas défaire
+
+- **Les lectures sont doublées, pas sérialisées** (tranché le 22/09/2026,
+  mesure de 249 salves, McNemar χ² = 10,32). La file d'attente laissait 18 %
+  des connexions échouer et 10 % dépasser 60 s ; le doublage tombe à 4 % et
+  aucune. Le parallélisme coûte bien 7,5 points de pertes supplémentaires —
+  l'hypothèse de NextStep n'était pas fausse — mais le doublon en rattrape
+  42 %, ce qui l'efface largement. Ne pas revenir à la sérialisation sans une
+  mesure au moins équivalente.
+- **Les pertes ne dépendent pas de l'heure.** Sur une journée complète et un
+  journal cloisonné, elles sont réparties de 07h à 17h sans pic de midi.
+  L'idée que l'infrastructure Apps Script saturerait aux heures ouvrées, née
+  d'un relevé partiel le 21/09, est **réfutée** — ne pas la réintroduire.
 
 Chacun a coûté cher à établir et est verrouillé par un test :
 
