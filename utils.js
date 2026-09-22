@@ -141,7 +141,10 @@ function resumeLogsTexte(logs, appli){
       // 'annulé' : le jumeau a repondu, l'appel a ete arrete. Ni reussite ni
       // perte — il sort des deux comptes (AG-006).
       annule: m[3].indexOf('annulé') === 0,
-      ko: m[3].indexOf('ok') !== 0 && m[3].indexOf('annulé') !== 0,
+      ko: m[3].indexOf('ok') !== 0 && m[3].indexOf('annulé') !== 0 && m[3].indexOf('serveur') !== 0,
+      // Refus serveur (ok:false, motif « serveur : ») : livre, donc ni une
+      // perte ni un succes — compte a part (AG-004, 22/09/2026).
+      refus: m[3].indexOf('serveur') === 0,
       // Le doublon d'une lecture porte le numero de son jumeau suivi de 'b'
       // (gasLectureDoublee, shared.js). C'est la seule trace du doublage dans
       // le journal, et elle suffit a le mesurer — voir plus bas.
@@ -153,7 +156,8 @@ function resumeLogsTexte(logs, appli){
   });
   if(!lus.length) return 'JOURNAL ' + appli + ' : ' + gas.length + ' lignes GAS, aucune au format attendu.';
   var ko = lus.filter(function(x){ return x.ko; });
-  var okSec = lus.filter(function(x){ return !x.ko && !x.annule; }).map(function(x){ return x.sec; }).sort(function(a,b){ return a-b; });
+  var refus = lus.filter(function(x){ return x.refus; });
+  var okSec = lus.filter(function(x){ return !x.ko && !x.annule && !x.refus; }).map(function(x){ return x.sec; }).sort(function(a,b){ return a-b; });
   var med = okSec.length ? okSec[Math.floor(okSec.length/2)] : 0;
   var p90 = okSec.length ? okSec[Math.min(okSec.length-1, Math.floor(okSec.length*0.9))] : 0;
   var perdu = ko.reduce(function(a,x){ return a + x.sec; }, 0);
@@ -169,6 +173,8 @@ function resumeLogsTexte(logs, appli){
   var reels = lus.filter(function(x){ return !x.annule; });
   l.push('perdus : ' + ko.length + '/' + reels.length + ' (' + Math.round(ko.length/reels.length*100) + '%)'
     + (reels.length !== lus.length ? '  [+' + (lus.length-reels.length) + ' doublons annules, hors compte]' : ''));
+  if(refus.length) l.push('refus serveur (livres, hors pertes) : ' + refus.length + ' — '
+    + refus.slice(0, 5).map(function(x){ return x.heure + ' ' + x.action + ' ' + x.motif; }).join(' | '));
   l.push('durees livrees : mediane ' + med.toFixed(1) + 's | p90 ' + p90.toFixed(1) + 's');
   l.push('temps passe a attendre des reponses mortes : ' + Math.round(perdu) + 's');
   // ── Ce que rapporte le doublage, et pourquoi le taux ci-dessus trompe ──
@@ -183,7 +189,7 @@ function resumeLogsTexte(logs, appli){
   // c'est que l'original n'avait toujours pas repondu.
   var doublons = lus.filter(function(x){ return x.doublon; });
   if(doublons.length){
-    var sauves = doublons.filter(function(x){ return !x.ko && !x.annule; }).length;
+    var sauves = doublons.filter(function(x){ return !x.ko && !x.annule && !x.refus; }).length;
     var dAnnules = doublons.filter(function(x){ return x.annule; }).length;
     // « non annules » et non « partis » : un doublon annule par un original
     // tardif ne comptait pas, ce qui rendait ce taux incomparable a celui du
