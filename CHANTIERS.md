@@ -177,10 +177,17 @@ ne renvoie que les noms actifs, ni rôle ni état).
   (`GAS_NEXTSTEP.js:472`, `:654`) et ignore en silence les colonnes qu'il ne
   connaît pas, voire les vide à la sauvegarde (`:691`). L'environnement de
   Claude ne joint ni Google ni github.io (vérifié le 23/09/2026).
-  **Proposé, à confirmer** : l'import **refuse de tourner** sur une colonne
-  inconnue du .xlsx. Transport de l'import : page PHP protégée sur
-  Alwaysdata où l'utilisateur dépose le .xlsx (recommandé) ou import en SSH
-  — ferme une porte : **bloc AGORA à ouvrir** en écrivant le script.
+  **✅ Validé par l'utilisateur le 23/09/2026** : l'import **refuse de
+  tourner** sur une colonne inconnue du .xlsx ; transport = **page PHP
+  protégée sur Alwaysdata** où l'utilisateur dépose le .xlsx. Ferme une
+  porte : **bloc AGORA à ouvrir** en écrivant le script. L'utilisateur
+  demande à être **guidé pas à pas** (export Sheets, Alwaysdata).
+  **Proposé (non encore décidé)** : identifiants MySQL et clé d'import dans
+  les Secrets GitHub (`ALWAYSDATA_DB_NOM`, `ALWAYSDATA_DB_UTILISATEUR`,
+  `ALWAYSDATA_DB_MOT_DE_PASSE`, `ALWAYSDATA_CLE_IMPORT`), écrits par
+  `deploy-api.yml` dans un fichier **hors de `~/www/`** — même principe que
+  le SSH : Claude ne voit jamais les identifiants. La base MySQL est à créer
+  par l'utilisateur dans l'administration Alwaysdata.
 
 ---
 
