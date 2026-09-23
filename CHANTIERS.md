@@ -19,6 +19,61 @@ effectué — AG-001 a corrigé le protocole du banc avant la série.
 
 ---
 
+## 🧭 23/09/2026 — Refonte d'architecture : réflexion en cours, RIEN n'est décidé
+
+Session de réflexion demandée par l'utilisateur (« prendre du recul, ne rien
+faire sauf proposer »). Aucun code touché. **Reprendre ici.**
+
+**Réponses de l'utilisateur (23/09/2026)** :
+- Aucune différence métier NextStep / NEWGEN : NEWGEN devait **prendre la
+  relève** de NextStep et servir de labo.
+- **Pas d'hébergement** (ni mutualisé ni autre). S'il en faut un : un
+  hébergeur où Claude peut agir comme sur GitHub.
+- **Personne n'utilise le classeur Google directement.**
+- Seuls NextStep et NEWGEN sont concernés (pas GDINV2, pas SMS-mail).
+
+**Diagnostic** : deux codes jumeaux qui divergent (`shared.js` : 2 324 lignes
+différentes ; stock dupliqué dans NEWGEN §6), transport GAS perdant 30-75 %
+des appels (toute l'énergie depuis le 18/09 part à le compenser côté client),
+endpoints lisibles sans token avec URL `/exec` publique, `shared.js` de
+5 000 lignes, déploiement GAS par copier-coller.
+
+**Proposition (non validée)** :
+0. Geler NextStep (bugs seulement), porter ses quelques spécificités dans
+   NEWGEN (liste NextStep §6).
+1. API PHP reproduisant **1:1** les actions GAS (`getAll`, `saveEntry`,
+   `saveMany`, suppression, comptes, config, `checkPassword`, `logLogin`) +
+   MySQL. Côté client, quasi seulement l'URL change ; `contract.test.js` sert
+   de garde-fou.
+2. Import du classeur NEWGEN, bascule, GAS gardé en lecture seule un temps.
+3. Import des données NextStep, redirection de son URL vers NEWGEN, archivage.
+4. Nettoyage : retirer reprises/doublage/banc et les sections réseau des
+   `CLAUDE.md`/`CHANTIERS.md` ; découper `shared.js` sans build.
+Une seule migration de backend (NEWGEN), pas deux. Proxy devant GAS
+**abandonné** : pansement inutile si GAS part. Pas de framework/build.
+
+**Hébergement — critère** : déploiement déclenché par un push GitHub (Action
+avec identifiants dans les Secrets du dépôt, ou intégration native) ; Claude
+n'a jamais besoin des identifiants et vérifie via les journaux d'Actions.
+Recommandations (tarifs à revérifier) :
+1. **Alwaysdata** (Paris) — recommandé : français, PHP+MySQL, offre gratuite
+   ~100 Mo, déploiement par Action SSH/rsync à écrire une fois.
+2. **Clever Cloud** (Nantes) — push `main` → déploiement natif, payant.
+3. Supabase — Postgres+auth sans code serveur, mais société US, pause après
+   7 jours d'inactivité en gratuit.
+
+**Questions ouvertes, à poser en reprise** :
+1. Les conseillers saisissent-ils **dans les deux sites** aujourd'hui ? Si
+   oui, dédoublonnage nécessaire à l'étape 3.
+2. Compte d'hébergement au nom de l'utilisateur ou du CD47 ? ⚠️ RGPD :
+   données d'agents sur compte perso → faire valider DSI/DPO.
+3. Choix de l'hébergeur.
+
+**Dès décision** : ouvrir un bloc AGORA (critère 1, la décision ferme une
+porte) **avant** d'écrire la moindre ligne.
+
+---
+
 ## 1. Tranché le 22/09/2026 — les lectures doublées l'emportent
 
 **La question ouverte depuis le 18/09 est close.** Série du banc : 249 salves,
