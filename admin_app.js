@@ -427,7 +427,7 @@ const LOGS_KEY = lsKey('adm_logs');
   }
   function retirerEntree(id){ setEntries(prev=>prev.filter(e=>e._id!==id)); setLastSync(new Date()); }
   async function handleDelete(id){
-    try{const res=await apiFetch('delete',{_id:id});if(!res.ok)throw new Error(res.error);showToast('✅ Atelier supprimé');addLog('Suppression '+id,'ok');retirerEntree(id);}
+    try{const res=await apiFetch('delete',{_id:id});if(!suppressionAboutie(res))throw new Error(res.error);showToast('✅ Atelier supprimé');addLog('Suppression '+id,'ok');retirerEntree(id);}
     catch(err){showToast('❌ '+err.message,false);}
   }
 
