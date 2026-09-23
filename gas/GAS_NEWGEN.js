@@ -3,12 +3,8 @@
 // v11.37 : keepAlive ne prend plus le verrou de script (AG-004 tranché le
 //          22/09/2026). Anti-empilement par drapeau CacheService. Voir le
 //          commentaire au-dessus de keepAlive.
-// ⚠️ CETTE COPIE EST EN AVANCE SUR LA PRODUCTION (22/09/2026).
-//    v11.35, v11.36 et v11.37 ne sont PAS déployées. Le déploiement se fait à la main
-//    (script.google.com → coller ce fichier → publier une version), voir
-//    gas/README.md. Tant que ce bandeau est là, le verrou d'écriture décrit
-//    ci-dessous n'existe pas en ligne. Le retirer une fois le déploiement
-//    confirmé, pas avant.
+// ✅ DÉPLOYÉE le 23/09/2026 (confirmé par l'utilisateur : tests et écritures
+//    ok). Cette copie reflète la production.
 //
 // v11.35 : SÉCURITÉ DONNÉES — verrou serveur sur les trois actions qui
 //          modifient la feuille Ateliers (saveEntry, saveMany, delete), via

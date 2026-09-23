@@ -1,12 +1,11 @@
 # GAS_NEWGEN.js — copie de référence
 
-## ⏳ EN ATTENTE DE DÉPLOIEMENT — préparé le 22/09/2026
+## ✅ v11.37 déployée le 23/09/2026
 
-**Ce fichier est en avance sur la production.** Version à déployer :
-**v11.37**. Elle contient v11.35 (verrou d'écriture serveur), v11.36 et v11.37
-(`keepAlive` ne prend plus le verrou, AG-004). Toute copie plus ancienne
-récupérée plus tôt est périmée. Correctif de **sécurité des données**, pas de
-confort — il **n'accélère rien**.
+Confirmé par l'utilisateur : `testerSecuriteDoGet` ok, enregistrement et
+suppression ok. Contient v11.35 (verrou d'écriture serveur), v11.36 et v11.37
+(`keepAlive` sans verrou, AG-004). Les sections ci-dessous restent comme
+référence.
 
 | | Avant | Après |
 |---|---|---|

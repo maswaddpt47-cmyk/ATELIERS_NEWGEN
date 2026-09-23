@@ -63,17 +63,11 @@ l'appui, et qu'il ne faut pas réapprendre :
 
 **Décision de l'utilisateur** : option recommandée — verrou d'abord.
 
-### 🔴 À FAIRE EN PREMIER — déployer le verrou GAS (préparé le 22/09/2026)
+### ✅ Verrou GAS déployé le 23/09/2026 — NEWGEN v11.37, NextStep v10.18.0
 
-Le code est **écrit et poussé, pas déployé** : Apps Script n'a pas d'API de
-push, le déploiement est manuel. `actionSaveEntry`, `actionSaveMany` et
-`actionDelete` des deux copies sont enveloppés dans
-`LockService.getScriptLock().waitLock(20 s)` / `releaseLock()` en `finally`
-(`_avecVerrouEcriture`). Marche à suivre pas à pas : **`gas/README.md`**,
-section « EN ATTENTE DE DÉPLOIEMENT ».
-
-Un bandeau ⚠️ en tête de chaque copie GAS signale la divergence avec la
-production. **Le retirer seulement quand l'utilisateur confirme « déployé ».**
+Confirmé par l'utilisateur sur les deux projets : tests de sécurité,
+enregistrement et suppression d'un atelier ok. Bandeaux ⚠️ retirés.
+**Le portage du doublage sur NextStep est débloqué.**
 
 ⚖️ **AG-004 tranché le 22/09/2026 — version à déployer : v11.37** (toute
 copie plus ancienne est périmée). Les mails « Summary of failures » montraient
@@ -222,6 +216,18 @@ confirmer sur le terrain après le portage.
 porter le doublage sans retirer la file. Un doublon mis en file derrière son
 propre jumeau ne partirait qu'après l'abandon de celui-ci — le mécanisme
 serait inopérant.
+
+## 🐞 Ouvert le 23/09/2026 — « Ordinateurs prêtés » remis à vide au premier enregistrement
+
+Signalé par l'utilisateur, **sur les deux projets** : en enregistrant un
+atelier avec Classe mobile, le champ « Ordinateurs prêtés » se vide et
+« champs obligatoires » s'affiche. Le deuxième enregistrement passe.
+**Non reproduit** en navigateur automatisé (Chromium de bureau et émulation
+Pixel 7, saisie complète d'un nouvel atelier : enregistré du premier coup).
+Lecture du code : rien ne remet `nb_ordinateurs` à vide hors `reset()`.
+En attente du scénario exact (appareil, nouveau/modification/duplication/
+cycle, ordre de saisie). Harnais de reproduction :
+`ateliers-cd47_NextStep/e2e/zz_repro.test.js` (non commité, à réutiliser).
 
 ## ⚠️ Origine commune — les deux applis partagent leur `localStorage`
 
