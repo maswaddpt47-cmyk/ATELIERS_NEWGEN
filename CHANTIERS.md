@@ -108,6 +108,15 @@ avant d'écrire le code. En attendant : seul le travail qui ne ferme rien
   clair, SHA-256 sans sel, lectures sans token, mot de passe dans l'URL).
   ⚠️ Correction : `contract.test.js` ne garde **pas** l'API (il ne teste que
   l'objet construit côté client) — un test de contrat serveur est à écrire.
+- **Précisé le 23/09/2026** : l'utilisateur n'a pas touché au PHP depuis
+  30 ans — **Claude écrit et maintient l'API seul**. Donc code commenté en
+  français, et la sûreté repose sur les tests (contrat serveur), pas sur une
+  relecture de l'utilisateur.
+- **Utilisateur — ouvrir le compte Alwaysdata** (offre gratuite, nom neutre
+  sans « cd47 » tant que le compte est personnel, ex. `ateliers-numeriques`).
+  S'arrêter après validation de l'e-mail ; ne transmettre aucun identifiant.
+  Le branchement GitHub → Alwaysdata (clé SSH dans les *Secrets*) sera guidé
+  pas à pas plus tard.
 - **Bloquant suivant — utilisateur** : fournir un **export xlsx du classeur
   NextStep** (4 feuilles) pour relever les vrais en-têtes. Hors dépôt
   (données personnelles) : copie locale ou version anonymisée.
