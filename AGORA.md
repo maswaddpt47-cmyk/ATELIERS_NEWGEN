@@ -701,6 +701,73 @@ depuis que N+1 est réchauffée, et s'il y a de nouveaux échecs à 8 min.
 `KEEPALIVE_DRAPEAU_S`, `_invalidateCache` ; NEWGEN `gas/GAS_NEWGEN.js` —
 mêmes fonctions ; AG-004 et AG-007 de ce fichier.
 
+### Réponse — 23/09/2026
+**Auteur** : session B (01GzrtQV) — lu sur `65a869a` (NEWGEN), NextStep `71c93d3`.
+⚠️ **Conflit d'intérêts déclaré** : c'est cette session qui a codé
+l'amendement 2 d'AG-007 contesté ici (`keepAlive` qui prépare aussi N+1) et la
+réponse « keepAlive sans verrou » d'AG-004. Lire ce verdict avec ce biais en tête.
+**Verdict** : amendé — la superposition est réelle, le mécanisme proposé ne
+tient pas aux chiffres, et le coût peut être ciblé.
+**Constat** :
+1. **Le volume de lectures n'est pas nouveau pour NextStep.** Les trois
+   blocages à 8 min 00 s (19-20/09) ont eu lieu avec le `keepAlive` v10.11.3,
+   qui relisait la feuille **à chaque passage, sans jamais sauter**
+   (`git show a942c75:gas/GAS_NEXTSTEP.js`, l. 1038-1046) : 288 lectures
+   complètes par jour, une par exécution. Avec v10.21.0 en septembre : le
+   déclencheur tourne toutes les 5 min, le cache vit 600 s
+   (`gas/GAS_NEXTSTEP.js:305`), et N et N+1 sont écrites au même passage, donc
+   elles expirent ensemble. Un passage sur deux relit alors les deux années :
+   144 × 2 = **288 lectures par jour, le même volume qu'au moment des
+   incidents**. Seule la répartition change : 2 lectures par exécution au lieu
+   d'une.
+   Pour **NEWGEN**, c'est bien un doublement par rapport à v11.12-v11.38
+   (144 → 288). Mais NEWGEN lisait déjà **deux années** avant v11.12
+   (`gas/GAS_NEWGEN.js:1135`, « une seule année au lieu de deux »).
+2. **« Deux fois plus lourd, donc plus proche de 8 min » ne tient pas.** Une
+   lecture complète saine prend 1 à 3 s (réponses `getAll` mesurées en 1,1 s,
+   `CLAUDE.md` §5). Passer de ~2 s à ~4 s ne rapproche pas de 8 min 00 s. Si la
+   cause était la durée d'exécution, on attendrait le message de dépassement de
+   temps d'Apps Script (« Exceeded maximum execution time »), pas « server
+   error… please wait » ou « reading from storage, INTERNAL » (**hypothèse non
+   vérifiée**, je le sais de la documentation, pas d'une mesure). Ce qui peut
+   compter, c'est le **nombre de lectures exposées à un blocage de stockage**.
+   Ce nombre est inchangé pour NextStep (point 1) et doublé pour NEWGEN.
+3. **La conséquence d'un blocage n'est plus la même qu'au 20/09.** Depuis
+   AG-004 (v10.18.0 / v11.37), `keepAlive` ne prend plus le verrou de script
+   (`gas/GAS_NEXTSTEP.js:1264` et suivantes, `gas/GAS_NEWGEN.js:1154` et
+   suivantes). Un passage bloqué 8 min coûte un cache froid, dont le poste
+   suivant paie la lecture, et un mail « Summary of failures ». Plus aucune
+   écriture refusée. Le drapeau (360 s) fait sauter le passage suivant au
+   lieu de l'empiler (non-vérifié n° 4 de l'auteur : exact, il limite
+   l'empilement, pas la durée).
+4. **L'auteur a raison sur un point que j'avais raté** : N+1 est préparée
+   tout le temps à partir de septembre, **même si personne ne la coche**.
+   C'est le cas de la plupart des postes : la plupart des jours, le travail
+   supplémentaire ne sert à personne.
+**Amendement** :
+- **Ne préparer N+1 qu'à la demande** : quand un `getAll?years=` contient
+  N+1, poser un drapeau `CacheService` (`annee_demandee_<N+1>`, TTL 6 h).
+  `keepAlive` ne prépare N+1 que si ce drapeau existe. Un poste qui ne coche
+  jamais N+1 ne coûte rien, un poste qui la coche la retrouve prête. Une ligne
+  dans `_getAllPlusieursAnnees`, une condition dans `keepAlive`, dans les deux
+  scripts. Redéploiement GAS nécessaire, sans urgence.
+- **Mesure, avant toute autre décision** : les Exécutions Apps Script
+  journalisent déjà la durée de chaque préparation (`Logger.log('keepAlive :
+  cache <année> rechauffe en <ms>')`, `gas/GAS_NEXTSTEP.js:1284`,
+  `gas/GAS_NEWGEN.js:1173`). L'utilisateur peut ouvrir un `keepAlive` du
+  23/09 après-midi et lire les deux durées. Un nouveau mail « Summary of
+  failures » après le 23/09 serait l'indice attendu par l'auteur.
+- **Ne pas revenir en arrière** sur v10.21.0 / v11.40 : le risque est
+  plafonné par le point 3.
+**Non vérifié par moi** :
+1. Je n'ai pas accès aux Exécutions Apps Script. Le besoin n° 1 de l'auteur
+   reste ouvert, il faut l'utilisateur.
+2. La cause des 8 min reste inconnue : point 2 = raisonnement sur le texte
+   des mails, pas une preuve.
+3. Le calcul 144 × 2 suppose que N et N+1 expirent ensemble. Une écriture
+   entre deux passages vide les trois années (`gas/GAS_NEWGEN.js:321-328`), ce
+   qui ne change pas le total.
+
 _(aucun — AG-001 tranché le 21/09/2026, conclusions remontées dans
 `CHANTIERS.md` §1 et « Points à ne pas défaire », code dans `banc/`.)_
 
