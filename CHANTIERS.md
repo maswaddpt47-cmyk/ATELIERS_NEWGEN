@@ -132,7 +132,7 @@ ne renvoie que les noms actifs, ni rôle ni état).
 - ✅ Compte Alwaysdata ouvert par l'utilisateur. **Claude écrit et maintient
   seul le PHP** (l'utilisateur n'en a pas fait depuis 30 ans) : code commenté
   en français, sûreté portée par les tests, pas par sa relecture.
-- **Étape 0 — écrite le 23/09/2026, en attente des secrets** :
+- **Étape 0 — déployée le 23/09/2026 à 23:58** (run `35925555123` : `ping.php` répond en ligne ; hôte `ssh-<compte>.alwaysdata.net` et dossier `~/www/` **confirmés**). Compte : `ateliers-numeriques`. **Reste : lancer la mesure une journée.** Détail :
   `api/ping.php` (JSON statique ~4 Ko, CORS limité à github.io),
   `.github/workflows/deploy-api.yml` (rsync par SSH à chaque push touchant
   `api/`, ou lancement manuel), `banc/cibles.html` (une paire d'appels
