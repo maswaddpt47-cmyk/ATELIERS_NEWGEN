@@ -38,7 +38,7 @@ des appels (toute l'énergie depuis le 18/09 part à le compenser côté client)
 endpoints lisibles sans token avec URL `/exec` publique, `shared.js` de
 5 000 lignes, déploiement GAS par copier-coller.
 
-**Proposition (non validée)** :
+**Plan initial — validé le 23/09/2026, amendé par AG-009 (ci-dessous, qui prime)** :
 0. Geler NextStep (bugs seulement), porter ses quelques spécificités dans
    NEWGEN (liste NextStep §6).
 1. API PHP reproduisant **1:1** les actions GAS (`getAll`, `saveEntry`,
@@ -143,10 +143,14 @@ ne renvoie que les noms actifs, ni rôle ni état).
   dans `banc/index.html` — le banc compare des stratégies sur *un* backend et
   refuse les séries mélangées, il ne donne pas de mesure appariée entre
   backends.
-  **Utilisateur** : activer le mot de passe SSH chez Alwaysdata, créer les
-  secrets `ALWAYSDATA_COMPTE` et `ALWAYSDATA_SSH_PASSWORD` dans le dépôt,
-  puis ouvrir `banc/cibles.html` une journée. Hypothèses d'hôte SSH et de
-  dossier `~/www/` non vérifiées : le premier déploiement les confirme.
+  ✅ Mot de passe SSH et secrets `ALWAYSDATA_COMPTE` /
+  `ALWAYSDATA_SSH_PASSWORD` créés par l'utilisateur le 23/09/2026.
+  **Utilisateur, 24/09/2026** : ouvrir
+  `https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/banc/cibles.html` sur
+  un poste du bureau, compte `ateliers-numeriques`, Démarrer ; vérifier que
+  la 1re paire montre Alwaysdata « livré » (sinon CORS à corriger — en-tête
+  vérifié en local seulement, l'environnement de Claude ne joint pas
+  Alwaysdata) ; laisser tourner la journée, coller le résumé.
   **Lecture** : Alwaysdata ≈ 0 % de pertes quand GAS en perd 30 %+ avec
   McNemar > 3,84 → la perte vient de GAS, la refonte la supprime. Pertes
   comparables → réseau des postes, on garde reprises et doublage.
