@@ -1,0 +1,4 @@
+# Rien dans ce dossier ne doit être servi : code inclus par les pages de
+# api/, et schéma de la base. Hypothèse non vérifiée : Apache 2.4 chez
+# Alwaysdata (les fichiers PHP d'ici ne produisent de toute façon aucune sortie).
+Require all denied

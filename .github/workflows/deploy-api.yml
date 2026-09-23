@@ -1,18 +1,23 @@
 # Déploie api/ chez Alwaysdata à chaque push sur main qui touche api/.
 # Refonte GAS → PHP (AG-009, CHANTIERS « Refonte d'architecture »).
 #
-# Deux secrets du dépôt, saisis par l'utilisateur, jamais vus par Claude :
-#   ALWAYSDATA_COMPTE        nom du compte (ex. ateliers-numeriques)
-#   ALWAYSDATA_SSH_PASSWORD  mot de passe de l'utilisateur SSH du compte
+# Secrets du dépôt, saisis par l'utilisateur, jamais vus par Claude :
+#   ALWAYSDATA_COMPTE          nom du compte (ex. ateliers-numeriques)
+#   ALWAYSDATA_SSH_PASSWORD    mot de passe de l'utilisateur SSH du compte
+#   ALWAYSDATA_DB_NOM          nom de la base MySQL      ┐ écrits dans
+#   ALWAYSDATA_DB_UTILISATEUR  utilisateur MySQL         │ ~/config-api.php,
+#   ALWAYSDATA_DB_MOT_DE_PASSE son mot de passe          │ hors du dossier
+#   ALWAYSDATA_CLE_IMPORT      clé de la page d'import   ┘ servi ~/www/
 # Hypothèses non vérifiées (lues de mémoire, pas sur un compte réel) : hôte
 # SSH ssh-<compte>.alwaysdata.net, utilisateur SSH = nom du compte, site par
-# défaut servi depuis ~/www/. À confirmer au premier déploiement.
+# défaut servi depuis ~/www/ — confirmés au déploiement du 23/09/2026.
+# Hypothèse non vérifiée : hôte MySQL mysql-<compte>.alwaysdata.net.
 name: Déploiement API Alwaysdata
 
 on:
   push:
     branches: [main]
-    paths: ['api/**', '.github/workflows/deploy-api.yml']
+    paths: ['api/**', 'api-tests/**', '.github/workflows/deploy-api.yml']
   workflow_dispatch:
 
 concurrency:
@@ -26,7 +31,16 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Vérifier la syntaxe PHP
-        run: for f in api/*.php; do php -l "$f"; done
+        run: for f in api/*.php api/lib/*.php api-tests/*.php; do php -l "$f"; done
+
+      # MySQL est préinstallé sur les machines GitHub (root / root).
+      - name: Tests de l'import (avec base MySQL jetable)
+        env:
+          ATELIERS_TEST_MYSQL: root@127.0.0.1
+          ATELIERS_TEST_MYSQL_MDP: root
+        run: |
+          sudo systemctl start mysql.service
+          php api-tests/import.test.php
 
       - name: Copier api/ vers ~/www/api/
         env:
@@ -44,7 +58,43 @@ jobs:
             -e "ssh -o StrictHostKeyChecking=accept-new" \
             api/ "$COMPTE@ssh-$COMPTE.alwaysdata.net:www/api/"
 
+      # Réécrit à chaque déploiement : changer un secret suffit, sans toucher
+      # au serveur. var_export produit du PHP valide quel que soit le mot de
+      # passe (guillemets, antislashs). Droits 600 : lisible par le seul compte.
+      - name: Écrire ~/config-api.php (identifiants de la base)
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+          SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
+          DB_NOM: ${{ secrets.ALWAYSDATA_DB_NOM }}
+          DB_UTILISATEUR: ${{ secrets.ALWAYSDATA_DB_UTILISATEUR }}
+          DB_MOT_DE_PASSE: ${{ secrets.ALWAYSDATA_DB_MOT_DE_PASSE }}
+          CLE_IMPORT: ${{ secrets.ALWAYSDATA_CLE_IMPORT }}
+        run: |
+          if [ -z "$DB_NOM$CLE_IMPORT" ]; then
+            echo "::warning::Secrets de la base absents : ~/config-api.php non écrit (la page d'import restera désactivée)"
+            exit 0
+          fi
+          umask 077
+          php -r 'echo "<?php\n// Écrit par deploy-api.yml depuis les Secrets GitHub. Ne pas modifier ici.\nreturn " . var_export([
+            "db_hote" => "mysql-" . getenv("COMPTE") . ".alwaysdata.net",
+            "db_nom" => getenv("DB_NOM"),
+            "db_utilisateur" => getenv("DB_UTILISATEUR"),
+            "db_mot_de_passe" => getenv("DB_MOT_DE_PASSE"),
+            "cle_import" => getenv("CLE_IMPORT"),
+          ], true) . ";\n";' > config-api.php
+          php -l config-api.php >/dev/null
+          sshpass -e rsync -zp --chmod=F600 \
+            -e "ssh -o StrictHostKeyChecking=accept-new" \
+            config-api.php "$COMPTE@ssh-$COMPTE.alwaysdata.net:config-api.php"
+          rm -f config-api.php
+
       - name: Vérifier la réponse en ligne
         env:
           COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
-        run: curl -fsS "https://$COMPTE.alwaysdata.net/api/ping.php" | head -c 60; echo
+        run: |
+          curl -fsS "https://$COMPTE.alwaysdata.net/api/ping.php" | head -c 60; echo
+          # La page d'import doit répondre, et le dossier lib/ rester fermé.
+          curl -fsS -o /dev/null "https://$COMPTE.alwaysdata.net/api/import.php"
+          code=$(curl -s -o /dev/null -w '%{http_code}' "https://$COMPTE.alwaysdata.net/api/lib/schema.sql")
+          echo "api/lib/schema.sql → HTTP $code"
+          if [ "$code" = "200" ]; then echo "::warning::api/lib/ est lisible depuis internet (.htaccess ignoré ?)"; fi
