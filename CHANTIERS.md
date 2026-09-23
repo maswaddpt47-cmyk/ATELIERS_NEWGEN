@@ -19,7 +19,7 @@ effectué — AG-001 a corrigé le protocole du banc avant la série.
 
 ---
 
-## 🧭 23/09/2026 — Refonte d'architecture : cap décidé, AG-009 ouvert, aucun code écrit
+## 🧭 23/09/2026 — Refonte d'architecture : cap décidé, AG-009 tranché, étape 0 (mesure) en cours
 
 Session de réflexion demandée par l'utilisateur (« prendre du recul, ne rien
 faire sauf proposer »). Aucun code touché. **Reprendre ici.**
@@ -93,38 +93,54 @@ Recommandations (tarifs à revérifier) :
    URL NEWGEN = labo.
 3. Données NEWGEN = test, **non migrées**. Seul le classeur NextStep l'est.
 
-**⚖️ AG-009 — session B a répondu le 23/09/2026 : amendé** (cap maintenu, 8 constats ; en attente de la décision de l'utilisateur). Ouvert le 23/09/2026 (`AGORA.md`) — contradiction demandée
-avant d'écrire le code. En attendant : seul le travail qui ne ferme rien
-(schéma SQL + API en local contre `contract.test.js`).
+**⚖️ AG-009 tranché le 23/09/2026 — amendé, amendements acceptés par
+l'utilisateur.** Texte complet : `git log -p AGORA.md` (commits `2dafa19`,
+`a18c8c3`). À ne pas réapprendre :
 
-**Prochaines actions** :
-- Utilisateur : créer le compte Alwaysdata (offre gratuite), puis mettre
-  les accès SSH de déploiement dans les *Secrets* du dépôt (Claude dira
-  lesquels, sans jamais les voir).
-- ~~Claude : inventaire des actions GAS~~ **fait le 23/09/2026 →
-  [`migration/INVENTAIRE.md`](migration/INVENTAIRE.md)** : 22 actions,
-  4 feuilles → 5 tables, 2 tâches planifiées, 6 points de sécurité à
-  corriger au passage (mots de passe par défaut `cd47`+prénom stockés en
-  clair, SHA-256 sans sel, lectures sans token, mot de passe dans l'URL).
-  ⚠️ Correction : `contract.test.js` ne garde **pas** l'API (il ne teste que
-  l'objet construit côté client) — un test de contrat serveur est à écrire.
-- **Précisé le 23/09/2026** : l'utilisateur n'a pas touché au PHP depuis
-  30 ans — **Claude écrit et maintient l'API seul**. Donc code commenté en
-  français, et la sûreté repose sur les tests (contrat serveur), pas sur une
-  relecture de l'utilisateur.
-- **Utilisateur — ouvrir le compte Alwaysdata** (offre gratuite, nom neutre
-  sans « cd47 » tant que le compte est personnel, ex. `ateliers-numeriques`).
-  S'arrêter après validation de l'e-mail ; ne transmettre aucun identifiant.
-  Le branchement GitHub → Alwaysdata (clé SSH dans les *Secrets*) sera guidé
-  pas à pas plus tard.
-- **Bloquant suivant — utilisateur** : fournir un **export xlsx du classeur
-  NextStep** (4 feuilles) pour relever les vrais en-têtes. Hors dépôt
-  (données personnelles) : copie locale ou version anonymisée.
-- **Décision à prendre** : l'écran de connexion liste les noms des agents
-  sans être connecté (`getComptes`). Garder une liste réduite aux noms
-  actifs, ou saisie libre du nom ?
-- Puis Claude : schéma SQL + import → API PHP → test de contrat serveur →
-  `shared.js` en POST derrière un interrupteur.
+- **Étape 0 avant tout code : mesurer.** Même poste, même moment, GAS
+  NextStep contre un `ping.php` statique chez Alwaysdata. Si la perte reste
+  comparable, elle vient du réseau des postes : la refonte garde ses autres
+  motifs, mais **on ne retire pas** reprises/doublage (ex-étape 4).
+- **Pas de 1:1 sur trois points** : `checkPassword` et écritures en `POST`
+  `application/x-www-form-urlencoded` (pas de pré-vol CORS) ; aucun mot de
+  passe en clair en MySQL (`password_hash` à l'import, vérif SHA-256 +
+  réhachage au login, changement forcé après réinitialisation) ;
+  `getComptes` public réduit (voir ci-dessous).
+- **Tests** : `contract.test.js` ne garde pas l'API. Fixtures de réponse
+  tirées des `MOCK_RESPONSE` d'`e2e.test.js:162` et `appels.test.js:95`,
+  rejouées contre l'API locale. ⚠️ Ces mocks sont accrochés à
+  `**/script.google.com/**` : **paramétrer le motif dans le même commit que
+  le changement d'URL**, sinon les suites partent sur le vrai réseau.
+- **Bascule** : l'ancien GAS passe **en maintenance** (`shared.js:1558-1562`),
+  pas en lecture seule — un poste resté sur l'ancien `index.html` (non
+  versionné) écrirait sinon dans le classeur abandonné, sans erreur.
+- **`APP_NS` par déploiement** : `'nextstep'` à l'URL NextStep, `'newgen'` au
+  labo. Sans ça, collision `localStorage` sur la même origine : préférences
+  perdues **et** cache `ateliers_cache_<année>` du labo affiché en production.
+- **Manifests et icônes de NextStep conservés** à la bascule (même
+  `start_url`/`scope`, pas de champ `id` : l'appli installée garde son
+  identité — lu, pas essayé sur appareil).
+- Toute l'équipe se reconnecte à la bascule (jetons non migrés).
+
+**Décisions de l'utilisateur du 23/09/2026** : amendements acceptés ; compte
+Alwaysdata **ouvert** ; export du classeur NextStep **le 24/09/2026** ; écran
+de connexion = **liste déroulante des seuls comptes actifs** (l'API publique
+ne renvoie que les noms actifs, ni rôle ni état).
+
+**Prochaines actions** (état au 23/09/2026) :
+- ✅ Inventaire des actions GAS → [`migration/INVENTAIRE.md`](migration/INVENTAIRE.md).
+- ✅ Compte Alwaysdata ouvert par l'utilisateur. **Claude écrit et maintient
+  seul le PHP** (l'utilisateur n'en a pas fait depuis 30 ans) : code commenté
+  en français, sûreté portée par les tests, pas par sa relecture.
+- **Étape 0 en cours — Claude** : `api/ping.php` + déploiement GitHub Action
+  vers Alwaysdata + page de mesure appariée GAS / Alwaysdata. Côté
+  utilisateur : renseigner le nom du compte et le mot de passe SSH dans le
+  dépôt (guidé), puis laisser tourner la mesure une journée.
+- **24/09/2026 — utilisateur** : export xlsx du classeur NextStep
+  (4 feuilles), **hors dépôt** (données personnelles).
+- Puis Claude, selon le résultat de l'étape 0 : schéma SQL + import → API
+  PHP → test de contrat serveur → `shared.js` en POST derrière un
+  interrupteur.
 
 ---
 
