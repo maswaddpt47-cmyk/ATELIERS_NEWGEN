@@ -714,3 +714,10 @@ pour amender avant la mise en ligne.
 **Non vérifié par moi** : taille réelle de réponse à 2-3 années et effet sur le
 taux de pertes (non-vérifié n° 2, aucun relevé) ; le comportement du GAS
 **déployé** est déduit de la copie de référence, pas observé.
+
+### Tranché le 23/09/2026 — décision : les trois amendements de la session B
+Décision de l'utilisateur : (1) avertissement « serveur pas encore à jour »
+quand la réponse à `years=` ne porte pas `years` ; (3) année de référence =
+l'année en cours si elle est cochée, sinon la plus récente ; (2) `keepAlive`
+réchauffe aussi N+1 à partir de septembre (NextStep v10.21.0, NEWGEN v11.40),
+plutôt qu'une lecture unique multi-années.

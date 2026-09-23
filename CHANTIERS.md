@@ -211,7 +211,7 @@ L'invariant « écritures séquentielles » est reformulé dans les deux
 
 ## ⏳ 23/09/2026 — années multiples et vérification après réponse perdue
 
-Livré côté appli (les deux projets), **GAS v11.39 à déployer** (`gas/README.md`).
+Livré côté appli (les deux projets), **GAS v11.40 à déployer** (`gas/README.md`).
 - **Sélecteur d'années à cases à cocher** (`ChoixAnnees`, `shared.js`) :
   plusieurs années chargées en **un seul** `getAll?years=` (AG-007,
   `ATELIERS_NEWGEN/AGORA.md`). `f_annee` stocke « 2026,2027 », l'ancien
@@ -221,6 +221,10 @@ Livré côté appli (les deux projets), **GAS v11.39 à déployer** (`gas/README
   d'annoncer un échec (idée de l'utilisateur). Sans le GAS déployé :
   comportement d'avant (message « recliquez, sans doublon »).
 - Tests : `e2e/appels.test.js` de NextStep (cas 8 et 9).
+- **AG-007 tranché le 23/09/2026** (amendé par la session B, décision de
+  l'utilisateur) : avertissement si le GAS en ligne ignore `years=` ;
+  Roadmap/Admin sur l'année **en cours** si elle est cochée ; `keepAlive`
+  réchauffe N+1 à partir de septembre (dans la version GAS à déployer).
 
 ## 🔴 23/09/2026 — cycle enregistré en double, et divergence entre les deux projets
 
