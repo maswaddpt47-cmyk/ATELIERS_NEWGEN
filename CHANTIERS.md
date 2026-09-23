@@ -209,9 +209,11 @@ même couche d'appel. Détail et mesure à suivre : `CHANTIERS.md` de NextStep.
 L'invariant « écritures séquentielles » est reformulé dans les deux
 `CLAUDE.md` : jamais doublées côté client, sérialisées côté serveur (verrou).
 
-## ⏳ 23/09/2026 — années multiples et vérification après réponse perdue
+## ✅ 23/09/2026 — années multiples et vérification après réponse perdue
 
-Livré côté appli (les deux projets), **GAS v11.40 à déployer** (`gas/README.md`).
+Livré côté appli (les deux projets), **GAS v11.40 déployé le 23/09/2026**.
+**À confirmer à l'usage** : cocher deux années affiche bien les deux ; un
+enregistrement dont la réponse se perd affiche « confirmé dans le classeur ».
 - **Sélecteur d'années à cases à cocher** (`ChoixAnnees`, `shared.js`) :
   plusieurs années chargées en **un seul** `getAll?years=` (AG-007,
   `ATELIERS_NEWGEN/AGORA.md`). `f_annee` stocke « 2026,2027 », l'ancien

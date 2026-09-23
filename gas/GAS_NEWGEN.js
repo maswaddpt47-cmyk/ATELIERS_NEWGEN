@@ -1,6 +1,6 @@
 
 // ── GAS Backend v11.40 ────────────────────────────────────────
-// ⚠️ v11.40 PAS ENCORE DÉPLOYÉE (préparée le 23/09/2026). En ligne : v11.38.
+// ✅ v11.40 DÉPLOYÉE le 23/09/2026 (confirmé par l'utilisateur).
 // v11.40 : keepAlive réchauffe aussi N+1 à partir de septembre (AG-007,
 //          amendement de la session B, point 2).
 // v11.39 : getAll accepte years=2026,2027 (sélecteur multi-années, AG-007),
