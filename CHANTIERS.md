@@ -101,8 +101,21 @@ avant d'écrire le code. En attendant : seul le travail qui ne ferme rien
 - Utilisateur : créer le compte Alwaysdata (offre gratuite), puis mettre
   les accès SSH de déploiement dans les *Secrets* du dépôt (Claude dira
   lesquels, sans jamais les voir).
-- Claude : inventaire exact des ~21 actions GAS + mails + cron → schéma SQL
-  → API PHP locale → tests de contrat.
+- ~~Claude : inventaire des actions GAS~~ **fait le 23/09/2026 →
+  [`migration/INVENTAIRE.md`](migration/INVENTAIRE.md)** : 22 actions,
+  4 feuilles → 5 tables, 2 tâches planifiées, 6 points de sécurité à
+  corriger au passage (mots de passe par défaut `cd47`+prénom stockés en
+  clair, SHA-256 sans sel, lectures sans token, mot de passe dans l'URL).
+  ⚠️ Correction : `contract.test.js` ne garde **pas** l'API (il ne teste que
+  l'objet construit côté client) — un test de contrat serveur est à écrire.
+- **Bloquant suivant — utilisateur** : fournir un **export xlsx du classeur
+  NextStep** (4 feuilles) pour relever les vrais en-têtes. Hors dépôt
+  (données personnelles) : copie locale ou version anonymisée.
+- **Décision à prendre** : l'écran de connexion liste les noms des agents
+  sans être connecté (`getComptes`). Garder une liste réduite aux noms
+  actifs, ou saisie libre du nom ?
+- Puis Claude : schéma SQL + import → API PHP → test de contrat serveur →
+  `shared.js` en POST derrière un interrupteur.
 
 ---
 

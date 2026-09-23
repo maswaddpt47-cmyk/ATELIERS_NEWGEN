@@ -101,6 +101,10 @@ que personne ne s'en sert), une bascule de production unique.
 rien : schéma SQL et API en local testés contre `contract.test.js`, sans
 toucher à la production. La bascule, elle, attend une réponse ou l'accord
 explicite de l'utilisateur après relecture de ce bloc.
+**Complément de l'auteur, 23/09/2026** : inventaire fait
+(`migration/INVENTAIRE.md`). Ma proposition disait « `contract.test.js` sert
+de garde-fou » : **faux**, il ne teste que l'objet construit côté client
+(`contract.test.js:12-34`). Un test de contrat serveur est à écrire.
 **Où regarder** : `gas/GAS_NEWGEN.js` et
 `ateliers-cd47_NextStep/gas/GAS_NEXTSTEP.js` (routage et services Google),
 `shared.js` (`GS_URL`, `gasAppel`), `contract.test.js`, `sw.js`,
