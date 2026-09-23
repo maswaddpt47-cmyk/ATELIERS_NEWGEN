@@ -1,0 +1,50 @@
+# Déploie api/ chez Alwaysdata à chaque push sur main qui touche api/.
+# Refonte GAS → PHP (AG-009, CHANTIERS « Refonte d'architecture »).
+#
+# Deux secrets du dépôt, saisis par l'utilisateur, jamais vus par Claude :
+#   ALWAYSDATA_COMPTE        nom du compte (ex. ateliers-numeriques)
+#   ALWAYSDATA_SSH_PASSWORD  mot de passe de l'utilisateur SSH du compte
+# Hypothèses non vérifiées (lues de mémoire, pas sur un compte réel) : hôte
+# SSH ssh-<compte>.alwaysdata.net, utilisateur SSH = nom du compte, site par
+# défaut servi depuis ~/www/. À confirmer au premier déploiement.
+name: Déploiement API Alwaysdata
+
+on:
+  push:
+    branches: [main]
+    paths: ['api/**', '.github/workflows/deploy-api.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier la syntaxe PHP
+        run: for f in api/*.php; do php -l "$f"; done
+
+      - name: Copier api/ vers ~/www/api/
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+          SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
+        run: |
+          if [ -z "$COMPTE" ] || [ -z "$SSHPASS" ]; then
+            echo "::error::Secrets ALWAYSDATA_COMPTE / ALWAYSDATA_SSH_PASSWORD absents"
+            exit 1
+          fi
+          sudo apt-get install -y -qq sshpass >/dev/null
+          # Pas de --delete : ne jamais effacer côté serveur un fichier absent
+          # du dépôt (la configuration de la base y vivra, hors dépôt).
+          sshpass -e rsync -az \
+            -e "ssh -o StrictHostKeyChecking=accept-new" \
+            api/ "$COMPTE@ssh-$COMPTE.alwaysdata.net:www/api/"
+
+      - name: Vérifier la réponse en ligne
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+        run: curl -fsS "https://$COMPTE.alwaysdata.net/api/ping.php" | head -c 60; echo

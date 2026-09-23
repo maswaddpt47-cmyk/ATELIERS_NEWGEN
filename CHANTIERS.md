@@ -132,10 +132,24 @@ ne renvoie que les noms actifs, ni rôle ni état).
 - ✅ Compte Alwaysdata ouvert par l'utilisateur. **Claude écrit et maintient
   seul le PHP** (l'utilisateur n'en a pas fait depuis 30 ans) : code commenté
   en français, sûreté portée par les tests, pas par sa relecture.
-- **Étape 0 en cours — Claude** : `api/ping.php` + déploiement GitHub Action
-  vers Alwaysdata + page de mesure appariée GAS / Alwaysdata. Côté
-  utilisateur : renseigner le nom du compte et le mot de passe SSH dans le
-  dépôt (guidé), puis laisser tourner la mesure une journée.
+- **Étape 0 — écrite le 23/09/2026, en attente des secrets** :
+  `api/ping.php` (JSON statique ~4 Ko, CORS limité à github.io),
+  `.github/workflows/deploy-api.yml` (rsync par SSH à chaque push touchant
+  `api/`, ou lancement manuel), `banc/cibles.html` (une paire d'appels
+  simultanés GAS NextStep `getConfig` / Alwaysdata toutes les 2 min, un seul
+  essai, plafond 30 s, McNemar sur les paires discordantes ; testé en
+  navigateur avec cibles simulées, pas encore contre les vraies).
+  ⚠️ Écart assumé à l'amendement B : **page séparée** plutôt qu'une 3e cible
+  dans `banc/index.html` — le banc compare des stratégies sur *un* backend et
+  refuse les séries mélangées, il ne donne pas de mesure appariée entre
+  backends.
+  **Utilisateur** : activer le mot de passe SSH chez Alwaysdata, créer les
+  secrets `ALWAYSDATA_COMPTE` et `ALWAYSDATA_SSH_PASSWORD` dans le dépôt,
+  puis ouvrir `banc/cibles.html` une journée. Hypothèses d'hôte SSH et de
+  dossier `~/www/` non vérifiées : le premier déploiement les confirme.
+  **Lecture** : Alwaysdata ≈ 0 % de pertes quand GAS en perd 30 %+ avec
+  McNemar > 3,84 → la perte vient de GAS, la refonte la supprime. Pertes
+  comparables → réseau des postes, on garde reprises et doublage.
 - **24/09/2026 — utilisateur** : export xlsx du classeur NextStep
   (4 feuilles), **hors dépôt** (données personnelles).
 - Puis Claude, selon le résultat de l'étape 0 : schéma SQL + import → API

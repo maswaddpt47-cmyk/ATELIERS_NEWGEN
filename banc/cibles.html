@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mesure GAS contre Alwaysdata</title>
+<style>
+  body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;padding:16px;background:#f8fafc;color:#1a202c;font-size:14px}
+  h1{font-size:18px;margin:0 0 4px}
+  .sous{color:#64748b;font-size:12px;margin-bottom:16px}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:14px}
+  label{font-size:12px;color:#475569;display:block;margin-bottom:3px}
+  input{padding:6px 8px;border:1px solid #cbd5e0;border-radius:6px;font-size:13px;font-family:inherit}
+  button{padding:7px 14px;border-radius:6px;border:1px solid #3b82f6;background:#eff6ff;color:#1d4ed8;font-weight:600;cursor:pointer;font-size:13px}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button.stop{border-color:#dc2626;background:#fef2f2;color:#b91c1c}
+  button.sec{border-color:#cbd5e0;background:#fff;color:#334155;font-weight:500}
+  .ligne{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+  table{border-collapse:collapse;width:100%;font-size:12px}
+  th,td{text-align:left;padding:5px 8px;border-bottom:1px solid #f1f5f9}
+  th{color:#64748b;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .ko{color:#b91c1c;font-weight:600}
+  .ok{color:#15803d}
+  .avert{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:12px;color:#78350f;margin-bottom:14px}
+  .etat{font-size:12px;color:#475569;margin-top:8px}
+  .journal{max-height:340px;overflow:auto}
+  pre{white-space:pre-wrap;font-size:12px;background:#f1f5f9;padding:10px;border-radius:6px}
+</style>
+</head>
+<body>
+
+<h1>Mesure appariée : GAS NextStep contre Alwaysdata</h1>
+<div class="sous">Étape 0 de la refonte (AG-009). La perte d'appels vient-elle de Google Apps Script ou du réseau des postes ?</div>
+
+<div class="avert">
+  Toutes les 2 minutes, <strong>un appel part en même temps</strong> vers chaque cible : le <code>getConfig</code> du GAS
+  de production NextStep, et une page statique chez Alwaysdata. Même poste, même seconde, même réseau : seule la cible change.<br>
+  Un seul essai, sans reprise, plafond 30 s — on mesure la perte brute, pas ce que l'usager subit.<br>
+  <strong>Laisser l'onglet visible</strong> et la veille système désactivée. Une journée de travail suffit (~250 paires).
+</div>
+
+<div class="card">
+  <div class="ligne">
+    <div>
+      <label for="compte">Nom du compte Alwaysdata</label>
+      <input id="compte" placeholder="ex. ateliers-numeriques" size="24">
+    </div>
+    <button id="go">Démarrer</button>
+    <button id="stop" class="stop" disabled>Arrêter</button>
+    <button id="copier" class="sec">Copier le résumé</button>
+    <button id="vider" class="sec">Vider</button>
+  </div>
+  <div class="etat" id="etat">À l'arrêt.</div>
+  <div class="etat" id="veille"></div>
+</div>
+
+<div class="card">
+  <table id="resume"><tbody></tbody></table>
+</div>
+
+<div class="card journal">
+  <table id="journal">
+    <thead><tr><th>Heure</th><th>GAS NextStep</th><th>Alwaysdata</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<pre id="sortie" style="display:none"></pre>
+
+<script>
+// Page volontairement séparée de banc/index.html : celui-ci compare deux
+// STRATÉGIES sur un seul backend et refuse une série mélangée. Ici on compare
+// deux BACKENDS, appel contre appel, dans la même seconde — un plan apparié
+// que l'alternance du banc ne donne pas.
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbx_YutREW-ucdGKXiHB7Y2hgUMHBJqAF0NprMrXB9p4_dEHPxrWk7nsXxCLDcJBDDHPEw/exec';
+var INTERVALLE_MS = 2 * 60000;
+// 30 s et non 12 s : une réponse perdue meurt vers 27 s (CLAUDE.md §5). Avec
+// un plafond plus long on distingue « lente mais livrée » de « perdue ».
+var PLAFOND_MS = 30000;
+var LENTE_MS = 12000;   // plafond de production : au-delà, l'appli aurait abandonné
+var CLE = 'banc_cibles_paires';
+var CLE_COMPTE = 'banc_cibles_compte';
+
+var paires = [];
+try { paires = JSON.parse(localStorage.getItem(CLE) || '[]'); } catch (e) { paires = []; }
+try { document.getElementById('compte').value = localStorage.getItem(CLE_COMPTE) || ''; } catch (e) {}
+
+var enCours = false, minuteur = null, verrou = null, cacheePendant = false;
+
+function urlAlwaysdata() {
+  var c = document.getElementById('compte').value.trim().toLowerCase();
+  return c ? 'https://' + c + '.alwaysdata.net/api/ping.php' : '';
+}
+
+// Un appel, un seul essai. Issue : 'ok' (JSON reçu), 'ko' (erreur HTTP,
+// réseau, non-JSON) ou 'to' (plafond atteint).
+function unAppel(url) {
+  var ctrl = new AbortController(), t0 = Date.now();
+  var chien = setTimeout(function () { ctrl.abort(); }, PLAFOND_MS);
+  var sep = url.indexOf('?') > -1 ? '&' : '?';
+  return fetch(url + sep + '_t=' + Date.now(), { signal: ctrl.signal, cache: 'no-store' })
+    .then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function () { clearTimeout(chien); return { e: 'ok', ms: Date.now() - t0 }; })
+    .catch(function (err) {
+      clearTimeout(chien);
+      return { e: ctrl.signal.aborted ? 'to' : 'ko', ms: Date.now() - t0, m: String(err.message || err).slice(0, 40) };
+    });
+}
+
+function unePaire() {
+  var ad = urlAlwaysdata();
+  cacheePendant = document.visibilityState === 'hidden';
+  var d = new Date();
+  Promise.all([unAppel(GAS_URL + '?action=getConfig'), unAppel(ad)]).then(function (r) {
+    paires.push({ iso: d.toISOString(), heure: d.toLocaleTimeString('fr-FR'), g: r[0], a: r[1], cachee: cacheePendant });
+    if (paires.length > 2000) paires = paires.slice(-2000);
+    try { localStorage.setItem(CLE, JSON.stringify(paires)); } catch (e) {}
+    rendre();
+    if (enCours) minuteur = setTimeout(unePaire, INTERVALLE_MS);
+  });
+}
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'hidden') cacheePendant = true;
+  if (enCours && document.visibilityState === 'visible' && !verrou) prendreVerrou();
+});
+
+function prendreVerrou() {
+  if (!('wakeLock' in navigator)) return Promise.resolve(false);
+  return navigator.wakeLock.request('screen').then(function (v) {
+    verrou = v; v.addEventListener('release', function () { verrou = null; }); return true;
+  }, function () { return false; });
+}
+
+// Paires retenues : onglet resté visible pendant l'appel (un onglet caché
+// voit ses minuteurs ralentis, le plafond ne veut alors plus rien dire).
+function valides() { return paires.filter(function (p) { return !p.cachee; }); }
+function mediane(xs) {
+  if (!xs.length) return 0;
+  var t = xs.slice().sort(function (a, b) { return a - b; });
+  return t[Math.floor(t.length / 2)];
+}
+function stats(v, cote) {
+  var n = v.length, ok = v.filter(function (p) { return p[cote].e === 'ok'; });
+  var ms = ok.map(function (p) { return p[cote].ms; });
+  return {
+    n: n, perdus: n - ok.length, taux: n ? (n - ok.length) / n : 0,
+    med: mediane(ms), lentes: ms.filter(function (x) { return x > LENTE_MS; }).length
+  };
+}
+// Test de McNemar (correction de continuité) sur les paires discordantes :
+// b = GAS perdu / Alwaysdata livré, c = l'inverse. > 3,84 : significatif à 5 %.
+function mcnemar(v) {
+  var b = 0, c = 0;
+  v.forEach(function (p) {
+    var g = p.g.e === 'ok', a = p.a.e === 'ok';
+    if (!g && a) b++; if (g && !a) c++;
+  });
+  var chi = (b + c) ? Math.pow(Math.abs(b - c) - 1, 2) / (b + c) : 0;
+  return { b: b, c: c, chi: chi };
+}
+function pct(x) { return Math.round(x * 1000) / 10 + ' %'; }
+
+function resumeTexte() {
+  var v = valides(), g = stats(v, 'g'), a = stats(v, 'a'), m = mcnemar(v);
+  var l = [];
+  l.push('Mesure appariée GAS NextStep / Alwaysdata — ' + v.length + ' paires valides (' + (paires.length - v.length) + ' écartées, onglet caché)');
+  if (paires.length) l.push('du ' + paires[0].iso + ' au ' + paires[paires.length - 1].iso);
+  l.push('GAS        : ' + g.perdus + ' perdus (' + pct(g.taux) + '), médiane livrée ' + (g.med / 1000).toFixed(1) + ' s, ' + g.lentes + ' livrées > 12 s');
+  l.push('Alwaysdata : ' + a.perdus + ' perdus (' + pct(a.taux) + '), médiane livrée ' + (a.med / 1000).toFixed(1) + ' s, ' + a.lentes + ' livrées > 12 s');
+  l.push('Discordantes : GAS seul perdu ' + m.b + ', Alwaysdata seul perdu ' + m.c + ' — McNemar χ² = ' + m.chi.toFixed(2) + (m.chi > 3.84 ? ' (significatif à 5 %)' : ' (non significatif)'));
+  var parHeure = {};
+  v.forEach(function (p) {
+    var h = p.iso.slice(11, 13);
+    parHeure[h] = parHeure[h] || { n: 0, g: 0, a: 0 };
+    parHeure[h].n++; if (p.g.e !== 'ok') parHeure[h].g++; if (p.a.e !== 'ok') parHeure[h].a++;
+  });
+  l.push('Pertes par heure UTC (paires / GAS / Alwaysdata) : ' + Object.keys(parHeure).sort().map(function (h) {
+    var x = parHeure[h]; return h + 'h ' + x.n + '/' + x.g + '/' + x.a;
+  }).join(', '));
+  return l.join('\n');
+}
+
+function cellule(r) {
+  if (!r) return '<td>—</td>';
+  return r.e === 'ok'
+    ? '<td class="ok">livré en ' + (r.ms / 1000).toFixed(1) + ' s</td>'
+    : '<td class="ko">' + (r.e === 'to' ? 'perdu (plafond 30 s)' : 'perdu : ' + (r.m || '') + ' à ' + (r.ms / 1000).toFixed(1) + ' s') + '</td>';
+}
+function rendre() {
+  var tb = document.querySelector('#journal tbody'); tb.innerHTML = '';
+  paires.slice(-60).reverse().forEach(function (p) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + p.heure + (p.cachee ? ' ⚠' : '') + '</td>' + cellule(p.g) + cellule(p.a);
+    tb.appendChild(tr);
+  });
+  var v = valides(), res = document.querySelector('#resume tbody');
+  if (!v.length) { res.innerHTML = '<tr><td style="color:#94a3b8">Aucune paire enregistrée.</td></tr>'; return; }
+  var g = stats(v, 'g'), a = stats(v, 'a'), m = mcnemar(v);
+  res.innerHTML = '<tr><th>Cible</th><th class="num">Appels</th><th class="num">Perdus</th><th class="num">Médiane livrée</th><th class="num">Livrées &gt; 12 s</th></tr>'
+    + [['GAS NextStep', g], ['Alwaysdata', a]].map(function (x) {
+      return '<tr><td>' + x[0] + '</td><td class="num">' + x[1].n + '</td><td class="num ' + (x[1].perdus ? 'ko' : '') + '">' + x[1].perdus + ' (' + pct(x[1].taux) + ')</td>'
+        + '<td class="num">' + (x[1].med / 1000).toFixed(1) + ' s</td><td class="num">' + x[1].lentes + '</td></tr>';
+    }).join('')
+    + '<tr><td colspan="5">Paires discordantes : GAS seul perdu <strong>' + m.b + '</strong>, Alwaysdata seul perdu <strong>' + m.c
+    + '</strong> — McNemar χ² = ' + m.chi.toFixed(2) + (m.chi > 3.84 ? ' (significatif à 5 %)' : ' (pas encore significatif)') + '</td></tr>';
+}
+
+document.getElementById('go').onclick = function () {
+  if (!urlAlwaysdata()) { document.getElementById('etat').textContent = 'Renseigner d’abord le nom du compte Alwaysdata.'; return; }
+  try { localStorage.setItem(CLE_COMPTE, document.getElementById('compte').value.trim()); } catch (e) {}
+  enCours = true; this.disabled = true;
+  document.getElementById('stop').disabled = false;
+  document.getElementById('compte').disabled = true;
+  document.getElementById('etat').textContent = 'En cours — une paire toutes les 2 minutes.';
+  prendreVerrou().then(function (ok) {
+    document.getElementById('veille').textContent = ok
+      ? '🔒 Écran maintenu allumé. La veille système reste à désactiver dans Windows.'
+      : '⚠ Ce navigateur refuse de maintenir l’écran allumé : désactiver la veille et garder la fenêtre visible.';
+  });
+  unePaire();
+};
+document.getElementById('stop').onclick = function () {
+  enCours = false; clearTimeout(minuteur);
+  if (verrou) { try { verrou.release(); } catch (e) {} verrou = null; }
+  this.disabled = true;
+  document.getElementById('go').disabled = false;
+  document.getElementById('compte').disabled = false;
+  document.getElementById('veille').textContent = '';
+  document.getElementById('etat').textContent = 'À l’arrêt — ' + paires.length + ' paires enregistrées.';
+};
+document.getElementById('copier').onclick = function () {
+  var t = resumeTexte(), s = document.getElementById('sortie');
+  s.style.display = ''; s.textContent = t;
+  if (navigator.clipboard) navigator.clipboard.writeText(t).catch(function () {});
+};
+document.getElementById('vider').onclick = function () {
+  if (!confirm('Effacer toutes les paires enregistrées ?')) return;
+  paires = []; try { localStorage.removeItem(CLE); } catch (e) {}
+  rendre();
+};
+rendre();
+</script>
+</body>
+</html>
