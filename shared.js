@@ -923,6 +923,20 @@ window.gasAppel = async function(url, action){
   throw derniere || new Error('Échec inconnu');
 };
 
+// Après un enregistrement dont la réponse s'est perdue, demande au serveur si
+// les ateliers sont bien dans la feuille (idée de l'utilisateur, 23/09/2026 :
+// « pourquoi afficher un échec au lieu de vérifier dans le sheet ? »).
+// true = tous présents, false = au moins un absent, null = on ne sait pas
+// (vérification perdue elle aussi, ou GAS sans l'action verifierIds).
+window.verifierEnregistres = async function(ids){
+  try{
+    const r = await apiFetch('verifierIds', {ids:ids.join(',')});
+    if(!r || !r.ok || !Array.isArray(r.presents)) return null;
+    const presents = new Set(r.presents);
+    return ids.every(id=>presents.has(id));
+  }catch(_){ return null; }
+};
+
 // Chargement d'un script à la demande, une seule fois même si plusieurs
 // actions le réclament en même temps. Sert aux grosses librairies qui ne
 // servent qu'à un clic (xlsxstyle.js : 414 Ko, 138 Ko compressés) et qui
@@ -1416,6 +1430,9 @@ window.onLogout = function(){
   ]);
   const WRITE_ACTIONS = new Set([
     'saveEntry','saveMany','delete','selfSetPassword',
+    // Lecture, mais jeton exigé côté GAS (v11.39) : elle vérifie un
+    // enregistrement. Reste hors GAS_ACTIONS_ECRITURE, donc doublée.
+    'verifierIds',
     ...ADMIN_ONLY_ACTIONS
   ]);
 
@@ -2022,10 +2039,8 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   async function handleSubmit(){
     if(!validate()){showToast('⚠️ Champs obligatoires manquants',false);return;}
     setSaving(true);
-    try{
-      const entry={...form,_id:form._id||idNouveauRef.current||(idNouveauRef.current=genId()),inscrits:form.inscrits===''?'':parseInt(form.inscrits)||0,presents:form.presents===''?'':parseInt(form.presents)||0,nb_ordinateurs:form.nb_ordinateurs===''?'':parseInt(form.nb_ordinateurs)||0,materiel:(form.materiel||[]).join('|')};
-      const res=await apiFetch('saveEntry',{entry});
-      if(!res.ok)throw Object.assign(new Error(res.error),{refus:true});
+    const entry={...form,_id:form._id||idNouveauRef.current||(idNouveauRef.current=genId()),inscrits:form.inscrits===''?'':parseInt(form.inscrits)||0,presents:form.presents===''?'':parseInt(form.presents)||0,nb_ordinateurs:form.nb_ordinateurs===''?'':parseInt(form.nb_ordinateurs)||0,materiel:(form.materiel||[]).join('|')};
+    const reussir=()=>{
       showToast(editId?'✅ Atelier modifié':'✅ Atelier enregistré');
       // materiel repart en tableau (pas la chaîne '|' envoyée à GAS) : c'est
       // le format attendu partout ailleurs dans l'app (badges, filtres...).
@@ -2037,7 +2052,17 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       // localement : jusqu'ici, éditer un atelier déclenchait un getAll complet
       // juste pour relire ce qu'on venait d'écrire.
       onSaved(!editId,{...entry,materiel:form.materiel||[]});reset();
-    }catch(err){showToast('❌ '+err.message+(err.refus?'':' — il a peut-être été enregistré quand même : recliquez sur Enregistrer, cela ne créera pas de doublon.'),false);}
+    };
+    try{
+      const res=await apiFetch('saveEntry',{entry});
+      if(!res.ok)throw Object.assign(new Error(res.error),{refus:true});
+      reussir();
+    }catch(err){
+      // Réponse perdue : on vérifie dans la feuille avant d'annoncer un échec.
+      // Une modification (editId) existait déjà : sa présence ne prouve rien.
+      if(!err.refus&&!editId&&await verifierEnregistres([entry._id])){reussir();return;}
+      showToast('❌ '+err.message+(err.refus?'':' — il a peut-être été enregistré quand même : recliquez sur Enregistrer, cela ne créera pas de doublon.'),false);
+    }
     finally{setSaving(false);}
   }
 
@@ -2050,15 +2075,24 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     setSaving(true);
     try{
       const entries=rowsFilled.map(row=>({_id:idsLotRef.current[row.id]||(idsLotRef.current[row.id]=genId()),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0,nb_ordinateurs:lotForm.nb_ordinateurs===''?'':parseInt(lotForm.nb_ordinateurs)||0,date_prelevement_materiel:row.date_prelevement_materiel||'',date_retour_materiel:row.date_retour_materiel||''}));
-      const res=await apiFetch('saveMany',{entries});
-      if(!res.ok)throw Object.assign(new Error(res.error),{refus:true});
+      const reussir=()=>{
       // Même conversion materiel string→tableau que le mode unique.
       entries.forEach(entry=>{if(onNewEntry)onNewEntry({...entry,materiel:lotForm.materiel||[]});});
       const createdIds=entries.map(e=>e._id);
       showToast(`✅ ${entries.length} atelier(s) créé(s)`);
       document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:createdIds}}));
       onSaved(true);resetLot();
-    }catch(err){showToast('❌ '+err.message+(err.refus?'':' — il a peut-être été enregistré quand même : recliquez sur Enregistrer, cela ne créera pas de doublon.'),false);}
+      };
+      try{
+        const res=await apiFetch('saveMany',{entries});
+        if(!res.ok)throw Object.assign(new Error(res.error),{refus:true});
+        reussir();
+      }catch(err){
+        // Réponse perdue : on vérifie dans la feuille avant d'annoncer un échec.
+        if(!err.refus&&await verifierEnregistres(entries.map(e=>e._id))){reussir();return;}
+        throw err;
+      }
+    }catch(err){showToast('❌ '+err.message+(err.refus?'':' — les dates ont peut-être été enregistrées quand même : recliquez sur Enregistrer, cela ne créera pas de doublon.'),false);}
     finally{setSaving(false);}
   }
 
