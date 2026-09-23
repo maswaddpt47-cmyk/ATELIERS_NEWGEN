@@ -1,7 +1,9 @@
 
 // ── GAS Backend v11.39 ────────────────────────────────────────
 // ⚠️ v11.39 PAS ENCORE DÉPLOYÉE (préparée le 23/09/2026). En ligne : v11.38.
-// v11.39 : getAll accepte years=2026,2027 (sélecteur multi-années, AG-007).
+// v11.39 : getAll accepte years=2026,2027 (sélecteur multi-années, AG-007),
+//          et verifierIds (l'appli vérifie un enregistrement dont la réponse
+//          s'est perdue avant d'annoncer un échec).
 // ✅ v11.38 DÉPLOYÉE le 23/09/2026 (confirmé par l'utilisateur).
 // v11.38 : surChangementFeuille (onChange) + installerTriggerChangement :
 //          onEdit ne voit pas la suppression/insertion de lignes à la main.
@@ -450,7 +452,23 @@ function handleReadAction(p) {
   if (action === 'getComptes')     return actionGetComptes(p);
   return {ok:false, error:'action inconnue: ' + action};
 }
+// v11.39 (23/09/2026) : lecture seule, pour l'appli qui a perdu la réponse
+// d'un enregistrement — « ces ateliers sont-ils dans la feuille ? ». Ne lit
+// que la colonne _id, 50 identifiants au plus. Hors READ_ACTIONS : jeton
+// exigé, comme pour l'enregistrement qu'elle vérifie.
+function actionVerifierIds(p) {
+  var ids = String(p.ids || '').split(',').map(function(x){ return String(x).trim(); })
+              .filter(function(x){ return x; }).slice(0, 50);
+  var sh = _ss().getSheetByName(SHEET_NAME);
+  if (!sh) return {ok:false, error:'Feuille introuvable'};
+  var n = sh.getLastRow();
+  var col = n > 1 ? sh.getRange(2, 1, n - 1, 1).getValues() : [];
+  var existe = {};
+  col.forEach(function(r){ if (r[0]) existe[String(r[0])] = true; });
+  return {ok:true, presents: ids.filter(function(id){ return existe[id]; })};
+}
 function handleWriteAction(p) {
+  if ((p.action || '') === 'verifierIds') return actionVerifierIds(p);
   var action = p.action || '';
   if (action === 'saveEntry')      return actionSaveEntry(p);
   if (action === 'saveMany')       return actionSaveMany(p);
