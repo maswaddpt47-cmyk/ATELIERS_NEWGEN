@@ -198,6 +198,9 @@ ne renvoie que les noms actifs, ni rôle ni état).
   **Décidé** : identifiants MySQL et clé d'import dans les Secrets GitHub,
   écrits par `deploy-api.yml` dans `~/config-api.php` (hors `~/www/`, droits
   600). Hôte `mysql-<compte>.alwaysdata.net` = **hypothèse non vérifiée**.
+  **Déployé le 23/09/2026** (run `35931911529`, vert) : tests d'import passés
+  sur le MySQL de GitHub, `import.php` en ligne (désactivée faute de
+  secrets), `api/lib/` bien fermé (HTTP 403 : le `.htaccess` est appliqué).
 - **Utilisateur — prochaine étape** : créer la base MySQL et son utilisateur
   dans l'admin Alwaysdata, puis 4 secrets `ALWAYSDATA_DB_NOM`,
   `ALWAYSDATA_DB_UTILISATEUR`, `ALWAYSDATA_DB_MOT_DE_PASSE`,
