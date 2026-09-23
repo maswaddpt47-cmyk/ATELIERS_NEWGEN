@@ -1922,6 +1922,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   // ── chargement editingId → force mode unique ──
   React.useEffect(()=>{
     if(!editingId)return;
+    idNouveauRef.current=null;
     const e=entries.find(x=>x._id===editingId);if(!e)return;
     setForm({...empty,...e,materiel:e.materiel||[]});setEditId(editingId);setIsDup(false);setModeLot(false);
     window.scrollTo(0,0);if(onClearEdit)onClearEdit();
@@ -1930,13 +1931,21 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   // ── chargement prefillData (duplication) → force mode unique ──
   React.useEffect(()=>{
     if(!prefillData)return;
+    idNouveauRef.current=null;
     setForm({...empty,...prefillData,_id:'',_n:'',date:'',horaire:'',ampm:'',inscrits:4,presents:'',remarques:'',statut:'Planifié'});
     setEditId(null);setIsDup(true);setModeLot(false);setErrors({});
     window.scrollTo(0,0);if(onClearPrefill)onClearPrefill();
   },[prefillData]);
 
-  function reset(){setForm(empty);setEditId(null);setIsDup(false);setErrors({});}
-  function resetLot(){setLotForm({orienteur:'',commune:'',lieu:'',conseiller:'',co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:''});setLotRows([emptyRow(),emptyRow()]);setLotErrors({});setLotRowErrors({});}
+  // Identifiants des ateliers d'un envoi, GARDÉS tant que l'envoi n'a pas
+  // réussi. Un clic dont la réponse se perd, puis un second clic, renvoient
+  // les MÊMES _id : le serveur remplace ses lignes au lieu d'en ajouter.
+  // Constaté le 23/09/2026 : cycle de 8 ateliers recliqué après « Google n'a
+  // pas livré la réponse » = 16 lignes, chaque clic tirant de nouveaux _id.
+  const idNouveauRef=React.useRef(null);
+  const idsLotRef=React.useRef({});
+  function reset(){idNouveauRef.current=null;setForm(empty);setEditId(null);setIsDup(false);setErrors({});}
+  function resetLot(){idsLotRef.current={};setLotForm({orienteur:'',commune:'',lieu:'',conseiller:'',co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:''});setLotRows([emptyRow(),emptyRow()]);setLotErrors({});setLotRowErrors({});}
 
   function set(k,v){setForm(f=>({...f,[k]:v}));setErrors(er=>({...er,[k]:''}));}
   function toggleMat(m){setForm(f=>{const already=matIncludes(f.materiel,m);return{...f,materiel:already?f.materiel.filter(x=>normalizeMat(x)!==normalizeMat(m)):[...f.materiel,m]};});}
@@ -2010,9 +2019,9 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     if(!validate()){showToast('⚠️ Champs obligatoires manquants',false);return;}
     setSaving(true);
     try{
-      const entry={...form,_id:form._id||genId(),inscrits:form.inscrits===''?'':parseInt(form.inscrits)||0,presents:form.presents===''?'':parseInt(form.presents)||0,nb_ordinateurs:form.nb_ordinateurs===''?'':parseInt(form.nb_ordinateurs)||0,materiel:(form.materiel||[]).join('|')};
+      const entry={...form,_id:form._id||idNouveauRef.current||(idNouveauRef.current=genId()),inscrits:form.inscrits===''?'':parseInt(form.inscrits)||0,presents:form.presents===''?'':parseInt(form.presents)||0,nb_ordinateurs:form.nb_ordinateurs===''?'':parseInt(form.nb_ordinateurs)||0,materiel:(form.materiel||[]).join('|')};
       const res=await apiFetch('saveEntry',{entry});
-      if(!res.ok)throw new Error(res.error);
+      if(!res.ok)throw Object.assign(new Error(res.error),{refus:true});
       showToast(editId?'✅ Atelier modifié':'✅ Atelier enregistré');
       // materiel repart en tableau (pas la chaîne '|' envoyée à GAS) : c'est
       // le format attendu partout ailleurs dans l'app (badges, filtres...).
@@ -2024,7 +2033,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       // localement : jusqu'ici, éditer un atelier déclenchait un getAll complet
       // juste pour relire ce qu'on venait d'écrire.
       onSaved(!editId,{...entry,materiel:form.materiel||[]});reset();
-    }catch(err){showToast('❌ '+err.message,false);}
+    }catch(err){showToast('❌ '+err.message+(err.refus?'':' — il a peut-être été enregistré quand même : recliquez sur Enregistrer, cela ne créera pas de doublon.'),false);}
     finally{setSaving(false);}
   }
 
@@ -2036,16 +2045,16 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     if(!validateLot(rowsFilled)){showToast('⚠️ Champs obligatoires manquants',false);return;}
     setSaving(true);
     try{
-      const entries=rowsFilled.map(row=>({_id:genId(),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0,nb_ordinateurs:lotForm.nb_ordinateurs===''?'':parseInt(lotForm.nb_ordinateurs)||0,date_prelevement_materiel:row.date_prelevement_materiel||'',date_retour_materiel:row.date_retour_materiel||''}));
+      const entries=rowsFilled.map(row=>({_id:idsLotRef.current[row.id]||(idsLotRef.current[row.id]=genId()),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0,nb_ordinateurs:lotForm.nb_ordinateurs===''?'':parseInt(lotForm.nb_ordinateurs)||0,date_prelevement_materiel:row.date_prelevement_materiel||'',date_retour_materiel:row.date_retour_materiel||''}));
       const res=await apiFetch('saveMany',{entries});
-      if(!res.ok)throw new Error(res.error);
+      if(!res.ok)throw Object.assign(new Error(res.error),{refus:true});
       // Même conversion materiel string→tableau que le mode unique.
       entries.forEach(entry=>{if(onNewEntry)onNewEntry({...entry,materiel:lotForm.materiel||[]});});
       const createdIds=entries.map(e=>e._id);
       showToast(`✅ ${entries.length} atelier(s) créé(s)`);
       document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:createdIds}}));
       onSaved(true);resetLot();
-    }catch(err){showToast('❌ '+err.message,false);}
+    }catch(err){showToast('❌ '+err.message+(err.refus?'':' — il a peut-être été enregistré quand même : recliquez sur Enregistrer, cela ne créera pas de doublon.'),false);}
     finally{setSaving(false);}
   }
 
