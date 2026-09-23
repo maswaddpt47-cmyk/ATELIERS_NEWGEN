@@ -151,7 +151,11 @@ ne renvoie que les noms actifs, ni rôle ni état).
   McNemar > 3,84 → la perte vient de GAS, la refonte la supprime. Pertes
   comparables → réseau des postes, on garde reprises et doublage.
 - **24/09/2026 — utilisateur** : export xlsx du classeur NextStep
-  (4 feuilles), **hors dépôt** (données personnelles).
+  (4 feuilles), **hors dépôt** (données personnelles). Par Google Sheets :
+  *Fichier → Télécharger → Microsoft Excel*. **Pas** l'export XLSX de
+  l'appli (`shared.js:2151-2156`) : ateliers filtrés de l'année affichée
+  seulement, 15 colonnes sans `_id`/`ampm`/prêt de matériel, dates
+  reformatées, ni Config ni Comptes ni journal.
 - Puis Claude, selon le résultat de l'étape 0 : schéma SQL + import → API
   PHP → test de contrat serveur → `shared.js` en POST derrière un
   interrupteur.
