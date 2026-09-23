@@ -219,8 +219,9 @@ classeur ».
 - **Sélecteur d'années à cases à cocher** (`ChoixAnnees`, `shared.js`) :
   plusieurs années chargées en **un seul** `getAll?years=` (AG-007,
   `ATELIERS_NEWGEN/AGORA.md`). `f_annee` stocke « 2026,2027 », l'ancien
-  format se relit tel quel. Roadmap et Admin prennent la plus récente
-  (choix de design à valider par l'utilisateur).
+  format se relit tel quel. Roadmap et Admin prennent **l'année en cours si
+  elle est cochée**, sinon la plus récente (tranché par AG-007 — la version
+  précédente de cette ligne disait « la plus récente », périmée).
 - **Réponse d'enregistrement perdue** → l'appli demande `verifierIds` avant
   d'annoncer un échec (idée de l'utilisateur). Sans le GAS déployé :
   comportement d'avant (message « recliquez, sans doublon »).
