@@ -151,6 +151,14 @@ ne renvoie que les noms actifs, ni rôle ni état).
   la 1re paire montre Alwaysdata « livré » (sinon CORS à corriger — en-tête
   vérifié en local seulement, l'environnement de Claude ne joint pas
   Alwaysdata) ; laisser tourner la journée, coller le résumé.
+  **Fait établi le 23/09/2026 (utilisateur)** : la série du banc du
+  22/09/2026 (§1, 30-38 % de pertes GAS) a été faite **depuis le domicile**,
+  hors réseau du CD47. Le relevé NextStep du même jour (45 %) vient de
+  l'usage réel de l'équipe. Pertes GAS constatées sur deux réseaux
+  différents : le réseau du Département **ne peut pas être la seule cause**.
+  Mesure au **bureau** toujours nécessaire : conditions de l'équipe, et
+  vérifier que le filtrage CD47 ne bloque pas `alwaysdata.net` (sinon
+  sujet DSI avant toute bascule). Mesure au domicile = complément.
   **Lecture** : Alwaysdata ≈ 0 % de pertes quand GAS en perd 30 %+ avec
   McNemar > 3,84 → la perte vient de GAS, la refonte la supprime. Pertes
   comparables → réseau des postes, on garde reprises et doublage.
