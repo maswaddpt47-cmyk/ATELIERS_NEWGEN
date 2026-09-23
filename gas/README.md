@@ -1,6 +1,6 @@
 # GAS_NEWGEN.js — copie de référence
 
-### ⏳ v11.39 à déployer (préparée le 23/09/2026)
+### ⏳ v11.40 à déployer (préparée le 23/09/2026)
 
 - **Plusieurs années en un appel** (`getAll` accepte `years=2026,2027`) :
   sans ce déploiement, cocher deux années ne charge que l'année en cours.
