@@ -389,29 +389,46 @@ automatisés (qui ne peuvent pas les couvrir) :
 
 ---
 
-## ⚖️ AG-008 ouvert le 23/09/2026 — keepAlive alourdi le jour où on le sait fragile
+## ⚖️ AG-008 répondu le 23/09/2026 — mon mécanisme ne tenait pas, le gaspillage si
 
-AG-004 et AG-007 ont été tranchés le **même jour** sans se citer. Le premier
-établit que `keepAlive` est arrêté par la plateforme à **8 min 00 s** (3 fois
-en 3 jours, mails « Summary of failures » des 19-21/09). Le second lui fait
-réchauffer **N+1 en plus** à partir de septembre — deux lectures complètes par
-passage froid au lieu d'une. Les deux décisions sont bonnes séparément ; leur
-superposition n'a été regardée par personne.
+J'avais proposé de remettre en cause l'amendement 2 d'AG-007 (`keepAlive`
+prépare N+1 dès septembre) au motif qu'il **double** le travail d'une fonction
+qu'AG-004 sait arrêtée par la plateforme à 8 min 00 s. **Réfuté, vérifié par
+moi-même :**
 
-**Déjà déployé** (v10.21.0 / v11.40). Rien à défaire dans l'immédiat : la
-question soumise est « surveiller suffit-il, ou faut-il alléger ? ».
+- **Le volume de lectures est inchangé pour NextStep.** `keepAlive` v10.11.3 —
+  celui qui tournait pendant les trois incidents — relisait la feuille à
+  **chaque** passage, sans jamais sauter (`git show a942c75`, l. 1038-1046) :
+  288 lectures/jour. Aujourd'hui : déclencheur 300 s, TTL cache 600 s
+  (`gas/GAS_NEXTSTEP.js:305`), donc une passe sur deux relit, et N et N+1
+  expirent ensemble → 144 × 2 = **288 lectures/jour. Le même chiffre.**
+  (Doublement réel pour NEWGEN, 144 → 288 ; mais NEWGEN lisait déjà deux
+  années avant v11.12.)
+- **La durée n'est pas le mécanisme.** Une lecture saine prend 1-3 s ; passer
+  de 2 à 4 s ne rapproche pas de 8 min. Et les messages sont des erreurs de
+  **stockage**, pas « Exceeded maximum execution time ».
+- **Le risque est plafonné depuis AG-004.** `keepAlive` ne prend plus le verrou
+  de script : un passage bloqué coûte un cache froid et un mail, **plus aucune
+  écriture refusée**. C'est ce qui rend le sujet secondaire.
+
+**Ce qui restait vrai, et qui est corrigé (v10.22.0 / v11.41, NON DÉPLOYÉ)** :
+N+1 était préparée **tout le temps à partir de septembre, même si personne ne
+la cochait** — le cas de la plupart des postes, la plupart des jours. Elle ne
+l'est plus que si un `getAll?years=` l'a demandée dans les 6 h (drapeau
+`CacheService`, `_marquerAnneeDemandee` / `_anneeDemandee`). Pire défaillance :
+le drapeau disparaît et un poste paie une lecture froide — le comportement
+d'avant v11.39. Jamais pire.
+
+**Bloc laissé ouvert** : c'est l'utilisateur qui tranche, pas le contradicteur.
+
+**Mesure qui reste à faire, 30 secondes** : ouvrir un `keepAlive` du 23/09
+après-midi dans les Exécutions — il journalise déjà la durée de chaque
+préparation (`Logger.log('keepAlive : cache <année> réchauffé en <ms>')`). Un
+nouveau mail « Summary of failures » après le 23/09 serait l'indice attendu.
 
 ⚠️ **Piste écartée, ne pas la rouvrir** : « les grosses réponses se perdent
-davantage » (le non-vérifié n° 2 d'AG-007, jamais mesuré). **Les relevés du
-22/09 ne le soutiennent pas** — aucun gradient entre taille et pertes :
-`getAll` (~110 Ko) 42 % contre `getConfig` 67 % côté NextStep, et `logLogin`
-(minuscule) à 100 % côté NEWGEN. Le multi-années ne pose donc pas de problème
-de **livraison** ; la question porte uniquement sur le **coût d'exécution** de
-`keepAlive`.
-
-**À regarder en premier, ça coûte 30 secondes** : Exécutions Apps Script
-depuis le 23/09 au matin — les `keepAlive` ont-ils changé de durée depuis que
-N+1 est réchauffée, et y a-t-il de nouveaux échecs à 8 min ?
+davantage ». Aucun gradient dans les relevés du 22/09 — `getAll` (~110 Ko)
+42 % contre `getConfig` 67 %, et `logLogin` (minuscule) 100 %.
 
 ## Points à ne pas défaire
 

@@ -1,5 +1,5 @@
 
-// ── GAS Backend v11.40 ────────────────────────────────────────
+// ── GAS Backend v11.41 ────────────────────────────────────────
 // ✅ v11.40 DÉPLOYÉE le 23/09/2026 (confirmé par l'utilisateur).
 // v11.40 : keepAlive réchauffe aussi N+1 à partir de septembre (AG-007,
 //          amendement de la session B, point 2).
@@ -593,9 +593,30 @@ function _anneesDemandees(s){
   liste.sort();
   return (liste.length >= 1 && liste.length <= 3) ? liste : null;
 }
+// ── Drapeau « année demandée » (AG-008, amendement) ───────────────────────
+// keepAlive préparait N+1 à chaque passage dès septembre, même si personne ne
+// la cochait — le cas de la plupart des postes, la plupart des jours : du
+// travail qui ne sert à personne, sur une fonction que les mails « Summary of
+// failures » des 19-21/09 montrent arrêtée par la plateforme à 8 min 00 s.
+// Désormais N+1 n'est préparée que si quelqu'un l'a demandée dans les 6 h.
+// TTL 6 h = 21600 s, exactement le maximum documenté de CacheService.put().
+// Défaillance possible : le drapeau disparaît (CacheService est best-effort),
+// et le poste qui coche N+1 paie une lecture froide — soit le comportement
+// d'avant v11.39. Jamais pire.
+var ANNEE_DEMANDEE_PREFIXE = 'annee_demandee_';
+var ANNEE_DEMANDEE_S = 6 * 60 * 60;
+function _marquerAnneeDemandee(an){
+  try{ CacheService.getScriptCache().put(ANNEE_DEMANDEE_PREFIXE + an, '1', ANNEE_DEMANDEE_S); }catch(_){}
+}
+function _anneeDemandee(an){
+  try{ return !!CacheService.getScriptCache().get(ANNEE_DEMANDEE_PREFIXE + an); }catch(_){ return false; }
+}
 function _getAllPlusieursAnnees(p, liste) {
   var fusion = null, entries = [];
   for (var i = 0; i < liste.length; i++) {
+    // Marqué à chaque demande, cache chaud ou non : c'est ce qui dit à
+    // keepAlive que cette année sert encore.
+    _marquerAnneeDemandee(liste[i]);
     var q = {};
     for (var k in p) { if (k !== 'years') q[k] = p[k]; }
     q.year = liste[i];
@@ -1159,7 +1180,8 @@ function keepAlive() {
     // entière pour N+1 à chaque ouverture, pendant que l'agent attend.
     var d = new Date(), an = d.getFullYear();
     var annees = [String(an)];
-    if (d.getMonth() >= 8) annees.push(String(an + 1));
+    // AG-008 : N+1 seulement si quelqu'un l'a demandée dans les 6 h.
+    if (d.getMonth() >= 8 && _anneeDemandee(String(an + 1))) annees.push(String(an + 1));
     var froides = annees.filter(function(y){ return !_lireCacheGetAll(y); });
     if (!froides.length) { Logger.log('keepAlive : cache ' + annees.join('+') + ' déjà chaud.'); return; }
     cache = CacheService.getScriptCache();
