@@ -156,6 +156,10 @@ ne renvoie que les noms actifs, ni rôle ni état).
   l'appli (`shared.js:2151-2156`) : ateliers filtrés de l'année affichée
   seulement, 15 colonnes sans `_id`/`ampm`/prêt de matériel, dates
   reformatées, ni Config ni Comptes ni journal.
+  **Décidé le 23/09/2026 : pas d'export dans l'appli.** Il vivrait dans le
+  GAS de production (redéploiement manuel) et devrait renvoyer la colonne
+  `Hash` — une action qui divulgue les mots de passe, dont certains en
+  clair. Le script d'import lit le .xlsx de Sheets, rejouable le jour J.
 - Puis Claude, selon le résultat de l'étape 0 : schéma SQL + import → API
   PHP → test de contrat serveur → `shared.js` en POST derrière un
   interrupteur.
