@@ -159,9 +159,11 @@ Conséquences, à ne pas réapprendre à chaque session :
 - **Rejouer une écriture est sûr** — vérifié en production le 18/09 : le
   client génère l'`_id` avant l'envoi et `actionSaveEntry` retrouve la ligne
   pour la remplacer (`saveEntry #1` abandonné, `#2` réussi, aucun doublon
-  constaté dans la feuille). Mais les écritures restent **séquentielles,
-  jamais doublées** : deux appels en parallèle pourraient tous deux conclure
-  « ligne absente » et faire chacun leur `appendRow`.
+  constaté dans la feuille). Mais une écriture n'est **jamais doublée**
+  (`GAS_ACTIONS_ECRITURE`). La sérialisation des écritures n'est
+  garantissable que **côté serveur**, par le verrou GAS
+  (`_avecVerrouEcriture`, v11.35) : le client ne voit ni un second onglet ni
+  un second conseiller.
 - **Après une écriture, ne jamais recharger pour relire.** `actionSaveEntry`
   invalide le cache `getAll` juste avant de rendre la main : le `loadData()`
   qui suivait relisait la feuille entière, au tarif maximum, pour retrouver ce
