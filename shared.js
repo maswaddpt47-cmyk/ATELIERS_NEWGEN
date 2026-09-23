@@ -2406,9 +2406,12 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
     if(dateFrom)r=r.filter(e=>e.date>=dateFrom);
     if(dateTo)r=r.filter(e=>e.date<=dateTo);
     if(dSearch){const q=stripAccents(dSearch);r=r.filter(e=>[e.lieu,e.thematique,e.orienteur,e.commune,e.public,e.remarques].some(v=>stripAccents(String(v||'')).includes(q)));}
-    if(newIdsFilter&&newIdsFilter.size>0)r=r.filter(e=>newIdsFilter.has(e._id));
+    // Filtre de mise en évidence post-enregistrement. Si aucun des ateliers
+    // mis en évidence n'existe plus (supprimé juste après), il ne montrerait
+    // que « 0 sur N » : on l'ignore (constaté le 23/09/2026 sur NextStep).
+    if(newIdsFilter&&newIdsFilter.size>0&&entries.some(e=>newIdsFilter.has(e._id)))r=r.filter(e=>newIdsFilter.has(e._id));
     return[...r].sort((a,b)=>{const va=a.date||'',vb=b.date||'';return va<vb?-sortDir:va>vb?sortDir:0;});
-  },[entries,filtStatut,filtMois,filtCommune,filtConseiller,filtPublic,dSearch,sortDir,dateFrom,dateTo]);
+  },[entries,filtStatut,filtMois,filtCommune,filtConseiller,filtPublic,dSearch,sortDir,dateFrom,dateTo,newIdsFilter]);
 
   const kpi=React.useMemo(()=>{const realises=filtered.filter(e=>e.statut==='Réalisé');const annules=filtered.filter(e=>e.statut==='Annulé').length;const inscrits=realises.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);const presents=realises.reduce((s,e)=>s+(parseInt(e.presents)||0),0);const tx=inscrits>0?Math.round(presents/inscrits*100):0;return{total:filtered.length,realises:realises.length,annules,inscrits,presents,tx};},[filtered]);
   const nRetard=React.useMemo(()=>entries.filter(e=>isRetard(e)&&(filtConseiller==='Tous'||e.conseiller===filtConseiller)).length,[entries,filtConseiller]);

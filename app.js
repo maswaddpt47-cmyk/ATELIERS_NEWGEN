@@ -418,7 +418,7 @@ function App(){
   // (édition) n'a pas ce raccourci : loadData() reste nécessaire.
   function handleSaved(isNewEntry,entry){ if(!isNewEntry) appliquerEntree(entry); setView('historique'); }
   async function handleDelete(id){
-    try{const res=await apiFetch('delete',{_id:id});if(!res.ok)throw new Error(res.error);showToast('✅ Atelier supprimé');retirerEntree(id);}
+    try{const res=await apiFetch('delete',{_id:id});if(!suppressionAboutie(res))throw new Error(res.error);showToast('✅ Atelier supprimé');retirerEntree(id);}
     catch(err){showToast('❌ '+err.message,false);}
   }
   function handleDuplicate(entry){
