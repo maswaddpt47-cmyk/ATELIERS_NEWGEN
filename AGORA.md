@@ -163,7 +163,7 @@ que GAS masquait, et l'hypothèse qui motive tout se mesure avant d'écrire.
    (`app.js:275`, `admin_app.js:336`) — des ateliers de test affichés en
    production sur tout poste où le labo a été ouvert.
 8. **Périmètre** : 22 actions côté NEWGEN (`GAS_NEWGEN.js:449-489`, dont
-   `verifierIds` `:465` et `getLogs`), 21 côté NextStep
+   `verifierIds` `:461` et `getLogs`), 21 côté NextStep
    (`GAS_NEXTSTEP.js:558-580`, même liste). Hors actions : limiteur,
    cache `getAll` et paramètre `years`, drapeau maintenance, alertes mail,
    sauvegarde Drive, `keepAlive` (inutile hors GAS).
