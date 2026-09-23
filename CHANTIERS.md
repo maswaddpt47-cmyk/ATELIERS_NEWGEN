@@ -167,6 +167,20 @@ ne renvoie que les noms actifs, ni rôle ni état).
 - Puis Claude, selon le résultat de l'étape 0 : schéma SQL + import → API
   PHP → test de contrat serveur → `shared.js` en POST derrière un
   interrupteur.
+  **Précision 23/09/2026** : schéma + import ne dépendent **pas** du
+  résultat de l'étape 0 (elle ne décide que du retrait des reprises et du
+  doublage). Ils attendent les en-têtes réels du classeur.
+- **En attente — l'utilisateur fournit le 24/09/2026** : le résumé du banc
+  **et la ligne 1 de l'onglet `Ateliers_next_step`** (en-têtes seuls, pas de
+  données : suffisant pour le schéma, rien de personnel dans la session).
+  Le GAS ne suffit pas : il relit la ligne 1 à chaque appel
+  (`GAS_NEXTSTEP.js:472`, `:654`) et ignore en silence les colonnes qu'il ne
+  connaît pas, voire les vide à la sauvegarde (`:691`). L'environnement de
+  Claude ne joint ni Google ni github.io (vérifié le 23/09/2026).
+  **Proposé, à confirmer** : l'import **refuse de tourner** sur une colonne
+  inconnue du .xlsx. Transport de l'import : page PHP protégée sur
+  Alwaysdata où l'utilisateur dépose le .xlsx (recommandé) ou import en SSH
+  — ferme une porte : **bloc AGORA à ouvrir** en écrivant le script.
 
 ---
 
