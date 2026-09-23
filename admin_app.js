@@ -420,7 +420,7 @@ const LOGS_KEY = lsKey('adm_logs');
     if(!entry||!entry._id)return;
     setEntries(prev=>{
       const i=prev.findIndex(e=>e._id===entry._id);
-      if(i<0) return String(entry.date||'').slice(0,4)===annee?[entry,...prev]:prev;
+      if(i<0) return anneeIncluse(annee,entry.date)?[entry,...prev]:prev;
       const next=[...prev];next[i]={...next[i],...entry};return next;
     });
     setLastSync(new Date());
@@ -502,7 +502,7 @@ const LOGS_KEY = lsKey('adm_logs');
         CE('span',{className:'sidebar-admin-badge'},'ADMIN'),
         entries.length>0&&CE('span',{style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},entries.length),
         CE('select',{className:'topbar-year-sel',value:annee,onChange:e=>setAnnee(e.target.value)},
-          [String(new Date().getFullYear()-1),String(new Date().getFullYear()),String(new Date().getFullYear()+1)].map(y=>CE('option',{key:y,value:y},y))
+          optionsAnnees(new Date().getFullYear(),annee).map(o=>CE('option',{key:o.value,value:o.value},o.label))
         ),
         CE('button',{
           onClick:()=>setDarkMode(d=>!d),
@@ -530,17 +530,17 @@ const LOGS_KEY = lsKey('adm_logs');
       loading&&CE(AttenteGAS,{titre:'Chargement des ateliers'}),
       error&&CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:()=>loadData()},'🔄 Réessayer')),
       !loading&&!error&&CE('div',{key:view,className:'view-anim'},
-        view==='saisie'&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{if(String(e.date||'').slice(0,4)===annee)setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(adminConseiller)}),
+        view==='saisie'&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{if(anneeIncluse(annee,e.date))setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(adminConseiller)}),
         view==='historique'&&CE(VueHistorique,{key:'hist_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem(lsKey('adm_conseiller'),nom);setAdminConseiller(nom);}}),
         view==='agenda'&&CE(VueAgendaSemaine,{key:'agenda_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,accentColor}),
         view==='calendrier'&&CE(VueCalendrier,{key:'cal_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem(lsKey('adm_conseiller'),nom);setAdminConseiller(nom);}}),
         view==='dashboard'&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
         view==='carte'&&CE(VueCarte,{entries,active:view==='carte'}),
-        view==='roadmap'&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),
+        view==='roadmap'&&CE(VueRoadmap,{entries,annee:anneeReference(annee),conseillers:lists.conseillers}),
         view==='bingo'&&CE(VueBingo,{entries}),
         view==='anomalies'&&CE(VueAnomalies,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');},communes:window.COMMUNES_47_CACHE||[],apiFetch,showToast,addLog}),
         view==='gestion_ordi'&&CE(VueGestionOrdi,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');}}),
-        view==='admin'&&role==='admin'&&CE(VueAdmin,{entries,onRefresh:()=>loadData(),addLog,conseillersList:lists.conseillers,onSaveColors:(c)=>{applyColors(c);},annee,adminConseiller,initialVisibility:cachedVisibility}),
+        view==='admin'&&role==='admin'&&CE(VueAdmin,{entries,onRefresh:()=>loadData(),addLog,conseillersList:lists.conseillers,onSaveColors:(c)=>{applyColors(c);},annee:anneeReference(annee),adminConseiller,initialVisibility:cachedVisibility}),
         view==='logs_connexion'&&(role==='admin'||role==='superviseur')&&CE(VueLogs,null),
           view==='logs'&&CE('div',{className:'card'},
             CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:8}},
