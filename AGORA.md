@@ -110,6 +110,86 @@ de garde-fou » : **faux**, il ne teste que l'objet construit côté client
 `shared.js` (`GS_URL`, `gasAppel`), `contract.test.js`, `sw.js`,
 `manifest-app.json`.
 
+### Réponse — 23/09/2026
+**Auteur** : session B — lu sur `3fbfcea` (NEWGEN) et `a95d2a6` (NextStep)
+**Verdict** : amendé — le cap tient, mais « 1:1 » reproduirait trois défauts
+que GAS masquait, et l'hypothèse qui motive tout se mesure avant d'écrire.
+**Constat** :
+1. **La cause de la perte se mesure pour ~20 lignes, avant tout code.** Le
+   banc sait déjà comparer des cibles depuis le même appareil au même moment
+   (`banc/index.html:117-120`, objet `URLS`). Y ajouter une 3e cible — un
+   `ping.php` chez Alwaysdata renvoyant un JSON statique de la taille de
+   `getConfig` — isole la variable « GAS ». Seul prérequis côté PHP :
+   `Access-Control-Allow-Origin`, le client faisant un `fetch` simple sans
+   en-tête (`shared.js:774`), donc pas de pré-vol CORS. Si la perte reste
+   comparable, elle vient du réseau des postes, pas de `/exec` : la refonte
+   garde ses autres motifs (jumeaux, sécurité, déploiement), mais l'étape 4
+   (retirer reprises/doublage) tombe.
+2. **`contract.test.js` n'est pas un garde-fou de l'API.** Il vérifie le
+   format d'un `entry` construit côté client (`contract.test.js:10-30`),
+   jamais une réponse. Le contrat des réponses vit dans les `MOCK_RESPONSE`
+   de `e2e.test.js:162` et `appels.test.js:95`, **accrochés au motif
+   `**/script.google.com/**`** : dès que `GS_URL` change, les mocks ne
+   captent plus rien et les suites partent sur le vrai réseau. Motif à
+   paramétrer dans le même commit que l'URL.
+3. **Tout passe en GET, mot de passe compris** : `app.js:98` →
+   `apiFetch` (`shared.js:1498-1520`) met chaque champ dans l'URL, y compris
+   `password`, `token` et l'`entry` entier. Chez Google c'était invisible ;
+   chez Alwaysdata, les **journaux d'accès HTTP du compte perso** garderont
+   mots de passe et ateliers en clair. ⚠️ RGPD/sécurité.
+4. **Mots de passe (point « pas relu »)** : SHA-256 non salé
+   (`GAS_NEWGEN.js:1004`), et **en clair** pour tout compte réinitialisé ou
+   créé : `actionResetPassword` écrit `defaultPwd` tel quel (`:909-911`),
+   `_ensureCompte` aussi (`:1002`) ; la mise à niveau n'a lieu qu'au login
+   réussi (`:552-553`). `defaultPwd` = `cd47` + prénom (`:1003`), devinable.
+   Le limiteur d'essais repose sur `CacheService` (`:533`, `:556-557`), à
+   reproduire en table. Les jetons (`PropertiesService`, `:501-502`) ne
+   migrent pas : toute l'équipe se reconnecte à la bascule.
+5. **PWA à la même URL — vérifié par lecture, pas par essai.** Manifests
+   NextStep et NEWGEN : même `start_url` (`./index.html`, `./admin.html`),
+   même `scope`, **aucun champ `id`** → l'identité de l'appli installée
+   (= `start_url`) ne change pas ; les deux `sw.js` ne cachent rien. Diffèrent :
+   `short_name` (« Ateliers Conseillers » vs « NewGen Conseillers ») et
+   icônes → publier les **manifests de NextStep**.
+6. **Le vrai risque PWA est l'ancien `index.html`**, non versionné
+   (`CLAUDE.md` §4) : un poste qui le garde charge l'ancien `shared.js?v=N`,
+   donc l'ancien `GS_URL`, et **écrit dans le classeur abandonné** sans
+   erreur. « GAS gardé en lecture seule » (étape 2 du plan) ne suffit pas.
+7. **`localStorage` : collision garantie si on publie tel quel.** `APP_NS`
+   vaut `'nextstep'` côté NextStep (`NextStep/utils.js:317`) et `'newgen'`
+   ici (`utils.js:283`), sur la **même origine** (`utils.js:273-277`). Le
+   code NEWGEN publié à l'URL NextStep perdrait les préférences de l'équipe
+   **et** lirait au démarrage le cache `ateliers_cache_<année>` du labo
+   (`app.js:275`, `admin_app.js:336`) — des ateliers de test affichés en
+   production sur tout poste où le labo a été ouvert.
+8. **Périmètre** : 22 actions côté NEWGEN (`GAS_NEWGEN.js:449-489`, dont
+   `verifierIds` `:465` et `getLogs`), 21 côté NextStep
+   (`GAS_NEXTSTEP.js:558-580`, même liste). Hors actions : limiteur,
+   cache `getAll` et paramètre `years`, drapeau maintenance, alertes mail,
+   sauvegarde Drive, `keepAlive` (inutile hors GAS).
+**Amendement** :
+- **Étape 0** : cible `ping.php` dans le banc, une journée de salves, avant
+  schéma et API. Décide du sort de l'étape 4, pas du cap.
+- **Pas de 1:1 sur trois points** : (a) `checkPassword` et écritures en
+  `POST` `application/x-www-form-urlencoded` (reste une requête simple, pas
+  de pré-vol) — petit changement dans `apiFetch` ; (b) import : `password_hash`
+  immédiat des `Hash` < 64 caractères, jamais de clair en MySQL, vérif SHA-256
+  + réhachage au login pour les autres ; changement forcé au premier login
+  après réinitialisation ; (c) `getComptes` hors lecture publique
+  (`READ_ACTIONS`, `GAS_NEWGEN.js:402`) — à trancher, non bloquant.
+- **Tests** : fixtures de réponse tirées des `MOCK_RESPONSE` existants,
+  rejouées contre l'API PHP locale ; motif de route paramétré.
+- **Bascule** : l'ancien GAS passe **en maintenance** (mécanisme existant,
+  `shared.js:1558-1562`), pas en lecture seule, pour que le poste resté sur
+  l'ancien code s'arrête au lieu d'écrire ailleurs.
+- **`APP_NS` par déploiement** : `'nextstep'` à l'URL NextStep, `'newgen'`
+  au labo. Manifests de NextStep conservés.
+**Non vérifié par moi** : l'offre Alwaysdata (quota, SSH en gratuit,
+transfert de compte) — pas consultée ; le comportement réel de Chrome
+Android sur un changement de `short_name` ; les formes de réponse GAS
+NextStep vs NEWGEN, pas comparées champ par champ ; et bien sûr que la perte
+disparaisse, qui est l'objet de l'étape 0.
+
 
 ---
 
