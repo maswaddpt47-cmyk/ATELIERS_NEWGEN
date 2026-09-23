@@ -668,3 +668,49 @@ pour amender avant la mise en ligne.
 (`actionGetAll`) ; `app.js`/`admin_app.js` des deux dépôts (`annee`,
 `setAnnee`, `sidebar-year`), `shared.js` (`fetchAll`, `VueRoadmap`).
 
+
+### Réponse — 23/09/2026
+**Auteur** : session B (01UyZhvm) — lu sur `7773de1` (NEWGEN), NextStep sur `baecba5` ; le code est déjà écrit (`ca7ae26`, `a7c55ec`), la relecture porte donc sur l'implémentation.
+**Verdict** : amendé
+**Constat** :
+1. **Tant que le GAS n'est pas collé, le client déjà en ligne affiche faux sans le dire.**
+   `shared.js:1554` envoie `years=2026,2027` dès que deux cases sont cochées ;
+   l'ancien GAS ignore ce paramètre et retombe sur `p.year || année courante`
+   (`gas/GAS_NEWGEN.js:619`, chemin inchangé) : il ne rend que 2026, et le bouton
+   affiche « 2026 + 2027 ». Aucun code client ne lit le `years` renvoyé
+   (`grep '\.years' shared.js app.js admin_app.js` : rien). Même chose NextStep.
+   La « fenêtre pour amender avant la mise en ligne » n'existe pas côté client :
+   la moitié client est déjà sur `main`, donc déployée par Pages.
+2. **Le non-vérifié n° 1 n'est pas occasionnel, il est systématique.** `keepAlive`
+   ne réchauffe que l'année courante (`gas/GAS_NEWGEN.js:1152-1162`, NextStep
+   `gas/GAS_NEXTSTEP.js:1258-1270`). 2027 n'est chaude que dans les 600 s
+   (`_CACHE_TTL_SECONDS`, `:267`) qui suivent une lecture de 2027. Hors de ça,
+   chaque `getAll?years=2026,2027` paie une lecture complète de la feuille dans
+   la requête — exactement ce que `keepAlive` existe pour éviter. Et après toute
+   écriture, `_invalidateCache` vide N-1, N et N+1 (`:319-326`) : le rechargement
+   suivant d'un poste multi-années paie **deux** lectures froides au lieu d'une.
+   Toujours non chronométré de mon côté.
+3. **« La plus récente » cache l'année en cours au moment où on en a besoin.**
+   `utils.js:250` → en septembre 2026, avec 2026 + 2027 cochés (le cas qui
+   motive la demande), Roadmap s'ouvre sur « Roadmap 2027 » avec la plage
+   2027-01-01 → 2027-12-31 et les raccourcis T1…S2 sur 2027
+   (`shared.js:4876-4900`) : l'activité réelle est hors plage par défaut. Admin
+   « Export Timeline » prend aussi 2027 (`admin_app.js:1107`).
+4. Non-vérifié n° 4 **confirmé sans effet** : `ChoixAnnees` trie et normalise
+   avant `onChange` (`shared.js:953`), la clé `fetchAll` est donc stable ; une
+   ancienne entrée `"2026"` expire au TTL.
+**Amendement** :
+- (1) Client : si la réponse à un appel `years=` ne porte pas `years`, **dire**
+  « serveur pas encore à jour, seule l'année AAAA est chargée » (toast ou
+  libellé du bouton) au lieu d'afficher les cases cochées. Une ligne dans
+  `rawGetAll`, sans attendre le déploiement GAS.
+- (2) GAS, à trancher par l'utilisateur **avant** le collage : soit `keepAlive`
+  réchauffe aussi N+1 à partir de septembre (une lecture froide de plus par
+  cycle, hors requête), soit `_getAllPlusieursAnnees` lit la feuille **une seule
+  fois** pour toutes les années froides. Le premier est plus simple et ne
+  touche pas le chemin actuel.
+- (3) Année de référence = **l'année courante si elle est cochée**, sinon la plus
+  récente. Une ligne dans `anneeReference`, déjà couverte par `utils.test.js`.
+**Non vérifié par moi** : taille réelle de réponse à 2-3 années et effet sur le
+taux de pertes (non-vérifié n° 2, aucun relevé) ; le comportement du GAS
+**déployé** est déduit de la copie de référence, pas observé.
