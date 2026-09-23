@@ -19,7 +19,7 @@ effectué — AG-001 a corrigé le protocole du banc avant la série.
 
 ---
 
-## 🧭 23/09/2026 — Refonte d'architecture : réflexion en cours, RIEN n'est décidé
+## 🧭 23/09/2026 — Refonte d'architecture : cap décidé, AG-009 ouvert, aucun code écrit
 
 Session de réflexion demandée par l'utilisateur (« prendre du recul, ne rien
 faire sauf proposer »). Aucun code touché. **Reprendre ici.**
