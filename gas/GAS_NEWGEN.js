@@ -1,5 +1,7 @@
 
-// ── GAS Backend v11.38 ────────────────────────────────────────
+// ── GAS Backend v11.39 ────────────────────────────────────────
+// ⚠️ v11.39 PAS ENCORE DÉPLOYÉE (préparée le 23/09/2026). En ligne : v11.38.
+// v11.39 : getAll accepte years=2026,2027 (sélecteur multi-années, AG-007).
 // ✅ v11.38 DÉPLOYÉE le 23/09/2026 (confirmé par l'utilisateur).
 // v11.38 : surChangementFeuille (onChange) + installerTriggerChangement :
 //          onEdit ne voit pas la suppression/insertion de lignes à la main.
@@ -557,7 +559,45 @@ function actionLogLogin(p) {
     return {ok:true};
   } catch(e) { return {ok:false, error:e.message}; }
 }
+// Plusieurs années en un seul appel (v11.39, 23/09/2026, AG-007) : le
+// sélecteur de l'appli permet d'en cocher plusieurs. « years=2026,2027 »,
+// 3 au plus, années à 4 chiffres. Chaque année passe par son cache habituel ;
+// les ateliers sont concaténés, le reste (listes, config, visibilité) vient
+// de la dernière année. « year » seul garde exactement le chemin d'avant.
+function _anneesDemandees(s){
+  var vues = {}, liste = [];
+  String(s || '').split(',').forEach(function(x){
+    x = String(x).trim();
+    if(/^\d{4}$/.test(x) && !vues[x]){ vues[x] = true; liste.push(x); }
+  });
+  liste.sort();
+  return (liste.length >= 1 && liste.length <= 3) ? liste : null;
+}
+function _getAllPlusieursAnnees(p, liste) {
+  var fusion = null, entries = [];
+  for (var i = 0; i < liste.length; i++) {
+    var q = {};
+    for (var k in p) { if (k !== 'years') q[k] = p[k]; }
+    q.year = liste[i];
+    var payload = actionGetAll(q);  // cache par année, comme un appel simple
+    // Maintenance ou erreur : rendue telle quelle, comme pour une seule année.
+    if (!payload || !payload.ok) return payload;
+    entries = entries.concat(payload.entries || []);
+    fusion = payload;
+  }
+  // Copie superficielle : le payload peut venir du cache, ne pas le modifier.
+  var r = {};
+  for (var c in fusion) r[c] = fusion[c];
+  r.entries = entries;
+  r.years = liste;
+  return r;
+}
 function actionGetAll(p) {
+  if (p.years) {
+    var liste = _anneesDemandees(p.years);
+    if (!liste) return {ok:false, error:'Paramètre years invalide'};
+    return _getAllPlusieursAnnees(p, liste);
+  }
   var year = p.year || String(new Date().getFullYear());
   var cached = _lireCacheGetAll(year);
   if (cached) return cached;
