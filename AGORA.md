@@ -101,6 +101,13 @@ entre corriger le classeur et assouplir la colonne — pas moi seul.
 **Où regarder** : `migration/INVENTAIRE.md` §1 et §4, `contract.test.js:12-34`,
 `GAS_NEXTSTEP.js:469-520` (lecture), `:652-700` (écriture), `:944-990` (journal),
 `shared.js:1972` (valeurs vides attendues par le formulaire).
+**Complément de l'auteur, 23/09/2026 (même session, avant toute réponse)** :
+l'export réel a été fourni. Vérifié dessus : 29 en-têtes conformes, dates et
+heures en cellules typées (formats 165/166), 0 valeur refusée sur 262
+ateliers. Restent non vérifiés : `Comptes`/`Logs_Connexion` n'ont été lus
+que sur ce fichier, Alwaysdata (extensions, MariaDB, hôte MySQL). Code
+écrit depuis : `db9634d` — le contradicteur peut le lire, sans biais de
+statu quo à craindre, l'import étant rejouable jusqu'à la bascule.
 
 
 ---
