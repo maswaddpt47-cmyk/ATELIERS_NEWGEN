@@ -1,6 +1,6 @@
 
 // ── GAS Backend v11.38 ────────────────────────────────────────
-// ⚠️ v11.38 PAS ENCORE DÉPLOYÉE (préparée le 23/09/2026). En ligne : v11.37.
+// ✅ v11.38 DÉPLOYÉE le 23/09/2026 (confirmé par l'utilisateur).
 // v11.38 : surChangementFeuille (onChange) + installerTriggerChangement :
 //          onEdit ne voit pas la suppression/insertion de lignes à la main.
 // v11.37 : keepAlive ne prend plus le verrou de script (AG-004 tranché le
