@@ -68,7 +68,40 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-_(aucun)_
+## AG-010 — Schéma MySQL et import du classeur NextStep — ouvert le 23/09/2026
+**Auteur** : session A (refonte, reprise du 24/09) — lu sur `78745da`
+**Proposition** : 6 tables (`ateliers` typée, `ateliers_materiel`, `config`,
+`comptes`, `journal`, `sessions` + `tentatives`) ; dates en `DATE`, `horaire`
+en `CHAR(5)`, compteurs en `INT NULL` (vide ⇒ `NULL` ⇒ renvoyé `''`), reste en
+texte. Import par une page PHP sur Alwaysdata (ZipArchive + SimpleXML, sans
+bibliothèque), protégée par une clé tirée des Secrets GitHub, **à blanc
+d'abord** (compte rendu), puis réel en une transaction qui vide et recharge.
+**Refus** de toute colonne inconnue ou valeur non convertible, avec n° de ligne.
+**Critère déclencheur** : 1 (schéma de données) et 2 (alternative écartée sans
+arbitrage : tout en `TEXT`, copie 1:1 de la feuille, qui n'aurait rien refusé).
+**Ce que ça engage** : le format que l'API lira et que `shared.js` recevra ;
+typer fait échouer l'import sur des cellules historiques mal saisies (à
+corriger dans Sheets avant bascule, pas dans le code). Réversible tant que
+la bascule n'a pas eu lieu (l'import recrée tout) ; figé après.
+**Non vérifié par l'auteur** :
+- en-têtes `Ateliers_next_step` fournis par l'utilisateur (29 colonnes,
+  identiques à `contrat` + 9 matériels de `GAS_NEXTSTEP.js:482`) ; ceux de
+  `Comptes`, `Config` et `Logs_Connexion` **déduits du code seulement** ;
+- comment l'export xlsx de Sheets encode une date saisie en texte, une heure
+  (fraction de jour ?), un `OUI` ; aucun fichier réel lu ;
+- `zip`/`SimpleXML` activés chez Alwaysdata, version MariaDB — de mémoire ;
+- `_n` : numéro de ligne à la création, jamais recalculé côté GAS — des
+  doublons ou trous existent peut-être ; proposé `INT NULL` non unique ;
+- le journal (`Logs_Connexion`, deux formats mêlés) est converti par la même
+  logique que `actionGetLogs` (`GAS_NEXTSTEP.js:958-980`) — ⚠️ RGPD : aucune
+  durée de conservation définie aujourd'hui, à décider (12 mois ?).
+**Si personne ne répond, je fais quoi ?** Je garde le typage, mais l'import à
+blanc liste chaque valeur refusée et l'utilisateur décide, au vu de la liste,
+entre corriger le classeur et assouplir la colonne — pas moi seul.
+**Où regarder** : `migration/INVENTAIRE.md` §1 et §4, `contract.test.js:12-34`,
+`GAS_NEXTSTEP.js:469-520` (lecture), `:652-700` (écriture), `:944-990` (journal),
+`shared.js:1972` (valeurs vides attendues par le formulaire).
+
 
 ---
 
