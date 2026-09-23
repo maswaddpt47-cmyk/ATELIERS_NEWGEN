@@ -536,9 +536,7 @@ function App(){
           lastSync.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
         ),
         CE('button',{onClick:()=>setDarkMode(d=>!d),style:{background:'none',border:'none',cursor:'pointer',fontSize:18,padding:'2px 4px',lineHeight:1},'aria-label':'Mode sombre'},darkMode?'☀️':'🌙'),
-        CE('select',{className:'topbar-year-sel',value:annee,onChange:e=>setAnnee(e.target.value),title:'Année'},
-          optionsAnnees(new Date().getFullYear(),annee).map(o=>CE('option',{key:o.value,value:o.value},o.label))
-        ),
+        CE(ChoixAnnees,{className:'topbar-year-sel',value:annee,onChange:setAnnee,title:'Années chargées'}),
         newEntries.length>0&&CE('button',{
           className:'topbar-notif-btn',
           onClick:()=>{setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);}

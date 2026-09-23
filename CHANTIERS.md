@@ -209,6 +209,19 @@ même couche d'appel. Détail et mesure à suivre : `CHANTIERS.md` de NextStep.
 L'invariant « écritures séquentielles » est reformulé dans les deux
 `CLAUDE.md` : jamais doublées côté client, sérialisées côté serveur (verrou).
 
+## ⏳ 23/09/2026 — années multiples et vérification après réponse perdue
+
+Livré côté appli (les deux projets), **GAS v11.39 à déployer** (`gas/README.md`).
+- **Sélecteur d'années à cases à cocher** (`ChoixAnnees`, `shared.js`) :
+  plusieurs années chargées en **un seul** `getAll?years=` (AG-007,
+  `ATELIERS_NEWGEN/AGORA.md`). `f_annee` stocke « 2026,2027 », l'ancien
+  format se relit tel quel. Roadmap et Admin prennent la plus récente
+  (choix de design à valider par l'utilisateur).
+- **Réponse d'enregistrement perdue** → l'appli demande `verifierIds` avant
+  d'annoncer un échec (idée de l'utilisateur). Sans le GAS déployé :
+  comportement d'avant (message « recliquez, sans doublon »).
+- Tests : `e2e/appels.test.js` de NextStep (cas 8 et 9).
+
 ## 🔴 23/09/2026 — cycle enregistré en double, et divergence entre les deux projets
 
 **Incident** : cycle de 8 ateliers sur NextStep, réponse de `saveMany` perdue,
