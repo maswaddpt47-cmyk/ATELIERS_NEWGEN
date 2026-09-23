@@ -178,24 +178,35 @@ ne renvoie que les noms actifs, ni rôle ni état).
   **Précision 23/09/2026** : schéma + import ne dépendent **pas** du
   résultat de l'étape 0 (elle ne décide que du retrait des reprises et du
   doublage). Ils attendent les en-têtes réels du classeur.
-- **En attente — l'utilisateur fournit le 24/09/2026** : le résumé du banc
-  **et la ligne 1 de l'onglet `Ateliers_next_step`** (en-têtes seuls, pas de
-  données : suffisant pour le schéma, rien de personnel dans la session).
-  Le GAS ne suffit pas : il relit la ligne 1 à chaque appel
-  (`GAS_NEXTSTEP.js:472`, `:654`) et ignore en silence les colonnes qu'il ne
-  connaît pas, voire les vide à la sauvegarde (`:691`). L'environnement de
-  Claude ne joint ni Google ni github.io (vérifié le 23/09/2026).
-  **✅ Validé par l'utilisateur le 23/09/2026** : l'import **refuse de
-  tourner** sur une colonne inconnue du .xlsx ; transport = **page PHP
-  protégée sur Alwaysdata** où l'utilisateur dépose le .xlsx. Ferme une
-  porte : **bloc AGORA à ouvrir** en écrivant le script. L'utilisateur
-  demande à être **guidé pas à pas** (export Sheets, Alwaysdata).
-  **Proposé (non encore décidé)** : identifiants MySQL et clé d'import dans
-  les Secrets GitHub (`ALWAYSDATA_DB_NOM`, `ALWAYSDATA_DB_UTILISATEUR`,
-  `ALWAYSDATA_DB_MOT_DE_PASSE`, `ALWAYSDATA_CLE_IMPORT`), écrits par
-  `deploy-api.yml` dans un fichier **hors de `~/www/`** — même principe que
-  le SSH : Claude ne voit jamais les identifiants. La base MySQL est à créer
-  par l'utilisateur dans l'administration Alwaysdata.
+- **23/09/2026 — banc lancé par l'utilisateur** (lieu à confirmer : bureau
+  ou domicile). Attendre son résumé.
+- **✅ 23/09/2026 — schéma + import écrits** (`db9634d`), bloc **AG-010**
+  ouvert (schéma typé, import strict). L'utilisateur a fourni l'export xlsx
+  réel **dans la session** (non commité, supprimé des fichiers de travail) :
+  analyse locale = **262 ateliers, 64 prêts de matériel, 5 comptes, 13 clés
+  de config, 1 219 lignes de journal, 0 erreur**. Constats sur le vrai
+  fichier, à ne pas réapprendre :
+  - 6 onglets : deux « Copie de … » **ignorés** (jamais lus par le GAS) ;
+  - `Config` **n'a pas de ligne d'en-tête** (ligne 1 = `app_version`) ;
+    6 clés mortes (lues par aucun code) non importées, dont
+    **`admin_password` : mot de passe en clair** ⚠️ à supprimer du classeur ;
+  - les 5 comptes ont déjà une empreinte SHA-256, aucun en clair ;
+  - journal entièrement au format récent ; dates/heures en cellules typées.
+  Fichiers : `api/import.php` (page), `api/lib/xlsx.php`, `api/lib/import.php`,
+  `api/lib/schema.sql`, `api/lib/base.php`, test `api-tests/import.test.php`
+  (lancé par `deploy-api.yml` avec un MySQL jetable avant tout déploiement).
+  **Décidé** : identifiants MySQL et clé d'import dans les Secrets GitHub,
+  écrits par `deploy-api.yml` dans `~/config-api.php` (hors `~/www/`, droits
+  600). Hôte `mysql-<compte>.alwaysdata.net` = **hypothèse non vérifiée**.
+- **Utilisateur — prochaine étape** : créer la base MySQL et son utilisateur
+  dans l'admin Alwaysdata, puis 4 secrets `ALWAYSDATA_DB_NOM`,
+  `ALWAYSDATA_DB_UTILISATEUR`, `ALWAYSDATA_DB_MOT_DE_PASSE`,
+  `ALWAYSDATA_CLE_IMPORT` ; relancer « Déploiement API Alwaysdata » (Actions
+  → Run workflow) ; ouvrir `https://ateliers-numeriques.alwaysdata.net/api/import.php`,
+  Analyser puis Importer. Claude ne peut pas le faire : pas d'accès
+  Alwaysdata depuis son environnement, et ne doit pas voir les identifiants.
+  Cet import est un **essai** : on refera un export frais le jour J.
+- Puis Claude : API PHP (lecture `getAll` d'abord) + test de contrat serveur.
 
 ---
 
