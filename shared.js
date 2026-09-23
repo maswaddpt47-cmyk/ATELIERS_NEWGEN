@@ -1561,6 +1561,12 @@ window.onLogout = function(){
     // maintenance sans un getConfig dédié.
     if(data && data.maintenance) return data;
     if(!data || !data.ok) throw new Error((data && data.error) || 'Erreur serveur');
+    // Plusieurs années demandées, mais le GAS en ligne ne connaît pas encore
+    // years= : il ne renvoie que l'année en cours, sans le dire. On le dit à
+    // sa place (AG-007, amendement de la session B, point 1).
+    if(String(year).indexOf(',')>=0 && !Array.isArray(data.years)){
+      try{ showToast('⚠️ Serveur pas encore à jour : seule l\'année '+new Date().getFullYear()+' est chargée.',false); }catch(_){}
+    }
     return data;
   }
 
