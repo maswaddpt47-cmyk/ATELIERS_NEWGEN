@@ -68,7 +68,44 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-_(aucun)_
+## AG-009 — Remplacer GAS + Sheets par PHP + MySQL chez Alwaysdata — ouvert le 23/09/2026
+**Auteur** : session A — lu sur `667d1e9`
+**Proposition** : réécrire le backend en API PHP reproduisant **1:1** les
+~21 actions GAS actuelles, sur MySQL, hébergée chez Alwaysdata (compte au nom
+de l'utilisateur), déployée par GitHub Action à chaque push. Le code convergé
+(NEWGEN) est publié **à l'URL de NextStep** le jour de la bascule, après copie
+du classeur NextStep. Détail et réponses de l'utilisateur :
+`CHANTIERS.md`, section « 🧭 Refonte d'architecture ».
+**Critère déclencheur** : 1 (ferme une porte : schéma de données, nouvelle
+dépendance d'hébergement) et 6 (migration de données de production, PWA
+installées de l'équipe).
+**Ce que ça engage** : un sous-traitant d'hébergement, un schéma SQL, la
+sortie de Google Sheets (plus de consultation du classeur — l'utilisateur dit
+que personne ne s'en sert), une bascule de production unique.
+**Non vérifié par l'auteur** :
+- **Que la perte d'appels disparaisse.** Hypothèse : elle vient de la
+  redirection `/exec` de GAS, absente d'un PHP classique. Aucune mesure.
+- Le périmètre GAS exact à reproduire, au-delà du routage
+  (`gas/GAS_NEXTSTEP.js:560-580`) : `MailApp.sendEmail`
+  (`GAS_NEXTSTEP.js:1157`), déclencheur `onChange`
+  (`GAS_NEXTSTEP.js:265`, devient inutile sans classeur), côté NEWGEN
+  alertes de retard quotidiennes et sauvegarde Drive
+  (`GAS_NEWGEN.js:1072`, `:1083`) → cron Alwaysdata + envoi SMTP, non testés.
+- Offre gratuite Alwaysdata actuelle (taille, PHP/MySQL, accès SSH pour le
+  déploiement par Action) et transférabilité du compte : lues de mémoire.
+- Qu'une PWA installée survive au remplacement du code **à la même URL**
+  (manifest, `start_url`, `sw.js`) : raisonnement, pas essai.
+- Le stockage des mots de passe côté GAS et leur reprise en PHP
+  (`password_hash`) : pas relu.
+**Si personne ne répond, je fais quoi ?** Je commence par ce qui ne ferme
+rien : schéma SQL et API en local testés contre `contract.test.js`, sans
+toucher à la production. La bascule, elle, attend une réponse ou l'accord
+explicite de l'utilisateur après relecture de ce bloc.
+**Où regarder** : `gas/GAS_NEWGEN.js` et
+`ateliers-cd47_NextStep/gas/GAS_NEXTSTEP.js` (routage et services Google),
+`shared.js` (`GS_URL`, `gasAppel`), `contract.test.js`, `sw.js`,
+`manifest-app.json`.
+
 
 ---
 

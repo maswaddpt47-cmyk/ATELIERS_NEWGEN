@@ -87,13 +87,22 @@ Recommandations (tarifs à revérifier) :
   Idem pour les clés `localStorage` (préférences des conseillers) à
   conserver.
 
-**Questions ouvertes, à poser en reprise** :
-1. Choix de l'hébergeur (recommandé : Alwaysdata).
-2. URL de bascule : garder celle de NextStep (recommandé) ?
-3. Confirmer que les données NEWGEN ne sont que du test.
+**✅ Décidé par l'utilisateur le 23/09/2026** (« oui pour tout ») :
+1. Hébergeur : **Alwaysdata**, compte au nom de l'utilisateur.
+2. Bascule **à l'URL de NextStep** (PWA et favoris de l'équipe préservés) ;
+   URL NEWGEN = labo.
+3. Données NEWGEN = test, **non migrées**. Seul le classeur NextStep l'est.
 
-**Dès décision** : ouvrir un bloc AGORA (critère 1, la décision ferme une
-porte) **avant** d'écrire la moindre ligne.
+**⚖️ AG-009 ouvert le 23/09/2026** (`AGORA.md`) — contradiction demandée
+avant d'écrire le code. En attendant : seul le travail qui ne ferme rien
+(schéma SQL + API en local contre `contract.test.js`).
+
+**Prochaines actions** :
+- Utilisateur : créer le compte Alwaysdata (offre gratuite), puis mettre
+  les accès SSH de déploiement dans les *Secrets* du dépôt (Claude dira
+  lesquels, sans jamais les voir).
+- Claude : inventaire exact des ~21 actions GAS + mails + cron → schéma SQL
+  → API PHP locale → tests de contrat.
 
 ---
 
