@@ -1489,7 +1489,11 @@ window.onLogout = function(){
   const cache  = new Map();  // année → {promise, inflight, ts}
 
   async function rawGetAll(year, source){
-    const params = new URLSearchParams({action:'getAll', year:String(year)});
+    // « 2026,2027 » : plusieurs années en un seul appel (years=, AG-007).
+    // Une seule année garde le paramètre year, et donc le chemin serveur
+    // d'avant — y compris sur un GAS pas encore redéployé.
+    const params = new URLSearchParams({action:'getAll'});
+    params.set(String(year).indexOf(',')>=0 ? 'years' : 'year', String(year));
     if(source) params.set('source', source);
     const data = await window.gasAppel(`${GS_URL}?${params.toString()}`, 'getAll');
     // Maintenance : GAS répond {ok:false, maintenance:true, msg} aux appels

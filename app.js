@@ -405,7 +405,7 @@ function App(){
     if(!entry||!entry._id)return;
     setEntries(prev=>{
       const i=prev.findIndex(e=>e._id===entry._id);
-      if(i<0) return String(entry.date||'').slice(0,4)===annee?[entry,...prev]:prev;
+      if(i<0) return anneeIncluse(annee,entry.date)?[entry,...prev]:prev;
       const next=[...prev];next[i]={...next[i],...entry};return next;
     });
     setLastSync(new Date());
@@ -537,7 +537,7 @@ function App(){
         ),
         CE('button',{onClick:()=>setDarkMode(d=>!d),style:{background:'none',border:'none',cursor:'pointer',fontSize:18,padding:'2px 4px',lineHeight:1},'aria-label':'Mode sombre'},darkMode?'☀️':'🌙'),
         CE('select',{className:'topbar-year-sel',value:annee,onChange:e=>setAnnee(e.target.value),title:'Année'},
-          [String(new Date().getFullYear()-1),String(new Date().getFullYear()),String(new Date().getFullYear()+1)].map(y=>CE('option',{key:y,value:y},y))
+          optionsAnnees(new Date().getFullYear(),annee).map(o=>CE('option',{key:o.value,value:o.value},o.label))
         ),
         newEntries.length>0&&CE('button',{
           className:'topbar-notif-btn',
@@ -581,13 +581,13 @@ function App(){
         [1,2,3].map(i=>CE('div',{key:i,className:'skeleton skeleton-card'}))
       ),
       !loading&&!error&&CE('div',{className:'view-anim',key:view+'_'+(filtreConseiller||'all')},
-        view==='saisie'&&visibility.saisie&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{if(String(e.date||'').slice(0,4)===annee)setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
+        view==='saisie'&&visibility.saisie&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{if(anneeIncluse(annee,e.date))setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
         view==='historique'&&visibility.historique&&CE(VueHistorique,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
         view==='agenda'&&visibility.agenda&&CE(VueAgendaSemaine,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:filtreConseiller,accentColor}),
         view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
         view==='dashboard'&&visibility.dashboard&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
         view==='carte'&&visibility.carte&&CE(VueCarte,{entries,active:view==='carte'}),
-        view==='roadmap'&&visibility.roadmap&&CE(VueRoadmap,{entries,annee,conseillers:lists.conseillers}),
+        view==='roadmap'&&visibility.roadmap&&CE(VueRoadmap,{entries,annee:anneeReference(annee),conseillers:lists.conseillers}),
         view==='gestion_ordi'&&visibility.gestion_ordi&&CE(VueGestionOrdi,{entries,onEdit:handleEdit}),
         view==='bingo'&&visibility.bingo&&CE(VueBingo,{entries})
       )
