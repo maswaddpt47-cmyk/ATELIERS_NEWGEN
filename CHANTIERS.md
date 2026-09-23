@@ -62,12 +62,35 @@ Recommandations (tarifs à revérifier) :
 3. Supabase — Postgres+auth sans code serveur, mais société US, pause après
    7 jours d'inactivité en gratuit.
 
+**Précisé par l'utilisateur le 23/09/2026 (2e réponse)** :
+- **NextStep est le site de production** : l'équipe travaille dessus, et
+  c'est **son** classeur qu'il faudra copier dans la nouvelle base. NEWGEN est
+  le labo — ses données ne sont pas à migrer (déduit, à confirmer au moment
+  de l'import).
+- Donc **pas de dédoublonnage** : un seul jeu de données réel.
+- **Compte d'hébergement au nom de l'utilisateur**, faute de délégation pour
+  l'ouvrir au nom du CD47. ⚠️ RGPD : données d'agents sur compte personnel —
+  choisir un hébergeur français, permettant de **transférer le compte** à une
+  entité plus tard, et prévoir une note pour la DSI/DPO. Provisoire assumé.
+
+**Conséquences sur le plan** :
+- Étape 2 : NEWGEN bascule sur la nouvelle base avec des données de test (ou
+  une copie ponctuelle du classeur NextStep), pas son propre classeur.
+- Étape 3 devient **la bascule de production** : import du classeur NextStep
+  le jour J, gel des saisies pendant la copie, puis l'équipe passe sur le
+  nouveau code.
+- ⚠️ **Nouvelle question — l'URL de bascule.** L'équipe a NextStep en favori
+  **et installé en PWA** (portée liée au chemin `/ateliers-cd47_NextStep/`).
+  Rediriger vers l'URL NEWGEN casse les PWA installées (AGORA critère 6).
+  **Piste recommandée** : publier le code convergé **à l'URL NextStep**
+  (dépôt NextStep ou redirection de domaine), l'URL NEWGEN restant le labo.
+  Idem pour les clés `localStorage` (préférences des conseillers) à
+  conserver.
+
 **Questions ouvertes, à poser en reprise** :
-1. Les conseillers saisissent-ils **dans les deux sites** aujourd'hui ? Si
-   oui, dédoublonnage nécessaire à l'étape 3.
-2. Compte d'hébergement au nom de l'utilisateur ou du CD47 ? ⚠️ RGPD :
-   données d'agents sur compte perso → faire valider DSI/DPO.
-3. Choix de l'hébergeur.
+1. Choix de l'hébergeur (recommandé : Alwaysdata).
+2. URL de bascule : garder celle de NextStep (recommandé) ?
+3. Confirmer que les données NEWGEN ne sont que du test.
 
 **Dès décision** : ouvrir un bloc AGORA (critère 1, la décision ferme une
 porte) **avant** d'écrire la moindre ligne.
