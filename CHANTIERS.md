@@ -389,7 +389,7 @@ automatisés (qui ne peuvent pas les couvrir) :
 
 ---
 
-## ⚖️ AG-008 répondu le 23/09/2026 — mon mécanisme ne tenait pas, le gaspillage si
+## ⚖️ AG-008 tranché le 23/09/2026 — mon mécanisme ne tenait pas, le gaspillage si
 
 J'avais proposé de remettre en cause l'amendement 2 d'AG-007 (`keepAlive`
 prépare N+1 dès septembre) au motif qu'il **double** le travail d'une fonction
@@ -419,7 +419,10 @@ l'est plus que si un `getAll?years=` l'a demandée dans les 6 h (drapeau
 le drapeau disparaît et un poste paie une lecture froide — le comportement
 d'avant v11.39. Jamais pire.
 
-**Bloc laissé ouvert** : c'est l'utilisateur qui tranche, pas le contradicteur.
+**Bloc sorti d'`AGORA.md`** : il n'y avait plus rien à trancher — proposition
+réfutée, amendement implémenté, et ce qui reste est une **mesure**, pas une
+décision. Le verdict allant contre son auteur, le fermer n'était pas un
+conflit d'intérêts.
 
 **Mesure qui reste à faire, 30 secondes** : ouvrir un `keepAlive` du 23/09
 après-midi dans les Exécutions — il journalise déjà la durée de chaque
