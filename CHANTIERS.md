@@ -389,6 +389,30 @@ automatisés (qui ne peuvent pas les couvrir) :
 
 ---
 
+## ⚖️ AG-008 ouvert le 23/09/2026 — keepAlive alourdi le jour où on le sait fragile
+
+AG-004 et AG-007 ont été tranchés le **même jour** sans se citer. Le premier
+établit que `keepAlive` est arrêté par la plateforme à **8 min 00 s** (3 fois
+en 3 jours, mails « Summary of failures » des 19-21/09). Le second lui fait
+réchauffer **N+1 en plus** à partir de septembre — deux lectures complètes par
+passage froid au lieu d'une. Les deux décisions sont bonnes séparément ; leur
+superposition n'a été regardée par personne.
+
+**Déjà déployé** (v10.21.0 / v11.40). Rien à défaire dans l'immédiat : la
+question soumise est « surveiller suffit-il, ou faut-il alléger ? ».
+
+⚠️ **Piste écartée, ne pas la rouvrir** : « les grosses réponses se perdent
+davantage » (le non-vérifié n° 2 d'AG-007, jamais mesuré). **Les relevés du
+22/09 ne le soutiennent pas** — aucun gradient entre taille et pertes :
+`getAll` (~110 Ko) 42 % contre `getConfig` 67 % côté NextStep, et `logLogin`
+(minuscule) à 100 % côté NEWGEN. Le multi-années ne pose donc pas de problème
+de **livraison** ; la question porte uniquement sur le **coût d'exécution** de
+`keepAlive`.
+
+**À regarder en premier, ça coûte 30 secondes** : Exécutions Apps Script
+depuis le 23/09 au matin — les `keepAlive` ont-ils changé de durée depuis que
+N+1 est réchauffée, et y a-t-il de nouveaux échecs à 8 min ?
+
 ## Points à ne pas défaire
 
 - **`keepAlive` ne prend jamais le verrou de script** (AG-004, 22/09/2026).

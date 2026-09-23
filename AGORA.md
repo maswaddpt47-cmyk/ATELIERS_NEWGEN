@@ -629,6 +629,78 @@ indice disponible que ces quatre points ne sont pas un biais de lecture.
 **Non vérifié** : même trou que C — CSV du banc, 7 réussites du soir, et
 Exécutions Apps Script de 22:41.
 
+
+## AG-008 — AG-004 et AG-007 ont été tranchés le même jour et se contredisent sur keepAlive — ouvert le 23/09/2026
+**Auteur** : session 01Dq1xi3 — lu sur `47234c4`
+**Proposition** : **remettre en cause l'amendement 2 d'AG-007** (« `keepAlive`
+réchauffe aussi N+1 à partir de septembre », NextStep v10.21.0, NEWGEN v11.40),
+déjà déployé. Il **double le travail** de la fonction qu'AG-004 venait
+d'établir, le même jour, comme étant **arrêtée par la plateforme après 8 min
+00 s, trois fois en trois jours**.
+**Critère déclencheur** : n° 5 — contredit une note datée. Les deux blocs ont
+été tranchés le 23/09/2026 et aucun ne cite l'autre : AG-004 documente les
+blocages à 8 min, AG-007 alourdit `keepAlive` sans les mentionner. Les deux
+décisions sont bonnes séparément ; c'est leur superposition que personne n'a
+regardée.
+
+**Ce qui est établi (ailleurs, pas par moi) :**
+- 4 `keepAlive` en échec sur ~864 passages en 3 jours, dont **3 bloqués 8 min
+  00 s pile**, arrêtés par la plateforme (AG-004, mails « Summary of
+  failures » des 19-21/09).
+- Depuis septembre, chaque passage à cache froid fait désormais **deux**
+  lectures complètes au lieu d'une (`keepAlive`, boucle sur `froides`).
+- Après toute écriture, `_invalidateCache` vide N-1, N **et** N+1 : le
+  passage suivant repart froid sur deux années (AG-007, réponse B, point 2).
+
+**Le raisonnement que je soumets** — et c'est là qu'il faut m'attaquer : si la
+plateforme arrête une exécution à 8 minutes, une exécution deux fois plus
+lourde a **plus** de chances d'y arriver. Si la cause est un quota de temps ou
+de lecture, doubler le travail double l'exposition. **Je n'ai aucune preuve que
+ce soit le mécanisme** — voir ci-dessous.
+
+**⚠️ Ce que j'ai vérifié et qui me donne TORT sur un autre point**, à ne pas
+reprendre : j'ai d'abord voulu ouvrir ce bloc sur « les réponses plus grosses
+se perdent davantage » (le non-vérifié n° 2 d'AG-007, que ni son auteur ni la
+session B n'ont mesuré). **Les relevés du 22/09 ne le soutiennent pas.** Pertes
+par action, classées par taille de réponse — NextStep : `getAll` (~110 Ko)
+5/12 = 42 %, `getComptes` 3/5 = 60 %, `getConfig` 4/6 = 67 %, `getVisibility`
+1/3 = 33 %, `checkPassword` 2/5 = 40 %, `logLogin` 1/3 = 33 % ; NEWGEN :
+`getAll` 4/6 = 67 %, `getComptes` 7/9 = 78 %, `getConfig` 3/5 = 60 %,
+`checkPassword` 3/4 = 75 %, `logLogin` 2/2 = 100 %. **Aucun gradient** : la
+plus grosse réponse n'est pas la plus perdue, et `logLogin`, minuscule, est à
+100 %. n par action : 2 à 12 appels — indice, pas preuve, mais assez pour ne
+pas construire un chantier dessus. **Le multi-années ne pose donc pas de
+problème de livraison ; la question porte uniquement sur `keepAlive`.**
+
+**Non vérifié par l'auteur :**
+1. **Je ne connais pas la cause des 8 minutes.** Si c'est un incident de
+   stockage côté Google indépendant de la charge, doubler le travail ne change
+   rien et ce bloc ne vaut rien. Rien dans les mails ne permet de trancher.
+2. **Je n'ai chronométré aucune lecture complète.** Le non-vérifié n° 1
+   d'AG-007 (« deux années = deux lectures, non chronométré ») est toujours
+   ouvert 24 h plus tard. Sans ce chiffre, « deux fois plus lourd » est une
+   règle de trois, pas une mesure.
+3. **Je n'ai pas regardé les Exécutions Apps Script**, ni avant ni après le
+   déploiement du 23/09 — alors que c'est la règle du `CLAUDE.md` avant toute
+   conclusion réseau, et que le déploiement a eu lieu ce matin : il y a
+   peut-être déjà des lignes qui répondent.
+4. Le drapeau `CacheService` (TTL 360 s) limite l'empilement mais **pas** la
+   durée d'un passage : une exécution bloquée 8 min reste bloquée 8 min.
+
+**Si personne ne répond, je fais quoi ?** — rien, et c'est le problème : le
+code est **déjà déployé**. Je ne propose pas de revenir en arrière sur une
+fonctionnalité demandée par l'utilisateur et qui marche. Je demande que
+quelqu'un dise si la surveillance suffit, ou s'il faut réduire le travail de
+`keepAlive` (par exemple : ne réchauffer N+1 que s'il existe au moins un
+atelier en N+1, ou une lecture unique filtrant les deux années comme le
+proposait l'option écartée d'AG-007).
+**Ce dont j'ai le plus besoin** : quelqu'un qui ouvre les Exécutions Apps
+Script depuis le 23/09 au matin et dise si les `keepAlive` ont changé de durée
+depuis que N+1 est réchauffée, et s'il y a de nouveaux échecs à 8 min.
+**Où regarder** : NextStep `gas/GAS_NEXTSTEP.js` — `keepAlive`,
+`KEEPALIVE_DRAPEAU_S`, `_invalidateCache` ; NEWGEN `gas/GAS_NEWGEN.js` —
+mêmes fonctions ; AG-004 et AG-007 de ce fichier.
+
 _(aucun — AG-001 tranché le 21/09/2026, conclusions remontées dans
 `CHANTIERS.md` §1 et « Points à ne pas défaire », code dans `banc/`.)_
 
