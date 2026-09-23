@@ -201,21 +201,13 @@ bases non communes). **L'angle mort n° 1 d'AG-003 est entamé, pas refermé.**
 Détail complet et relevé brut : `CHANTIERS.md` d'ateliers-cd47_NextStep, même
 section.
 
-### Puis seulement : porter le doublage
+### ✅ Doublage porté sur NextStep le 23/09/2026
 
-**Ne pas porter tant que le déploiement du verrou n'est pas confirmé en
-ligne.** Ensuite : porter `gasLectureDoublee` sur NextStep, retirer
-`_gasQueue`, mettre à jour `reseau.test.js` dans le même commit.
-
-⚠️ **Le verrou n'accélère rien** — c'est de la sécurité des données. Le gain de
-latence attendu (26 s → 12 s en médiane) vient du portage, et reste une
-**inférence** : le banc a mesuré le backend NEWGEN, pas celui de NextStep. À
-confirmer sur le terrain après le portage.
-
-⚠️ **Incompatibilité à ne pas oublier au moment du portage** : on ne peut pas
-porter le doublage sans retirer la file. Un doublon mis en file derrière son
-propre jumeau ne partirait qu'après l'abandon de celui-ci — le mécanisme
-serait inopérant.
+`gasLectureDoublee` portée telle quelle, `_gasQueue` retirée, tests à jour
+(`reseau.test.js`, `e2e/appels.test.js`). Les deux projets ont désormais la
+même couche d'appel. Détail et mesure à suivre : `CHANTIERS.md` de NextStep.
+L'invariant « écritures séquentielles » est reformulé dans les deux
+`CLAUDE.md` : jamais doublées côté client, sérialisées côté serveur (verrou).
 
 ## 🐞 23/09/2026 — « Ordinateurs prêtés » vidé au premier enregistrement : non reproduit
 
