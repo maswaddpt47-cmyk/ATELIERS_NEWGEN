@@ -1,5 +1,8 @@
 
-// ── GAS Backend v11.37 ────────────────────────────────────────
+// ── GAS Backend v11.38 ────────────────────────────────────────
+// ⚠️ v11.38 PAS ENCORE DÉPLOYÉE (préparée le 23/09/2026). En ligne : v11.37.
+// v11.38 : surChangementFeuille (onChange) + installerTriggerChangement :
+//          onEdit ne voit pas la suppression/insertion de lignes à la main.
 // v11.37 : keepAlive ne prend plus le verrou de script (AG-004 tranché le
 //          22/09/2026). Anti-empilement par drapeau CacheService. Voir le
 //          commentaire au-dessus de keepAlive.
@@ -344,6 +347,35 @@ function onEdit(e) {
     if (e.range.getSheet().getName() !== SHEET_NAME) return;
     _invalidateCache();
   } catch (_) {}
+}
+// ── Modifications faites à la main dans le classeur (23/09/2026) ──────────
+// onEdit (simple trigger, rien à installer) couvre la saisie et le collage.
+// Il NE couvre PAS la suppression ou l'insertion de lignes : d'après la
+// documentation Apps Script, ces changements de structure ne déclenchent que
+// onChange, qui doit être installé une fois (installerTriggerChangement).
+// Constaté le 23/09/2026 : lignes en double supprimées à la main, l'appli les
+// affichait encore jusqu'à l'expiration du cache (10 min).
+// ⚠️ HYPOTHÈSE NON VÉRIFIÉE : ce script ouvre le classeur par openById, il
+// n'y est donc sans doute pas attaché — et un onEdit « simple » ne se
+// déclenche que dans un script attaché. Le déclencheur installé ci-dessous
+// fonctionne dans les deux cas et couvre aussi les saisies (EDIT) : c'est
+// lui qui fait foi, onEdit n'est plus qu'un doublon sans risque.
+// Pas de filtre par feuille ici : l'événement onChange ne dit pas laquelle
+// a changé, et vider le cache ne coûte qu'une relecture.
+function surChangementFeuille(e) {
+  try {
+    var t = e && e.changeType;
+    if (t === 'EDIT' || t === 'REMOVE_ROW' || t === 'INSERT_ROW' || t === 'OTHER') _invalidateCache();
+  } catch (_) {}
+}
+// À lancer UNE fois depuis l'éditeur (menu Exécuter). Relançable sans risque :
+// l'ancien déclencheur est retiré avant d'en créer un nouveau.
+function installerTriggerChangement() {
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'surChangementFeuille') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('surChangementFeuille').forSpreadsheet(_ss()).onChange().create();
+  Logger.log('Déclencheur « à la modification » installé : surChangementFeuille.');
 }
 function json(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
