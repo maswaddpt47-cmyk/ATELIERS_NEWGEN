@@ -1,6 +1,8 @@
 
-// ── GAS Backend v11.39 ────────────────────────────────────────
-// ⚠️ v11.39 PAS ENCORE DÉPLOYÉE (préparée le 23/09/2026). En ligne : v11.38.
+// ── GAS Backend v11.40 ────────────────────────────────────────
+// ⚠️ v11.40 PAS ENCORE DÉPLOYÉE (préparée le 23/09/2026). En ligne : v11.38.
+// v11.40 : keepAlive réchauffe aussi N+1 à partir de septembre (AG-007,
+//          amendement de la session B, point 2).
 // v11.39 : getAll accepte years=2026,2027 (sélecteur multi-années, AG-007),
 //          et verifierIds (l'appli vérifie un enregistrement dont la réponse
 //          s'est perdue avant d'annoncer un échec).
@@ -1152,16 +1154,24 @@ var KEEPALIVE_DRAPEAU_S = 360;
 function keepAlive() {
   var cache = null, pose = false;
   try {
-    var year = String(new Date().getFullYear());
-    if (_lireCacheGetAll(year)) { Logger.log('keepAlive : cache ' + year + ' déjà chaud.'); return; }
+    // v11.40 (AG-007, point 2) : à partir de septembre, l'année suivante est
+    // réchauffée aussi — un poste qui coche N + N+1 relisait sinon la feuille
+    // entière pour N+1 à chaque ouverture, pendant que l'agent attend.
+    var d = new Date(), an = d.getFullYear();
+    var annees = [String(an)];
+    if (d.getMonth() >= 8) annees.push(String(an + 1));
+    var froides = annees.filter(function(y){ return !_lireCacheGetAll(y); });
+    if (!froides.length) { Logger.log('keepAlive : cache ' + annees.join('+') + ' déjà chaud.'); return; }
     cache = CacheService.getScriptCache();
     if (cache.get(KEEPALIVE_DRAPEAU)) { Logger.log('keepAlive : passage précédent encore en cours, sauté.'); return; }
     cache.put(KEEPALIVE_DRAPEAU, '1', KEEPALIVE_DRAPEAU_S);
     pose = true;
-    var t0 = new Date().getTime();
-    var result = _actionGetAllFresh({year: year});
-    if (result.ok) _cacherGetAll(year, result);
-    Logger.log('keepAlive : cache ' + year + ' réchauffé en ' + (new Date().getTime() - t0) + ' ms');
+    froides.forEach(function(y){
+      var t0 = new Date().getTime();
+      var result = _actionGetAllFresh({year: y});
+      if (result.ok) _cacherGetAll(y, result);
+      Logger.log('keepAlive : cache ' + y + ' réchauffé en ' + (new Date().getTime() - t0) + ' ms');
+    });
   } catch (err) {
     Logger.log('keepAlive error: ' + err);
   } finally {
