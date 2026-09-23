@@ -93,7 +93,7 @@ Recommandations (tarifs à revérifier) :
    URL NEWGEN = labo.
 3. Données NEWGEN = test, **non migrées**. Seul le classeur NextStep l'est.
 
-**⚖️ AG-009 ouvert le 23/09/2026** (`AGORA.md`) — contradiction demandée
+**⚖️ AG-009 — session B a répondu le 23/09/2026 : amendé** (cap maintenu, 8 constats ; en attente de la décision de l'utilisateur). Ouvert le 23/09/2026 (`AGORA.md`) — contradiction demandée
 avant d'écrire le code. En attendant : seul le travail qui ne ferme rien
 (schéma SQL + API en local contre `contract.test.js`).
 
