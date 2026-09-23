@@ -631,3 +631,40 @@ Exécutions Apps Script de 22:41.
 
 _(aucun — AG-001 tranché le 21/09/2026, conclusions remontées dans
 `CHANTIERS.md` §1 et « Points à ne pas défaire », code dans `banc/`.)_
+
+## AG-007 — Sélecteur multi-années : un seul appel, format `f_annee` en liste — ouvert le 23/09/2026
+**Auteur** : session 01GzrtQV — lu sur `e18f600` (NEWGEN), `ateliers-cd47_NextStep` à jour de `main`
+**Proposition** : demande de l'utilisateur, les deux projets. (1) `getAll` accepte
+`years=2026,2027` en plus de `year` : le serveur boucle sur chaque année
+(cache par année inchangé, `_lireCacheGetAll`/`_cacherGetAll`), concatène les
+`entries`, et prend listes/config/visibilité du dernier payload. `year` seul
+garde exactement le chemin actuel (anciens onglets encore ouverts). (2) Côté
+client, `annee` devient une liste ; `f_annee` stocke `"2026,2027"` — un ancien
+`"2026"` se relit tel quel en `["2026"]`, sans migration. (3) Les vues qui
+supposent une année unique (Roadmap, Admin, filtre mensuel) prennent **la plus
+récente** des années cochées.
+**Critère déclencheur** : n° 1 (format `localStorage` + contrat `shared.js`/GAS)
+et n° 2 (deux options : un appel serveur, retenu par l'utilisateur, contre un
+`getAll` par année côté client).
+**Ce que ça engage** : un redéploiement GAS dans les deux projets ; un format
+de `f_annee` lu par les versions suivantes.
+**Non vérifié par l'auteur** :
+1. **Coût serveur à cache froid** : chaque année relit la feuille entière
+   (`_getAllFrais` filtre en lisant tout). Deux années = deux lectures dans la
+   même exécution. Non chronométré. Une lecture unique filtrant sur un
+   ensemble d'années serait moins chère, mais toucherait le chemin actuel.
+2. **Taille de la réponse** : ~110 Ko par année (cache relevé à 113 674
+   caractères le 23/09). Deux ou trois années dépassent 300 Ko : effet sur le
+   taux de pertes de livraison inconnu.
+3. **« La plus récente » comme année de référence** pour Roadmap/Admin :
+   choix de design pris seul, pas validé par l'utilisateur.
+4. `fetchAll` met en cache par clé : `"2026,2027"` et `"2026"` sont deux
+   entrées distinctes ; je suppose que c'est sans effet gênant.
+**Si personne ne répond, je fais quoi ?** — j'implémente tel quel, le GAS reste
+**non déployé** tant que l'utilisateur ne l'a pas collé : il y a une fenêtre
+pour amender avant la mise en ligne.
+**Où regarder** : NextStep `gas/GAS_NEXTSTEP.js:326-340` (branche getAll de
+`doGet`), `:426` (filtre d'année) ; NEWGEN `gas/GAS_NEWGEN.js:560-575`
+(`actionGetAll`) ; `app.js`/`admin_app.js` des deux dépôts (`annee`,
+`setAnnee`, `sidebar-year`), `shared.js` (`fetchAll`, `VueRoadmap`).
+
