@@ -178,8 +178,22 @@ ne renvoie que les noms actifs, ni rôle ni état).
   **Précision 23/09/2026** : schéma + import ne dépendent **pas** du
   résultat de l'étape 0 (elle ne décide que du retrait des reprises et du
   doublage). Ils attendent les en-têtes réels du classeur.
-- **23/09/2026 — banc lancé par l'utilisateur** (lieu à confirmer : bureau
-  ou domicile). Attendre son résumé.
+- **✅ Étape 0 — résultat de la nuit du 23 au 24/09/2026** (`banc/cibles.html`,
+  lieu **à confirmer** : bureau ou domicile) : 158 paires, 23:04 → 04:35 UTC.
+  GAS NextStep **15 perdus (9,5 %)**, médiane 2,7 s, 7 livrés > 12 s ;
+  Alwaysdata **0 perdu**, médiane 0,3 s, 0 > 12 s. Discordantes 15 / 0,
+  **McNemar χ² = 13,07** (> 3,84). Pertes GAS dans 5 heures sur 6.
+  **Lecture** : même poste, même instant — la perte vient de **GAS**, pas du
+  réseau du poste. La refonte la supprime. Au plafond client de 12 s, les 7
+  réponses tardives comptent aussi comme échecs : **22/158 = 13,9 %** côté
+  usager, la nuit, hors charge.
+  **Limites** : nuit seulement (pertes de jour relevées à 30-45 % les
+  22-23/09) ; une seule nuit ; si mesuré au domicile, le **filtrage du réseau
+  CD47 vers `alwaysdata.net` reste à vérifier au bureau** (une paire
+  suffit : Alwaysdata « livré ») avant toute bascule.
+  **Conséquence** : le retrait des reprises/doublage (ex-étape 4) redevient
+  possible **après** la bascule, pas avant — tant que NextStep reste sur GAS,
+  ils servent.
 - **✅ 23/09/2026 — schéma + import écrits** (`db9634d`), bloc **AG-010**
   ouvert (schéma typé, import strict). L'utilisateur a fourni l'export xlsx
   réel **dans la session** (non commité, supprimé des fichiers de travail) :
