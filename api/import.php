@@ -12,6 +12,20 @@
 // conservé : PHP efface le fichier temporaire à la fin de la requête.
 // Après la bascule, meta.import_verrouille = '1' interdit tout nouvel import.
 
+// Une erreur fatale de PHP (mémoire, extension absente…) donnait une page
+// blanche, sans rien à rapporter (constaté le 24/09/2026 sur Alwaysdata) :
+// on affiche au moins sa nature. Pas de donnée du fichier dans ce message.
+ini_set('display_errors', '0');
+register_shutdown_function(function () {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        echo '<p style="background:#fee2e2;padding:.6rem">Erreur PHP : '
+            . htmlspecialchars($e['message'] . ' (' . basename($e['file']) . ':' . $e['line'] . ')', ENT_QUOTES, 'UTF-8')
+            . ' — PHP ' . PHP_VERSION . '</p>';
+    }
+});
+@ini_set('memory_limit', '256M');
+
 require_once __DIR__ . '/lib/base.php';
 require_once __DIR__ . '/lib/import.php';
 
@@ -23,7 +37,9 @@ header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; 
 
 function h(string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
 
-$cle = (string) (api_config()['cle_import'] ?? '');
+// Espaces et retour à la ligne de bord ignorés, des deux côtés : un secret
+// collé avec un saut de ligne final ne doit pas rendre la clé inutilisable.
+$cle = trim((string) (api_config()['cle_import'] ?? ''));
 $https = ($_SERVER['HTTPS'] ?? '') === 'on' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
 
 $message = null;   // [classe, texte]
@@ -35,7 +51,7 @@ if (strlen($cle) < 20) {
     $message = ['erreur', 'Import refusé hors HTTPS : ouvrez cette page en https://.'];
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fichier = $_FILES['fichier'] ?? null;
-    if (!hash_equals($cle, (string) ($_POST['cle'] ?? ''))) {
+    if (!hash_equals($cle, trim((string) ($_POST['cle'] ?? '')))) {
         sleep(2); // ralentit les essais au hasard
         $message = ['erreur', "Clé d'import incorrecte."];
     } elseif (!$fichier || $fichier['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($fichier['tmp_name'])) {
