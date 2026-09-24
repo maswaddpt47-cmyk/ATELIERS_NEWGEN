@@ -282,6 +282,30 @@ function verifier(nom, condition, detail) {
     await p.ctx.close();
   }
 
+  // 8. Déconnexion automatique après 30 min d'inactivité (24/09/2026),
+  //    sauf pendant la saisie d'un atelier (rien n'est gardé en brouillon).
+  {
+    const { ctx, page } = await preparer(browser);
+    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil:'networkidle', timeout:20000 });
+    await connecter(page);
+    const vieillir = () => page.evaluate(() => {
+      localStorage.setItem('newgen:idx_derniere_activite', String(Date.now() - 31 * 60 * 1000));
+      window.dispatchEvent(new Event('focus'));
+    });
+    const pwdVisible = () => page.locator('input[type="password"]').first().isVisible({ timeout:1500 }).catch(() => false);
+    await page.locator('nav.bottom-nav-v2').getByText('Nouveau', { exact:true }).click();
+    await page.waitForTimeout(500);
+    // Le titre de l'onglet suit la vue (app.js : « Nouveau — … » en saisie).
+    const enSaisie = (await page.title()).startsWith('Nouveau');
+    await vieillir(); await page.waitForTimeout(400);
+    verifier('index — 30 min d\'inactivité pendant la saisie : pas déconnecté', enSaisie && !(await pwdVisible()), enSaisie ? '' : 'formulaire de saisie non ouvert');
+    await page.locator('nav.bottom-nav-v2').getByText('Historique', { exact:true }).click();
+    await page.waitForTimeout(400);
+    await vieillir(); await page.waitForTimeout(400);
+    verifier('index — 30 min d\'inactivité hors saisie : retour à la connexion', await pwdVisible());
+    await ctx.close();
+  }
+
   // 7. Mot de passe oublié (AG-013) : lien sur l'écran de connexion, puis
   //    formulaire ouvert par le lien reçu par mail (?reinit=…).
   {

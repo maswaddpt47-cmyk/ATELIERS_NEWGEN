@@ -112,6 +112,13 @@ const ecranConnexion = page => page.locator('input[type="password"]').first().is
     await p.page.evaluate(() => window.fetchAll(new Date().getFullYear(), { force:true }).catch(() => {}));
     await p.page.waitForTimeout(800);
     verifier('index : jeton refusé → écran de connexion', await ecranConnexion(p.page));
+    await p.page.fill('input[type="password"]', 'test');
+    await p.page.getByRole('button', { name:/Connexion/ }).click();
+    await p.page.waitForTimeout(1200);
+    p.jetonRefuse = false;
+    await p.page.evaluate(() => { localStorage.setItem('labo-nextstep:idx_derniere_activite', String(Date.now() - 31 * 60 * 1000)); window.dispatchEvent(new Event('focus')); });
+    await p.page.waitForTimeout(500);
+    verifier('index : 30 min d\'inactivité → écran de connexion', await ecranConnexion(p.page));
     verifier('index : aucune erreur JS', p.erreurs.length === 0, p.erreurs.join(' | '));
     verifier('index : aucun appel au GAS de production', p.gas.length === 0, p.gas.join(', '));
     await p.ctx.close();

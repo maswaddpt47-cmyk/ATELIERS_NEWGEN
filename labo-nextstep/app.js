@@ -293,6 +293,40 @@ function App(){
     window.addEventListener('ateliers:auth-expiree',f);
     return()=>window.removeEventListener('ateliers:auth-expiree',f);
   },[]);
+  // ── Déconnexion automatique après 30 min d'inactivité (24/09/2026) ──────
+  // Même règle que l'Admin, pour les postes partagés (médiathèques, lieux
+  // d'accueil) : une session oubliée restait ouverte jusqu'à 6 h. Clé propre
+  // à Index : l'activité sur l'Admin ne prolonge pas Index. EXCEPTION
+  // volontaire : jamais pendant la saisie d'un atelier (aucun brouillon
+  // n'est gardé, un conseiller qui anime son atelier perdrait sa saisie) —
+  // le compteur reprend en sortant du formulaire.
+  const vueCourante=React.useRef(view);
+  vueCourante.current=view;
+  React.useEffect(()=>{
+    if(!authed) return;
+    const CLE=lsKey('idx_derniere_activite'), DELAI=30*60*1000;
+    const toucher=()=>{ try{ localStorage.setItem(CLE,String(Date.now())); }catch(_){} };
+    const expirer=()=>{
+      if(vueCourante.current==='saisie') return false;
+      let dernier=0; try{ dernier=parseInt(localStorage.getItem(CLE)||'0',10); }catch(_){}
+      if(!(dernier>0&&Date.now()-dernier>DELAI)) return false;
+      window.authToken.clear();
+      setAuthed(false); setFiltreConseiller(null); setShowPicker(false); setView('accueil');
+      showToast('⏱️ Déconnecté après 30 min d’inactivité.',false);
+      return true;
+    };
+    toucher();
+    const minuteur=setInterval(expirer,60*1000);
+    const auRetour=()=>{ if(!expirer()) toucher(); };
+    const activite=()=>{ if(!expirer()) toucher(); };
+    window.addEventListener('focus',auRetour);
+    ['keydown','mousedown','touchstart'].forEach(t=>window.addEventListener(t,activite,{passive:true}));
+    return()=>{
+      clearInterval(minuteur);
+      window.removeEventListener('focus',auRetour);
+      ['keydown','mousedown','touchstart'].forEach(t=>window.removeEventListener(t,activite));
+    };
+  },[authed]);
   function handleLogout(){
     if(!window.confirm('Se déconnecter ?'))return;
     window.authToken.clear();
