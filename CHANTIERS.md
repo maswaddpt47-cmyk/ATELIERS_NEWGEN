@@ -362,6 +362,15 @@ ne renvoie que les noms actifs, ni rôle ni état).
   NEWGEN/NextStep n'a été dressée : ne rien affirmer sans la faire. **D'ici la bascule** : les vrais ateliers se saisissent dans
   NextStep (classeur Google) ; NEWGEN `?backend=php` = base d'essai figée
   au 23/09, invisible pour l'équipe.
+- **Confirmé par l'utilisateur le 24/09/2026 : la bascule garde l'adresse
+  NextStep** (« c'est encore mieux ») — pas de page de redirection.
+  L'annonce aux conseillers passe par un message sur l'écran de connexion
+  (`AnnonceNouvelleVersion`, labo NextStep, masqué après « Compris ») :
+  même adresse, reconnexion avec le mot de passe habituel (vérifié : les
+  empreintes du classeur sont reprises), lien « mot de passe oublié ».
+  **Rien publié sur la NextStep officielle** (consigne : « ne la publie pas
+  encore »). Jour J à fixer avec l'utilisateur : export frais → import →
+  GAS NextStep en maintenance → publication.
 - **✅ 24/09/2026 — labo NextStep en ligne** (demande utilisateur) :
   `labo-nextstep/` = copie du front NextStep `a95d2a6` branchée sur l'API,
   pour comparer les deux interfaces sur la même base d'essai. Adresse :
