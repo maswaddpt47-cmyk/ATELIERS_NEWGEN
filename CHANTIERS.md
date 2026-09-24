@@ -277,6 +277,14 @@ ne renvoie que les noms actifs, ni rôle ni état).
   de Claude ne joint pas Alwaysdata. ⚠️ Les écritures faites en mode API
   vont dans la base d'essai, **pas** dans le classeur : ne pas y saisir de
   vrais ateliers.
+- **✅ 24/09/2026 — mesure de JOUR (mi-journée)**, PC pro, VPN CD47 : 65
+  paires, 12:23 → 14:42 (Paris), 0 écartée. GAS **16 perdus (24,6 %)**, 9
+  livrés > 12 s, médiane 2,7 s ; Alwaysdata **0 perdu**, 0 > 12 s, médiane
+  **0,3 s**. Discordantes 16 / 0, **McNemar χ² = 14,06**. Au plafond client
+  de 12 s : **25/65 = 38 %** d'échecs côté usager avec GAS, 0 % avec
+  Alwaysdata. Confirme la nuit du 23-24/09 (9,5 %) et les relevés de jour
+  des 22-23/09 (30-45 %) : la perte vient de GAS, pas du poste ni du réseau.
+  Mesure en cours jusqu'au soir (résumé final attendu).
 - **24/09/2026 12:23 (Paris) — une paire du banc** relevée par l'utilisateur
   depuis son **PC professionnel, VPN et pare-feu du CD47 actifs** (pas le
   réseau filaire du bureau) : GAS livré en 5,4 s, Alwaysdata **livré** en
