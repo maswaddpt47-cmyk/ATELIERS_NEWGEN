@@ -31,11 +31,14 @@ $c['Comptes'][] = ['Ancien Collegue', hash('sha256', 'x'), 'user', 'NON', 0, nul
 $c['Config'][] = ['visibility', '{}'];
 $c['Config'][] = ['list_statuts', "Planifié\nRéalisé"];
 $c['Config'][] = ['maintenance_msg', 'Retour à 14 h'];
+$c['Config'][] = ['emails', json_encode(['Nouveau Venu' => 'nouveau.venu@example.org'])];
 $a = analyser($c);
 if ($a['erreurs']) { echo "Classeur de test invalide :\n" . implode("\n", $a['erreurs']) . "\n"; exit(1); }
 import_charger($db, $a, 'test');
 $db->exec("UPDATE comptes SET role = 'user' WHERE conseiller = 'Nouveau Venu'");
 
+$dossierMails = sys_get_temp_dir() . '/mails_' . getmypid();
+@mkdir($dossierMails);
 $cfg = tempnam(sys_get_temp_dir(), 'cfg');
 file_put_contents($cfg, '<?php return ' . var_export(['db_hote' => $hote, 'db_nom' => 'ateliers_test_api', 'db_utilisateur' => $util, 'db_mot_de_passe' => $mdp], true) . ';');
 
@@ -43,7 +46,7 @@ file_put_contents($cfg, '<?php return ' . var_export(['db_hote' => $hote, 'db_no
 $port = 8700 + random_int(0, 99);
 $srv = proc_open([PHP_BINARY, '-S', "127.0.0.1:$port", '-t', __DIR__ . '/../api'],
     [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $tubes, null,
-    ['ATELIERS_API_CONFIG' => $cfg] + getenv());
+    ['ATELIERS_API_CONFIG' => $cfg, 'ATELIERS_MAIL_TEST_DIR' => $dossierMails] + getenv());
 register_shutdown_function(function () use ($srv, $cfg, $db) {
     proc_terminate($srv);
     @unlink($cfg);
@@ -217,6 +220,37 @@ appel(['action' => 'logAccesIndex'], $T + ['conseiller' => 'Conseiller Test', 'u
 $l = $db->query("SELECT conseiller, ref FROM journal WHERE action = 'accesIndex' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
 verifier($l === ['conseiller' => 'Nouveau Venu', 'ref' => 'Conseiller Test'], 'logAccesIndex : personne du jeton, nom choisi en ref (AG-011)');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'login'")->fetchColumn() >= 4, 'connexions réussies journalisées par checkPassword');
+
+echo "API — mot de passe oublié\n";
+$mails = function () use ($dossierMails) { $f = glob("$dossierMails/*.txt"); sort($f); return array_map('file_get_contents', $f); };
+$RETOUR = 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/index.html?backend=php';
+verifier(appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => 'https://pirate.example/'])['ok'] === false && $mails() === [], 'lien vers un autre site : refusé, aucun mail');
+$r1 = appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => $RETOUR]);
+$r2 = appel(['action' => 'demanderReinit'], ['conseiller' => 'Conseiller Test', 'retour' => $RETOUR]);   // pas d'adresse
+$r3 = appel(['action' => 'demanderReinit'], ['conseiller' => 'Personne Inconnue', 'retour' => $RETOUR]);
+verifier($r1 === $r2 && $r2 === $r3 && $r1['ok'] === true, 'réponse identique (adresse, sans adresse, inconnu) : rien ne se devine');
+$m = $mails();
+verifier(count($m) === 1 && str_contains($m[0], 'A: nouveau.venu@example.org'), 'un seul mail, à la bonne adresse');
+preg_match('/[?&]reinit=([0-9a-f]{64})/', $m[0] ?? '', $mm);
+$jetonReinit = $mm[1] ?? '';
+verifier($jetonReinit !== '' && str_contains($m[0], $RETOUR . '&reinit='), 'lien vers la page de départ, ?backend=php conservé');
+verifier((int) $db->query("SELECT COUNT(*) FROM reinitialisations WHERE jeton_hash = '$jetonReinit'")->fetchColumn() === 0, 'jeton jamais stocké en clair');
+$avant = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'Un-Autre-Mdp-99', 'source' => 'index.html']);
+verifier(appel(['action' => 'reinitMotDePasse'], ['jeton' => $jetonReinit, 'password' => 'court'])['error'] === API_MDP_POLITIQUE, 'mot de passe trop faible refusé, lien pas consommé');
+verifier(appel(['action' => 'reinitMotDePasse', 'jeton' => $jetonReinit, 'password' => 'Nouveau-Mdp-2026!'])['ok'] === false, 'jeton et mot de passe dans l\'URL : ignorés');
+$r = appel(['action' => 'reinitMotDePasse'], ['jeton' => $jetonReinit, 'password' => 'Nouveau-Mdp-2026!']);
+verifier(($r['ok'] ?? false) === true && $r['conseiller'] === 'Nouveau Venu', 'réinitialisation réussie');
+verifier(appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'Nouveau-Mdp-2026!', 'source' => 'index.html'])['ok'] === true, 'connexion avec le nouveau mot de passe');
+verifier(str_contains(appel(['action' => 'reinitMotDePasse'], ['jeton' => $jetonReinit, 'password' => 'Encore-Un-Mdp-3!'])['error'] ?? '', 'invalide ou expiré'), 'lien à usage unique');
+appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => $RETOUR]);
+appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => $RETOUR]);
+appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => $RETOUR]);
+verifier(count($mails()) === 3, '3 demandes par heure au plus (la 4e n\'envoie rien)');
+$db->exec("UPDATE reinitialisations SET cree = NOW() - INTERVAL 2 HOUR, expire = NOW() - INTERVAL 1 MINUTE");
+appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => $RETOUR]);
+$vieux = $db->query("SELECT COUNT(*) FROM reinitialisations WHERE expire < NOW()")->fetchColumn();
+verifier(count($mails()) === 4 && (int) $vieux >= 1, 'après une heure, nouvelle demande possible');
+array_map('unlink', glob("$dossierMails/*.txt")); @rmdir($dossierMails);
 
 $db->exec("UPDATE sessions SET expire = NOW() - INTERVAL 1 SECOND");
 verifier(appel(['action' => 'getAll'], ['token' => $admin['token']])['auth'] ?? false, 'jeton expiré : refusé');

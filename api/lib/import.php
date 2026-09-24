@@ -436,7 +436,7 @@ function import_charger(PDO $db, array $analyse, string $empreinteFichier): void
 
     $db->beginTransaction();
     try {
-        foreach (['ateliers_materiel', 'ateliers', 'config', 'comptes', 'journal', 'sessions', 'tentatives'] as $t) {
+        foreach (['ateliers_materiel', 'ateliers', 'config', 'comptes', 'journal', 'sessions', 'tentatives', 'reinitialisations'] as $t) {
             $db->exec("DELETE FROM $t");
         }
         $d = $analyse['donnees'];
