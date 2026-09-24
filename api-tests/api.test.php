@@ -182,6 +182,7 @@ verifier(appel(['action' => 'delete'], $T + ['_id' => 'lot_1']) === ['ok' => tru
 verifier(appel(['action' => 'delete'], $T + ['_id' => 'lot_1'])['error'] === 'Entrée introuvable', 'suppression rejouée : introuvable');
 verifier((int) $db->query("SELECT COUNT(*) FROM ateliers_materiel WHERE atelier_id = 'lot_1'")->fetchColumn() === 0, 'matériel supprimé avec l\'atelier');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'saveEntry' AND ref = 'entry_1'")->fetchColumn() === 2, 'écritures journalisées');
+verifier($db->query("SELECT conseiller FROM journal WHERE action = 'delete' ORDER BY id DESC LIMIT 1")->fetchColumn() === 'Nouveau Venu', 'suppression journalisée au nom de la personne connectée');
 
 echo "API — administration\n";
 $A = ['token' => $admin['token']];
@@ -202,7 +203,11 @@ verifier(appel(['action' => 'selfSetPassword'], ['token' => $nr['token'], 'passw
 verifier(appel(['action' => 'selfSetPassword'], ['token' => $nr['token'], 'password' => 'Un-Mot-De-Passe-7'])['ok'] === true, 'selfSetPassword');
 $nr = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => 'Un-Mot-De-Passe-7']);
 verifier($nr['ok'] === true && !isset($nr['doit_changer']), 'nouveau mot de passe : plus de changement exigé');
-verifier(appel(['action' => 'setPassword'], $A + ['conseiller' => 'Nouvelle Recrue', 'password' => 'Autre-Mot-De-Passe-8'])['ok'] === true, 'setPassword admin');
+verifier(appel(['action' => 'setPassword'], $A + ['conseiller' => 'Nouvelle Recrue', 'password' => 'Autre-Mot-De-Passe-8'])['ok'] === false, 'setPassword sans mot de passe actuel : refusé');
+verifier(appel(['action' => 'setPassword'], $A + ['conseiller' => 'Nouvelle Recrue', 'currentPwd' => 'Pas-Le-Bon-1', 'password' => 'Autre-Mot-De-Passe-8'])['error'] === 'Mot de passe actuel incorrect', 'setPassword : mot de passe actuel faux refusé');
+verifier(appel(['action' => 'setPassword', 'currentPwd' => 'Un-Mot-De-Passe-7'], $A + ['conseiller' => 'Nouvelle Recrue', 'password' => 'Autre-Mot-De-Passe-8'])['ok'] === false, 'setPassword : mot de passe actuel dans l\'URL ignoré');
+verifier(appel(['action' => 'setPassword'], $A + ['conseiller' => 'Nouvelle Recrue', 'currentPwd' => 'Un-Mot-De-Passe-7', 'password' => 'Autre-Mot-De-Passe-8'])['ok'] === true, 'setPassword avec mot de passe actuel');
+$db->exec("DELETE FROM tentatives");
 appel(['action' => 'saveCompte'], $A + ['conseiller' => 'Nouvelle Recrue', 'actif' => 'NON']);
 verifier((appel(['action' => 'getAll'], ['token' => $nr['token']])['ok'] ?? false) === true, 'interrupteur désactivé : la connexion Index continue');
 appel(['action' => 'saveCompte'], $A + ['conseiller' => 'Nouvelle Recrue', 'role' => 'superviseur']);
@@ -212,6 +217,8 @@ verifier(str_contains(appel(['action' => 'getLogs'], $A)['error'] ?? '', 'admini
 verifier(!isset(appel(['action' => 'getComptes'], $A)['comptes'][0]['role']), 'admin à l\'interrupteur désactivé : liste réduite');
 $db->exec("UPDATE comptes SET actif = 1 WHERE conseiller = 'Conseiller Test'");
 verifier(appel(['action' => 'saveCompte'], $A + ['conseiller' => 'Nouvelle Recrue', 'role' => 'roi'])['error'] === 'Rôle inconnu', 'saveCompte : rôle contrôlé');
+$j = $db->query("SELECT conseiller, ref, role FROM journal WHERE action = 'saveCompte' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+verifier($j === ['conseiller' => 'Conseiller Test', 'ref' => 'Nouvelle Recrue', 'role' => 'admin'], 'action admin journalisée (auteur, cible) : ' . json_encode($j, JSON_UNESCAPED_UNICODE));
 $r = appel(['action' => 'getLogs'], $A + ['n' => 3]);
 verifier(count($r['logs']) === 3 && str_ends_with($r['logs'][0]['timestamp'], 'Z') && is_bool($r['logs'][0]['success']), 'getLogs : n dernières lignes, format GAS');
 verifier(appel(['action' => 'logLogin'], ['conseiller' => 'Faux']) === ['ok' => true] && (int) $db->query("SELECT COUNT(*) FROM journal WHERE conseiller = 'Faux'")->fetchColumn() === 0, 'logLogin : ne journalise plus rien');

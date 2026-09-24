@@ -51,8 +51,9 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
     $p = $post + $get;
     // Secrets : corps POST uniquement.
     $jeton = (string) ($post['token'] ?? '');
-    unset($p['token'], $p['password'], $p['jeton']);
+    unset($p['token'], $p['password'], $p['jeton'], $p['currentPwd']);
     $p['password'] = (string) ($post['password'] ?? '');
+    $p['currentPwd'] = (string) ($post['currentPwd'] ?? '');
     $p['jeton'] = (string) ($post['jeton'] ?? '');   // lien « mot de passe oublié »
 
     switch ($action) {
@@ -81,13 +82,26 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
         return ['ok' => false, 'error' => 'Non autorisé : réservé aux administrateurs'];
     }
 
+    $r = api_action_protegee($db, $action, $p, $session);
+    // Traçabilité : toute action d'administration réussie est journalisée au
+    // nom de la personne CONNECTÉE (audit du 24/09/2026), avec sa cible.
+    if (($r['ok'] ?? false) === true && (in_array($action, API_ACTIONS_ADMIN, true) || $action === 'selfSetPassword') && $action !== 'getLogs') {
+        $cible = (string) ($p['conseiller'] ?? $p['key'] ?? '');
+        if ($action === 'setConfig' && in_array($cible, ['maintenance', 'stock_ordinateurs'], true)) $cible .= '=' . (string) ($p['value'] ?? '');
+        api_journal($db, $action, $session['conseiller'], $cible, $session['role'], 1, 0, '', 'admin');
+    }
+    return $r;
+}
+
+function api_action_protegee(PDO $db, string $action, array $p, array $session): array
+{
     switch ($action) {
         case 'getAll':          return action_get_all($db, $p, $session);
         case 'getConfig':       return ['ok' => true, 'config' => api_config_base($db)];
         case 'getVisibility':   return ['ok' => true, 'visibility' => api_json(api_config_base($db)['visibility'] ?? '', (object) [])];
-        case 'saveEntry':       return action_save_entry($db, $p);
-        case 'saveMany':        return action_save_many($db, $p);
-        case 'delete':          return action_delete($db, $p);
+        case 'saveEntry':       return action_save_entry($db, $p, $session['conseiller']);
+        case 'saveMany':        return action_save_many($db, $p, $session['conseiller']);
+        case 'delete':          return action_delete($db, $p, $session['conseiller']);
         case 'verifierIds':     return action_verifier_ids($db, $p);
         case 'selfSetPassword': return action_self_set_password($db, $p, $session);
         case 'logAccesIndex':   return action_log_acces_index($db, $p, $session);
@@ -99,7 +113,7 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
         case 'saveEmails':      return action_set_json($db, 'emails', $p['emails'] ?? null);
         case 'saveCompte':      return action_save_compte($db, $p);
         case 'resetPassword':   return action_reset_password($db, $p);
-        case 'setPassword':     return action_set_password($db, $p);
+        case 'setPassword':     return action_set_password($db, $p, $session);
         case 'getLogs':         return action_get_logs($db, $p);
     }
     return ['ok' => false, 'error' => 'action inconnue: ' . $action];
@@ -113,13 +127,8 @@ function action_check_password(PDO $db, array $p): array
     $mdp = trim((string) ($p['password'] ?? ''));   // le GAS retirait aussi les espaces
     if ($nom === '' || $mdp === '') return ['ok' => false, 'error' => 'Paramètres manquants'];
 
-    $t = $db->prepare('SELECT nb, bloque_jusqua FROM tentatives WHERE conseiller = ?');
-    $t->execute([$nom]);
-    $tent = $t->fetch(PDO::FETCH_ASSOC) ?: ['nb' => 0, 'bloque_jusqua' => null];
-    if ($tent['bloque_jusqua'] !== null && strtotime($tent['bloque_jusqua']) > time()) {
-        $min = (int) ceil((strtotime($tent['bloque_jusqua']) - time()) / 60);
-        return ['ok' => false, 'error' => "Trop de tentatives. Réessayez dans $min min."];
-    }
+    $bloque = api_blocage($db, $nom);
+    if ($bloque !== null) return ['ok' => false, 'error' => $bloque];
 
     $c = $db->prepare('SELECT conseiller, hash, role, actif, doit_changer FROM comptes WHERE conseiller = ?');
     $c->execute([$nom]);
@@ -136,11 +145,7 @@ function action_check_password(PDO $db, array $p): array
     $empreinte = hash('sha256', $mdp);
     $ok = $compte['hash'] !== null && password_verify($empreinte, $compte['hash']);
     if (!$ok) {
-        $nb = (int) $tent['nb'] + 1;
-        $bloque = null;
-        if ($nb >= API_ECHECS_MAX) { $bloque = date('Y-m-d H:i:s', time() + API_BLOCAGE_S); $nb = 0; }
-        $db->prepare('REPLACE INTO tentatives (conseiller, nb, bloque_jusqua) VALUES (?, ?, ?)')->execute([$nom, $nb, $bloque]);
-        api_journal($db, 'loginFail', $nom, '', '', 0, $nb, (string) ($p['userAgent'] ?? ''), (string) ($p['source'] ?? ''));
+        api_echec_mdp($db, $nom, (string) ($p['userAgent'] ?? ''), (string) ($p['source'] ?? ''));
         return ['ok' => false, 'error' => 'Mot de passe incorrect'];
     }
 
@@ -159,6 +164,30 @@ function action_check_password(PDO $db, array $p): array
     $r = ['ok' => true, 'role' => $compte['role'], 'token' => $jeton];
     if ((int) $compte['doit_changer'] === 1) $r['doit_changer'] = true;   // ajout, ignoré par le client actuel
     return $r;
+}
+
+// Blocage après API_ECHECS_MAX échecs : message d'erreur, ou null si libre.
+function api_blocage(PDO $db, string $nom): ?string
+{
+    $t = $db->prepare('SELECT bloque_jusqua FROM tentatives WHERE conseiller = ?');
+    $t->execute([$nom]);
+    $b = $t->fetchColumn();
+    if (!$b || strtotime($b) <= time()) return null;
+    $min = (int) ceil((strtotime($b) - time()) / 60);
+    return "Trop de tentatives. Réessayez dans $min min.";
+}
+
+// Compte un échec de mot de passe (connexion, ou « mot de passe actuel »
+// faux au changement) : même compteur, même blocage.
+function api_echec_mdp(PDO $db, string $nom, string $ua, string $source): void
+{
+    $t = $db->prepare('SELECT nb FROM tentatives WHERE conseiller = ?');
+    $t->execute([$nom]);
+    $nb = (int) $t->fetchColumn() + 1;
+    $bloque = null;
+    if ($nb >= API_ECHECS_MAX) { $bloque = date('Y-m-d H:i:s', time() + API_BLOCAGE_S); $nb = 0; }
+    $db->prepare('REPLACE INTO tentatives (conseiller, nb, bloque_jusqua) VALUES (?, ?, ?)')->execute([$nom, $nb, $bloque]);
+    api_journal($db, 'loginFail', $nom, '', '', 0, $nb, $ua, $source);
 }
 
 // Accès Admin : rôle admin/superviseur ET interrupteur « login » activé,
