@@ -289,6 +289,12 @@ ne renvoie que les noms actifs, ni rôle ni état).
   installée) ; (2) **plus de PWA** dans la version convergée — l'accès nomade
   se fait en ligne, par le navigateur. Retrait soumis en **AG-012**
   (critères 5 et 6) ; rien n'est fait tant que l'utilisateur n'a pas dit quand.
+  **Fait établi le 24/09/2026 (utilisateur)** : **seul l'utilisateur** a
+  installé les applis (NEWGEN et NextStep) ; l'équipe ne les a pas
+  installées. Le risque « postes de l'équipe bloqués en mode installé »
+  soulevé par la réponse B d'AG-012 ne concerne donc que ses propres
+  appareils : le bandeau devient facultatif, une désinstallation manuelle
+  suffit.
 - **✅ 24/09/2026 — premier essai réel par l'utilisateur** en mode
   `?backend=php` : « ça fonctionne, il réagit d'une vitesse
   extraordinaire » (connexion + affichage, test rapide). Trajet navigateur →
