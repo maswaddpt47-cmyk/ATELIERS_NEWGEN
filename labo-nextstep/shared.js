@@ -478,7 +478,21 @@ function FadeItem({children,delay=0,style={}}){
 // déploiement de production. index.html/admin.html ne définissent jamais
 // cette variable : GS_URL vaut donc toujours l'URL de production pour eux,
 // comportement strictement inchangé.
-const GS_URL = window.GS_URL_OVERRIDE || 'https://script.google.com/macros/s/AKfycbx_YutREW-ucdGKXiHB7Y2hgUMHBJqAF0NprMrXB9p4_dEHPxrWk7nsXxCLDcJBDDHPEw/exec';
+// ── LABO NextStep (ATELIERS_NEWGEN/labo-nextstep, 24/09/2026) ──────────────
+// Copie de l'interface NextStep branchée sur l'API Alwaysdata, pour que
+// l'équipe compare les deux interfaces sur la même base d'essai. Elle ne doit
+// JAMAIS parler au GAS de production : GS_URL pointe volontairement vers une
+// adresse morte, pour qu'un appel direct oublié échoue au lieu d'écrire dans
+// le classeur. Tout passe par requeteServeur (POST vers l'API, jeton dans le
+// corps) ; une réponse {auth:true} déclenche « ateliers:auth-expiree ».
+const GS_URL = 'about:blank#labo-sans-gas';
+const API_PHP_URL = 'https://ateliers-numeriques.alwaysdata.net/api/index.php';
+window.BACKEND_PHP = true;
+window.requeteServeur = function(params){
+  const token = window.authToken && window.authToken.get();
+  if(token && !params.has('token')) params.set('token', token);
+  return {url:`${API_PHP_URL}?action=${encodeURIComponent(params.get('action')||'')}`, corps:params.toString()};
+};
 // ── Politique d'appel GAS : un seul appel, jamais de retry sur simple lenteur ─
 // Fait mesuré (Network + onglet Logs, en production) : /exec met 12 à 16 s à
 // répondre en temps d'exécution réel — « exec?action=getConfig… 15.87 s »,
@@ -609,14 +623,16 @@ window.logGas = function(action, attempt, ms, issue, file){
 // l'appel (doublage : dès que l'un des deux répond, l'autre n'a plus lieu
 // d'être). ctrl.inutile marqué avant l'annulation évite de journaliser en
 // rouge un appel qu'on a sciemment arrêté.
-window.gasUnAppel = async function(url, action, numero, plafond, ctrlFourni){
+window.gasUnAppel = async function(url, action, numero, plafond, ctrlFourni, corps){
   const limite = plafond || GAS_TIMEOUT_LECTURE_MS;
   const t0 = Date.now();
   const ctrl = ctrlFourni || new AbortController();
   const chien = setTimeout(()=>ctrl.abort(), limite);
   let res;
   try{
-    res = await fetch(url, {signal:ctrl.signal});
+    res = await fetch(url, corps
+      ? {method:'POST', body:corps, headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ctrl.signal}
+      : {signal:ctrl.signal});
   }catch(err){
     if(ctrl.inutile){
       // Le jumeau a répondu : ce n'est PAS un échec. Journalisé sous un motif
@@ -655,6 +671,9 @@ window.gasUnAppel = async function(url, action, numero, plafond, ctrlFourni){
   // resumeLogsTexte le compte a part.
   const refus = data && data.ok === false ? 'serveur : ' + (data.error || 'refus') : undefined;
   logGas(action, numero, Date.now()-t0, refus);
+  if(data && data.auth === true){
+    try{ window.dispatchEvent(new Event('ateliers:auth-expiree')); }catch(_){}
+  }
   return data;
 };
 
@@ -668,7 +687,7 @@ const GAS_HEDGE_MS = 7000;
 // premier. Le premier qui répond gagne, l'autre est annulé. On ne rejette que
 // si TOUS les appels partis ont échoué (sinon on abandonnerait sur un 404
 // rapide pendant qu'un doublon est encore en route).
-function gasLectureDoublee(url, action, numero, plafond){
+function gasLectureDoublee(url, action, numero, plafond, corps){
   return new Promise((resolve, reject)=>{
     let termine=false, partis=1, echecs=0, derniere=null;
     let minuteurDoublon=null;
@@ -691,7 +710,7 @@ function gasLectureDoublee(url, action, numero, plafond){
     const lancer=(num)=>{
       const ctrl=new AbortController();
       ctrls.push(ctrl);
-      gasUnAppel(url, action, num, plafond, ctrl).then(d=>gagner(d, ctrl), perdre);
+      gasUnAppel(url, action, num, plafond, ctrl, corps).then(d=>gagner(d, ctrl), perdre);
     };
     lancer(numero);
     // Le doublon porte le numéro de son jumeau suivi de « b » : c'est ce que
@@ -714,7 +733,7 @@ const GAS_SANS_DOUBLON = new Set(['checkPassword']);
 // ── Politique de reprise, partagée par apiFetch et fetchAll ────────────────
 // apiFetch et rawGetAll recopiaient la même boucle, avec des plafonds qui
 // divergeaient à chaque retouche. Une seule implémentation, deux régimes.
-window.gasAppel = async function(url, action){
+window.gasAppel = async function(url, action, corps){
   const ecriture   = GAS_ACTIONS_ECRITURE.has(action);
   const plafond    = gasPlafond(action, ecriture);
   const pause      = ecriture ? GAS_PAUSE_ECRITURE_MS   : GAS_PAUSE_LECTURE_MS;
@@ -728,8 +747,8 @@ window.gasAppel = async function(url, action){
   for(let n=1; n<=tentatives; n++){
     try{
       return doubler
-        ? await gasLectureDoublee(url, action, n, plafond)
-        : await gasUnAppel(url, action, n, plafond);
+        ? await gasLectureDoublee(url, action, n, plafond, corps)
+        : await gasUnAppel(url, action, n, plafond, undefined, corps);
     }catch(err){
       derniere = err;
       // Erreur définitive (403, réponse non-JSON, déploiement cassé, erreur
@@ -1027,7 +1046,7 @@ function showToast(msg,ok=true){
 }
 
 // ── Auth admin : token généré par checkPassword côté GAS, stocké en
-// sessionStorage. Avant ce correctif, aucune vérification n'existait côté
+// LABO_SS. Avant ce correctif, aucune vérification n'existait côté
 // serveur sur les actions admin (saveConfig, resetPassword, getLogs...) —
 // seulement à l'écran dans admin_app.js, donc contournable en appelant
 // l'URL /exec directement avec les bons paramètres. apiFetch envoie ce
@@ -1046,20 +1065,19 @@ function pwdPolicyOk(pwd){
 }
 
 window.authToken = {
-  get()  { return sessionStorage.getItem('gs_token') || null; },
-  set(t) { sessionStorage.setItem('gs_token', t); },
-  clear(){ sessionStorage.removeItem('gs_token'); sessionStorage.removeItem('gs_role'); },
-  getRole()  { return sessionStorage.getItem('gs_role') || 'user'; },
-  setRole(r) { sessionStorage.setItem('gs_role', r); }
+  get()  { return LABO_SS.getItem('gs_token') || null; },
+  set(t) { LABO_SS.setItem('gs_token', t); },
+  clear(){ LABO_SS.removeItem('gs_token'); LABO_SS.removeItem('gs_role'); },
+  getRole()  { return LABO_SS.getItem('gs_role') || 'user'; },
+  setRole(r) { LABO_SS.setItem('gs_role', r); }
 };
 window.onLoginSuccess = function(conseiller, res){
   if(res && res.token){
     window.authToken.set(res.token);
     window.authToken.setRole(res.role || 'user');
-    // logLogin en fire-and-forget : le succès n'a plus besoin d'attendre
-    // l'écriture du log de connexion pour répondre (voir GAS actionCheckPassword,
-    // qui ne journalise plus que les échecs sur son chemin critique).
-    setTimeout(function(){
+    // Labo : checkPassword journalise déjà la connexion côté API, logLogin
+    // n'y fait plus rien — l'appel n'est plus envoyé.
+    if(false) setTimeout(function(){
       window.apiFetch && window.apiFetch('logLogin',{
         conseiller: conseiller,
         role: res.role || 'user',
@@ -1102,8 +1120,8 @@ window.onLogout = function(){
         params.set(k, typeof v==='object' ? JSON.stringify(v) : v);
       });
     }
-    const url = `${GS_URL}?${params.toString()}`;
-    return gasAppel(url, action);
+    const {url, corps} = window.requeteServeur(params);
+    return gasAppel(url, action, corps);
   };
 })();
 
@@ -1132,7 +1150,8 @@ window.onLogout = function(){
     const params = new URLSearchParams({action:'getAll'});
     params.set(String(year).indexOf(',')>=0 ? 'years' : 'year', String(year));
     if(source) params.set('source', source);
-    const data = await gasAppel(`${GS_URL}?${params.toString()}`, 'getAll');
+    const req = window.requeteServeur(params);
+    const data = await gasAppel(req.url, 'getAll', req.corps);
     // Le mode maintenance n'est pas une erreur, c'est un état que le serveur
     // rapporte : il sort de _getAllFrais avec {ok:false, maintenance:true,
     // msg}. Le renvoyer tel quel évite un appel getConfig dédié côté client
@@ -1395,7 +1414,7 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails,materielsMasques,on
     // Sauvegarder les matériels masqués (action générique setConfig, purge le cache)
     try{
       const arr=[...masquesDraft];
-      const res=await apiFetch('setConfig',{key:'materiels_masques',value:JSON.stringify(arr)});
+      const res=await apiFetch('setConfig',{key:'materiels_caches',value:JSON.stringify(arr)});
       if(res&&res.ok){if(onSaveMasques)onSaveMasques(arr);}
       else showToast('⚠️ Matériels masqués : erreur GAS',false);
     }catch(_){showToast('⚠️ Matériels masqués : hors-ligne',false);}
@@ -3740,7 +3759,7 @@ function VueAdmin({entries,onRefresh,addLog,conseillersList,onSaveColors}){
       const BATCH=5;let done=0;
       for(let i=0;i<entries_raw.length;i+=BATCH){
         if(cancelRef.current){showToast(`⛔ Annulé — ${done} lignes importées`,false);addLog(`Import CSV annulé à ${done}/${entries_raw.length}`,'info');return;}
-        const batch=entries_raw.slice(i,i+BATCH);const params=new URLSearchParams({action:'saveMany',entries:JSON.stringify(batch)});const res=await Promise.race([fetch(`${GS_URL}?${params.toString()}`),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),45000))]);const data=await res.json();if(!data.ok)throw new Error(data.error);done+=batch.length;setImportProgress(Math.round(done/entries_raw.length*100));setImportMsg(`${done}/${entries_raw.length} lignes importées…`);}
+        const batch=entries_raw.slice(i,i+BATCH);const data=await apiFetch('saveMany',{entries:batch});if(!data.ok)throw new Error(data.error);done+=batch.length;setImportProgress(Math.round(done/entries_raw.length*100));setImportMsg(`${done}/${entries_raw.length} lignes importées…`);}
       addLog(`Import CSV : ${entries_raw.length} ateliers`,'ok');showToast(`✅ ${entries_raw.length} ateliers importés`);onRefresh();
     }catch(err){showToast('❌ '+err.message,false);addLog('Erreur import CSV : '+err.message,'err');}
     finally{setImporting(false);setImportProgress(0);setImportMsg('');cancelRef.current=false;}
@@ -3775,7 +3794,7 @@ function VueAdmin({entries,onRefresh,addLog,conseillersList,onSaveColors}){
       const BATCH=5;let done=0;
       for(let i=0;i<entries_raw.length;i+=BATCH){
         if(cancelRef.current){showToast(`⛔ Annulé — ${done} lignes importées`,false);addLog(`Import XLSX annulé à ${done}/${entries_raw.length}`,'info');return;}
-        const batch=entries_raw.slice(i,i+BATCH);const params=new URLSearchParams({action:'saveMany',entries:JSON.stringify(batch)});const res=await Promise.race([fetch(`${GS_URL}?${params.toString()}`),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),45000))]);const data=await res.json();if(!data.ok)throw new Error(data.error);done+=batch.length;setImportProgress(Math.round(done/entries_raw.length*100));}
+        const batch=entries_raw.slice(i,i+BATCH);const data=await apiFetch('saveMany',{entries:batch});if(!data.ok)throw new Error(data.error);done+=batch.length;setImportProgress(Math.round(done/entries_raw.length*100));}
       addLog(`Import XLSX : ${entries_raw.length} ateliers`,'ok');showToast(`✅ ${entries_raw.length} ateliers importés`);onRefresh();
     }catch(err){showToast('❌ '+err.message,false);addLog('Erreur import XLSX : '+err.message,'err');}
     finally{setImporting(false);setImportProgress(0);setImportMsg('');cancelRef.current=false;}

@@ -314,7 +314,7 @@ if (typeof window !== 'undefined') window.suppressionAboutie = suppressionAbouti
 // latence inattribuable. Mêmes collisions sur le conseiller connecté, le
 // thème, l'année filtrée, le minuteur d'inactivité et le cache d'ateliers.
 // Toute clé de stockage passe désormais par lsKey().
-const APP_NS = 'nextstep';
+const APP_NS = 'labo-nextstep';   // labo : jamais les clés de la vraie NextStep (même origine)
 function lsKey(k) { return APP_NS + ':' + k; }
 
 // Migration unique depuis les clés d'avant le cloisonnement, pour ne pas
@@ -370,3 +370,13 @@ if (typeof module !== 'undefined') {
   lsKey, migrerLocalStorage, LS_A_MIGRER,
   };
 }
+
+
+// Labo : sessionStorage (jeton de connexion gs_token, gs_role, gs_conseiller)
+// préfixé comme localStorage — la vraie NextStep, ouverte dans le même onglet,
+// ne doit ni recevoir un jeton de l'API ni prêter le sien au labo.
+window.LABO_SS = {
+  getItem(k){ try{ return sessionStorage.getItem(APP_NS + ':' + k); }catch(_){ return null; } },
+  setItem(k, v){ try{ sessionStorage.setItem(APP_NS + ':' + k, v); }catch(_){} },
+  removeItem(k){ try{ sessionStorage.removeItem(APP_NS + ':' + k); }catch(_){} },
+};

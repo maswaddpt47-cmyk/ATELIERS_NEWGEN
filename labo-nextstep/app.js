@@ -107,7 +107,8 @@ function VueLoginIndex({conseillers,onSuccess}){
       const res=await apiFetch('checkPassword',{conseiller,password:pwd,userAgent:navigator.userAgent,source:'index.html'});
       if(res.ok){
         setFailCount(0);setLockUntil(0);
-        if(pwd.trim()===defaultPwdIndex(conseiller)){
+        // doit_changer : mot de passe provisoire de l'API (resetPassword).
+        if(res.doit_changer||pwd.trim()===defaultPwdIndex(conseiller)){
           setPendingRes(res);
           setMustChangePwd(true);
         }else{
@@ -254,11 +255,12 @@ function App(){
   // seul (Journal client, 18/09/2026) — contre des HTTP 404 à 15-34 s quand
   // il partait dans la rafale getComptes + getConfig + getAll.
   React.useEffect(()=>{
+    // Labo : getComptes public rend les noms (sans état) et la maintenance.
     apiFetch('getComptes').then(res=>{
       if(!res.ok||!res.comptes) return;
-      setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));
-      const actifs=res.comptes.filter(c=>c.actif!=='NON').map(c=>c.conseiller).filter(Boolean);
-      if(actifs.length>0) setLoginConseillers(actifs);
+      const noms=res.comptes.map(c=>c.conseiller).filter(Boolean);
+      if(noms.length>0) setLoginConseillers(noms);
+      if(res.maintenance) setMaintenance({msg:res.maintenance_msg||''});
     }).catch(()=>{});
   },[]);
   const[sidebarPinned,setSidebarPinned] = React.useState(()=>localStorage.getItem(lsKey('sidebar_pinned'))==='1');
@@ -270,7 +272,7 @@ function App(){
   // "Qui êtes-vous ?" (VueAccueilStatic) au lieu de rester identifié.
   React.useEffect(()=>{
     if(authed&&!filtreConseiller){
-      const stored=sessionStorage.getItem('gs_conseiller');
+      const stored=LABO_SS.getItem('gs_conseiller');
       if(stored) handleChoixConseiller(stored);
     }
   },[]);
@@ -282,10 +284,16 @@ function App(){
   function setAnnee(v){ localStorage.setItem(lsKey('f_annee'),v); setAnneeState(v); }
   function resetConseiller(){ setFiltreConseiller(null); }
   function togglePin(){ setSidebarPinned(p=>{ const n=!p; localStorage.setItem(lsKey('sidebar_pinned'),n?'1':'0'); return n; }); }
+  // Jeton refusé par l'API (expiré après 6 h) : retour à la connexion.
+  React.useEffect(()=>{
+    const f=()=>{ window.authToken.clear(); LABO_SS.removeItem('gs_conseiller'); setAuthed(false); setFiltreConseiller(null); setShowPicker(false); setView('accueil'); setError(null); };
+    window.addEventListener('ateliers:auth-expiree',f);
+    return()=>window.removeEventListener('ateliers:auth-expiree',f);
+  },[]);
   function handleLogout(){
     if(!window.confirm('Se déconnecter ?'))return;
     window.authToken.clear();
-    sessionStorage.removeItem('gs_conseiller');
+    LABO_SS.removeItem('gs_conseiller');
     setAuthed(false);
     setFiltreConseiller(null);
     setShowPicker(false);
@@ -346,7 +354,9 @@ function App(){
       }
       if(data.visibility)setVisibility(v=>({...v,...data.visibility}));
       if(data.conseiller_colors)applyColors(data.conseiller_colors);
-      if(Array.isArray(data.materiels_masques))setMaterielsMasques(data.materiels_masques);
+      // L'API rend la forme NEWGEN (materielsCaches), pas materiels_masques.
+      if(Array.isArray(data.materielsCaches))setMaterielsMasques(data.materielsCaches);
+      if(Array.isArray(data.conseillers_inactifs))setInactifsSet(new Set(data.conseillers_inactifs));
       if(data.stockOrdinateurs)STOCK_ORDINATEURS=parseInt(data.stockOrdinateurs)||STOCK_ORDINATEURS;
       setLastSync(new Date());
       setSeenIds(prev=>{
@@ -499,7 +509,7 @@ function App(){
     setShowPicker(false);
     setView(visibility.historique?'historique':visibility.calendrier?'calendrier':visibility.saisie?'saisie':'dashboard');
     if(nom){
-      sessionStorage.setItem('gs_conseiller', nom);
+      LABO_SS.setItem('gs_conseiller', nom);
     }
   }
   function handleEdit(id){setEditingId(id);setPrefillData(null);setView('saisie');}

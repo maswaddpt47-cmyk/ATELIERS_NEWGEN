@@ -48,9 +48,8 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
   // l'authentification et les données plutôt qu'entre la maintenance et les
   // données. loadData (après connexion) réutilise ce résultat via fetchAll,
   // qui dédoublonne : aucun getAll supplémentaire n'est déclenché.
-  React.useEffect(()=>{
-    fetchAll(new Date().getFullYear(),{source:'admin'}).catch(()=>{});
-  },[]);
+  // Labo : getAll exige un jeton côté API (AG-011) — plus de préchargement
+  // avant connexion, il ne ferait qu'un appel refusé.
 
   // Tick du countdown
   React.useEffect(()=>{
@@ -93,6 +92,9 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
         setFailCount(0);setLockUntil(0);
         window.onLoginSuccess&&window.onLoginSuccess(conseiller,res);
         touchSession();onLogin(res.role,conseiller);
+      }else if(/Admin non autorisé/.test(res.error||'')){
+        // Interrupteur « accès Admin » coupé : le mot de passe était bon.
+        setErr('⛔ '+res.error+'.');
       }else{
         const nf=failCount+1;
         setFailCount(nf);
@@ -193,8 +195,9 @@ function App(){
     apiFetch('getComptes').catch(()=>null).then(res=>{
       const comptes=res?.ok&&res.comptes?res.comptes:[];
       if(comptes.length===0)return; // on garde CONSEILLERS_DEFAULT
+      // Labo : l'API filtre déjà (source=admin → interrupteurs activés seuls)
+      // et ne rend ni rôle ni état sans connexion.
       const eligibles=comptes
-        .filter(c=>(c.role==='admin'||c.role==='superviseur')&&c.actif!=='NON')
         .map(c=>c.conseiller)
         .filter(Boolean);
       setLoginConseillers(eligibles.length>0?eligibles:CONSEILLERS_DEFAULT);
@@ -293,6 +296,12 @@ const LOGS_KEY = lsKey('adm_logs');
     clearSession();
     setAuth(false);
   }
+  // Jeton refusé par l'API (expiré, rôle changé) : retour à la connexion.
+  React.useEffect(()=>{
+    const f=()=>{ window.authToken.clear(); clearSession(); setAuth(false); setError(null); };
+    window.addEventListener('ateliers:auth-expiree',f);
+    return()=>window.removeEventListener('ateliers:auth-expiree',f);
+  },[]);
   React.useEffect(()=>{
     if(!auth) return;
     touchSession();
@@ -339,7 +348,8 @@ const LOGS_KEY = lsKey('adm_logs');
       }
       if(data.conseiller_colors){applyColors(data.conseiller_colors);}
       if(data.emails){setEmails(data.emails);addLog('Emails chargés','ok');}
-      if(Array.isArray(data.materiels_masques))setMaterielsMasques(data.materiels_masques);
+      // L'API rend la forme NEWGEN (materielsCaches), pas materiels_masques.
+      if(Array.isArray(data.materielsCaches))setMaterielsMasques(data.materielsCaches);
       if(data.stockOrdinateurs){STOCK_ORDINATEURS=parseInt(data.stockOrdinateurs)||STOCK_ORDINATEURS;}
       addLog(`${incoming.length} ateliers chargés (${annee})`,'ok');
       setLastSync(new Date());
@@ -1192,12 +1202,9 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
       for(let i=0;i<rows_raw.length;i+=BATCH){
         if(cancelRef.current){annule=true;break;}
         const batch=rows_raw.slice(i,i+BATCH);
-        const params=new URLSearchParams({action:'saveMany',source:'admin',entries:JSON.stringify(batch)});
-        const _importToken=window.authToken.get();
-        if(_importToken)params.set('token',_importToken);
         try{
-          const res=await Promise.race([fetch(`${GS_URL}?${params.toString()}`),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),45000))]);
-          const data=await res.json();
+          // Labo : par l'API (apiFetch joint le jeton), jamais le GAS.
+          const data=await apiFetch('saveMany',{entries:batch});
           if(!data.ok)throw new Error(data.error||'Erreur batch');
           done+=batch.length;
         }catch(be){batchErrors.push({from:i+1,to:Math.min(i+BATCH,rows_raw.length),msg:be.message});}
