@@ -297,6 +297,10 @@ ne renvoie que les noms actifs, ni rôle ni état).
   Si la passerelle du Département bloque : demander à la DSI d'autoriser
   l'expéditeur. Étape 2 (parcours complet) seulement si les mails arrivent.
   Préférer les adresses pro dans Listes → Conseillers (RGPD).
+  **Résultat 24/09/2026 15:05** : mail de test **reçu en boîte de réception**
+  sur l'adresse pro `@lotetgaronne.fr` (pas en indésirables). Défaut
+  d'encodage du nom d'expéditeur/objet (« numÃ©riques ») corrigé. Gmail non
+  testé. → Étape 2 (parcours complet) lancée.
 - **✅ RGPD — journal conservé 12 mois** (décision utilisateur 24/09/2026),
   purgé à chaque connexion réussie (`API_JOURNAL_MOIS`, `api/lib/api.php`).
   Point « durée de conservation » d'AG-010 réglé.
