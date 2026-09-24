@@ -10,6 +10,7 @@
 // champ, ce test le réclame à l'API.
 
 require __DIR__ . '/outils.php';
+require_once __DIR__ . '/../api/lib/ecriture.php';
 
 $mysql = getenv('ATELIERS_TEST_MYSQL');
 if (!$mysql) { echo "(API non testée : ATELIERS_TEST_MYSQL non défini)\n"; exit(0); }
@@ -135,9 +136,75 @@ $r = appel(['action' => 'getConfig'], ['token' => $user['token']]);
 verifier($r['ok'] === true && $r['config']['maintenance'] === 'true' && !isset($r['config']['admin_password']), 'getConfig avec jeton');
 verifier(appel(['action' => 'getConfig'])['ok'] === false, 'getConfig sans jeton : refusé');
 verifier(appel(['action' => 'getVisibility'], ['token' => $user['token']]) === ['ok' => true, 'visibility' => []], 'getVisibility');
+echo "API — écritures d'ateliers\n";
+$db->exec("UPDATE config SET valeur = 'false' WHERE cle = 'maintenance'");
+$T = ['token' => $user['token']];
+$nb = fn() => (int) $db->query('SELECT COUNT(*) FROM ateliers')->fetchColumn();
+$lire = function (string $id) use ($user) {
+    $r = appel(['action' => 'getAll', 'years' => '2026,2027'], ['token' => $user['token']]);
+    return array_column($r['entries'], null, '_id')[$id] ?? null;
+};
+verifier((appel(['action' => 'saveEntry'], ['entry' => '{}'])['auth'] ?? false) === true, 'saveEntry sans jeton : refusé');
+$avant = $nb();
+$nouveau = ['statut' => 'Planifié', 'date' => '2026-10-05', 'horaire' => '9:30', 'ampm' => 'AM', 'thematique' => 'Mails',
+            'commune' => 'Nérac', 'conseiller' => 'Conseiller Test', 'inscrits' => 5, 'presents' => '', 'materiel' => ['Vidéoprojecteur', 'Classe mobile']];
+$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($nouveau)]);
+verifier($r['ok'] === true && str_starts_with($r['_id'], 'entry_') && $nb() === $avant + 1, 'création sans _id : identifiant attribué');
+$e = $lire($r['_id']);
+verifier($e['horaire'] === '09:30' && $e['presents'] === '' && $e['inscrits'] === 5 && $e['_n'] === 3, 'relu : heure normalisée, vide gardé, numéro suivant');
+verifier($e['materiel'] === ['Classe mobile', 'Videoprojecteur'], 'matériel rapproché du nom de colonne (« Vidéoprojecteur » → Videoprojecteur)');
+
+$maj = ['_id' => 'entry_1', '_n' => '', 'statut' => 'Réalisé', 'date' => '2026-09-24', 'horaire' => '13:30', 'presents' => '5', 'conseiller' => 'Conseiller Test', 'materiel' => 'Ordinateur|Tablette'];
+$avant = $nb();
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj)]);
+$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj)]);   // rejeu
+$e = $lire('entry_1');
+verifier($r === ['ok' => true, '_id' => 'entry_1'] && $nb() === $avant, 'mise à jour rejouée : pas de doublon');
+verifier($e['statut'] === 'Réalisé' && $e['presents'] === 5 && $e['_n'] === 2 && $e['materiel'] === ['Ordinateur', 'Tablette'], 'mise à jour : champs, numéro conservé, matériel remplacé');
+$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'entry_x', 'date' => '24/09/2026'])]);
+verifier($r['ok'] === false && str_contains($r['error'], 'date') && $lire('entry_x') === null, 'date invalide : refusée, rien écrit');
+
+$r = appel(['action' => 'saveMany'], $T + ['entries' => json_encode([['_id' => 'lot_1', 'date' => '2026-11-02'], ['_id' => 'lot_2', 'date' => 'demain']])]);
+verifier($r['ok'] === false && str_contains($r['error'], '"idx":1') && $lire('lot_1') !== null, 'saveMany : erreur rapportée par position, entrée valide écrite');
+verifier(appel(['action' => 'saveMany'], $T + ['entries' => '[{"_id":"lot_3","date":"2026-11-03"}]']) === ['ok' => true, 'count' => 1], 'saveMany valide');
+verifier(appel(['action' => 'verifierIds'], $T + ['ids' => 'lot_1,absent,lot_3']) === ['ok' => true, 'presents' => ['lot_1', 'lot_3']], 'verifierIds');
+verifier(appel(['action' => 'delete'], $T + ['_id' => 'lot_1']) === ['ok' => true] && $lire('lot_1') === null, 'suppression');
+verifier(appel(['action' => 'delete'], $T + ['_id' => 'lot_1'])['error'] === 'Entrée introuvable', 'suppression rejouée : introuvable');
+verifier((int) $db->query("SELECT COUNT(*) FROM ateliers_materiel WHERE atelier_id = 'lot_1'")->fetchColumn() === 0, 'matériel supprimé avec l\'atelier');
+verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'saveEntry' AND ref = 'entry_1'")->fetchColumn() === 2, 'écritures journalisées');
+
+echo "API — administration\n";
+$A = ['token' => $admin['token']];
+verifier(str_contains(appel(['action' => 'setConfig'], $T + ['key' => 'stock_ordinateurs', 'value' => '20'])['error'] ?? '', 'administrateurs'), 'action admin refusée à un conseiller');
+appel(['action' => 'setConfig'], $A + ['key' => 'stock_ordinateurs', 'value' => '20']);
+appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'carte' => false])]);
+verifier(appel(['action' => 'getAll'], $A)['stockOrdinateurs'] === 20, 'setConfig relu par getAll');
+verifier(appel(['action' => 'getVisibility'], $A)['visibility'] === ['saisie' => true, 'carte' => false], 'saveVisibility relu');
+appel(['action' => 'saveLists'], $A + ['lists' => json_encode(['statuts' => ['Planifié'], 'conseillers' => ['Conseiller Test', 'Nouvelle Recrue'], 'publics' => [], 'materiels' => ['Ordinateur']])]);
+verifier(appel(['action' => 'getAll'], $A)['lists']['conseillers'] === ['Conseiller Test', 'Nouvelle Recrue'], 'saveLists relu');
+verifier($db->query("SELECT hash IS NULL FROM comptes WHERE conseiller = 'Nouvelle Recrue'")->fetchColumn() == 1, 'compte créé par saveLists, sans mot de passe');
+verifier(appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => 'cd47nouvelle'])['ok'] === false, 'plus de mot de passe cd47+prénom');
+$r = appel(['action' => 'resetPassword'], $A + ['conseiller' => 'Nouvelle Recrue']);
+verifier($r['ok'] === true && strlen($r['newPassword']) === 12, 'resetPassword : mot de passe provisoire aléatoire');
+$nr = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => $r['newPassword']]);
+verifier($nr['ok'] === true && ($nr['doit_changer'] ?? false) === true, 'provisoire : connexion avec changement exigé');
+verifier(appel(['action' => 'selfSetPassword'], ['token' => $nr['token'], 'password' => 'court'])['error'] === API_MDP_POLITIQUE, 'selfSetPassword : politique appliquée');
+verifier(appel(['action' => 'selfSetPassword'], ['token' => $nr['token'], 'password' => 'Un-Mot-De-Passe-7'])['ok'] === true, 'selfSetPassword');
+$nr = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => 'Un-Mot-De-Passe-7']);
+verifier($nr['ok'] === true && !isset($nr['doit_changer']), 'nouveau mot de passe : plus de changement exigé');
+verifier(appel(['action' => 'setPassword'], $A + ['conseiller' => 'Nouvelle Recrue', 'password' => 'Autre-Mot-De-Passe-8'])['ok'] === true, 'setPassword admin');
+appel(['action' => 'saveCompte'], $A + ['conseiller' => 'Nouvelle Recrue', 'actif' => 'NON']);
+verifier((appel(['action' => 'getAll'], ['token' => $nr['token']])['auth'] ?? false) === true, 'compte désactivé : sa connexion tombe aussitôt');
+verifier(appel(['action' => 'saveCompte'], $A + ['conseiller' => 'Nouvelle Recrue', 'role' => 'roi'])['error'] === 'Rôle inconnu', 'saveCompte : rôle contrôlé');
+$r = appel(['action' => 'getLogs'], $A + ['n' => 3]);
+verifier(count($r['logs']) === 3 && str_ends_with($r['logs'][0]['timestamp'], 'Z') && is_bool($r['logs'][0]['success']), 'getLogs : n dernières lignes, format GAS');
+verifier(appel(['action' => 'logLogin'], ['conseiller' => 'Faux']) === ['ok' => true] && (int) $db->query("SELECT COUNT(*) FROM journal WHERE conseiller = 'Faux'")->fetchColumn() === 0, 'logLogin : ne journalise plus rien');
+verifier(appel(['action' => 'logAccesIndex'], ['conseiller' => 'Faux'])['ok'] === false, 'logAccesIndex sans jeton : refusé');
+verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'login'")->fetchColumn() >= 4, 'connexions réussies journalisées par checkPassword');
+
 $db->exec("UPDATE sessions SET expire = NOW() - INTERVAL 1 SECOND");
 verifier(appel(['action' => 'getAll'], ['token' => $admin['token']])['auth'] ?? false, 'jeton expiré : refusé');
-verifier(appel(['action' => 'saveEntry'])['error'] === 'action inconnue: saveEntry', 'écritures pas encore ouvertes');
+verifier(appel(['action' => 'inventee'], $A)['error'] === 'action inconnue: inventee', 'action inconnue');
 
 echo $echecs ? "\n$echecs échec(s)\n" : "\nTous les tests passent.\n";
 exit($echecs ? 1 : 0);
