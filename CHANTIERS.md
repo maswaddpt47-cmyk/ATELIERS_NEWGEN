@@ -179,7 +179,7 @@ ne renvoie que les noms actifs, ni rôle ni état).
   résultat de l'étape 0 (elle ne décide que du retrait des reprises et du
   doublage). Ils attendent les en-têtes réels du classeur.
 - **✅ Étape 0 — résultat de la nuit du 23 au 24/09/2026** (`banc/cibles.html`,
-  lieu **à confirmer** : bureau ou domicile) : 158 paires, 23:04 → 04:35 UTC.
+  mesuré **depuis le domicile**, confirmé par l'utilisateur le 24/09/2026) : 158 paires, 23:04 → 04:35 UTC.
   GAS NextStep **15 perdus (9,5 %)**, médiane 2,7 s, 7 livrés > 12 s ;
   Alwaysdata **0 perdu**, médiane 0,3 s, 0 > 12 s. Discordantes 15 / 0,
   **McNemar χ² = 13,07** (> 3,84). Pertes GAS dans 5 heures sur 6.
@@ -188,9 +188,9 @@ ne renvoie que les noms actifs, ni rôle ni état).
   réponses tardives comptent aussi comme échecs : **22/158 = 13,9 %** côté
   usager, la nuit, hors charge.
   **Limites** : nuit seulement (pertes de jour relevées à 30-45 % les
-  22-23/09) ; une seule nuit ; si mesuré au domicile, le **filtrage du réseau
-  CD47 vers `alwaysdata.net` reste à vérifier au bureau** (une paire
-  suffit : Alwaysdata « livré ») avant toute bascule.
+  22-23/09) ; une seule nuit ; **à faire au bureau** : vérifier que le
+  réseau CD47 laisse passer `alwaysdata.net` (une paire suffit : Alwaysdata
+  « livré »), **bloquant pour la bascule** — sinon sujet DSI.
   **Conséquence** : le retrait des reprises/doublage (ex-étape 4) redevient
   possible **après** la bascule, pas avant — tant que NextStep reste sur GAS,
   ils servent.
