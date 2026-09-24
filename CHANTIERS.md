@@ -302,6 +302,16 @@ ne renvoie que les noms actifs, ni rôle ni état).
   publié sans date de fin ; `icons/` gardé ; `CLAUDE.md` §4 réécrit. Bandeau
   « mode installé » non fait (seul l'utilisateur a installé). **À faire** :
   NextStep le jour de la bascule ; l'utilisateur désinstalle ses icônes.
+- **Question ouverte (24/09/2026) — laisser l'équipe choisir entre
+  l'interface NextStep et l'interface NEWGEN ?** Mesuré : l'écart n'est pas
+  qu'une question de couleurs. `VueHistorique` diffère de 402 lignes entre
+  les deux dépôts ; NEWGEN s'appuie sur 121 `var(--…)` et des composants
+  « v2 » (filtres, bandeau KPI, cartes), NextStep sur 14. Deux interfaces
+  complètes = deux codes d'écran à maintenir, ce que la refonte veut
+  supprimer. Pistes proposées : thème de couleurs « NextStep » sur NEWGEN
+  (léger), ou reprendre écran par écran ce que l'équipe préfère (une seule
+  interface). En attente de l'utilisateur (ce que l'équipe regrette).
+  Pas d'AGORA tant qu'aucune option n'est choisie.
 - **✅ 24/09/2026 — premier essai réel par l'utilisateur** en mode
   `?backend=php` : « ça fonctionne, il réagit d'une vitesse
   extraordinaire » (connexion + affichage, test rapide). Trajet navigateur →
