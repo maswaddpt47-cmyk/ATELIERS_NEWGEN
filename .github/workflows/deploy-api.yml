@@ -58,6 +58,11 @@ jobs:
           sshpass -e rsync -az \
             -e "ssh -o StrictHostKeyChecking=accept-new" \
             api/ "$COMPTE@ssh-$COMPTE.alwaysdata.net:www/api/"
+          # Fichiers retirés du dépôt : rsync ne les efface pas (pas de
+          # --delete), on les nomme ici. ping.php : mesure de l'étape 0, close
+          # (audit de sécurité du 24/09/2026).
+          sshpass -e ssh -o StrictHostKeyChecking=accept-new \
+            "$COMPTE@ssh-$COMPTE.alwaysdata.net" 'rm -f www/api/ping.php'
 
       # Réécrit à chaque déploiement : changer un secret suffit, sans toucher
       # au serveur. var_export produit du PHP valide quel que soit le mot de
@@ -93,7 +98,12 @@ jobs:
         env:
           COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
         run: |
-          curl -fsS "https://$COMPTE.alwaysdata.net/api/ping.php" | head -c 60; echo
+          # L'API répond (réponse lue sans l'afficher : elle contient des noms,
+          # et ce journal est public). ping.php doit avoir disparu.
+          curl -fsS -d action=getComptes "https://$COMPTE.alwaysdata.net/api/index.php" | grep -q '"ok":true'
+          code=$(curl -s -o /dev/null -w '%{http_code}' "https://$COMPTE.alwaysdata.net/api/ping.php")
+          echo "api/ping.php → HTTP $code"
+          if [ "$code" = "200" ]; then echo "::error::api/ping.php toujours en ligne"; exit 1; fi
           # La page d'import doit répondre, et le dossier lib/ rester fermé.
           curl -fsS -o /dev/null "https://$COMPTE.alwaysdata.net/api/import.php"
           curl -fsS -o /dev/null "https://$COMPTE.alwaysdata.net/api/mailtest.php"
