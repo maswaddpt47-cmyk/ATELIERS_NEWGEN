@@ -74,12 +74,15 @@ payant) — liste encore vide le 24/09 au soir (base remplie le jour même) :
 bascule) : `api/lib/sauvegarde.php` → `~/sauvegardes/ateliers-*.sql.gz`
 (600, hors `www/`), 30 jours gardés, lancée aussi à chaque déploiement ;
 `api-tests/sauvegarde.test.php` prouve qu'une copie se **restaure**.
-**Reste à l'utilisateur : créer la tâche planifiée** (Avancé → Tâches
-planifiées → Ajouter : commande `php $HOME/www/api/lib/sauvegarde.php`,
-chaque jour à 3 h, mail en cas d'erreur). Ne protège pas contre une perte
-du compte : **copie chiffrée dans un dépôt GitHub privé** (clé publique
-dans GitHub, clé privée chez l'utilisateur seul — RGPD : GitHub est
-américain), à faire après la bascule. **À vérifier par l'utilisateur** : double authentification
+Ne protège pas contre une perte
+du compte : **copie chiffrée dans le dépôt privé
+`maswaddpt47-cmyk/ateliers-backups`** (créé le 24/09, workflow `copie.yml`
+à 04:15 : récupère la copie de nuit, la chiffre avec `age`, la range ;
+échoue si la copie de nuit a plus de 26 h). **En attente de l'utilisateur** :
+secrets `ALWAYSDATA_COMPTE`/`ALWAYSDATA_SSH_PASSWORD` dans ce dépôt, paire de
+clés `age` générée par lui (clé privée hors ligne, jamais vue par Claude),
+clé publique à déposer dans `cle-publique.txt`. Tâche planifiée Alwaysdata
+créée le 24/09 au soir (03:00). **À vérifier par l'utilisateur** : double authentification
 GitHub, clé d'import aléatoire ≥ 20 caractères. **Après la bascule** :
 ligne `admin_password` du classeur à supprimer, durée d'archive du
 classeur à fixer, export xlsx du 25/09 à supprimer ; consigne de l'audit
