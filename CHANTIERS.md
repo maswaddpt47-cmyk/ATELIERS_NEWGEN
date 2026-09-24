@@ -289,6 +289,14 @@ ne renvoie que les noms actifs, ni rôle ni état).
   extraordinaire » (connexion + affichage, test rapide). Trajet navigateur →
   Alwaysdata (CORS, POST) donc **vérifié en vrai**. Reste le test complet
   (liste ci-dessous), à faire sur la base d'essai uniquement.
+- **24/09/2026 — retours de test de l'utilisateur (mode API)** :
+  ajout et suppression d'atelier OK. « Écran vide après suppression » :
+  la recherche « test » restait active (0 résultat attendu), **pas** le bug
+  du 23/09 — à reconfirmer par l'utilisateur. **Décision de l'utilisateur** :
+  l'interrupteur « login » de Listes → Conseillers = **accès à l'Admin
+  seulement**, Index reste ouvert. Appliqué en mode API uniquement ; écart
+  assumé au GAS (NextStep compris), où « inactif » coupe tout. Couper
+  complètement un agent = supprimer son compte.
 - **Utilisateur — prochaine étape** : ouvrir
   `https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/index.html?backend=php`,
   se connecter avec son mot de passe habituel, vérifier que ses ateliers
