@@ -98,7 +98,9 @@ function VueLoginIndex({conseillers,onSuccess}){
       const res=await apiFetch('checkPassword',{conseiller,password:pwd,userAgent:navigator.userAgent,source:'index.html'});
       if(res.ok){
         setFailCount(0);setLockUntil(0);
-        if(pwd.trim()===defaultPwdIndex(conseiller)){
+        // doit_changer : mot de passe provisoire donné par l'API (resetPassword
+        // tire un mot de passe aléatoire, plus cd47+prénom).
+        if(res.doit_changer||pwd.trim()===defaultPwdIndex(conseiller)){
           setPendingRes(res);
           setMustChangePwd(true);
         }else{
@@ -231,6 +233,9 @@ function App(){
   const[online,setOnline]          = React.useState(navigator.onLine);
   const[showPicker,setShowPicker]   = React.useState(false);
   const[inactifsSet,setInactifsSet] = React.useState(new Set());
+  // Mode API (AG-011) : liste de connexion tirée de getComptes public (noms
+  // des comptes actifs), getAll n'étant plus lisible avant connexion.
+  const[nomsConnexion,setNomsConnexion] = React.useState([]);
   const[sidebarPinned,setSidebarPinned] = React.useState(()=>localStorage.getItem(lsKey('sidebar_pinned'))==='1');
   const[darkMode,setDarkMode]=React.useState(()=>localStorage.getItem(lsKey('f_dark'))==='1');
   React.useEffect(()=>{document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');localStorage.setItem(lsKey('f_dark'),darkMode?'1':'0');},[darkMode]);
@@ -260,6 +265,13 @@ function App(){
     setView('accueil');
   }
   function togglePin(){ setSidebarPinned(p=>{ const n=!p; localStorage.setItem(lsKey('sidebar_pinned'),n?'1':'0'); return n; }); }
+  // Jeton refusé par l'API (expiré après 6 h, compte désactivé) : retour à
+  // l'écran de connexion au lieu d'un écran d'erreur (AG-011, amendement 3).
+  React.useEffect(()=>{
+    const f=()=>{ window.authToken.clear(); setAuthed(false); setFiltreConseiller(null); setShowPicker(false); setView('accueil'); setError(null); };
+    window.addEventListener('ateliers:auth-expiree',f);
+    return()=>window.removeEventListener('ateliers:auth-expiree',f);
+  },[]);
 
   const isFirstLoad=React.useRef(true);
   const errorRef=React.useRef(null);
@@ -309,6 +321,7 @@ function App(){
       if(data.conseiller_colors) applyColors(data.conseiller_colors);
       if(data.stockOrdinateurs) STOCK_ORDINATEURS=parseInt(data.stockOrdinateurs)||STOCK_ORDINATEURS;
       if(Array.isArray(data.materielsCaches)) MATERIELS_CACHES=data.materielsCaches;
+      if(Array.isArray(data.conseillers_inactifs)) setInactifsSet(new Set(data.conseillers_inactifs));
       setLastSync(new Date());
       setSeenIds(prev=>{
         if(prev.size===0) return new Set(incoming.map(e=>e._id));
@@ -345,13 +358,26 @@ function App(){
   // n'exécute PAS une requête à la fois par projet (doGet observés se
   // chevauchant dans les Exécutions Apps Script). Les enchaîner ferait
   // dépendre chaque appel du sort du précédent, sans rien y gagner.
+  // Mode API : getAll exige un jeton, il part donc après la connexion
+  // (AG-011) ; authed entre alors dans les dépendances.
   React.useEffect(()=>{
+    if(window.BACKEND_PHP&&!authed) return;
     if(isFirstLoad.current){isFirstLoad.current=false;loadData();}
     else{setSeenIds(new Set());loadData();}
-  },[annee]);
+  },[annee,window.BACKEND_PHP?authed:null]);
 
+  // Mode API : getComptes public rend les noms actifs et la maintenance
+  // (seules infos utiles avant connexion) ; les inactifs arrivent avec getAll.
   React.useEffect(()=>{
-    apiFetch('getComptes').then(res=>{if(res.ok&&res.comptes){setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));}}).catch(()=>{});
+    apiFetch('getComptes').then(res=>{
+      if(!res.ok||!res.comptes)return;
+      if(window.BACKEND_PHP){
+        setNomsConnexion(res.comptes.map(c=>c.conseiller).filter(Boolean));
+        if(res.maintenance) setMaintenance({msg:res.maintenance_msg||''});
+        return;
+      }
+      setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));
+    }).catch(()=>{});
   },[]);
 
   // L'appel getConfig dédié qui vivait ici est supprimé : il ne servait qu'à
@@ -436,7 +462,7 @@ function App(){
 
   if(!authed){
     return CE(VueLoginIndex,{
-      conseillers:lists.conseillers,
+      conseillers:window.BACKEND_PHP&&nomsConnexion.length?nomsConnexion:lists.conseillers,
       onSuccess:(nom,res)=>{ window.onLoginSuccess(nom,res); setAuthed(true); handleChoixConseiller(nom, true); }
     });
   }

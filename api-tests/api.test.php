@@ -102,7 +102,8 @@ $r = appel(['action' => 'getAll', 'year' => '2026', 'token' => $admin['token']])
 verifier(($r['ok'] ?? null) === false, 'jeton dans l\'URL : refusé');
 $r = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']]);
 verifier($r['ok'] === true, 'jeton dans le corps : accepté');
-verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'emails', 'stockOrdinateurs', 'materielsCaches'], 'clés de la réponse = GAS NEWGEN : ' . implode(',', array_keys($r)));
+verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'emails', 'stockOrdinateurs', 'materielsCaches', 'conseillers_inactifs'], 'clés de la réponse = GAS NEWGEN + conseillers_inactifs : ' . implode(',', array_keys($r)));
+verifier($r['conseillers_inactifs'] === ['Ancien Collegue'], 'conseillers_inactifs (AG-011)');
 verifier(count($r['entries']) === 2, '2026 seule : 2 ateliers');
 $parId = array_column($r['entries'], null, '_id');
 $e1 = $parId['entry_1'];
@@ -200,6 +201,9 @@ $r = appel(['action' => 'getLogs'], $A + ['n' => 3]);
 verifier(count($r['logs']) === 3 && str_ends_with($r['logs'][0]['timestamp'], 'Z') && is_bool($r['logs'][0]['success']), 'getLogs : n dernières lignes, format GAS');
 verifier(appel(['action' => 'logLogin'], ['conseiller' => 'Faux']) === ['ok' => true] && (int) $db->query("SELECT COUNT(*) FROM journal WHERE conseiller = 'Faux'")->fetchColumn() === 0, 'logLogin : ne journalise plus rien');
 verifier(appel(['action' => 'logAccesIndex'], ['conseiller' => 'Faux'])['ok'] === false, 'logAccesIndex sans jeton : refusé');
+appel(['action' => 'logAccesIndex'], $T + ['conseiller' => 'Conseiller Test', 'userAgent' => 'test']);
+$l = $db->query("SELECT conseiller, ref FROM journal WHERE action = 'accesIndex' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+verifier($l === ['conseiller' => 'Nouveau Venu', 'ref' => 'Conseiller Test'], 'logAccesIndex : personne du jeton, nom choisi en ref (AG-011)');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'login'")->fetchColumn() >= 4, 'connexions réussies journalisées par checkPassword');
 
 $db->exec("UPDATE sessions SET expire = NOW() - INTERVAL 1 SECOND");

@@ -13,7 +13,7 @@
 //     cd47+prénom en clair) : l'admin fait ensuite « réinitialiser » ;
 //   - logLogin ne fait plus rien : checkPassword journalise lui-même la
 //     connexion réussie (une ligne de journal ne se forge plus sans jeton) ;
-//   - logAccesIndex exige un jeton.
+//   - logAccesIndex exige un jeton, et journalise la personne du jeton.
 
 require_once __DIR__ . '/base.php';
 require_once __DIR__ . '/import.php';   // IMPORT_COLONNES_MATERIEL
@@ -214,9 +214,12 @@ function api_objet(mixed $v): ?array
 
 // ── Journal ───────────────────────────────────────────────────────────────
 
-function action_log_acces_index(PDO $db, array $p): array
+// AG-011, amendement 1 : le journal attribue l'accès à la personne
+// CONNECTÉE (celle du jeton) ; le conseiller choisi dans le sélecteur
+// d'Index, qui peut être un autre, va dans ref.
+function action_log_acces_index(PDO $db, array $p, array $session): array
 {
-    api_journal($db, 'accesIndex', (string) ($p['conseiller'] ?? ''), '', 'user', 1, 0, (string) ($p['userAgent'] ?? ''), 'index.html');
+    api_journal($db, 'accesIndex', $session['conseiller'], (string) ($p['conseiller'] ?? ''), $session['role'], 1, 0, (string) ($p['userAgent'] ?? ''), 'index.html');
     return ['ok' => true];
 }
 

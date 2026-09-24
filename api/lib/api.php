@@ -76,7 +76,7 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
         case 'delete':          return action_delete($db, $p);
         case 'verifierIds':     return action_verifier_ids($db, $p);
         case 'selfSetPassword': return action_self_set_password($db, $p, $session);
-        case 'logAccesIndex':   return action_log_acces_index($db, $p);
+        case 'logAccesIndex':   return action_log_acces_index($db, $p, $session);
         case 'saveLists':       return action_save_lists($db, $p);
         case 'saveConfig':
         case 'setConfig':       return action_set_config($db, $p);
@@ -211,6 +211,9 @@ function action_get_all(PDO $db, array $p, array $session): array
         'emails' => api_json($cfg['emails'] ?? '', (object) []),
         'stockOrdinateurs' => ((int) ($cfg['stock_ordinateurs'] ?? 0)) ?: 10,
         'materielsCaches' => api_json($cfg['materiels_caches'] ?? '', []),
+        // AG-011, amendement 2 : ce que l'appel getComptes d'app.js:354
+        // allait chercher (actif === 'NON'), sans exposer les rôles.
+        'conseillers_inactifs' => $db->query('SELECT conseiller FROM comptes WHERE actif = 0 ORDER BY conseiller')->fetchAll(PDO::FETCH_COLUMN),
     ];
     if (isset($p['years'])) $r['years'] = $annees;
     return $r;

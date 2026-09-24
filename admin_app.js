@@ -47,7 +47,10 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
   // l'authentification et les données plutôt qu'entre la maintenance et les
   // données. loadData (après connexion) réutilise ce résultat via fetchAll,
   // qui dédoublonne : aucun getAll supplémentaire n'est déclenché.
+  // Mode API : getAll et getConfig exigent un jeton (AG-011) — les
+  // précharger ici ne ferait que deux appels refusés par ouverture.
   React.useEffect(function(){
+    if(window.BACKEND_PHP) return;
     window.fetchAll && window.fetchAll(new Date().getFullYear(),{source:'admin'}).catch(function(){});
   },[]);
 
@@ -56,6 +59,7 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
   // app.js). fetchConfig plutôt qu'apiFetch('getConfig') : dédoublonne avec
   // les autres composants qui demandent la même config.
   React.useEffect(function(){
+    if(window.BACKEND_PHP) return;
     window.fetchConfig && window.fetchConfig().catch(function(){});
   },[]);
 
@@ -204,8 +208,11 @@ function App(){
     apiFetch('getComptes').catch(()=>null).then(res=>{
       const comptes=res?.ok&&res.comptes?res.comptes:[];
       if(comptes.length===0)return; // on garde CONSEILLERS_DEFAULT
+      // Mode API : getComptes public ne rend ni rôle ni état — tous les
+      // comptes actifs sont proposés, le rôle est vérifié après
+      // checkPassword (AG-011, amendement 4).
       const eligibles=comptes
-        .filter(c=>(c.role==='admin'||c.role==='superviseur')&&c.actif!=='NON')
+        .filter(c=>window.BACKEND_PHP||((c.role==='admin'||c.role==='superviseur')&&c.actif!=='NON'))
         .map(c=>c.conseiller)
         .filter(Boolean);
       setLoginConseillers(eligibles.length>0?eligibles:CONSEILLERS_DEFAULT);
@@ -293,6 +300,13 @@ const LOGS_KEY = lsKey('adm_logs');
     clearSession();
     setAuth(false);
   }
+  // Jeton refusé par l'API (expiré, compte désactivé ou rôle changé) :
+  // retour à l'écran de connexion (AG-011, amendement 3).
+  React.useEffect(()=>{
+    const f=()=>{ window.authToken.clear(); clearSession(); setAuth(false); setError(null); };
+    window.addEventListener('ateliers:auth-expiree',f);
+    return()=>window.removeEventListener('ateliers:auth-expiree',f);
+  },[]);
   React.useEffect(()=>{
     if(!auth) return;
     touchSession();

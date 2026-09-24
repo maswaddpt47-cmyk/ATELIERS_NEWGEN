@@ -266,10 +266,20 @@ ne renvoie que les noms actifs, ni rôle ni état).
   Aussi : Admin lit avant connexion (`admin_app.js:50-61`) — à couper en
   mode API ; passage en POST ⇒ `reseau.test.js` obligatoire. Vérifié sur
   l'export réel : `list_conseillers` = les 5 comptes, à l'identique.
-- **Puis Claude** : brancher `shared.js`/`app.js`/`admin_app.js` NEWGEN sur
-  l'API derrière un interrupteur — **attend la décision AG-011** (ordre de
-  démarrage d'Index). Mocks des suites navigateur à paramétrer dans le même
-  commit que le changement d'URL (AG-009).
+- **✅ 24/09/2026 — NEWGEN branché sur l'API, derrière un interrupteur**
+  (`shared.js` : `BACKEND_PHP`, `requeteServeur`). **GAS par défaut** ;
+  `?backend=php` dans l'adresse bascule l'onglet (sessionStorage),
+  `?backend=gas` revient. Amendements AG-011 appliqués (API `0b81ebd`,
+  client ce commit). `appels.test.js` : 9 cas en mode API ; `reseau`,
+  `e2e`, `sandbox`, suites Node verts. **Non vérifié en vrai** : l'appel
+  réel navigateur → Alwaysdata (CORS, cookies, latence) — l'environnement
+  de Claude ne joint pas Alwaysdata. ⚠️ Les écritures faites en mode API
+  vont dans la base d'essai, **pas** dans le classeur : ne pas y saisir de
+  vrais ateliers.
+- **Utilisateur — prochaine étape** : ouvrir
+  `https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/index.html?backend=php`,
+  se connecter avec son mot de passe habituel, vérifier que ses ateliers
+  (export du 23/09) s'affichent ; idem `admin.html?backend=php`.
 
 ---
 
