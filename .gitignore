@@ -14,3 +14,12 @@ Thumbs.db
 
 # Node (si jamais un package.json est ajouté)
 node_modules/
+
+# RGPD : exports et copies de données, identifiants — jamais dans ce dépôt
+# public (vérifié aussi en CI, deploy.yml « Garde-fou RGPD »)
+*.xlsx
+*.xls
+*.csv
+*.sql.gz
+*.age
+config-api.php
