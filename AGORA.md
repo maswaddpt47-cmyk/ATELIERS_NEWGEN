@@ -68,6 +68,39 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-013 — « Mot de passe oublié » en libre-service, par mail — ouvert le 24/09/2026
+**Auteur** : session A (refonte) — lu sur `fb62c75`
+**Proposition** : sur l'écran de connexion (Index et Admin, mode API
+seulement), lien « Mot de passe oublié ? ». Le conseiller choisit son nom →
+action publique `demanderReinit` : si une adresse existe dans la config
+`emails` (Listes → Conseillers), l'API tire un jeton aléatoire (32 octets),
+n'en garde que l'empreinte, valable **30 min, usage unique**, et envoie par
+`mail()` d'Alwaysdata un lien `…/index.html?reinit=<jeton>`. Réponse
+**toujours identique** (« si une adresse est enregistrée, un mail est
+parti »). Le lien ouvre un formulaire « nouveau mot de passe » (politique
+existante, 12 caractères…) → action publique `reinitMotDePasse` : consomme
+le jeton, pose le hash, `doit_changer = 0`, coupe les sessions du compte.
+Limite : 3 demandes par compte et par heure.
+**Critère déclencheur** : 1 (nouvelle table `reinitialisations`, deux actions
+publiques = contrat) et 2 (options écartées : code à 6 chiffres par mail au
+lieu d'un lien ; réinitialisation par l'admin seulement, l'existant).
+**Ce que ça engage** : une porte d'entrée publique sur les comptes — la
+sécurité du compte devient celle de la boîte mail du conseiller ; une
+dépendance à la délivrabilité des mails d'Alwaysdata (expéditeur
+`…@alwaysdata.net` vers des adresses Gmail : risque de spam, **non testé**).
+**Non vérifié par l'auteur** : que `mail()` fonctionne chez Alwaysdata sans
+réglage (SPF/DKIM de l'expéditeur) ; que les 5 comptes ont une adresse
+valide (une capture du 24/09 montre `email@exemple.com` pour un compte) ;
+quelle interface reçoit le lien pour l'équipe (NextStep) quand elle est
+encore sur GAS — la fonction n'existe qu'en mode API ; qu'aucun conseiller
+ne partage une boîte mail avec un autre.
+**Si personne ne répond, je fais quoi ?** J'attends le feu vert de
+l'utilisateur sur le principe, puis je commence par un **mail de test**
+envoyé depuis Alwaysdata : sans délivrabilité prouvée, le reste ne sert à rien.
+**Où regarder** : `api/lib/api.php` (`checkPassword`, `tentatives`),
+`api/lib/ecriture.php` (`api_changer_mdp`, `API_MDP_POLITIQUE`),
+`gas/GAS_NEWGEN.js:1107-1114` (envoi de mail côté GAS), config `emails`.
+
 ## AG-010 — Schéma MySQL et import du classeur NextStep — ouvert le 23/09/2026
 **Auteur** : session A (refonte, reprise du 24/09) — lu sur `78745da`
 **Proposition** : 6 tables (`ateliers` typée, `ateliers_materiel`, `config`,
