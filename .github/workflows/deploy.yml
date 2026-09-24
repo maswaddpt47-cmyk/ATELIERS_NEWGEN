@@ -74,6 +74,9 @@ jobs:
       - name: Appels GAS superflus (ouverture, écriture)
         run: node appels.test.js
 
+      - name: Labo NextStep (branché sur l'API, jamais sur le GAS)
+        run: node labo-nextstep.test.js
+
   deploy:
     needs: [test, e2e]
     environment:
