@@ -277,9 +277,12 @@ ne renvoie que les noms actifs, ni rôle ni état).
   vont dans la base d'essai, **pas** dans le classeur : ne pas y saisir de
   vrais ateliers.
 - **24/09/2026 12:23 (Paris) — une paire du banc** relevée par l'utilisateur
-  en journée (lieu **à confirmer**, a priori le bureau) : GAS livré en
-  5,4 s, Alwaysdata **livré** en 1,1 s. Si c'est bien le réseau CD47 : il
-  laisse passer `alwaysdata.net`, le point bloquant de la bascule est levé.
+  depuis son **PC professionnel, VPN et pare-feu du CD47 actifs** (pas le
+  réseau filaire du bureau) : GAS livré en 5,4 s, Alwaysdata **livré** en
+  1,1 s. Le filtrage du poste pro ne bloque pas `alwaysdata.net`. ⚠️ Non
+  prouvé pour le réseau du bureau : si le VPN ne fait passer que le trafic
+  interne (tunnel partagé, hypothèse non vérifiée), Alwaysdata est sorti
+  par la box. Une paire au bureau le 25/09 reste utile (1 min).
   Une paire ne dit rien des taux de perte (McNemar non significatif).
 - **✅ 24/09/2026 — premier essai réel par l'utilisateur** en mode
   `?backend=php` : « ça fonctionne, il réagit d'une vitesse
