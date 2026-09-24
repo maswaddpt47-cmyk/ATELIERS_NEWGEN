@@ -63,8 +63,8 @@ connectée + actions d'administration journalisées ; erreurs PHP jamais
 affichées ; `mailtest.php` refusé hors HTTPS ; `ping.php` retiré (et
 effacé du serveur par le déploiement). **Laissé tel quel sur décision de
 l'utilisateur** : le rôle superviseur garde ses pouvoirs quasi admin (via
-Listes : rôles, mails). **À vérifier par l'utilisateur** : HTTPS forcé
-côté Alwaysdata, sauvegardes de la base, double authentification GitHub et
+Listes : rôles, mails). **HTTPS forcé : vérifié par l'utilisateur le 24/09 (http:// redirigé vers https://)**. **À vérifier par l'utilisateur** :
+sauvegardes de la base, double authentification GitHub et
 Alwaysdata, clé d'import aléatoire ≥ 20 caractères. **Après la bascule** :
 ligne `admin_password` du classeur à supprimer, durée d'archive du
 classeur à fixer, export xlsx du 25/09 à supprimer ; consigne de l'audit
