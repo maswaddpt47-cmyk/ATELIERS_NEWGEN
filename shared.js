@@ -657,7 +657,12 @@ tr:hover td{background:#f7fafc}
 .cal-year-sel option{background:#1e3a8a;color:#fff}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeSlideIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
-.view-anim{animation:fadeSlideIn .22s ease both}
+/* fill-mode backwards, pas both : avec both, le transform:translateY(0) final
+   restait actif et faisait de .view-anim la référence de tout position:fixed
+   à l'intérieur — le panneau latéral de l'Historique défilait avec la page
+   au lieu de rester à l'écran (signalé le 24/09/2026). Rien ne reste après
+   l'animation, l'état final étant celui par défaut. */
+.view-anim{animation:fadeSlideIn .22s ease backwards}
 `;
   document.head.appendChild(s);
 })();

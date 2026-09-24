@@ -72,7 +72,7 @@ function AnnonceNouvelleVersion(){
     CE('div',null,'Les ateliers sont désormais enregistrés sur un nouveau serveur : ',CE('strong',null,'plus rapide et sans échecs d\u2019enregistrement'),'.'),
     CE('ul',{style:{margin:'6px 0 8px',paddingLeft:18}},
       CE('li',null,'Même adresse, mêmes écrans, mêmes ateliers.'),
-      CE('li',null,'Reconnectez-vous une fois avec ',CE('strong',null,'votre mot de passe habituel'),'.'),
+      CE('li',null,'Connectez-vous comme d\u2019habitude, avec ',CE('strong',null,'votre mot de passe habituel'),'.'),
       CE('li',null,'Mot de passe oublié ? Un lien « Mot de passe oublié ? » est maintenant disponible sous le bouton de connexion.')),
     CE('button',{type:'button',onClick:fermer,style:{background:'#1e3a8a',color:'#fff',border:'none',borderRadius:6,padding:'6px 14px',fontWeight:700,fontSize:12,cursor:'pointer'}},'Compris')
   );
