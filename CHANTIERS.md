@@ -254,6 +254,18 @@ ne renvoie que les noms actifs, ni rôle ni état).
   désactivé ou changé de rôle perd ses connexions en cours. ⚠️ Conséquence
   client : le changement obligatoire d'Index (`app.js:45-70`) détecte
   aujourd'hui `cd47`+prénom ; il devra lire `doit_changer` de la réponse.
+- **⚖️ AG-011 tranché le 24/09/2026 — amendé, amendements acceptés par
+  l'utilisateur** (texte complet : `git log -p AGORA.md`, réponse B `6ce65f9`).
+  Jeton exigé en lecture, dans le corps POST ; `getComptes` public = noms
+  actifs + maintenance ; maintenance levée par le rôle. Amendements :
+  (1) `logAccesIndex` journalise le conseiller **du jeton**, le nom choisi
+  va dans `ref` ; (2) `getAll` rend `conseillers_inactifs`, l'appel
+  `getComptes` d'`app.js:354` disparaît en mode API ; (3) toute réponse
+  `auth:true` ⇒ retour à l'écran de connexion (Index et Admin), testé ;
+  (4) liste de connexion Admin = tous les actifs, sans filtre de rôle.
+  Aussi : Admin lit avant connexion (`admin_app.js:50-61`) — à couper en
+  mode API ; passage en POST ⇒ `reseau.test.js` obligatoire. Vérifié sur
+  l'export réel : `list_conseillers` = les 5 comptes, à l'identique.
 - **Puis Claude** : brancher `shared.js`/`app.js`/`admin_app.js` NEWGEN sur
   l'API derrière un interrupteur — **attend la décision AG-011** (ordre de
   démarrage d'Index). Mocks des suites navigateur à paramétrer dans le même
