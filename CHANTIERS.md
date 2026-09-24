@@ -302,6 +302,16 @@ ne renvoie que les noms actifs, ni rôle ni état).
   publié sans date de fin ; `icons/` gardé ; `CLAUDE.md` §4 réécrit. Bandeau
   « mode installé » non fait (seul l'utilisateur a installé). **À faire** :
   NextStep le jour de la bascule ; l'utilisateur désinstalle ses icônes.
+- **✅ 24/09/2026 — labo NextStep en ligne** (demande utilisateur) :
+  `labo-nextstep/` = copie du front NextStep `a95d2a6` branchée sur l'API,
+  pour comparer les deux interfaces sur la même base d'essai. Adresse :
+  `https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/labo-nextstep/index.html`
+  (et `admin.html`). Garde-fous : `GS_URL` neutralisée, stockage préfixé
+  `labo-nextstep:`, bandeau rouge « LABO », `labo-nextstep.test.js` en CI
+  (échoue au moindre appel GAS). Si l'équipe choisit NextStep, cette copie
+  devient la base publiée à l'URL NextStep le jour J ; sinon on supprime le
+  dossier. ⚠️ Toute correction faite dans le vrai NextStep d'ici là devra
+  être reportée dans la copie (elle est figée sur `a95d2a6`).
 - **Question ouverte (24/09/2026) — laisser l'équipe choisir entre
   l'interface NextStep et l'interface NEWGEN ?** Mesuré : l'écart n'est pas
   qu'une question de couleurs. `VueHistorique` diffère de 402 lignes entre
