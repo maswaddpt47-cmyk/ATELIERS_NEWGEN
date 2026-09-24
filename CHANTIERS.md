@@ -19,7 +19,9 @@ effectué — AG-001 a corrigé le protocole du banc avant la série.
 
 ---
 
-## 🚀 24/09/2026 — Bascule prête, prévue le 25/09/2026 vers 15 h (reprendre ici)
+## 🚀 24/09/2026 — Bascule prête, fixée au 25/09/2026 à 15 h 30 (reprendre ici)
+
+**Mail envoyé à l'équipe le 24/09/2026** (date et heure annoncées : 25/09 à 15 h 30).
 
 **NextStep officielle** : branche `claude/architecture-refonte-migration-wqlanb`
 de `ateliers-cd47_NextStep`, poussée, **non fusionnée** (son `deploy.yml` ne
@@ -399,7 +401,7 @@ ne renvoie que les noms actifs, ni rôle ni état).
   même adresse, reconnexion avec le mot de passe habituel (vérifié : les
   empreintes du classeur sont reprises), lien « mot de passe oublié ».
   **Rien publié sur la NextStep officielle** (consigne : « ne la publie pas
-  encore »). Jour J fixé au 25/09/2026 vers 15 h — ordre corrigé
+  encore »). Jour J fixé au 25/09/2026 à 15 h 30 — ordre corrigé
   (maintenance d'abord) dans le bloc « Bascule prête » en tête de fichier.
 - **✅ 24/09/2026 — labo NextStep en ligne** (demande utilisateur) :
   `labo-nextstep/` = copie du front NextStep `a95d2a6` branchée sur l'API,
