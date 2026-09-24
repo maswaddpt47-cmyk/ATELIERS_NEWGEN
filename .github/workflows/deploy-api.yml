@@ -34,13 +34,14 @@ jobs:
         run: for f in api/*.php api/lib/*.php api-tests/*.php; do php -l "$f"; done
 
       # MySQL est préinstallé sur les machines GitHub (root / root).
-      - name: Tests de l'import (avec base MySQL jetable)
+      - name: Tests de l'import et de l'API (avec base MySQL jetable)
         env:
           ATELIERS_TEST_MYSQL: root@127.0.0.1
           ATELIERS_TEST_MYSQL_MDP: root
         run: |
           sudo systemctl start mysql.service
           php api-tests/import.test.php
+          php api-tests/api.test.php
 
       - name: Copier api/ vers ~/www/api/
         env:

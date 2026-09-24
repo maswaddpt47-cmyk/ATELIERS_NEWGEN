@@ -223,7 +223,18 @@ ne renvoie que les noms actifs, ni rôle ni état).
   Analyser puis Importer. Claude ne peut pas le faire : pas d'accès
   Alwaysdata depuis son environnement, et ne doit pas voir les identifiants.
   Cet import est un **essai** : on refera un export frais le jour J.
-- Puis Claude : API PHP (lecture `getAll` d'abord) + test de contrat serveur.
+- **✅ 24/09/2026 — API de lecture écrite** : `api/index.php` +
+  `api/lib/api.php` — `checkPassword`, `getComptes`, `getAll` (`year`/`years`),
+  `getConfig`, `getVisibility`. Test de contrat `api-tests/api.test.php`
+  (35 cas, relit les champs de `contract.test.js`), lancé en CI avant
+  déploiement. Vérifiée en local sur l'export réel : 247 ateliers 2026,
+  15 en 2027. Choix ouverts dans **AG-011** (jeton exigé en lecture, dans le
+  corps POST ; `getComptes` public réduit + maintenance ; maintenance levée
+  par le rôle). ⚠️ **Le client n'est pas branché** : `shared.js`/`app.js`
+  inchangés tant que l'utilisateur n'a pas tranché AG-011 (l'ordre de
+  démarrage d'Index change : `getAll` après la connexion).
+- **Puis Claude** : écritures (`saveEntry`, `saveMany`, `delete`, `logLogin`,
+  actions admin), puis `shared.js` derrière un interrupteur.
 
 ---
 
