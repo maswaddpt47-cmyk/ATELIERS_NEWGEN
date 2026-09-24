@@ -80,7 +80,8 @@ Recommandations (tarifs à revérifier) :
   le jour J, gel des saisies pendant la copie, puis l'équipe passe sur le
   nouveau code.
 - ⚠️ **Nouvelle question — l'URL de bascule.** L'équipe a NextStep en favori
-  **et installé en PWA** (portée liée au chemin `/ateliers-cd47_NextStep/`).
+  (**corrigé le 24/09/2026** : seul l'utilisateur l'avait installé en PWA ;
+  PWA retirée, AG-012).
   Rediriger vers l'URL NEWGEN casse les PWA installées (AGORA critère 6).
   **Piste recommandée** : publier le code convergé **à l'URL NextStep**
   (dépôt NextStep ou redirection de domaine), l'URL NEWGEN restant le labo.
@@ -89,7 +90,7 @@ Recommandations (tarifs à revérifier) :
 
 **✅ Décidé par l'utilisateur le 23/09/2026** (« oui pour tout ») :
 1. Hébergeur : **Alwaysdata**, compte au nom de l'utilisateur.
-2. Bascule **à l'URL de NextStep** (PWA et favoris de l'équipe préservés) ;
+2. Bascule **à l'URL de NextStep** (favoris et clés `localStorage` de l'équipe préservés — la PWA ne compte plus, AG-012) ;
    URL NEWGEN = labo.
 3. Données NEWGEN = test, **non migrées**. Seul le classeur NextStep l'est.
 
@@ -117,9 +118,9 @@ l'utilisateur.** Texte complet : `git log -p AGORA.md` (commits `2dafa19`,
 - **`APP_NS` par déploiement** : `'nextstep'` à l'URL NextStep, `'newgen'` au
   labo. Sans ça, collision `localStorage` sur la même origine : préférences
   perdues **et** cache `ateliers_cache_<année>` du labo affiché en production.
-- **Manifests et icônes de NextStep conservés** à la bascule (même
-  `start_url`/`scope`, pas de champ `id` : l'appli installée garde son
-  identité — lu, pas essayé sur appareil).
+- ~~Manifests et icônes de NextStep conservés à la bascule~~ — **remplacé
+  le 24/09/2026 par AG-012** : plus de PWA ; à la bascule, NextStep reçoit
+  le `sw.js` de désinstallation, garde `icons/` (favicon).
 - Toute l'équipe se reconnecte à la bascule (jetons non migrés).
 
 **Décisions de l'utilisateur du 23/09/2026** : amendements acceptés ; compte
@@ -295,6 +296,12 @@ ne renvoie que les noms actifs, ni rôle ni état).
   soulevé par la réponse B d'AG-012 ne concerne donc que ses propres
   appareils : le bandeau devient facultatif, une désinstallation manuelle
   suffit.
+  **⚖️ AG-012 tranché le 24/09/2026 — amendé** (réponse B `c7add07`), feu
+  vert de l'utilisateur. **Fait dans NEWGEN** : manifeste, `apple-touch-icon`
+  et enregistrement du SW retirés des deux pages ; `sw.js` = désinstallation,
+  publié sans date de fin ; `icons/` gardé ; `CLAUDE.md` §4 réécrit. Bandeau
+  « mode installé » non fait (seul l'utilisateur a installé). **À faire** :
+  NextStep le jour de la bascule ; l'utilisateur désinstalle ses icônes.
 - **✅ 24/09/2026 — premier essai réel par l'utilisateur** en mode
   `?backend=php` : « ça fonctionne, il réagit d'une vitesse
   extraordinaire » (connexion + affichage, test rapide). Trajet navigateur →
