@@ -87,30 +87,22 @@ confirmé sur ateliers-cd47_NextStep le 16/09/2026, porté ici en garde-fou
 préventif — `scripts/check-cache-busting.js`, vérifié en CI). Vérifier ce
 point avant de conclure qu'un correctif ne marche pas.
 
-## 4. PWA & service worker
+## 4. Plus de PWA — `sw.js` de désinstallation
 
-Source canonique : `MD-LIB/pwa-service-worker.md`. Les deux pages sont
-installables en PWA depuis le 19/09/2026 (`manifest-app.json`,
-`manifest-admin.json`, `icons/`, `sw.js`). Prolonge directement la règle 3 :
-un service worker est le seul code du projet qui **survit au déploiement
-suivant**, puisqu'il reste installé sur l'appareil.
+Les pages ne sont **plus installables** depuis le 24/09/2026 (AG-012,
+décision de l'utilisateur : l'usage nomade passe par le navigateur ; le mode
+installé, sans barre d'adresse, empêchait tout rechargement forcé de
+`index.html`/`admin.html`). Ni manifeste, ni `apple-touch-icon`, ni
+enregistrement de service worker dans les pages.
 
-- **`sw.js` ne met rien en cache et n'intercepte rien, volontairement.** Le
-  versioning est déjà assuré par le `?v=N` ci-dessus ; un service worker en
-  cache-first recréerait l'incident du 16/09/2026 en pire, son cache ne
-  partant pas avec les données de navigation.
-- **Jamais de `respondWith()`.** La requête serait ré-émise depuis le contexte
-  du service worker, hors de portée des mocks réseau de `e2e.test.js`,
-  `appels.test.js` et `reseau.test.js`. Le symptôme ne ressemble pas à sa
-  cause : on croit à une régression de l'authentification.
-- **Enregistrement sur `load`**, en fin de `<body>`, avec un `catch` vide.
-- ⚠️ **En mode installé, il n'y a plus de barre d'adresse, donc plus de
-  rechargement forcé.** Le `?v=N` protège `shared.js`, `app.js` et les CSS,
-  **pas `index.html`/`admin.html` eux-mêmes**. Sortie de secours à connaître :
-  désinstaller/réinstaller l'application, ou vider les données du site.
-- Après toute modification de `sw.js` : relancer les suites navigateur **sur
-  les vraies pages** (une page de test nue n'enregistre pas le service
-  worker, donc ne prouve rien).
+- **`sw.js` reste publié, sans date de fin** : il se désinscrit sur les
+  appareils où l'ancien est installé. Ne pas le supprimer.
+- **Jamais de désinscription depuis la page** : l'origine est partagée avec
+  NextStep et GDINV2 (commentaire en tête de `sw.js`).
+- `icons/` reste : favicon des deux pages. `manifest-*.json` : à retirer
+  plus tard, une fois les dernières installations désinstallées.
+- Si une PWA revenait un jour : `MD-LIB/pwa-service-worker.md` (jamais de
+  cache, jamais de `respondWith()`).
 
 ## 5. Backend GAS
 

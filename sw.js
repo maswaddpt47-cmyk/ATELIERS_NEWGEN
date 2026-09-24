@@ -1,33 +1,20 @@
-// Service worker minimal — sert uniquement à rendre le site installable en PWA
-// sur Android (certaines versions de Chrome exigent un service worker
-// enregistré, avec un handler 'fetch' présent, pour proposer
-// "Installer l'application" plutôt que le simple raccourci navigateur).
+// Service worker de DÉSINSTALLATION — ne pas supprimer ce fichier.
 //
-// Il ne met VOLONTAIREMENT rien en cache et n'intercepte VOLONTAIREMENT
-// aucune requête (pas d'event.respondWith) :
-// 1. Le site a un système de cache-busting explicite (`?v=N` sur
-//    app.css/utils.js/shared.js/app.js/..., voir CLAUDE.md) — un SW qui
-//    mettrait les fichiers en cache-first recréerait le même type
-//    d'incident que celui déjà rencontré sur ateliers-cd47_NextStep
-//    (correctif invisible sur des postes avec l'ancienne version en cache,
-//    16/09/2026).
-// 2. Un SW qui répond lui-même à une requête (respondWith(fetch(...)))
-//    la ré-émet depuis le contexte du service worker, hors de portée des
-//    mocks réseau des tests (page.route()/interception GAS dans
-//    e2e.test.js, appels.test.js, reseau.test.js) — confirmé sur
-//    ateliers-cd47_NextStep le 19/09/2026 : avec respondWith, tous les
-//    tests de connexion échouaient (réponse mockée jamais reçue) ; sans,
-//    tout passe. Ne pas ajouter respondWith() ici sans revalider les
-//    quatre suites de tests.
+// Les pages ne sont plus installables en PWA depuis le 24/09/2026 (AG-012,
+// décision de l'utilisateur : l'usage nomade passe par le navigateur). Les
+// pages n'enregistrent plus aucun service worker ; mais un appareil où
+// l'ancien sw.js est déjà installé revérifie ce fichier en naviguant dans sa
+// portée. Il reçoit alors celui-ci, qui s'active et se désinscrit aussitôt.
+//
+// À garder publié SANS DATE DE FIN : on ne saura jamais quand le dernier
+// appareil est repassé, et un 404 à la vérification ne garantit pas la
+// désinscription (réponse B d'AG-012, point 4).
+//
+// ⚠️ Ne JAMAIS remplacer ceci par une désinscription depuis la page
+// (navigator.serviceWorker.getRegistrations() puis unregister() sur chacune) :
+// NEWGEN, NextStep et GDINV2 partagent l'origine maswaddpt47-cmyk.github.io,
+// la page désinscrirait aussi les service workers des autres applis.
+// self.registration ne vise que la portée de CE fichier.
 
-self.addEventListener('install', (event) => {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
-});
-
-self.addEventListener('fetch', (event) => {
-  // Ne rien faire : laisser le navigateur traiter la requête normalement.
-});
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', () => { self.registration.unregister(); });
