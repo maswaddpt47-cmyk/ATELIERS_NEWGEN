@@ -1,0 +1,28 @@
+# Diagnostic du serveur Alwaysdata, lancé à la main (Actions → Run workflow).
+# Claude n'a pas d'accès direct au serveur : ce job lui rapporte la version
+# de PHP, les extensions utiles et les dernières erreurs PHP.
+# N'affiche jamais ~/config-api.php. Les lignes de journal sont filtrées sur
+# les erreurs PHP : pas de journal d'accès (adresses IP des usagers).
+name: Diagnostic API Alwaysdata
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Interroger le serveur
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+          SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
+        run: |
+          sudo apt-get install -y -qq sshpass >/dev/null
+          sshpass -e ssh -o StrictHostKeyChecking=accept-new "$COMPTE@ssh-$COMPTE.alwaysdata.net" '
+            echo "== php (ligne de commande)"; php -v | head -1
+            php -m | grep -iE "^(zip|simplexml|pdo_mysql|mbstring|libxml)$" | tr "\n" " "; echo
+            echo "== fichiers"; ls -la ~/config-api.php 2>&1 | cut -c1-40; ls ~/www/api ~/www/api/lib
+            echo "== journaux récents"; find ~/admin/logs -type f -mmin -1440 2>/dev/null | head -20
+            echo "== erreurs PHP (24 h)"
+            find ~/admin/logs -type f -mmin -1440 2>/dev/null | xargs -r grep -hiE "PHP (Fatal|Parse|Warning|Notice)|Uncaught|Allowed memory|Maximum execution" 2>/dev/null | tail -30
+          '
