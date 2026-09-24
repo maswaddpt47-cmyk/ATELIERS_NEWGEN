@@ -1863,7 +1863,7 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
     const existing=comptes[nom]||{role:'user'};
     try{
       const res=await apiFetch('saveCompte',{conseiller:nom,role:existing.role,actif:newActif?'OUI':'NON'});
-      if(res&&res.ok){setComptes(m=>({...m,[nom]:{...existing,actif:newActif?'OUI':'NON'}}));showToast(newActif?'✅ '+nom+' activé':'🔕 '+nom+' désactivé');}
+      if(res&&res.ok){setComptes(m=>({...m,[nom]:{...existing,actif:newActif?'OUI':'NON'}}));showToast(window.BACKEND_PHP?(newActif?'✅ '+nom+' : accès Admin autorisé':'🔒 '+nom+' : accès Admin retiré (Index reste ouvert)'):(newActif?'✅ '+nom+' activé':'🔕 '+nom+' désactivé'));}
       else showToast('❌ Erreur GAS',false);
     }catch(_){showToast('❌ Hors-ligne',false);}
     finally{setComptesSaving(s=>({...s,[nom]:false}));}
@@ -1946,7 +1946,8 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
                   onChange:e=>handleToggleActif(item,e.target.checked)}),
                 CE('span',{className:'tgl-track',style:comptes[item]?.actif==='NON'?{background:'#e2e8f0'}:{}})
               ),
-              CE('span',null,comptes[item]?.actif!=='NON'?'🔑 login':'🔑 inactif')
+              // Mode API : l'interrupteur ne ferme que l'Admin (24/09/2026), Index reste ouvert.
+              CE('span',null,window.BACKEND_PHP?(comptes[item]?.actif!=='NON'?'🔑 accès Admin':'🔒 sans Admin'):(comptes[item]?.actif!=='NON'?'🔑 login':'🔑 inactif'))
             ),
             CE('select',{
               value:comptes[item]?.role||'user',

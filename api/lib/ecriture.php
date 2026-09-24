@@ -298,9 +298,11 @@ function action_save_compte(PDO $db, array $p): array
     if (!in_array($role, ['admin', 'superviseur', 'user'], true)) return ['ok' => false, 'error' => 'Rôle inconnu'];
     $actif = isset($p['actif']) ? ((string) $p['actif'] === 'NON' ? 0 : 1) : (int) $c['actif'];
     $db->prepare('UPDATE comptes SET role = ?, actif = ? WHERE conseiller = ?')->execute([$role, $actif, $nom]);
-    // Rôle changé ou compte désactivé : ses connexions en cours tombent,
-    // sinon il garderait jusqu'à 6 h les droits d'avant.
-    if ($role !== $c['role'] || $actif !== (int) $c['actif']) {
+    // Rôle changé : ses connexions en cours tombent, sinon il garderait
+    // jusqu'à 6 h les droits d'avant. L'interrupteur « actif » (accès Admin)
+    // n'a pas besoin de ça : il est relu à chaque action d'administration,
+    // et couper les sessions déconnecterait aussi Index.
+    if ($role !== $c['role']) {
         $db->prepare('DELETE FROM sessions WHERE conseiller = ?')->execute([$nom]);
     }
     return ['ok' => true];

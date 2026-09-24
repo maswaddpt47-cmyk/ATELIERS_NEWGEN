@@ -105,6 +105,10 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
         touchSession();
         window.onLoginSuccess(conseiller, res);
         onLogin(res.role||'user',conseiller);
+      }else if(/Admin non autorisé/.test(res.error||'')){
+        // Interrupteur « accès Admin » coupé (mode API) : le mot de passe
+        // était bon, ce n'est pas une tentative ratée.
+        setErr('⛔ '+res.error+'.');
       }else{
         const nf=failCount+1;
         setFailCount(nf);

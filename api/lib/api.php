@@ -8,9 +8,13 @@
 //   - jeton exigé pour getAll, getConfig, getVisibility ;
 //   - jeton et mot de passe lus dans le corps POST, jamais dans l'URL (une
 //     URL finit dans les journaux d'accès de l'hébergeur) ;
-//   - getComptes sans jeton admin ne rend que les noms des comptes actifs,
+//   - getComptes sans jeton admin ne rend que les noms des comptes,
 //     plus l'état de maintenance (seules infos utiles avant connexion) ;
-//   - la maintenance est levée par le rôle du jeton, plus par source=admin.
+//   - la maintenance est levée par le rôle du jeton, plus par source=admin ;
+//   - « actif » (interrupteur « login » de Listes → Conseillers) ne veut plus
+//     dire « compte coupé partout » mais « accès à l'Admin autorisé »
+//     (décision de l'utilisateur, 24/09/2026) : Index reste ouvert, l'Admin
+//     exige rôle admin/superviseur ET actif, vérifié à chaque action.
 // Chaque fonction action_* reçoit la base et les paramètres, et renvoie le
 // tableau à encoder en JSON.
 
@@ -63,7 +67,7 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
     }
     $session = api_session($db, $jeton);
     if ($session === null) return ['ok' => false, 'error' => 'Non autorisé : jeton manquant ou expiré', 'auth' => true];
-    if (in_array($action, API_ACTIONS_ADMIN, true) && !in_array($session['role'], API_ROLES_ADMIN, true)) {
+    if (in_array($action, API_ACTIONS_ADMIN, true) && !api_acces_admin($db, $session)) {
         return ['ok' => false, 'error' => 'Non autorisé : réservé aux administrateurs'];
     }
 
@@ -111,7 +115,12 @@ function action_check_password(PDO $db, array $p): array
     $c->execute([$nom]);
     $compte = $c->fetch(PDO::FETCH_ASSOC);
     if (!$compte) return ['ok' => false, 'error' => 'Conseiller introuvable'];
-    if ((int) $compte['actif'] === 0) return ['ok' => false, 'error' => 'Compte désactivé'];
+    // Interrupteur désactivé : l'Admin est refusé, Index reste ouvert. La
+    // page est déclarée par le client ; la vraie barrière est la
+    // vérification à chaque action d'administration (api_acces_admin).
+    if ((int) $compte['actif'] === 0 && str_contains((string) ($p['source'] ?? ''), 'admin')) {
+        return ['ok' => false, 'error' => "Accès à l'Admin non autorisé pour ce compte"];
+    }
 
     // Empreinte stockée = password_hash(sha256_hex(mot de passe)) (schema.sql).
     $empreinte = hash('sha256', $mdp);
@@ -141,6 +150,16 @@ function action_check_password(PDO $db, array $p): array
     return $r;
 }
 
+// Accès Admin : rôle admin/superviseur ET interrupteur « login » activé,
+// relu dans comptes à chaque appel (désactiver prend effet aussitôt).
+function api_acces_admin(PDO $db, array $session): bool
+{
+    if (!in_array($session['role'], API_ROLES_ADMIN, true)) return false;
+    $s = $db->prepare('SELECT actif FROM comptes WHERE conseiller = ?');
+    $s->execute([$session['conseiller']]);
+    return (int) $s->fetchColumn() === 1;
+}
+
 // Renvoie ['conseiller' => …, 'role' => …] pour un jeton valide, sinon null.
 function api_session(PDO $db, string $jeton): ?array
 {
@@ -160,14 +179,15 @@ function api_journal(PDO $db, string $action, string $conseiller, string $ref, s
 
 function action_get_comptes(PDO $db, ?array $session): array
 {
-    if ($session !== null && in_array($session['role'], API_ROLES_ADMIN, true)) {
+    if ($session !== null && api_acces_admin($db, $session)) {
         $l = $db->query('SELECT conseiller, role, actif FROM comptes ORDER BY conseiller')->fetchAll(PDO::FETCH_ASSOC);
         return ['ok' => true, 'comptes' => array_map(fn($c) => [
             'conseiller' => $c['conseiller'], 'role' => $c['role'], 'actif' => (int) $c['actif'] === 1 ? 'OUI' : 'NON',
         ], $l)];
     }
-    // Public : les noms nécessaires à la liste de connexion, rien d'autre.
-    $noms = $db->query('SELECT conseiller FROM comptes WHERE actif = 1 ORDER BY conseiller')->fetchAll(PDO::FETCH_COLUMN);
+    // Public : les noms nécessaires à la liste de connexion, rien d'autre
+    // (tous les comptes : l'interrupteur ne ferme que l'Admin).
+    $noms = $db->query('SELECT conseiller FROM comptes ORDER BY conseiller')->fetchAll(PDO::FETCH_COLUMN);
     $cfg = api_config_base($db);
     return [
         'ok' => true,
@@ -189,7 +209,7 @@ function action_get_all(PDO $db, array $p, array $session): array
     }
 
     $cfg = api_config_base($db);
-    if (api_maintenance($cfg) && !in_array($session['role'], API_ROLES_ADMIN, true)) {
+    if (api_maintenance($cfg) && !api_acces_admin($db, $session)) {
         return ['ok' => false, 'maintenance' => true, 'msg' => (string) ($cfg['maintenance_msg'] ?? '')];
     }
 
@@ -211,9 +231,11 @@ function action_get_all(PDO $db, array $p, array $session): array
         'emails' => api_json($cfg['emails'] ?? '', (object) []),
         'stockOrdinateurs' => ((int) ($cfg['stock_ordinateurs'] ?? 0)) ?: 10,
         'materielsCaches' => api_json($cfg['materiels_caches'] ?? '', []),
-        // AG-011, amendement 2 : ce que l'appel getComptes d'app.js:354
-        // allait chercher (actif === 'NON'), sans exposer les rôles.
-        'conseillers_inactifs' => $db->query('SELECT conseiller FROM comptes WHERE actif = 0 ORDER BY conseiller')->fetchAll(PDO::FETCH_COLUMN),
+        // AG-011, amendement 2 : liste que l'appel getComptes d'app.js:354
+        // servait à construire. Toujours vide depuis que l'interrupteur ne
+        // ferme plus que l'Admin (24/09/2026) : personne n'est masqué du
+        // sélecteur d'Index. Gardée pour ne pas changer la forme de réponse.
+        'conseillers_inactifs' => [],
     ];
     if (isset($p['years'])) $r['years'] = $annees;
     return $r;
