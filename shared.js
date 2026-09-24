@@ -702,6 +702,8 @@ window.BACKEND_PHP = (function(){
 })();
 // Adresse et corps d'un appel : GAS en GET (paramètres dans l'URL), API en
 // POST (action dans l'URL pour lire les journaux, le reste dans le corps).
+// Lien « mot de passe oublié » : il doit rouvrir la page en mode API.
+window.RETOUR_REINIT_SUFFIXE = window.BACKEND_PHP ? '?backend=php' : '';
 window.requeteServeur = function(params){
   if(!window.BACKEND_PHP) return {url:`${GS_URL}?${params.toString()}`, corps:null};
   const token = window.authToken && window.authToken.get();
@@ -764,7 +766,10 @@ const GAS_ACTIONS_ECRITURE = new Set([
   'saveEmails','saveCompte','resetPassword','setPassword','selfSetPassword',
   // Écrivent une ligne dans Logs_Connexion : doubler fabriquerait de fausses
   // connexions dans le journal.
-  'logLogin','logAccesIndex'
+  'logLogin','logAccesIndex',
+  // Mot de passe oublié (AG-013) : doubler enverrait deux mails et
+  // consommerait deux fois le quota de 3 demandes par heure.
+  'demanderReinit','reinitMotDePasse'
 ]);
 const GAS_HEDGE_MS            = 7000;   // délai avant de doubler une lecture
 const GAS_TENTATIVES_LECTURE  = 3;
@@ -1467,6 +1472,84 @@ function showToast(msg,ok=true){
 const PWD_POLICY_MSG='Le mot de passe doit contenir au moins 12 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.';
 function pwdPolicyOk(pwd){
   return typeof pwd==='string'&&pwd.length>=12&&/[A-Z]/.test(pwd)&&/[a-z]/.test(pwd)&&/[0-9]/.test(pwd)&&/[^A-Za-z0-9]/.test(pwd);
+}
+
+// ── Mot de passe oublié (AG-013, mode API seulement) ───────────────────────
+// Le conseiller demande un lien par mail ; le lien ramène sur cette même page
+// avec ?reinit=<jeton>, qui affiche le formulaire « nouveau mot de passe ».
+// Le jeton part ensuite dans le corps POST (requeteServeur), jamais dans l'URL
+// d'un appel, et il est retiré de la barre d'adresse une fois utilisé.
+window.jetonReinitUrl=function(){
+  try{const j=new URLSearchParams(window.location.search).get('reinit');return /^[0-9a-f]{64}$/.test(j||'')?j:null;}catch(_){return null;}
+};
+function oterReinitUrl(){
+  try{const u=new URL(window.location.href);u.searchParams.delete('reinit');window.history.replaceState(null,'',u.pathname+u.search+u.hash);}catch(_){}
+}
+const REINIT_CHAMP={width:'100%',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)',marginBottom:10};
+const REINIT_BTN={width:'100%',padding:'11px',background:'#1e3a8a',color:'#fff',border:'none',borderRadius:8,fontSize:14,fontWeight:700,cursor:'pointer'};
+const REINIT_LIEN={background:'none',border:'none',color:'#1e3a8a',cursor:'pointer',fontSize:12,textDecoration:'underline',padding:0};
+
+function LienMotDePasseOublie({conseiller}){
+  const[ouvert,setOuvert]=React.useState(false);
+  const[envoi,setEnvoi]=React.useState(false);
+  const[msg,setMsg]=React.useState(null); // {ok,texte}
+  if(!window.BACKEND_PHP) return null;
+  async function envoyer(){
+    setEnvoi(true);setMsg(null);
+    try{
+      const retour=window.location.origin+window.location.pathname+(window.RETOUR_REINIT_SUFFIXE||'');
+      const r=await apiFetch('demanderReinit',{conseiller,retour,userAgent:navigator.userAgent});
+      setMsg(r&&r.ok?{ok:true,texte:r.message}:{ok:false,texte:(r&&r.error)||'Erreur'});
+    }catch(e){setMsg({ok:false,texte:'Erreur réseau : '+e.message});}
+    finally{setEnvoi(false);}
+  }
+  if(!ouvert) return CE('div',{style:{textAlign:'center',marginTop:12}},
+    CE('button',{type:'button',style:REINIT_LIEN,onClick:()=>setOuvert(true)},'Mot de passe oublié ?'));
+  return CE('div',{style:{marginTop:14,padding:12,border:'1px solid var(--border)',borderRadius:8,fontSize:13,color:'var(--text-2)'}},
+    CE('div',{style:{marginBottom:8}},'Un lien pour choisir un nouveau mot de passe sera envoyé à l’adresse mail enregistrée pour ',CE('strong',null,conseiller||'…'),'.'),
+    msg&&CE('p',{style:{color:msg.ok?'#15803d':'#c53030',margin:'0 0 8px'}},msg.texte),
+    !(msg&&msg.ok)&&CE('button',{type:'button',style:{...REINIT_BTN,opacity:envoi||!conseiller?.6:1},disabled:envoi||!conseiller,onClick:envoyer},envoi?'Envoi…':'📧 Recevoir un lien par mail'),
+    CE('div',{style:{textAlign:'center',marginTop:8}},CE('button',{type:'button',style:REINIT_LIEN,onClick:()=>{setOuvert(false);setMsg(null);}},'Fermer'))
+  );
+}
+
+function VueReinitMotDePasse({jeton,onFini}){
+  const[p1,setP1]=React.useState('');
+  const[p2,setP2]=React.useState('');
+  const[voir,setVoir]=React.useState(false);
+  const[envoi,setEnvoi]=React.useState(false);
+  const[err,setErr]=React.useState('');
+  const[fini,setFini]=React.useState(false);
+  function terminer(){oterReinitUrl();onFini&&onFini();}
+  async function valider(){
+    if(!pwdPolicyOk(p1)){setErr('❌ '+PWD_POLICY_MSG);return;}
+    if(p1!==p2){setErr('Les deux mots de passe ne correspondent pas.');return;}
+    setEnvoi(true);setErr('');
+    try{
+      const r=await apiFetch('reinitMotDePasse',{jeton,password:p1,userAgent:navigator.userAgent});
+      if(r&&r.ok){setFini(true);oterReinitUrl();}
+      else setErr((r&&r.error)||'Erreur');
+    }catch(e){setErr('Erreur réseau : '+e.message);}
+    finally{setEnvoi(false);}
+  }
+  if(fini) return CE('div',{style:{textAlign:'center'}},
+    CE('div',{style:{fontSize:32,marginBottom:8}},'✅'),
+    CE('div',{style:{fontSize:15,fontWeight:700,marginBottom:12,color:'var(--text)'}},'Mot de passe changé. Vous pouvez vous connecter.'),
+    CE('button',{type:'button',style:REINIT_BTN,onClick:terminer},'Aller à la connexion'));
+  const champ=(val,set,ph,entree)=>CE('input',{type:voir?'text':'password',placeholder:ph,value:val,autoComplete:'new-password',
+    onChange:e=>set(e.target.value),onKeyDown:e=>entree&&e.key==='Enter'&&valider(),style:REINIT_CHAMP});
+  return CE('div',null,
+    CE('div',{style:{textAlign:'center',fontSize:32,marginBottom:8}},'🔑'),
+    CE('div',{style:{fontSize:15,fontWeight:700,textAlign:'center',marginBottom:4,color:'var(--text)'}},'Choisir un nouveau mot de passe'),
+    CE('div',{style:{fontSize:11,color:'#718096',textAlign:'center',marginBottom:12}},'12 caractères min. avec majuscule, minuscule, chiffre et caractère spécial.'),
+    champ(p1,setP1,'Nouveau mot de passe',false),
+    champ(p2,setP2,'Confirmer',true),
+    CE('label',{style:{fontSize:12,color:'var(--text-2)',display:'flex',gap:6,alignItems:'center',marginBottom:10}},
+      CE('input',{type:'checkbox',checked:voir,onChange:e=>setVoir(e.target.checked)}),'Afficher'),
+    err&&CE('p',{style:{color:'#c53030',fontSize:13,marginBottom:8}},err),
+    CE('button',{type:'button',style:{...REINIT_BTN,opacity:envoi||!p1||!p2?.6:1},disabled:envoi||!p1||!p2,onClick:valider},envoi?'Enregistrement…':'✅ Valider'),
+    CE('div',{style:{textAlign:'center',marginTop:10}},CE('button',{type:'button',style:REINIT_LIEN,onClick:terminer},'Annuler et revenir à la connexion'))
+  );
 }
 
 // ── Helper login : à appeler après un checkPassword réussi ──────
