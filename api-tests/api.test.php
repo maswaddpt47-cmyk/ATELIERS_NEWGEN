@@ -75,6 +75,7 @@ $r = appel(['action' => 'getComptes'], [], $ent);
 verifier(in_array('Access-Control-Allow-Origin: https://maswaddpt47-cmyk.github.io', $ent, true), 'CORS limité à github.io');
 verifier($r['ok'] === true && array_column($r['comptes'], 'conseiller') === ['Ancien Collegue', 'Conseiller Test', 'Nouveau Venu'], 'getComptes public : tous les comptes (l\'interrupteur ne ferme que l\'Admin)');
 verifier(!isset($r['comptes'][0]['role']) && !isset($r['comptes'][0]['actif']), 'getComptes public : ni rôle ni état');
+verifier(array_column(appel(['action' => 'getComptes', 'source' => 'admin'])['comptes'], 'conseiller') === ['Conseiller Test', 'Nouveau Venu'], 'getComptes page Admin : interrupteurs activés seuls');
 verifier($r['maintenance'] === false && $r['maintenance_msg'] === '', 'getComptes public : état de maintenance');
 
 $r = appel(['action' => 'checkPassword', 'conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
