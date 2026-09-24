@@ -289,6 +289,14 @@ ne renvoie que les noms actifs, ni rôle ni état).
   McNemar χ² = 16,06.
   **Arrêtée à mi-journée** (accord du 24/09/2026 : résultat déjà net, la
   soirée n'apporterait rien de décisif). **Étape 0 close.**
+- **24/09/2026 — « mot de passe oublié » en libre-service : feu vert de
+  l'utilisateur** (bloc AG-013 ouvert, sans réponse B pour l'instant).
+  Étape 1 faite : `api/lib/mail.php` + page `api/mailtest.php` (clé
+  d'import). **Utilisateur** : tester l'envoi vers son adresse pro
+  `@lotetgaronne.fr` **et** une Gmail, regarder réception ET indésirables.
+  Si la passerelle du Département bloque : demander à la DSI d'autoriser
+  l'expéditeur. Étape 2 (parcours complet) seulement si les mails arrivent.
+  Préférer les adresses pro dans Listes → Conseillers (RGPD).
 - **✅ RGPD — journal conservé 12 mois** (décision utilisateur 24/09/2026),
   purgé à chaque connexion réussie (`API_JOURNAL_MOIS`, `api/lib/api.php`).
   Point « durée de conservation » d'AG-010 réglé.
