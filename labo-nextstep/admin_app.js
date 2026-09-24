@@ -1,0 +1,1461 @@
+// ════════════════════════════════════════════════════════════
+// Stocke le timestamp du dernier geste utilisateur.
+// Vérifié à chaque reprise du focus + toutes les minutes.
+// Sur expiration : déconnexion propre + toast informatif.
+// ════════════════════════════════════════════════════════════
+const SESSION_KEY        = lsKey('adm_last_activity');
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
+
+function touchSession(){
+  localStorage.setItem(SESSION_KEY, String(Date.now()));
+}
+function isSessionExpired(){
+  const last = parseInt(localStorage.getItem(SESSION_KEY) || '0', 10);
+  return last > 0 && (Date.now() - last) > SESSION_TIMEOUT_MS;
+}
+function clearSession(){
+  localStorage.removeItem(SESSION_KEY);
+  window.onLogout&&window.onLogout();
+}
+
+// ════════════════════════════════════════════════════════════
+// 3 échecs → blocage 5 min, countdown visible, reset auto.
+// ════════════════════════════════════════════════════════════
+function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp}){
+  const MAX_FAILS=3, LOCK_MS=5*60*1000;
+
+  const[pwd,setPwd]=React.useState('');
+  const[err,setErr]=React.useState('');
+  const[loading,setLoading]=React.useState(false);
+  const[hint,setHint]=React.useState('');
+  const[show,setShow]=React.useState(false);
+  const[failCount,setFailCount]=React.useState(0);
+  const[lockUntil,setLockUntil]=React.useState(0);
+  const[countdown,setCountdown]=React.useState(0);
+  const base=conseillersProp&&conseillersProp.length?conseillersProp:CONSEILLERS_DEFAULT;
+  const[conseiller,setConseiller]=React.useState(()=>savedName&&savedName!=='admin'&&base.includes(savedName)?savedName:(base[0]||''));
+  // Resync quand la liste arrive depuis App (fetch async)
+  React.useEffect(()=>{
+    if(!base.length)return;
+    setConseiller(c=>base.includes(c)?c:base[0]);
+  },[base.join(',')]);
+
+  // Préchargement des ateliers en parallèle de la saisie du mot de passe :
+  // getAll ne dépend pas d'un jeton, rien n'empêche de le lancer avant que
+  // checkPassword ait répondu. Sans ça, Historique attendait le plein
+  // aller-retour de checkPassword avant même de commencer son propre
+  // chargement — même défaut que celui corrigé sur l'Index, ici entre
+  // l'authentification et les données plutôt qu'entre la maintenance et les
+  // données. loadData (après connexion) réutilise ce résultat via fetchAll,
+  // qui dédoublonne : aucun getAll supplémentaire n'est déclenché.
+  React.useEffect(()=>{
+    fetchAll(new Date().getFullYear(),{source:'admin'}).catch(()=>{});
+  },[]);
+
+  // Tick du countdown
+  React.useEffect(()=>{
+    if(!lockUntil||lockUntil<=Date.now()) return;
+    const tick=()=>{
+      const left=lockUntil-Date.now();
+      if(left<=0){setCountdown(0);setLockUntil(0);setFailCount(0);}
+      else setCountdown(Math.ceil(left/1000));
+    };
+    tick();
+    const id=setInterval(tick,1000);
+    return()=>clearInterval(id);
+  },[lockUntil]);
+
+  const isLocked=lockUntil>Date.now()||countdown>0;
+
+  async function handleSubmit(){
+    if(!pwd.trim()||isLocked) return;
+    setLoading(true);setErr('');setHint('');
+    const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
+    const t1=setTimeout(()=>setHint('Connexion au serveur…'),2000);
+    const t2=setTimeout(()=>setHint('Démarrage de Google Apps Script…'),6000);
+    const t3=isMobile?setTimeout(()=>setHint('Réseau mobile détecté, patience…'),12000):null;
+    try{
+      // Pas de Promise.race ici : apiFetch a déjà son propre plafond + une
+      // reprise (gasUnAppel). Un minuteur extérieur plus court abandonnait
+      // avant que cette reprise interne aboutisse — l'appel continuait en
+      // arrière-plan (rien ne l'annule), son résultat était jeté, le bouton
+      // Connexion se réactivait, et un second clic empilait un deuxième
+      // checkPassword EN CONCURRENCE avec le premier. Vu en production :
+      // "checkPassword #1" et "#2" tournant au même moment, 404 en boucle,
+      // jusqu'à ce que l'un des deux passe enfin. attendre apiFetch
+      // directement garantit une seule tentative en vol à la fois.
+      const res=await apiFetch('checkPassword',{conseiller,password:pwd,userAgent:navigator.userAgent,source:'admin.html'});
+      if(res.ok){
+        if((res.role||'user')!=='admin'&&(res.role||'user')!=='superviseur'){
+          setErr('⛔ Accès refusé — réservé aux administrateurs.');
+          return;
+        }
+        setFailCount(0);setLockUntil(0);
+        window.onLoginSuccess&&window.onLoginSuccess(conseiller,res);
+        touchSession();onLogin(res.role,conseiller);
+      }else{
+        const nf=failCount+1;
+        setFailCount(nf);
+        if(nf>=MAX_FAILS){
+          const until=Date.now()+LOCK_MS;
+          setLockUntil(until);
+          setErr('🔒 Trop de tentatives — accès bloqué 5 minutes.');
+        }else{
+          setErr(`Mot de passe incorrect (${nf}/${MAX_FAILS} tentative${nf>1?'s':''})`);
+        }
+      }
+    }catch(e){setErr('Erreur réseau : '+e.message);}
+    finally{setLoading(false);setHint('');clearTimeout(t1);clearTimeout(t2);if(t3)clearTimeout(t3);}
+  }
+
+  const mins=Math.floor(countdown/60), secs=String(countdown%60).padStart(2,'0');
+
+  return CE('div',{className:'login-wrap'},
+    CE('div',{className:'login-card'},
+      CE('h2',null,'🔐 Accès Admin NextStep'),
+      savedName&&savedName!=='admin'&&CE('div',{style:{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:8,padding:'8px 12px',marginBottom:12,display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:12}},
+        CE('span',{style:{color:'#1e3a8a',fontWeight:700}},'👤 Connecté en tant que : '+savedName),
+        CE('button',{onClick:onResetProfil,style:{background:'none',border:'none',color:'#9ca3af',cursor:'pointer',fontSize:11,textDecoration:'underline'}},'Changer')
+      ),
+      isLocked
+        ? CE('div',{style:{textAlign:'center',padding:'28px 0'}},
+            CE('div',{style:{fontSize:44,marginBottom:10}},'🔒'),
+            CE('div',{style:{fontSize:15,fontWeight:700,color:'#c53030',marginBottom:6}},'Accès temporairement bloqué'),
+            CE('div',{style:{fontSize:28,fontWeight:800,color:'#1a202c',fontVariantNumeric:'tabular-nums'}},mins+'m'+secs+'s'),
+            CE('div',{style:{fontSize:12,color:'#9ca3af',marginTop:4}},'Trop de tentatives incorrectes')
+          )
+        : CE(React.Fragment,null,
+            CE('div',{style:{marginBottom:10}},
+              CE('label',{style:{fontSize:12,fontWeight:600,color:'#4a5568',display:'block',marginBottom:4}},'Conseiller'),
+              CE('select',{value:conseiller,onChange:e=>setConseiller(e.target.value),style:{width:'100%',padding:'10px 14px',border:'1px solid #e2e8f0',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'#fff'}},
+                base.map(c=>CE('option',{key:c,value:c},c))
+              )
+            ),
+            CE('div',{style:{position:'relative',marginBottom:10}},
+              CE('input',{
+                type:show?'text':'password',placeholder:'Mot de passe',value:pwd,
+                onChange:e=>setPwd(e.target.value),
+                onKeyDown:e=>e.key==='Enter'&&handleSubmit(),
+                style:{width:'100%',padding:'10px 40px 10px 14px',border:'1px solid #e2e8f0',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box'}
+              }),
+              CE('button',{onClick:()=>setShow(s=>!s),style:{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#718096',padding:0}},show?'🙈':'👁️')
+            ),
+            err&&CE('p',{style:{color:'#c53030',fontSize:13,marginBottom:8}},err),
+            hint&&!err&&CE('p',{style:{color:'#718096',fontSize:12,marginBottom:8,display:'flex',alignItems:'center',gap:6}},CE('span',{className:'spinner',style:{width:12,height:12,borderWidth:2}}),hint),
+            CE('button',{onClick:handleSubmit,disabled:loading||!pwd.trim(),style:{width:'100%',padding:'11px',background:'#1e3a8a',color:'#fff',border:'none',borderRadius:8,fontSize:14,fontWeight:700,cursor:loading?'progress':'pointer'}},loading?'Vérification…':'Connexion')
+          )
+    )
+  );
+}
+
+var VIEW_META = {
+  saisie:     { ico: '✏️',  label: 'Nouveau',        group: 'Action' },
+  historique: { ico: '📋',  label: 'Historique',     group: 'Consulter' },
+  agenda:     { ico: '🗓️', label: 'Agenda',          group: 'Consulter' },
+  calendrier: { ico: '📅',  label: 'Calendrier',     group: 'Consulter' },
+  carte:      { ico: '🗺️', label: 'Carte',          group: 'Consulter' },
+  roadmap:    { ico: '🛣️', label: 'Roadmap',         group: 'Consulter' },
+  dashboard:  { ico: '🚀',  label: 'Dashboard',      group: 'Analyser' },
+  graphiques: { ico: '📊',  label: 'Statistiques',   group: 'Analyser' },
+  bingo:      { ico: '🎯',  label: 'Bingo',          group: 'Analyser' },
+  anomalies:  { ico: '⚠️',  label: 'Anomalies',      group: 'Analyser' },
+  gestion_ordi: { ico: '🖥️', label: 'Gestion ordi',  group: 'Analyser' },
+  powerbi:    { ico: '📈',  label: 'Power BI',       group: 'Analyser' },
+  admin:      { ico: '⚙️', label: 'Admin',          group: 'Config' },
+  logs:            { ico: '📜',  label: 'Logs',        group: 'Config' },
+  logs_connexion:  { ico: '🔐',  label: 'Connexions',  group: 'Config' },
+};
+
+// ── App Admin ──────────────────────────────────────────────
+function App(){
+  const[auth,setAuth]           = React.useState(false);
+  const[adminConseiller,setAdminConseiller]= React.useState(()=>localStorage.getItem(lsKey('adm_conseiller'))||'');
+  const[view,setView]           = React.useState('historique');
+  const[entries,setEntries]= React.useState([]);
+  const[loading,setLoading]= React.useState(true);
+  const[error,setError]    = React.useState(null);
+  const[newEntries,setNewEntries]= React.useState([]);
+  const[seenIds,setSeenIds]= React.useState(new Set());
+  const[showListes,setShowListes]= React.useState(false);
+  const[editingId,setEditingId]  = React.useState(null);
+  const[prefillData,setPrefillData]= React.useState(null);
+  const[annee,setAnnee]    = React.useState(String(new Date().getFullYear()));
+  const[lists,setLists]    = React.useState({
+    statuts:[...STATUTS_DEFAULT],conseillers:[...CONSEILLERS_DEFAULT],
+    publics:[...PUBLICS_DEFAULT],materiels:[...MATERIELS_DEFAULT]
+  });
+  // Chargé avant l'auth pour alimenter le dropdown de login
+  const[loginConseillers,setLoginConseillers]=React.useState(CONSEILLERS_DEFAULT);
+  // Dropdown construit sur getComptes seul : la feuille Comptes porte déjà le
+  // nom, le rôle et l'état actif de chacun. Le getAll qui servait à récupérer
+  // lists.conseillers coûtait ~20 s pour la même information.
+  React.useEffect(()=>{
+    apiFetch('getComptes').catch(()=>null).then(res=>{
+      const comptes=res?.ok&&res.comptes?res.comptes:[];
+      if(comptes.length===0)return; // on garde CONSEILLERS_DEFAULT
+      const eligibles=comptes
+        .filter(c=>(c.role==='admin'||c.role==='superviseur')&&c.actif!=='NON')
+        .map(c=>c.conseiller)
+        .filter(Boolean);
+      setLoginConseillers(eligibles.length>0?eligibles:CONSEILLERS_DEFAULT);
+    });
+  },[]);
+  const[emails,setEmails]  = React.useState({});
+  const[materielsMasques,setMaterielsMasques] = React.useState([]);
+  const[lastSync,setLastSync]= React.useState(null);
+  const[syncing,setSyncing]= React.useState(false);
+  const[logFilter,setLogFilter]= React.useState('all');
+  const[pinned,setPinned]= React.useState(()=>localStorage.getItem(lsKey('adm_sidebar_pinned'))==='1'); // épingle sidebar
+  const[darkMode,setDarkMode]=React.useState(()=>localStorage.getItem(lsKey('adm_dark'))==='1');
+  React.useEffect(()=>{
+    document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
+    localStorage.setItem(lsKey('adm_dark'),darkMode?'1':'0');
+  },[darkMode]);
+  const LOGS_PURGE_MS=30*24*60*60*1000;
+  const LOGS_MAX=200;
+
+// ⚠️ Les deux applis (NextStep et NEWGEN) sont servies depuis la MÊME origine
+// GitHub Pages — maswaddpt47-cmyk.github.io — et localStorage est cloisonné
+// par origine, pas par chemin. Une clé identique des deux côtés les fait donc
+// écrire l'une sur l'autre. Constaté le 21/09/2026 : « Tout effacer » depuis
+// un journal faisait remonter les lignes de l'autre appli, et les deux
+// journaux n'en formaient qu'un seul. La pastille NEXTSTEP/NEWGEN ne pouvait
+// pas le révéler — elle nomme l'appli qui AFFICHE la liste, pas celle qui a
+// émis l'appel, d'où des mesures attribuées au mauvais projet.
+// Les préférences (adm_conseiller, adm_dark, f_annee, sidebar…) restent
+// partagées à ce jour : même cause, chantier séparé.
+const LOGS_KEY = lsKey('adm_logs');
+  // ── Journal des opérations, partagé entre onglets ─────────────────────────
+  // LOGS_KEY est commun à tous les onglets Admin du même
+  // navigateur. La version précédente y recopiait son seul état React en
+  // mémoire : deux onglets ouverts, et le dernier à journaliser effaçait les
+  // lignes écrites par l'autre. Le journal étant l'outil qui sert à mesurer
+  // les appels GAS, des lignes manquantes faussent le diagnostic lui-même.
+  //
+  // On relit donc le stockage à froid avant chaque écriture, et on fusionne.
+  // Chaque entrée porte un id : c'est lui qui permet de dédupliquer sans se
+  // fier à l'horodatage, deux lignes pouvant tomber sur la même milliseconde.
+  function logId(){ return Date.now()+'_'+Math.random().toString(36).slice(2,8); }
+
+  function lireLogsStockes(){
+    try{
+      const raw=JSON.parse(localStorage.getItem(LOGS_KEY)||'[]');
+      return Array.isArray(raw)?raw:[];
+    }catch{ return []; }
+  }
+
+  // liste = l'état React courant, éventuellement précédé de la nouvelle
+  // entrée. On y ajoute ce que les autres onglets ont écrit entre-temps, on
+  // déduplique, on purge au-delà de 30 jours, on plafonne, on réécrit.
+  // Le repli ts+'|'+msg couvre les entrées écrites avant l'ajout des id.
+  function ecrireLogs(liste){
+    const cutoff=Date.now()-LOGS_PURGE_MS;
+    const vus=new Set();
+    const fusion=[...liste, ...lireLogsStockes()]
+      .filter(e=>e&&(!e.ts||e.ts>=cutoff))
+      .filter(e=>{
+        const cle=e.id||((e.ts||0)+'|'+e.msg);
+        if(vus.has(cle)) return false;
+        vus.add(cle);
+        return true;
+      })
+      .sort((a,b)=>(b.ts||0)-(a.ts||0))
+      .slice(0,LOGS_MAX);
+    try{ localStorage.setItem(LOGS_KEY,JSON.stringify(fusion)); }catch{}
+    return fusion;
+  }
+
+  const[logs,setLogs]=React.useState(()=>{
+    const cutoff=Date.now()-LOGS_PURGE_MS;
+    return lireLogsStockes().filter(e=>!e.ts||e.ts>=cutoff);
+  });
+  function addLog(msg,type='info'){
+    const entry={id:logId(),msg,type,t:new Date().toLocaleTimeString('fr-FR'),ts:Date.now()};
+    setLogs(l=>ecrireLogs([entry,...l]));
+  }
+  // « Tout effacer » vide réellement le stockage partagé. Limite assumée : un
+  // autre onglet gardant ses lignes en mémoire les réécrira à sa prochaine
+  // journalisation. Le rafraîchir repart d'un journal vide.
+  function clearLogs(){setLogs([]);try{localStorage.removeItem(LOGS_KEY);}catch{}}
+  function purgeLogs(){ setLogs(l=>ecrireLogs(l)); }
+
+  // ── Session expirante ──────────────────────────────
+  // Déconnexion automatique après 30 min d'inactivité.
+  // touchSession() appelé sur chaque interaction clavier/souris.
+  function doSessionExpire(){
+    clearSession();
+    setAuth(false);
+    showToast('⏱️ Session expirée — reconnecte-toi.',false);
+    addLog('Session expirée (30 min inactivité)','info');
+  }
+  function handleLogout(){
+    if(!window.confirm('Se déconnecter ?'))return;
+    clearSession();
+    setAuth(false);
+  }
+  React.useEffect(()=>{
+    if(!auth) return;
+    touchSession();
+    // Vérification toutes les 60s
+    const interval = setInterval(()=>{
+      if(isSessionExpired()) doSessionExpire();
+    }, 60*1000);
+    // Vérification au retour sur l'onglet
+    function onFocus(){ if(isSessionExpired()) doSessionExpire(); else touchSession(); }
+    window.addEventListener('focus', onFocus);
+    // Touch sur toute interaction utilisateur
+    function onActivity(){ touchSession(); }
+    window.addEventListener('keydown', onActivity, {passive:true});
+    window.addEventListener('mousedown', onActivity, {passive:true});
+    window.addEventListener('touchstart', onActivity, {passive:true});
+    return ()=>{
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('keydown', onActivity);
+      window.removeEventListener('mousedown', onActivity);
+      window.removeEventListener('touchstart', onActivity);
+    };
+  },[auth]);
+
+  // useCache=true : accepte le résultat du prefetch du login (chargement
+  // initial). Sinon on force un appel réseau — après une écriture, un refresh
+  // manuel ou la synchro auto, les données doivent être fraîches.
+  async function loadData(attempt=1, silent=false, useCache=false){
+    setSyncing(true);
+    if(!silent) setLoading(true);
+    setError(null);
+    try{
+      // fetchAll porte seul les tentatives (3 essais échelonnés, budget borné).
+      // Une échelle de retry supplémentaire ici multipliait les appels : 3 × 3
+      // = jusqu'à 9 appels réseau et plus de 2 minutes d'attente.
+      const data=await fetchAll(annee,{source:'admin',force:!useCache});
+      const incoming=data.entries||[];
+      setEntries(incoming);
+      if(data.lists){
+        const l=data.lists;
+        const nl={statuts:Array.isArray(l.statuts)?l.statuts:[...STATUTS_DEFAULT],conseillers:Array.isArray(l.conseillers)?l.conseillers:[...CONSEILLERS_DEFAULT],publics:Array.isArray(l.publics)?l.publics:[...PUBLICS_DEFAULT],materiels:Array.isArray(l.materiels)?l.materiels:[...MATERIELS_DEFAULT]};
+        setLists(nl);STATUTS=[...nl.statuts];CONSEILLERS=[...nl.conseillers];PUBLICS=[...nl.publics];MATERIELS=[...nl.materiels];
+        addLog('Listes synchronisées','ok');
+      }
+      if(data.conseiller_colors){applyColors(data.conseiller_colors);}
+      if(data.emails){setEmails(data.emails);addLog('Emails chargés','ok');}
+      if(Array.isArray(data.materiels_masques))setMaterielsMasques(data.materiels_masques);
+      if(data.stockOrdinateurs){STOCK_ORDINATEURS=parseInt(data.stockOrdinateurs)||STOCK_ORDINATEURS;}
+      addLog(`${incoming.length} ateliers chargés (${annee})`,'ok');
+      setLastSync(new Date());
+      setSeenIds(prev=>{if(prev.size===0)return new Set(incoming.map(e=>e._id));const nouvs=incoming.filter(e=>!prev.has(e._id));if(nouvs.length>0)setNewEntries(n=>[...nouvs,...n]);return new Set(incoming.map(e=>e._id));});
+      setLoading(false);setSyncing(false);
+    }catch(err){
+      // fetchAll a déjà épuisé ses tentatives : on affiche, sans relancer.
+      setError('Impossible de charger : '+err.message);
+      addLog('Erreur : '+err.message,'err');
+      setLoading(false);setSyncing(false);
+    }
+  }
+
+  // Chaque appel GAS atterrit dans l'onglet Logs avec sa durée et son numéro de
+  // tentative : on lit où passe le temps sans ouvrir les DevTools.
+  React.useEffect(()=>{
+    window.gasLogHook=e=>addLog(
+      `GAS ${e.action} #${e.attempt} — ${e.issue} en ${(e.ms/1000).toFixed(1)} s`
+        + (e.file>=100 ? ` (file ${(e.file/1000).toFixed(1)} s)` : ''),
+      // 'annulé' n'est ni une réussite ni un échec : l'appel a été arrêté
+      // parce que son jumeau avait répondu. Le peindre en rouge ferait croire
+      // à une panne.
+      e.issue==='ok' ? 'ok' : (e.issue.indexOf('annulé')===0 ? 'info' : 'err')
+    );
+    return()=>{window.gasLogHook=null;};
+  },[]);
+
+
+  // ── Application locale après écriture (au lieu d'un rechargement complet) ──
+  // Chaque saveEntry/delete était suivi d'un getAll complet. Deux appels en
+  // série dont le second tombait systématiquement dans son pire cas : côté
+  // GAS, toute écriture purge le cache de réponse, donc le rechargement qui
+  // suit immédiatement relit forcément tout le classeur.
+  //
+  // Relevé du 18/09/2026 (Journal client) : un cycle d'enregistrement
+  // contenait un « getAll ok en 11,8 s » juste après le saveEntry ; un autre
+  // en contenait quatre (404 en 26,5 s, 33,3 s, 27,3 s, 9,4 s puis ok en
+  // 2,3 s), soit l'essentiel des 3 min 30 observées.
+  //
+  // L'entrée écrite est déjà connue du client : on l'applique en local et on
+  // ne redemande rien. Seul _n (numéro de ligne) est attribué côté serveur —
+  // il est purement cosmétique (colonne N° de l'export, libellé de la modale
+  // de suppression) et le mode lot crée déjà des entrées avec _n:''. La
+  // resynchro différée ci-dessous le récupère, avec les écritures des
+  // collègues.
+  const resyncRef = React.useRef(null);
+  function planifierResync(){
+    if(resyncRef.current) clearTimeout(resyncRef.current);
+    // Différé, et non enchaîné : c'est tout l'intérêt. Repartir tout de suite
+    // remettrait le getAll en concurrence avec le saveEntry qui vient de
+    // finir — exactement la rafale qu'on cherche à supprimer. Le délai est
+    // remis à zéro à chaque écriture, donc une série de saisies ne déclenche
+    // qu'une seule resynchro, une fois l'utilisateur au repos.
+    resyncRef.current = setTimeout(()=>{ resyncRef.current=null; loadData(1,true); }, 30000);
+  }
+  React.useEffect(()=>()=>{ if(resyncRef.current) clearTimeout(resyncRef.current); },[]);
+
+  function appliquerEntreeLocale(entry){
+    if(!entry||!entry._id) return;
+    setEntries(prev=>{
+      const i=prev.findIndex(e=>e._id===entry._id);
+      if(i===-1) return [...prev, entry];
+      const copie=prev.slice();
+      copie[i]={...prev[i], ...entry};
+      return copie;
+    });
+    planifierResync();
+  }
+  function retirerEntreeLocale(id){
+    if(!id) return;
+    setEntries(prev=>prev.filter(e=>e._id!==id));
+    planifierResync();
+  }
+  // shared.js (VueSaisie, panneaux d'Historique et de Calendrier) appelle ces
+  // deux points d'entrée après une écriture réussie.
+  React.useEffect(()=>{
+    window.__entreeSauvegardee = appliquerEntreeLocale;
+    window.__entreeSupprimee   = retirerEntreeLocale;
+    return()=>{ window.__entreeSauvegardee=null; window.__entreeSupprimee=null; };
+  },[]);
+
+  const isFirstLoad=React.useRef(true);
+  React.useEffect(()=>{loadCommunes47().catch(()=>{});},[]);
+  // Attendre l'authentification avant de charger : sur l'écran de login, ces
+  // hooks tournaient déjà (ils sont déclarés avant le `if(!auth) return`), donc
+  // loadData enchaînait ses 3 tentatives en concurrence avec le préchauffage et
+  // le chargement du dropdown. Ses 3 timeouts expiraient avant que le mot de
+  // passe soit saisi, et l'erreur restée en state s'affichait sur l'onglet
+  // Historique juste après une connexion pourtant réussie.
+  React.useEffect(()=>{
+    if(!auth) return;
+    if(isFirstLoad.current){isFirstLoad.current=false;loadData(1,false,true);}
+    else{setSeenIds(new Set());loadData();}
+  },[annee,auth]);
+  // Une erreur affichée signifie que la lecture précédente n'a pas abouti —
+  // très probablement parce que la livraison Apps Script traverse une de ses
+  // fenêtres de panne. Relancer dedans toutes les 10 min ne fait qu'ajouter
+  // des appels morts pendant que l'utilisateur a déjà le bouton Réessayer
+  // sous les yeux. Lu via une ref : la fonction passée à setInterval est
+  // créée une fois et ne verrait jamais la valeur à jour de `error`.
+  const errorRef = React.useRef(null);
+  React.useEffect(()=>{ errorRef.current = error; },[error]);
+
+  // Synchro de fond : 10 min au lieu de 5, et suspendue quand l'onglet n'est
+  // pas visible. Un onglet Admin laissé ouvert en arrière-plan toute la
+  // journée envoyait un getAll complet toutes les 5 minutes, en concurrence
+  // avec les enregistrements des conseillers.
+  React.useEffect(()=>{
+    if(!auth) return;
+    const id=setInterval(()=>{
+      if(document.hidden) return;
+      if(errorRef.current) return;
+      loadData(1,true);
+    },10*60*1000);
+    return()=>clearInterval(id);
+  },[annee,auth]);
+  async function handleDelete(id){
+    try{const res=await apiFetch('delete',{_id:id});if(!suppressionAboutie(res))throw new Error(res.error);showToast('✅ Atelier supprimé');addLog('Suppression '+id,'ok');retirerEntreeLocale(id);}
+    catch(err){showToast('❌ '+err.message,false);}
+  }
+
+  function handleEdit(id){setEditingId(id);setPrefillData(null);setView('saisie');}
+  function handleSaved(){setView('historique');}
+
+  function handleDuplicate(entry){
+    const{_id,_n,date,horaire,ampm,inscrits,presents,remarques,...rest}=entry;
+    setPrefillData({...rest});setEditingId(null);setView('saisie');
+  }
+
+  function handleSaveLists(newLists){
+    setLists(newLists);STATUTS=[...newLists.statuts];CONSEILLERS=[...newLists.conseillers];PUBLICS=[...newLists.publics];MATERIELS=[...newLists.materiels];
+  }
+
+  function handleSaveEmails(newEmails){
+    setEmails(newEmails);
+  }
+  const STATUS_PALETTE={'Planifié':'#9683EC','Réalisé':'#70AD47','Annulé':'#FF5050','Non réalisé':'#FFC000','Reporté':'#ED7D31'};
+  const statusCounts=React.useMemo(()=>{
+    const c={};
+    entries.forEach(e=>{const s=e.statut||'?';c[s]=(c[s]||0)+1;});
+    return Object.entries(STATUS_PALETTE).filter(([s])=>c[s]>0).map(([s,color])=>({s,v:c[s],color}));
+  },[entries]);
+
+  const[role,setRole]=React.useState('');
+  if(!auth)return CE(AdminLogin,{onLogin:(r,nom)=>{setAuth(true);setRole(r||'user');const key=r==='superviseur'?'admin':nom;if(nom){localStorage.setItem(lsKey('adm_conseiller'),key);setAdminConseiller(key);}},savedName:adminConseiller,onResetProfil:()=>{localStorage.removeItem(lsKey('adm_conseiller'));setAdminConseiller('');},conseillers:loginConseillers})
+
+  if(!adminConseiller)return CE('div',{className:'login-wrap'},
+    CE('div',{className:'login-card'},
+      CE('h2',null,'👤 Qui êtes-vous ?'),
+      loading
+        ? CE(AttenteGAS,null)
+        : CE(React.Fragment,null,
+            CE('p',{style:{fontSize:13,color:'#718096',margin:'8px 0 20px'}},'Pour personnaliser votre interface'),
+            (lists.conseillers||CONSEILLERS_DEFAULT).map(c=>
+              CE('button',{key:c,onClick:()=>{localStorage.setItem(lsKey('adm_conseiller'),c);setAdminConseiller(c);},
+                style:{display:'block',width:'100%',marginBottom:10,padding:'11px 16px',border:`2px solid ${conseillerColor(c)}22`,borderRadius:10,background:`${conseillerColor(c)}11`,color:conseillerColor(c),fontSize:14,fontWeight:700,cursor:'pointer',textAlign:'left',transition:'all .15s'}},
+                CE('span',{style:{display:'inline-block',width:10,height:10,borderRadius:'50%',background:conseillerColor(c),marginRight:8}}),c)
+            ),
+            CE('button',{onClick:()=>{localStorage.setItem(lsKey('adm_conseiller'),'admin');setAdminConseiller('admin');},style:{display:'block',width:'100%',padding:'11px 16px',border:'2px solid #e2e8f0',borderRadius:10,background:'#f8fafc',color:'#718096',fontSize:13,cursor:'pointer',marginTop:4}},'Continuer sans personnalisation')
+          )
+    )
+  );
+
+  const sideBtn=(v,ico,lbl,extraClass)=>CE('button',{
+    key:v,
+    className:'sidebar-btn'+(view===v?' active':'')+(extraClass?' '+extraClass:''),
+    title:lbl,
+    onClick:()=>setView(v)
+  },
+    CE('span',{className:'sidebar-btn-ico'},ico),
+    CE('span',{className:'sidebar-btn-lbl'},lbl)
+  );
+
+  const accentColor = conseillerColor(adminConseiller)||NAV_DEFAULT_COLOR;
+  const meta = VIEW_META[view]||{ico:'📄',label:view,group:''};
+
+  return CE('div',{className:'app-shell'},
+
+    CE('aside',{className:'sidebar'+(pinned?' sidebar--pinned':''),style:{background:accentColor}},
+
+      CE('button',{
+        className:'sidebar-pin-btn'+(pinned?' pinned':''),
+        title:pinned?'Désépingler le menu':'Épingler le menu',
+        onClick:()=>setPinned(p=>{const n=!p;localStorage.setItem(lsKey('adm_sidebar_pinned'),n?'1':'0');return n;})
+      },pinned?'📌':'📍'),
+
+      CE('div',{className:'sidebar-logo'},'🖥️'),
+      CE('span',{className:'sidebar-count'},entries.length),
+      CE('span',{className:'sidebar-admin-badge'},'ADMIN'),
+
+      // Groupe : Action
+      CE('div',{className:'sidebar-sep'}),
+      CE('span',{className:'sidebar-group-label'},'Action'),
+      sideBtn('saisie','✏️','Nouveau'),
+
+      // Groupe : Voir
+      CE('div',{className:'sidebar-sep'}),
+      CE('span',{className:'sidebar-group-label'},'Voir'),
+      sideBtn('historique','📋','Historique'),
+      sideBtn('agenda','🗓️','Agenda'),
+      sideBtn('calendrier','📅','Calendrier'),
+      sideBtn('carte','🗺️','Carte'),
+      sideBtn('roadmap','🛣️','Roadmap'),
+
+      // Groupe : Stats
+      CE('div',{className:'sidebar-sep'}),
+      CE('span',{className:'sidebar-group-label'},'Analyser'),
+      sideBtn('dashboard','📊','Dashboard'),
+      sideBtn('bingo','🎯','Bingo'),
+      sideBtn('anomalies','⚠️','Anomalies'),
+      sideBtn('gestion_ordi','🖥️','Gestion ordi'),
+
+      // Groupe : Config — Listes ICI (remonté v9.3b)
+      CE('div',{className:'sidebar-sep'}),
+      CE('span',{className:'sidebar-group-label'},'Config'),
+      CE('button',{
+        className:'sidebar-btn sidebar-btn-listes',
+        title:'Gérer les listes déroulantes',
+        onClick:()=>setShowListes(true)
+      },
+        CE('span',{className:'sidebar-btn-ico'},'📋'),
+        CE('span',{className:'sidebar-btn-lbl'},'Listes')
+      ),
+      sideBtn('logs','📜','Logs'),
+      role==='admin'&&sideBtn('admin','⚙️','Admin'),
+      (role==='admin'||role==='superviseur')&&sideBtn('logs_connexion','🔐','Connexions'),
+
+      // Bas : sélecteur année + notifs
+      CE('div',{className:'sidebar-bottom'},
+        CE(ChoixAnnees,{className:'sidebar-year',value:annee,onChange:setAnnee,title:'Années chargées'}),
+        CE('button',{
+          className:'sidebar-btn',
+          title:darkMode?'Mode clair':'Mode sombre',
+          onClick:()=>setDarkMode(d=>!d),
+          style:{width:52,height:44,flexShrink:0}
+        },
+          CE('span',{className:'sidebar-btn-ico'},darkMode?'☀️':'🌙'),
+          CE('span',{className:'sidebar-btn-lbl'},darkMode?'Mode clair':'Mode sombre')
+        ),
+        newEntries.length>0&&CE('button',{
+          className:'sidebar-notif-btn',
+          title:`${newEntries.length} nouveaux ateliers`,
+          onClick:()=>{setView('historique');window._filterNewEntries&&window._filterNewEntries(newEntries.map(e=>e._id));setNewEntries([]);}
+        },
+          CE('span',null,'🔔'),
+          CE('span',null,newEntries.length)
+        )
+      )
+    ),
+
+    CE('div',{className:'app-content'+(pinned?' app-content--pinned':'')},
+
+      CE('div',{className:'app-topbar'},
+        CE('span',{style:{fontSize:16}},meta.ico),
+        CE('span',{className:'app-topbar-title'},meta.label),
+        meta.group&&CE('span',{className:'app-topbar-sub'},'— '+meta.group),
+        CE('div',{className:'app-topbar-right'},
+          syncing&&!loading&&CE('span',{className:'topbar-syncing',title:'Synchronisation en cours'},'🔄 Sync'),
+          lastSync&&!syncing&&CE('span',{
+            className:'topbar-sync-info',
+            title:'Sync auto toutes les 5 min'
+          },'🔄 '+lastSync.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})),
+          adminConseiller&&adminConseiller!=='admin'&&CE('span',{
+            className:'app-topbar-conseiller',
+            style:{background:accentColor}
+          },adminConseiller),
+          CE('button',{
+            onClick:()=>{localStorage.removeItem(lsKey('adm_conseiller'));setAdminConseiller('');},
+            title:'Changer d\'identité',
+            style:{background:'none',border:'1px solid #e2e8f0',borderRadius:6,padding:'3px 8px',fontSize:11,color:'#718096',cursor:'pointer'}
+          },'👤 Changer'),
+          CE('button',{
+            onClick:handleLogout,
+            title:'Déconnexion',
+            style:{background:'none',border:'1px solid #e2e8f0',borderRadius:6,padding:'3px 8px',fontSize:11,color:'#718096',cursor:'pointer'}
+          },'🚪 Déconnexion')
+        )
+      ),
+
+      CE('div',{className:'app-main'},
+        loading&&CE(AttenteGAS,{titre:'Chargement des ateliers'}),
+        error&&CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:()=>loadData()},'🔄 Réessayer')),
+        !loading&&!error&&CE('div',{key:view,className:'view-anim'},
+          view==='saisie'&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(adminConseiller),materielsMasques}),
+          view==='historique'&&CE(VueHistorique,{key:'hist_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem(lsKey('adm_conseiller'),nom);setAdminConseiller(nom);}}),
+          view==='agenda'&&CE(VueAgendaSemaine,{key:'agenda_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,accentColor}),
+          view==='calendrier'&&CE(VueCalendrier,{key:'cal_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem(lsKey('adm_conseiller'),nom);setAdminConseiller(nom);}}),
+          view==='dashboard'&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
+          view==='carte'&&CE(VueCarte,{entries,active:view==='carte'}),
+          view==='roadmap'&&CE(VueRoadmap,{entries,annee:anneeReference(annee),conseillers:lists.conseillers}),
+          view==='bingo'&&CE(VueBingo,{entries}),
+          view==='anomalies'&&CE(VueAnomalies,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');},communes:window.COMMUNES_47_CACHE||[],apiFetch,showToast,addLog}),
+          view==='gestion_ordi'&&CE(VueGestionOrdi,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');}}),
+
+          view==='admin'&&role==='admin'&&CE(VueAdmin,{entries,onRefresh:()=>loadData(),addLog,conseillersList:lists.conseillers,onSaveColors:(c)=>{applyColors(c);},annee:anneeReference(annee),adminConseiller}),
+          view==='logs_connexion'&&(role==='admin'||role==='superviseur')&&CE(VueLogs,null),
+          view==='logs'&&CE('div',{className:'card'},
+            CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:8}},
+              CE('h2',{style:{margin:0}},'📜 Journal des opérations'),
+              // Les deux applis sont visuellement identiques (même nav, même
+              // sidebar) : sans cette étiquette, impossible de savoir de
+              // laquelle vient une capture d'écran du journal — ce qui a
+              // déjà fait attribuer des mesures au mauvais projet.
+              CE('span',{style:{fontSize:11,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'#fff',background:'#7c3aed',borderRadius:6,padding:'3px 8px',marginLeft:10,verticalAlign:'middle'}},'NEXTSTEP'),
+              CE('div',{style:{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}},
+                CE('div',{style:{display:'flex',gap:4}},
+                  ['all','ok','err','info'].map(f=>CE('button',{key:f,
+                    onClick:()=>setLogFilter(f),
+                    style:{fontSize:11,padding:'3px 9px',borderRadius:6,cursor:'pointer',fontWeight:logFilter===f?700:400,
+                      border:logFilter===f?'1.5px solid #1e3a8a':'1px solid #e2e8f0',
+                      background:logFilter===f?'#eff6ff':'#f8fafc',
+                      color:logFilter===f?'#1e3a8a':f==='ok'?'#16a34a':f==='err'?'#dc2626':'#718096'}
+                  },{all:'Tous',ok:'✅ OK',err:'❌ Erreurs',info:'ℹ️ Info'}[f]))
+                ),
+                CE('span',{style:{fontSize:11,color:'#9ca3af'}},
+                  (logFilter==='all'?logs:logs.filter(l=>l.type===logFilter)).length+' / '+logs.length
+                ),
+                (()=>{
+                  const cutoff=Date.now()-30*24*60*60*1000;
+                  const old30=logs.filter(e=>!e.ts||e.ts<cutoff).length;
+                  return old30>0&&CE('button',{
+                    onClick:purgeLogs,
+                    title:'Supprimer les '+old30+' entrée'+(old30>1?'s':'')+' de plus de 30 jours',
+                    style:{fontSize:11,padding:'3px 10px',border:'1px solid #fbd38d',borderRadius:6,background:'#fffbeb',cursor:'pointer',color:'#b45309'}
+                  },'🕐 +30j ('+old30+')');
+                })(),
+                logs.length>0&&CE('button',{
+                  onClick:()=>{
+                    const txt=window.resumeLogsTexte(logs,'NEXTSTEP');
+                    const fini=(ok)=>{ if(!ok) console.log(txt); alert(ok?'Résumé copié — colle-le dans la conversation.':'Copie refusée par le navigateur : le résumé est dans la console (F12).'); };
+                    if(navigator.clipboard&&navigator.clipboard.writeText){
+                      navigator.clipboard.writeText(txt).then(()=>fini(true),()=>fini(false));
+                    } else fini(false);
+                  },
+                  title:'Copier un résumé exploitable du journal (taux de perte, durées, répartition horaire)',
+                  style:{fontSize:11,padding:'3px 10px',border:'1px solid #c4b5fd',borderRadius:6,background:'#f5f3ff',cursor:'pointer',color:'#6d28d9',fontWeight:600}
+                },'📋 Copier pour Claude'),
+                logs.length>0&&CE('button',{
+                  onClick:()=>{clearLogs();setLogFilter('all');},
+                  style:{fontSize:11,padding:'3px 10px',border:'1px solid #e2e8f0',borderRadius:6,background:'#f8fafc',cursor:'pointer',color:'#718096'}
+                },'🗑️ Tout effacer')
+              )
+            ),
+            (()=>{
+              const filtered=logFilter==='all'?logs:logs.filter(l=>l.type===logFilter);
+              return filtered.length===0
+                ?CE('p',{style:{color:'#718096',fontSize:13}},logFilter==='all'?'Aucune opération enregistrée.':'Aucune entrée de ce type.')
+                :filtered.map((l,i)=>{
+                  const dateStr=l.ts?new Date(l.ts).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}):'';
+                  return CE('div',{key:i,className:'log-entry log-'+l.type},
+                    CE('span',{className:'log-time'},dateStr&&(dateStr+' '),l.t),
+                    CE('span',null,l.msg));
+                });
+            })()
+          )
+        )
+      )
+    ),
+
+    // Modale listes — avec emails v9.3
+    showListes&&CE(VueListes,{
+      lists,
+      onSave:handleSaveLists,
+      onClose:()=>setShowListes(false),
+      emails,
+      onSaveEmails:handleSaveEmails,
+      materielsMasques,
+      onSaveMasques:setMaterielsMasques
+    }),
+
+    CE('div',{id:'toast',className:'toast',style:{opacity:0}})
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// Pages : Général · Conseillers · Territoire
+// Filtres croisés : mois, conseiller, statut
+// Données réelles issues de Google Sheets
+// ════════════════════════════════════════════════════════════
+// ── TableCommunes : tri par colonne ────────────────────────
+function TableCommunes({fd}){
+  const[sortKey,setSortKey]=React.useState('ateliers');
+  const[sortDir,setSortDir]=React.useState(-1); // -1 desc, 1 asc
+
+  function handleSort(key){
+    if(sortKey===key) setSortDir(d=>d*-1);
+    else{setSortKey(key);setSortDir(-1);}
+  }
+
+  const communes=[...new Set(fd.map(d=>d.commune).filter(Boolean))].map(c=>{
+    const r=fd.filter(d=>d.commune===c);
+    const rl=r.filter(d=>d.statut==='Réalisé').length;
+    const ins=r.reduce((s,d)=>s+(parseInt(d.inscrits)||0),0);
+    const pre=r.reduce((s,d)=>s+(parseInt(d.presents)||0),0);
+    const tp=ins?Math.round(pre/ins*100):0;
+    return{name:c,ateliers:r.length,realises:rl,inscrits:ins,presents:pre,presence:tp};
+  }).sort((a,b)=>sortDir*(a[sortKey]>b[sortKey]?1:a[sortKey]<b[sortKey]?-1:0));
+
+  const COLS=[
+    {key:'name',     label:'Commune'},
+    {key:'ateliers', label:'Atl.'},
+    {key:'realises', label:'Réal.'},
+    {key:'inscrits', label:'Inscrits'},
+    {key:'presents', label:'Présents'},
+    {key:'presence', label:'Présence'},
+  ];
+
+  function ThSort({col}){
+    const active=sortKey===col.key;
+    const arrow=active?(sortDir===-1?'↓':'↑'):'↕';
+    return CE('th',{
+      onClick:()=>handleSort(col.key),
+      style:{padding:'7px 8px',textAlign:'left',fontWeight:700,
+        color:active?'#2563EB':'#6b7280',borderBottom:'2px solid '+(active?'#2563EB':'#e5e7eb'),
+        fontSize:10,whiteSpace:'nowrap',cursor:'pointer',userSelect:'none',
+        background:active?'#eff6ff':'#f9fafb',transition:'all .15s'}
+    },
+      CE('span',null,col.label),
+      CE('span',{style:{marginLeft:4,opacity:active?1:.4,fontSize:9}},arrow)
+    );
+  }
+
+  return CE('div',{style:{overflowX:'auto'}},
+    CE('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:11}},
+      CE('thead',null,CE('tr',null,COLS.map(col=>CE(ThSort,{key:col.key,col})))),
+      CE('tbody',null,communes.map((c,i)=>{
+        const tpColor=c.presence>70?'#16a34a':c.presence>40?'#d97706':'#ef4444';
+        return CE('tr',{key:c.name,style:{background:i%2?'#f9fafb':'#fff'}},
+          CE('td',{style:{padding:'6px 8px',fontWeight:600,fontSize:10}},c.name.slice(0,18)),
+          CE('td',{style:{padding:'6px 8px'}},c.ateliers),
+          CE('td',{style:{padding:'6px 8px',color:'#16a34a',fontWeight:600}},c.realises),
+          CE('td',{style:{padding:'6px 8px'}},c.inscrits),
+          CE('td',{style:{padding:'6px 8px'}},c.presents),
+          CE('td',{style:{padding:'6px 8px'}},
+            CE('div',{style:{display:'flex',alignItems:'center',gap:5}},
+              CE('div',{style:{height:5,width:36,background:'#f3f4f6',borderRadius:3}},
+                CE('div',{style:{height:5,borderRadius:3,width:c.presence+'%',background:tpColor}})
+              ),
+              CE('span',{style:{fontSize:10,fontWeight:700,color:tpColor}},c.presence+'%')
+            )
+          )
+        );
+      }))
+    )
+  );
+}
+
+
+// ════════════════════════════════════════════════════════════
+//   • KPIs enrichis (4 indicateurs + taux + mois)
+//   • Validation pré-import CSV & XLSX (modal aperçu)
+// ════════════════════════════════════════════════════════════
+
+// ── Modale aperçu import ───────────────────────────────────
+function ImportPreviewModal({preview, onConfirm, onCancel}){
+  if(!preview) return null;
+  const {rows, errors, type} = preview;
+  const COLS=['statut','date','horaire','conseiller','commune','thematique','orienteur'];
+  return CE('div',{className:'confirm-overlay',onClick:onCancel},
+    CE('div',{onClick:e=>e.stopPropagation(),style:{
+      background:'#fff',borderRadius:14,padding:'24px',maxWidth:760,width:'95%',
+      maxHeight:'85vh',overflowY:'auto',boxShadow:'0 16px 64px rgba(0,0,0,.25)',
+      animation:'slideUp .18s ease'
+    }},
+      CE('h3',{style:{margin:'0 0 4px',fontSize:16,color:'#1a202c'}},'📋 Aperçu — Import '+type),
+      CE('p',{style:{margin:'0 0 16px',fontSize:13,color:'#4a5568'}},
+        rows.length+' ligne'+(rows.length>1?'s':'')+' détectée'+(rows.length>1?'s':'')+
+        (errors.length>0?' · '+errors.length+' anomalie'+(errors.length>1?'s':'')+' détectée'+(errors.length>1?'s':'') : '')),
+
+      // Bandeau erreurs
+      errors.length>0&&CE('div',{style:{background:'#fff5f5',border:'1px solid #fed7d7',borderRadius:8,padding:'10px 14px',marginBottom:14}},
+        CE('div',{style:{fontWeight:700,fontSize:13,color:'#c53030',marginBottom:6}},'⚠️ '+errors.length+' anomalie'+(errors.length>1?'s':'')+' détectée'+(errors.length>1?'s':'')+' :'),
+        errors.slice(0,8).map((e,i)=>CE('div',{key:i,style:{fontSize:12,color:'#c53030',marginBottom:2}},'• '+e)),
+        errors.length>8&&CE('div',{style:{fontSize:11,color:'#9ca3af',marginTop:4}},'… et '+(errors.length-8)+' autre'+(errors.length-8>1?'s':''))
+      ),
+
+      // Tableau aperçu (5 premières lignes)
+      CE('div',{style:{overflowX:'auto',marginBottom:16}},
+        CE('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:11,minWidth:500}},
+          CE('thead',null,CE('tr',null,
+            COLS.map(c=>CE('th',{key:c,style:{background:'#f1f5f9',padding:'6px 8px',textAlign:'left',fontSize:11,fontWeight:700,color:'#4a5568',borderBottom:'2px solid #e2e8f0',whiteSpace:'nowrap'}},c))
+          )),
+          CE('tbody',null,
+            rows.slice(0,5).map((r,i)=>CE('tr',{key:i,style:{background:i%2?'#f8fafc':'#fff'}},
+              COLS.map(c=>CE('td',{key:c,style:{padding:'5px 8px',borderBottom:'1px solid #f0f0f0',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:!r[c]&&['statut','date','conseiller'].includes(c)?'#fc8181':'#1a202c'}},
+                String(r[c]||'—')
+              ))
+            ))
+          )
+        )
+      ),
+      rows.length>5&&CE('p',{style:{fontSize:11,color:'#9ca3af',margin:'-10px 0 14px',textAlign:'right'}},
+        '… '+( rows.length-5)+' ligne'+(rows.length-5>1?'s':'')+' supplémentaire'+(rows.length-5>1?'s':'')+' non affichée'+(rows.length-5>1?'s':'')),
+
+      CE('div',{style:{display:'flex',gap:10,justifyContent:'flex-end'}},
+        CE('button',{onClick:onCancel,style:{padding:'9px 20px',border:'1px solid #e2e8f0',borderRadius:8,background:'#f8fafc',cursor:'pointer',fontSize:13,fontWeight:600,color:'#4a5568'}},'Annuler'),
+        CE('button',{onClick:onConfirm,autoFocus:true,style:{padding:'9px 20px',border:'none',borderRadius:8,background:errors.length>0?'#dd6b20':'#1e3a8a',cursor:'pointer',fontSize:13,fontWeight:700,color:'#fff'}},
+          errors.length>0?'⚠️ Importer quand même':'✅ Confirmer l\'import'
+        )
+      )
+    )
+  );
+}
+
+function ImportRapportModal({rapport,onClose}){
+  if(!rapport) return null;
+  const {total,envoyes,batchErrors,anomaliesPre,annule,ts}=rapport;
+  const ok=envoyes===total&&!annule&&batchErrors.length===0;
+  const partial=envoyes>0&&(annule||batchErrors.length>0);
+  const couleur=ok?'#276749':partial?'#92400e':'#9b2335';
+  const bg=ok?'#f0fff4':partial?'#fffbeb':'#fff5f5';
+  const border=ok?'#9ae6b4':partial?'#fbd38d':'#fed7d7';
+  return CE('div',{className:'confirm-overlay',onClick:onClose},
+    CE('div',{onClick:e=>e.stopPropagation(),style:{background:'#fff',borderRadius:14,padding:'28px',maxWidth:460,width:'92%',boxShadow:'0 16px 64px rgba(0,0,0,.25)',animation:'slideUp .18s ease'}},
+      CE('h3',{style:{margin:'0 0 16px',fontSize:16,color:'#1a202c'}},'📊 Rapport d\'import'),
+      CE('div',{style:{background:bg,border:'1px solid '+border,borderRadius:10,padding:'14px 18px',marginBottom:16}},
+        CE('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:anomaliesPre>0||batchErrors.length>0?12:0}},
+          CE('div',{style:{textAlign:'center'}},CE('div',{style:{fontSize:28,fontWeight:800,color:'#1a202c'}},total),CE('div',{style:{fontSize:11,color:'#718096'}},'Lignes détectées')),
+          CE('div',{style:{textAlign:'center'}},CE('div',{style:{fontSize:28,fontWeight:800,color:envoyes===total?'#276749':'#dd6b20'}},envoyes),CE('div',{style:{fontSize:11,color:'#718096'}},'Envoyées ✓'))
+        ),
+        anomaliesPre>0&&CE('div',{style:{fontSize:12,color:'#92400e',marginBottom:4}},'⚠️ '+anomaliesPre+' anomalie'+(anomaliesPre>1?'s':'')+' détectée'+(anomaliesPre>1?'s':'')+' avant envoi'),
+        annule&&CE('div',{style:{fontSize:12,color:'#c53030',marginBottom:4}},'⛔ Import annulé manuellement'),
+        batchErrors.length>0&&CE('div',null,
+          CE('div',{style:{fontSize:12,color:'#c53030',fontWeight:700,marginBottom:4}},batchErrors.length+' lot'+(batchErrors.length>1?'s':'')+' en erreur :'),
+          batchErrors.map((e,i)=>CE('div',{key:i,style:{fontSize:11,color:'#c53030',marginBottom:2}},'• Lignes '+e.from+'–'+e.to+' : '+e.msg))
+        )
+      ),
+      CE('div',{style:{fontSize:11,color:'#9ca3af',marginBottom:16}},'Import du '+ts),
+      CE('button',{onClick:onClose,style:{width:'100%',padding:'10px',border:'none',borderRadius:8,background:'#1e3a8a',color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer'}},'Fermer')
+    )
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+
+function ChangerMotDePasse({adminConseiller}){
+  const[currentPwd,setCurrentPwd]=React.useState('');
+  const[pwd,setPwd]=React.useState('');
+  const[pwd2,setPwd2]=React.useState('');
+  const[show,setShow]=React.useState(false);
+  const[saving,setSaving]=React.useState(false);
+  const[msg,setMsg]=React.useState(null);
+
+  async function handleSave(){
+    if(!currentPwd){setMsg({ok:false,txt:'Mot de passe actuel requis'});return;}
+    if(!pwdPolicyOk(pwd)){setMsg({ok:false,txt:'❌ Règle du mot de passe non respectée.'});return;}
+    if(pwd!==pwd2){setMsg({ok:false,txt:'Les mots de passe ne correspondent pas'});return;}
+    setSaving(true);setMsg(null);
+    try{
+      const res=await apiFetch('setPassword',{conseiller:adminConseiller,currentPwd,password:pwd});
+      if(res.ok){setMsg({ok:true,txt:'✅ Mot de passe mis à jour'});setCurrentPwd('');setPwd('');setPwd2('');}
+      else setMsg({ok:false,txt:res.error||'Erreur'});
+    }catch(e){setMsg({ok:false,txt:'Erreur réseau'});}
+    finally{setSaving(false);}
+  }
+
+  const inputStyle={marginTop:4,display:'block',padding:'8px 36px 8px 12px',border:'1px solid #e2e8f0',borderRadius:6,fontSize:13,boxSizing:'border-box',width:'100%'};
+  const eyeStyle={position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:14,color:'#718096',padding:0};
+
+  return CE('div',{className:'admin-section'},
+    CE('h3',null,'🔑 Changer le mot de passe'),
+    CE('div',{style:{display:'flex',gap:10,flexWrap:'wrap',alignItems:'flex-end'}},
+      CE('div',null,
+        CE('label',null,'Mot de passe actuel'),
+        CE('div',{style:{position:'relative'}},
+          CE('input',{type:show?'text':'password',value:currentPwd,onChange:e=>setCurrentPwd(e.target.value),placeholder:'Mot de passe actuel',style:inputStyle}),
+          CE('button',{onClick:()=>setShow(s=>!s),style:eyeStyle},show?'🙈':'👁️')
+        )
+      ),
+      CE('div',null,
+        CE('label',null,'Nouveau mot de passe'),
+        CE('div',{style:{position:'relative'}},
+          CE('input',{type:show?'text':'password',value:pwd,onChange:e=>setPwd(e.target.value),placeholder:'Nouveau mot de passe',style:inputStyle}),
+          CE('button',{onClick:()=>setShow(s=>!s),style:eyeStyle},show?'🙈':'👁️')
+        )
+      ),
+      CE('div',null,
+        CE('label',null,'Confirmer'),
+        CE('div',{style:{position:'relative'}},
+          CE('input',{type:show?'text':'password',value:pwd2,onChange:e=>setPwd2(e.target.value),placeholder:'Répéter',style:inputStyle}),
+          CE('button',{onClick:()=>setShow(s=>!s),style:eyeStyle},show?'🙈':'👁️')
+        )
+      ),
+      CE('button',{className:'btn btn-primary',disabled:saving||!currentPwd||!pwd||!pwd2,onClick:handleSave,style:{alignSelf:'flex-end'}},saving?'Sauvegarde…':'💾 Sauvegarder')
+    ),
+    CE('p',{style:{marginTop:8,fontSize:11,color:'#a0aec0'}},'12 caractères min. avec majuscule, minuscule, chiffre et caractère spécial.'),
+    msg&&CE('p',{style:{marginTop:4,fontSize:13,color:msg.ok?'#276749':'#c53030'}},msg.txt)
+  );
+}
+
+function ReinitialiserMotDePasseCollegue({conseillers}){
+  const[cible,setCible]=React.useState('');
+  const[saving,setSaving]=React.useState(false);
+  const[result,setResult]=React.useState(null); // {ok, newPassword} | {ok:false, txt}
+  const[copied,setCopied]=React.useState(false);
+
+  async function handleReset(){
+    if(!cible)return;
+    if(!window.confirm('Réinitialiser le mot de passe de '+cible+' au mot de passe par défaut ?\n\nCette action est immédiate et remplace son mot de passe actuel.'))return;
+    setSaving(true);setResult(null);setCopied(false);
+    try{
+      const res=await apiFetch('resetPassword',{conseiller:cible});
+      if(res&&res.ok)setResult({ok:true,newPassword:res.newPassword});
+      else setResult({ok:false,txt:res&&res.error||'Erreur GAS'});
+    }catch(_){setResult({ok:false,txt:'Hors-ligne'});}
+    finally{setSaving(false);}
+  }
+
+  return CE('div',{className:'admin-section'},
+    CE('h3',null,'🔑 Mot de passe oublié — réinitialiser pour un collègue'),
+    CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:12}},'Remet le mot de passe par défaut du conseiller sélectionné. Communiquez-lui ensuite le nouveau mot de passe affiché ci-dessous (téléphone, en personne…).'),
+    CE('div',{style:{display:'flex',gap:10,flexWrap:'wrap',alignItems:'flex-end'}},
+      CE('div',null,
+        CE('label',null,'Conseiller'),
+        CE('select',{value:cible,onChange:e=>{setCible(e.target.value);setResult(null);},style:{marginTop:4,display:'block',padding:'8px 12px',border:'1px solid #e2e8f0',borderRadius:6,fontSize:13,minWidth:200}},
+          CE('option',{value:''},'— Sélectionner —'),
+          (conseillers||[]).map(c=>CE('option',{key:c,value:c},c))
+        )
+      ),
+      CE('button',{className:'btn btn-primary',disabled:!cible||saving,onClick:handleReset},saving?'Réinitialisation…':'🔑 Réinitialiser')
+    ),
+    result&&result.ok&&CE('div',{style:{marginTop:12,padding:'12px 14px',background:'#f0fff4',border:'1.5px solid #9ae6b4',borderRadius:8}},
+      CE('div',{style:{fontSize:12,color:'#276749',fontWeight:700,marginBottom:6}},'✅ Nouveau mot de passe de '+cible+' :'),
+      CE('div',{style:{display:'flex',alignItems:'center',gap:10}},
+        CE('code',{style:{fontFamily:"'SF Mono',Consolas,monospace",fontSize:14,color:'#22543d',background:'#fff',border:'1px solid #9ae6b4',borderRadius:6,padding:'4px 10px'}},result.newPassword),
+        CE('button',{className:'btn btn-sm btn-secondary',onClick:()=>{navigator.clipboard.writeText(result.newPassword).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),1200);});}},copied?'✅ Copié':'📋 Copier')
+      )
+    ),
+    result&&!result.ok&&CE('p',{style:{marginTop:8,fontSize:13,color:'#c53030'}},'❌ '+result.txt)
+  );
+}
+
+// ── VueLogs : audit des connexions (admin seulement) ─────────
+const LOGS_COLONNES=[
+  {label:'Horodatage',key:'timestamp'},
+  {label:'Action',key:'action'},
+  {label:'Conseiller',key:'conseiller'},
+  {label:'Rôle',key:'role'},
+  {label:'Via',key:'source'},
+  {label:'Résultat',key:'success'},
+  {label:'Tentatives',key:'tentatives'},
+  {label:'Appareil',key:'user_agent'}
+];
+let logsCache=null; // {data:[...], ts:number} — survit aux démontages du composant
+function VueLogs(){
+  const[logs,setLogs]=React.useState([]);
+  const[loading,setLoading]=React.useState(true);
+  const[err,setErr]=React.useState('');
+  const[filter,setFilter]=React.useState('all');
+  const[conseillerFilter,setConseillerFilter]=React.useState('all');
+  const[sortKey,setSortKey]=React.useState(null);
+  const[sortDir,setSortDir]=React.useState('asc');
+  function fetchLogs(force){
+    if(!force&&logsCache&&Date.now()-logsCache.ts<2*60*1000){setLogs(logsCache.data);setLoading(false);return;}
+    setLoading(true);setErr('');
+    apiFetch('getLogs',{n:100})
+      .then(res=>{if(res.ok){logsCache={data:res.logs||[],ts:Date.now()};setLogs(res.logs||[]);}else setErr(res.error||'Erreur');})
+      .catch(e=>setErr('Erreur réseau : '+e.message))
+      .finally(()=>setLoading(false));
+  }
+  React.useEffect(()=>{fetchLogs(false);},[]);
+  function toggleSort(key){
+    if(sortKey===key) setSortDir(d=>d==='asc'?'desc':'asc');
+    else{ setSortKey(key); setSortDir('asc'); }
+  }
+  const filtered=React.useMemo(()=>{
+    let out=filter==='all'?logs:filter==='ok'?logs.filter(l=>l.success):logs.filter(l=>!l.success);
+    if(conseillerFilter!=='all') out=out.filter(l=>l.conseiller===conseillerFilter);
+    if(sortKey){
+      out=[...out].sort((a,b)=>{
+        let va=a[sortKey],vb=b[sortKey];
+        if(sortKey==='timestamp'){va=va?new Date(va).getTime():0;vb=vb?new Date(vb).getTime():0;}
+        else if(sortKey==='success'){va=va?1:0;vb=vb?1:0;}
+        else if(sortKey==='tentatives'){va=va||0;vb=vb||0;}
+        else{va=String(va||'').toLowerCase();vb=String(vb||'').toLowerCase();}
+        if(va<vb)return sortDir==='asc'?-1:1;
+        if(va>vb)return sortDir==='asc'?1:-1;
+        return 0;
+      });
+    }
+    return out;
+  },[logs,filter,conseillerFilter,sortKey,sortDir]);
+  function formatTs(ts){if(!ts)return'—';try{return new Date(ts).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return ts;}}
+  return CE('div',{className:'card'},
+    CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:8}},
+      CE('h2',{style:{margin:0}},'🔐 Logs de connexion'),
+      CE('div',{style:{display:'flex',gap:6,flexWrap:'wrap'}},
+        CE('button',{onClick:()=>fetchLogs(true),disabled:loading,style:{fontSize:11,padding:'3px 10px',borderRadius:6,cursor:'pointer',border:'1px solid #e2e8f0',background:'#f8fafc',color:'#4a5568'}},loading?'…':'🔄 Actualiser'),
+        CE('select',{value:conseillerFilter,onChange:e=>setConseillerFilter(e.target.value),style:{fontSize:11,padding:'3px 8px',borderRadius:6,cursor:'pointer',border:'1px solid #e2e8f0',background:'#f8fafc',color:'#4a5568'}},
+          CE('option',{value:'all'},'Tous les conseillers'),
+          CONSEILLERS.map(c=>CE('option',{key:c,value:c},c))
+        ),
+        ['all','ok','err'].map(f=>CE('button',{key:f,onClick:()=>setFilter(f),style:{fontSize:11,padding:'3px 10px',borderRadius:6,cursor:'pointer',fontWeight:filter===f?700:400,border:filter===f?'1.5px solid #1e3a8a':'1px solid #e2e8f0',background:filter===f?'#eff6ff':'#f8fafc',color:filter===f?'#1e3a8a':f==='ok'?'#16a34a':f==='err'?'#dc2626':'#718096'}},{all:'Tous',ok:'✅ Succès',err:'❌ Échecs'}[f]))
+      )
+    ),
+    loading&&CE('div',{style:{color:'#9ca3af',padding:'20px 0',display:'flex',gap:10,alignItems:'center'}},CE('span',{className:'spinner',style:{width:18,height:18,borderWidth:2}}),'Chargement…'),
+    err&&CE('p',{style:{color:'#dc2626',fontSize:13}},err),
+    !loading&&!err&&CE(React.Fragment,null,
+      CE('p',{style:{fontSize:12,color:'#9ca3af',marginBottom:12}},filtered.length+' entrée'+(filtered.length>1?'s':'')),
+      filtered.length===0
+        ?CE('p',{style:{color:'#718096',fontSize:13}},'Aucune entrée.')
+        :CE('div',{style:{overflowX:'auto'}},
+          CE('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
+            CE('thead',null,CE('tr',null,LOGS_COLONNES.map(({label,key})=>CE('th',{key:label,onClick:()=>toggleSort(key),style:{padding:'8px 10px',textAlign:'left',fontWeight:700,color:'#4a5568',borderBottom:'2px solid #e2e8f0',background:'#f7fafc',whiteSpace:'nowrap',cursor:'pointer',userSelect:'none'}},label+(sortKey===key?(sortDir==='asc'?' ▲':' ▼'):''))))),
+            CE('tbody',null,filtered.map((l,i)=>CE('tr',{key:i,style:{background:l.success?(i%2===0?'#f0fdf4':'#fff'):(i%2===0?'#fff5f5':'#fff')}},
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',whiteSpace:'nowrap',color:'#4a5568'}},formatTs(l.timestamp)),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:600,background:'#f1f5f9',color:'#475569',fontFamily:'monospace'}},l.action||'—')),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',fontWeight:600}},l.conseiller||'—'),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:700,background:l.role==='admin'?'#ede9fe':'#dbeafe',color:l.role==='admin'?'#6d28d9':'#1d4ed8'}},l.role||'—')),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:600,background:l.source==='admin.html'?'#fef3c7':l.source?'#f0fdf4':'#f1f5f9',color:l.source==='admin.html'?'#92400e':l.source?'#166534':'#94a3b8'}},l.source||'—')),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:700,background:l.success?'#dcfce7':'#fee2e2',color:l.success?'#166534':'#991b1b'}},l.success?'✅ Succès':'❌ Échec')),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',textAlign:'center',color:l.tentatives>0?'#dc2626':'#9ca3af',fontWeight:l.tentatives>0?700:400}},l.tentatives||0),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',fontSize:10,color:'#9ca3af',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},l.user_agent||'—')
+            )))
+          )
+        )
+    )
+  );
+}
+
+// ── VueAdmin override ──────────────────────────────────────
+function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,annee,adminConseiller}){
+  const adminRef=React.useRef(null);
+  React.useEffect(()=>{
+    if(!adminRef.current)return;
+    const sections=adminRef.current.querySelectorAll('.admin-section');
+    sections.forEach((el,i)=>{
+      el.style.opacity='0';el.style.transform='translateY(12px)';el.style.transition='opacity .5s ease,transform .5s ease';
+      setTimeout(()=>{el.style.opacity='1';el.style.transform='translateY(0)';},i*100+30);
+    });
+  },[]);
+  const[resetStep,setResetStep]=React.useState(0);
+  const[visibility,setVisibility]=React.useState(null);
+  const[visSaving,setVisSaving]=React.useState(false);
+  const[importing,setImporting]=React.useState(false);
+  const[colorDraft,setColorDraft]=React.useState({...CONSEILLER_COLORS});
+  const[colorSaving,setColorSaving]=React.useState(false);
+  const[importProgress,setImportProgress]=React.useState(0);
+  const[importMsg,setImportMsg]=React.useState('');
+  const[importPreview,setImportPreview]=React.useState(null); // v10 : aperçu avant envoi
+  const[importRapport,setImportRapport]=React.useState(null); // v10 : rapport post-import
+  const cancelRef=React.useRef(false);
+  const pendingRowsRef=React.useRef([]);
+  const preErrorCountRef=React.useRef(0);
+  const MOIS_CAL=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const MOIS_SHORT_CAL=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+  const[moisDeb,setMoisDeb]=React.useState(()=>parseInt(localStorage.getItem(lsKey('cal_moisDeb'))||'1'));
+  const[moisFin,setMoisFin]=React.useState(()=>parseInt(localStorage.getItem(lsKey('cal_moisFin'))||'12'));
+  const[tlRunning,setTlRunning]=React.useState(false);
+  const[tlLogs,setTlLogs]=React.useState([]);
+  const[lastExport,setLastExport]=React.useState(null);
+  function addTlLog(msg,type='info'){setTlLogs(l=>[...l,{msg,type,t:new Date().toLocaleTimeString('fr-FR')}]);}
+  function changeMoisDeb(v){localStorage.setItem(lsKey('cal_moisDeb'),v);setMoisDeb(v);setLastExport(null);}
+  function changeMoisFin(v){localStorage.setItem(lsKey('cal_moisFin'),v);setMoisFin(v);setLastExport(null);}
+  const VIS_ITEMS=[{key:'saisie',label:'✏️ Saisie',sub:'Formulaire de saisie'},{key:'historique',label:'📋 Historique',sub:'Liste des ateliers'},{key:'agenda',label:'🗓️ Agenda',sub:'Planning hebdo AM/PM'},{key:'calendrier',label:'📅 Calendrier',sub:'Vue calendrier mensuelle'},{key:'dashboard',label:'📊 Dashboard',sub:'Synthèse · Graphiques · Territoire'},{key:'carte',label:'🗺️ Carte',sub:'Carte des communes'},{key:'bingo',label:'🎯 Bingo',sub:'Vue par commune'},{key:'roadmap',label:'🛣️ Roadmap',sub:'Timeline & densité'},{key:'anomalies',label:'⚠️ Anomalies',sub:'Champs manquants & communes invalides'}];
+
+  React.useEffect(()=>{apiFetch('getVisibility').then(res=>{if(res.ok)setVisibility(res.visibility);}).catch(()=>{});},[]);
+  React.useEffect(()=>{setColorDraft(d=>{const draft={...CONSEILLER_COLORS,...d};(conseillersList||[]).forEach(c=>{if(!draft[c])draft[c]='#6B7280';});return draft;});},[conseillersList]);
+
+  // ── KPIs enrichis ─────────────────────────────────
+  const kpis=React.useMemo(()=>{
+    const now=new Date();
+    const moisActuel=now.getMonth(), anneeActuelle=now.getFullYear();
+    const total=entries.length;
+    const realises=entries.filter(e=>e.statut==='Réalisé').length;
+    const annules=entries.filter(e=>e.statut==='Annulé').length;
+    const base=total-annules;
+    const taux=base>0?Math.round(realises/base*100):0;
+    const ceMois=entries.filter(e=>{
+      if(!e.date)return false;
+      const d=new Date(e.date);
+      return d.getFullYear()===anneeActuelle&&d.getMonth()===moisActuel;
+    }).length;
+    const parConseiller={};
+    entries.forEach(e=>{if(e.conseiller){parConseiller[e.conseiller]=(parConseiller[e.conseiller]||0)+1;}});
+    const topConseiller=Object.entries(parConseiller).sort((a,b)=>b[1]-a[1])[0];
+    return{total,realises,taux,ceMois,topConseiller,annules};
+  },[entries,annee]);
+
+  async function handleSaveColors(){
+    setColorSaving(true);
+    try{const res=await apiFetch('saveColors',{colors:JSON.stringify(colorDraft)});if(!res.ok)throw new Error(res.error);applyColors(colorDraft);if(onSaveColors)onSaveColors(colorDraft);showToast('✅ Couleurs sauvegardées');addLog('Couleurs conseillers mises à jour','ok');}
+    catch(err){showToast('❌ '+err.message,false);}
+    finally{setColorSaving(false);}
+  }
+
+  async function handleSaveVisibility(){
+    setVisSaving(true);
+    try{const res=await apiFetch('saveVisibility',{visibility:JSON.stringify(visibility)});if(res.ok){showToast('✅ Visibilité sauvegardée');addLog('Visibilité frontend mise à jour','ok');}else throw new Error(res.error);}
+    catch(err){showToast('❌ '+err.message,false);}
+    finally{setVisSaving(false);}
+  }
+
+  function handleReset(){if(resetStep===0){setResetStep(1);return;}if(resetStep===1){setResetStep(2);return;}addLog('Réinitialisation BDD locale','info');showToast('✅ BDD locale vidée (Google Sheet intact)');setResetStep(0);onRefresh();}
+
+  // ── Export Timeline ────────────────────────────────
+  async function handleExport(){
+    setTlRunning(true);setTlLogs([]);setLastExport(null);
+    try{
+      const yr=parseInt(annee||new Date().getFullYear());
+      if(moisDeb>moisFin)throw new Error('Mois de début postérieur au mois de fin.');
+      const months=[];for(let m=moisDeb;m<=moisFin;m++)months.push(m);
+      addTlLog(`Traitement de ${entries.length} ateliers pour ${yr}…`);
+      const df=[];
+      for(const e of entries){
+        if(!e.date||!e.conseiller)continue;
+        const s=String(e.date).trim();let d=null;
+        const mFr=s.match(/^(?:\w+\s+)?(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if(mFr)d=new Date(Date.UTC(parseInt(mFr[3]),parseInt(mFr[2])-1,parseInt(mFr[1])));
+        if(!d){const mIso=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(mIso)d=new Date(Date.UTC(+mIso[1],+mIso[2]-1,+mIso[3]));}
+        if(!d||isNaN(d.getTime()))continue;
+        if(d.getUTCFullYear()!==yr)continue;
+        if(!months.includes(d.getUTCMonth()+1))continue;
+        df.push({date:d,horaire:e.horaire||'9H00',ampm:'',conseiller:String(e.conseiller).trim(),orienteur:String(e.orienteur||'').trim()||'—',statut:String(e.statut||'').trim()});
+      }
+      addTlLog(`✓ ${df.length} ateliers valides`,'ok');
+      const cons=conseillersList||[];
+      addTlLog(`→ ${cons.length} conseillers : ${cons.join(', ')}`);
+      if(df.length===0)throw new Error('Aucun atelier trouvé pour cette période. Vérifiez l\'année et les mois sélectionnés.');
+      const wb=window.generateCalendrier(df,yr,months,cons,addTlLog);
+      const outData=XLSX.write(wb,{type:'base64',bookType:'xlsx'});
+      const fileName=`Calendrier_ateliers_${yr}.xlsx`;
+      const dataUrl='data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,'+outData;
+      setLastExport({url:dataUrl,name:fileName});
+      const a=document.createElement('a');a.href=dataUrl;a.download=fileName;document.body.appendChild(a);a.click();document.body.removeChild(a);
+      addTlLog(`✓ "${fileName}" téléchargé`,'ok');
+    }catch(err){addTlLog('✗ '+err.message,'err');console.error(err);}
+    finally{setTlRunning(false);}
+  }
+
+  // ── Validation pré-import ─────────────────────────
+  function detectErrors(rows){
+    const errs=[];
+    rows.forEach((r,i)=>{
+      const ln='Ligne '+(i+2);
+      if(!r.statut)errs.push(ln+' : statut vide');
+      if(!r.date||r.date==='Invalid Date'||r.date==='NaN-NaN-NaN')errs.push(ln+' : date invalide ('+JSON.stringify(r.date)+')');
+      if(!r.conseiller)errs.push(ln+' : conseiller vide');
+      if(!r.commune)errs.push(ln+' : commune vide');
+    });
+    return errs;
+  }
+
+  async function doUpload(rows_raw){
+    setImportPreview(null);setImporting(true);setImportProgress(0);
+    const BATCH=5;let done=0;const batchErrors=[];let annule=false;
+    try{
+      setImportMsg(`${rows_raw.length} lignes — envoi vers Google Sheets…`);
+      for(let i=0;i<rows_raw.length;i+=BATCH){
+        if(cancelRef.current){annule=true;break;}
+        const batch=rows_raw.slice(i,i+BATCH);
+        const params=new URLSearchParams({action:'saveMany',source:'admin',entries:JSON.stringify(batch)});
+        const _importToken=window.authToken.get();
+        if(_importToken)params.set('token',_importToken);
+        try{
+          const res=await Promise.race([fetch(`${GS_URL}?${params.toString()}`),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),45000))]);
+          const data=await res.json();
+          if(!data.ok)throw new Error(data.error||'Erreur batch');
+          done+=batch.length;
+        }catch(be){batchErrors.push({from:i+1,to:Math.min(i+BATCH,rows_raw.length),msg:be.message});}
+        setImportProgress(Math.round(Math.min(done+(batchErrors.length*BATCH),rows_raw.length)/rows_raw.length*100));
+        setImportMsg(`${done}/${rows_raw.length} lignes importées…`);
+      }
+      const rapport={total:rows_raw.length,envoyes:done,batchErrors,anomaliesPre:preErrorCountRef.current,annule,ts:new Date().toLocaleString('fr-FR')};
+      setImportRapport(rapport);
+      const logMsg=`Import : ${done}/${rows_raw.length} envoyés`+(batchErrors.length>0?` · ${batchErrors.length} erreur(s) batch`:'')+(annule?' · annulé':'');
+      addLog(logMsg,batchErrors.length>0||annule?'err':'ok');
+      if(!annule&&batchErrors.length===0)showToast(`✅ ${done} ateliers importés`);
+      onRefresh();
+    }catch(err){showToast('❌ '+err.message,false);addLog('Erreur import : '+err.message,'err');}
+    finally{setImporting(false);setImportProgress(0);setImportMsg('');cancelRef.current=false;}
+  }
+
+  async function handleImportCSV(e){
+    const file=e.target.files[0];if(!file)return;e.target.value='';
+    try{
+      const text=await file.text();const lines=text.split('\n').filter(l=>l.trim());
+      if(lines.length<2)throw new Error('Fichier vide ou invalide');
+      const sep=(lines[0].split(';').length>lines[0].split(',').length)?';':',';
+      function parseCSVLine(line){const res=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"')inQ=!inQ;else if(c===sep&&!inQ){res.push(cur.trim());cur='';}else cur+=c;}res.push(cur.trim());return res;}
+      const headers=parseCSVLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
+      const rows_raw=[];
+      for(let i=1;i<lines.length;i++){const vals=parseCSVLine(lines[i]);if(vals.length<3)continue;const row={};headers.forEach((h,idx)=>{row[h]=vals[idx]?vals[idx].replace(/^"|"$/g,'').trim():'';});if(!row._id&&!row.statut&&!row['Statut'])continue;
+        const g=(...keys)=>{for(const k of keys){if(row[k]!==undefined&&row[k]!=='')return row[k];}return '';};
+        rows_raw.push({_id:g('_id')||genId(),_n:parseInt(g('_n','N°'))||0,statut:g('statut','Statut')||'Planifié',date:normalizeDate(g('date','Date')),horaire:normalizeHoraire(g('horaire','Horaire')),ampm:g('ampm','AM/PM')||'AM',orienteur:g('orienteur','Orienteur'),commune:normalizeCommune(g('commune','Commune')),lieu:g('lieu','Lieu',"Lieu de l'atelier"),thematique:g('thematique','Thématique','Thematique'),inscrits:g('inscrits','Inscrits')===''?'':parseInt(g('inscrits','Inscrits'))||0,presents:g('presents','Présents')===''?'':parseInt(g('presents','Présents'))||0,public:g('pub','public','Public')||'Tous publics',conseiller:g('conseiller','Conseiller','Conseiller numérique'),materiel:MATERIELS.filter(m=>String(g(m)).trim().toUpperCase()==='OUI'),residence:g('residence','Résidence','Résidence des participants'),remarques:g('remarques','Remarques')});
+      }
+      pendingRowsRef.current=rows_raw;
+      setImportPreview({rows:rows_raw,errors:detectErrors(rows_raw),type:'CSV'});
+    }catch(err){showToast('❌ '+err.message,false);addLog('Erreur lecture CSV : '+err.message,'err');}
+  }
+
+  async function handleImportXLSX(e){
+    const file=e.target.files[0];if(!file)return;e.target.value='';
+    try{
+      const ab=await file.arrayBuffer();const wb=XLSX.read(ab);const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      const g=(r,...keys)=>{for(const k of keys){if(r[k]!==undefined&&r[k]!=='')return r[k];}return '';};
+      const rows_raw=rows.map(r=>({
+        _id:g(r,'_id')||genId(),_n:parseInt(g(r,'_n','N°','n'))||0,
+        statut:g(r,'statut','Statut')||'Planifié',date:normalizeDate(g(r,'date','Date')),
+        horaire:normalizeHoraire(g(r,'horaire','Horaire')),ampm:g(r,'ampm','AM/PM')||'AM',
+        orienteur:g(r,'orienteur','Orienteur'),commune:normalizeCommune(g(r,'commune','Commune')),
+        lieu:g(r,'lieu','Lieu',"Lieu de l'atelier"),thematique:g(r,'thematique','Thématique','Thematique'),
+        inscrits:g(r,'inscrits','Inscrits')===''?'':parseInt(g(r,'inscrits','Inscrits'))||0,
+        presents:g(r,'presents','Présents','Presents')===''?'':parseInt(g(r,'presents','Présents','Presents'))||0,
+        public:g(r,'public','Public')||'Tous publics',conseiller:g(r,'conseiller','Conseiller','Conseiller numérique'),
+        materiel:MATERIELS.filter(m=>String(g(r,m)).trim().toUpperCase()==='OUI'),
+        residence:g(r,'residence','Résidence','Résidence des participants'),remarques:g(r,'remarques','Remarques'),
+      })).filter(r=>r.statut);
+      pendingRowsRef.current=rows_raw;
+      setImportPreview({rows:rows_raw,errors:detectErrors(rows_raw),type:'XLSX'});
+    }catch(err){showToast('❌ '+err.message,false);addLog('Erreur lecture XLSX : '+err.message,'err');}
+  }
+
+  const[maintenanceOn,setMaintenanceOn]=React.useState(false);
+  const[maintenanceMsg,setMaintenanceMsg]=React.useState('');
+  const[maintenanceSaving,setMaintenanceSaving]=React.useState(false);
+  const[maintenanceLoaded,setMaintenanceLoaded]=React.useState(false);
+  const[stockOrdiDraft,setStockOrdiDraft]=React.useState(STOCK_ORDINATEURS);
+  const[stockOrdiSaving,setStockOrdiSaving]=React.useState(false);
+  React.useEffect(()=>{
+    apiFetch('getConfig').then(res=>{
+      if(res.ok&&res.config){
+        setMaintenanceOn(res.config['maintenance']==='true');setMaintenanceMsg(res.config['maintenance_msg']||'');
+        if(res.config['stock_ordinateurs'])setStockOrdiDraft(parseInt(res.config['stock_ordinateurs'])||STOCK_ORDINATEURS);
+      }
+      setMaintenanceLoaded(true);
+    }).catch(()=>setMaintenanceLoaded(true));
+  },[]);
+  async function handleSaveMaintenance(newState){
+    setMaintenanceSaving(true);
+    try{
+      await apiFetch('setConfig',{key:'maintenance',value:String(newState)});
+      await apiFetch('setConfig',{key:'maintenance_msg',value:maintenanceMsg});
+      setMaintenanceOn(newState);
+      showToast(newState?'🔧 Maintenance activée':'✅ Application remise en ligne');
+      addLog('Maintenance '+(newState?'activée':'désactivée'),'ok');
+    }catch(err){showToast('❌ '+err.message,false);}
+    finally{setMaintenanceSaving(false);}
+  }
+  async function handleSaveStockOrdi(){
+    const n=parseInt(stockOrdiDraft);
+    if(!n||n<1){showToast('⚠️ Nombre invalide',false);return;}
+    setStockOrdiSaving(true);
+    try{
+      await apiFetch('setConfig',{key:'stock_ordinateurs',value:String(n)});
+      STOCK_ORDINATEURS=n;setStockOrdiDraft(n);
+      showToast('✅ Stock ordinateurs mis à jour ('+n+')');
+      addLog('Stock ordinateurs → '+n,'ok');
+    }catch(err){showToast('❌ '+err.message,false);}
+    finally{setStockOrdiSaving(false);}
+  }
+  const resetLabels=['🗑️ Réinitialiser la BDD locale','⚠️ Confirmer (1/2)','🚨 Confirmer définitivement (2/2)'];
+  const STATUT_COLOR={'Planifié':'#9683EC','Réalisé':'#70AD47','Annulé':'#FF5050','Non réalisé':'#FFC000','Reporté':'#ED7D31'};
+
+  return CE(React.Fragment,null,
+    CE(ImportPreviewModal,{preview:importPreview,onCancel:()=>{setImportPreview(null);pendingRowsRef.current=[];},onConfirm:()=>{preErrorCountRef.current=importPreview.errors.length;doUpload(pendingRowsRef.current);}}),
+    CE(ImportRapportModal,{rapport:importRapport,onClose:()=>setImportRapport(null)}),
+    CE('div',{ref:adminRef},
+
+      // ── KPIs enrichis ──
+      CE('div',{className:'card'},
+        CE('h2',{style:{marginBottom:14}},'⚙️ Panneau Administrateur'),
+        CE('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))',gap:12,marginBottom:4}},
+          CE(FadeItem,{delay:0},CE('div',{className:'kpi',style:{borderLeft:'4px solid #1e3a8a',background:'#f0f4ff',textAlign:'left'}},CE('div',{className:'val',style:{color:'#1e3a8a'}},kpis.total),CE('div',{className:'lbl'},'Total ateliers'))),
+          CE(FadeItem,{delay:0.08},CE('div',{className:'kpi',style:{borderLeft:'4px solid #16a34a',background:'#f0fdf4',textAlign:'left'}},CE('div',{className:'val',style:{color:'#16a34a'}},kpis.realises),CE('div',{className:'lbl'},'Réalisés'))),
+          CE(FadeItem,{delay:0.16},CE('div',{className:'kpi',style:{borderLeft:'4px solid '+(kpis.taux>=75?'#16a34a':kpis.taux>=50?'#d97706':'#dc2626'),background:kpis.taux>=75?'#f0fdf4':kpis.taux>=50?'#fffbeb':'#fff5f5',textAlign:'left'}},CE('div',{className:'val',style:{color:kpis.taux>=75?'#16a34a':kpis.taux>=50?'#d97706':'#dc2626'}},kpis.taux+'%'),CE('div',{className:'lbl'},'Taux réalisation'))),
+          CE(FadeItem,{delay:0.24},CE('div',{className:'kpi',style:{borderLeft:'4px solid #9683EC',background:'#f5f3ff',textAlign:'left'}},CE('div',{className:'val',style:{color:'#9683EC'}},kpis.ceMois),CE('div',{className:'lbl'},'Ce mois-ci')))
+        ),
+        kpis.topConseiller&&CE('p',{style:{fontSize:11,color:'#9ca3af',marginTop:6,marginBottom:0}},
+          '🏆 Top conseiller : '+kpis.topConseiller[0]+' ('+kpis.topConseiller[1]+' atelier'+(kpis.topConseiller[1]>1?'s':'')+')'
+        )
+      ),
+
+      CE('div',{className:'admin-section'},
+        CE('h3',null,'🎨 Couleurs des conseillers'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:16}},"Personnalisez la couleur de chaque conseiller numérique. S'applique au bandeau, au formulaire et aux cartes."),
+        CE('div',{style:{display:'flex',flexDirection:'column',gap:10}},
+          (conseillersList||Object.keys(CONSEILLER_COLORS)).map(c=>{
+            const hexVal=(colorDraft[c]||'#6B7280').toUpperCase();
+            return CE('div',{key:c,style:{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',background:'#f8fafc',borderRadius:10,border:'1.5px solid #e2e8f0'}},
+              CE('input',{type:'color',value:(colorDraft[c]||'#6B7280').toLowerCase(),onChange:e=>setColorDraft(d=>({...d,[c]:e.target.value.toUpperCase()})),style:{width:44,height:44,borderRadius:8,border:'none',cursor:'pointer',padding:2,background:'none',flexShrink:0}}),
+              CE('div',{style:{width:36,height:36,borderRadius:8,background:colorDraft[c]||'#6B7280',flexShrink:0,boxShadow:'0 2px 6px rgba(0,0,0,.15)'}}),
+              CE('span',{style:{flex:1,fontWeight:700,fontSize:14,color:'#1a202c'}},c),
+              CE('input',{type:'text',value:hexVal,maxLength:7,onChange:e=>setColorDraft(d=>({...d,[c]:e.target.value.toUpperCase()})),onBlur:e=>{const v=e.target.value;if(/^#[0-9A-Fa-f]{6}$/.test(v))setColorDraft(d=>({...d,[c]:v.toUpperCase()}));else setColorDraft(d=>({...d,[c]:colorDraft[c]||'#6B7280'}));},style:{width:88,fontFamily:'monospace',fontSize:13,fontWeight:700,color:'#1a202c',padding:'6px 10px',border:'1.5px solid #e2e8f0',borderRadius:8,background:'#fff',textAlign:'center'}}),
+              CE('button',{onClick:()=>{const orig=CONSEILLER_COLORS[c]||'#6B7280';setColorDraft(d=>({...d,[c]:orig}));},style:{padding:'4px 10px',border:'1px solid #e2e8f0',borderRadius:6,fontSize:11,color:'#718096',cursor:'pointer',background:'#fff',flexShrink:0}},'↩ Reset')
+            );
+          })
+        ),
+        CE('button',{className:'btn btn-primary',style:{marginTop:16},onClick:handleSaveColors,disabled:colorSaving},colorSaving?'…':'💾 Sauvegarder les couleurs')
+      ),
+
+      visibility&&CE('div',{className:'admin-section'},
+        CE('h3',null,'👁️ Visibilité — Frontend conseillers'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:12}},"Choisissez les onglets visibles dans l'interface conseiller."),
+        VIS_ITEMS.map(item=>CE('div',{key:item.key,className:'toggle-row'},
+          CE('div',null,CE('div',{className:'toggle-label'},item.label),CE('div',{className:'toggle-sub'},item.sub)),
+          CE('label',{className:'tgl'},CE('input',{type:'checkbox',checked:!!visibility[item.key],onChange:()=>setVisibility(v=>({...v,[item.key]:!v[item.key]}))}),CE('span',{className:'tgl-track'}))
+        )),
+        CE('button',{className:'btn btn-primary',style:{marginTop:16},onClick:handleSaveVisibility,disabled:visSaving},visSaving?'…':'💾 Enregistrer la visibilité')
+      ),
+
+      CE('div',{className:'admin-section'},
+        CE('h3',null,'📥 Import CSV'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:12}},'Importe un fichier CSV compatible. Les entrées existantes sont fusionnées.'),
+        importing?CE('div',null,CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:6}},importMsg),CE('div',{className:'progress-bar'},CE('div',{className:'progress-fill',style:{width:importProgress+'%'}})),CE('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}},CE('p',{style:{fontSize:11,color:'#718096'}},importProgress+'%'),CE('button',{className:'btn btn-danger btn-sm',onClick:()=>cancelRef.current=true},'⛔ Annuler'))):
+          CE('label',{style:{display:'inline-block',cursor:'pointer'}},CE('span',{className:'btn btn-primary'},'📂 Choisir un fichier CSV'),CE('input',{type:'file',accept:'.csv',style:{display:'none'},onChange:handleImportCSV}))
+      ),
+
+      CE('div',{className:'admin-section'},
+        CE('h3',null,'📊 Import XLSX'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:12}},'Réimporte un fichier .xlsx précédemment exporté.'),
+        importing?CE('div',null,CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:6}},importMsg||'Import en cours…'),CE('div',{className:'progress-bar'},CE('div',{className:'progress-fill',style:{width:importProgress+'%'}})),CE('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}},CE('p',{style:{fontSize:11,color:'#718096'}},importProgress+'%'),CE('button',{className:'btn btn-danger btn-sm',onClick:()=>cancelRef.current=true},'⛔ Annuler'))):
+          CE('label',{style:{display:'inline-block',cursor:'pointer'}},CE('span',{className:'btn btn-warn'},'📂 Choisir un fichier XLSX'),CE('input',{type:'file',accept:'.xlsx',style:{display:'none'},onChange:handleImportXLSX}))
+      ),
+
+      CE('div',{className:'admin-section'},
+        CE('h3',null,'🔍 Vérification cohérence'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:12}},'Analyse les données chargées pour détecter les anomalies.'),
+        CE('button',{className:'btn btn-primary',onClick:()=>{
+          const now=new Date();
+          const anomalies=[];
+          // Doublons _id
+          const ids=entries.map(e=>e._id);
+          const dupIds=ids.filter((id,i)=>ids.indexOf(id)!==i);
+          if(dupIds.length>0) anomalies.push('⚠️ '+dupIds.length+' doublon'+(dupIds.length>1?'s':'')+' d\'identifiant détecté'+(dupIds.length>1?'s':''));
+          // Dates dans le futur (> aujourd'hui + 30j)
+          const futurLimit=new Date(now.getTime()+30*24*60*60*1000);
+          const futurEntries=entries.filter(e=>{if(!e.date)return false;const d=new Date(e.date);return d>futurLimit;});
+          if(futurEntries.length>0) anomalies.push('📅 '+futurEntries.length+' atelier'+(futurEntries.length>1?'s':'')+' planifié'+(futurEntries.length>1?'s':'')+' à plus de 30j dans le futur');
+          // Ateliers sans conseiller
+          const sansConseiller=entries.filter(e=>!e.conseiller);
+          if(sansConseiller.length>0) anomalies.push('👤 '+sansConseiller.length+' atelier'+(sansConseiller.length>1?'s':'')+' sans conseiller');
+          // Ateliers sans date
+          const sansDate=entries.filter(e=>!e.date||e.date==='Invalid Date');
+          if(sansDate.length>0) anomalies.push('📅 '+sansDate.length+' atelier'+(sansDate.length>1?'s':'')+' sans date valide');
+          // Présents > inscrits
+          const presentsAberrants=entries.filter(e=>e.presents&&e.inscrits&&parseInt(e.presents)>parseInt(e.inscrits));
+          if(presentsAberrants.length>0) anomalies.push('📊 '+presentsAberrants.length+' atelier'+(presentsAberrants.length>1?'s':'')+' avec présents > inscrits');
+          const msg=anomalies.length===0?'OK : aucune anomalie ('+entries.length+' ateliers)':anomalies.join(' — ');
+          addLog('Vérification cohérence : '+(anomalies.length===0?'OK':anomalies.length+' anomalie'+(anomalies.length>1?'s':'')),anomalies.length===0?'ok':'err');
+          alert(msg);
+        }},'🔍 Analyser ('+entries.length+' ateliers)')
+      ),
+
+      CE('div',{className:'admin-section'},
+        CE('h3',null,'🖥️ Stock ordinateurs'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:16}},"Nombre d'ordinateurs disponibles pour le prêt aux participants — utilisé par la Frise du parc et les conflits de stock (Anomalies BDD)."),
+        CE('div',{style:{display:'flex',alignItems:'center',gap:10}},
+          CE('input',{type:'number',min:1,value:stockOrdiDraft,onChange:e=>setStockOrdiDraft(e.target.value),style:{width:90,padding:'8px 12px',border:'1.5px solid #e2e8f0',borderRadius:8,fontSize:14,fontWeight:700,textAlign:'center'}}),
+          CE('button',{onClick:handleSaveStockOrdi,disabled:stockOrdiSaving,style:{padding:'8px 16px',background:'#1e3a8a',color:'#fff',border:'none',borderRadius:6,fontSize:12,fontWeight:600,cursor:'pointer'}},stockOrdiSaving?'…':'💾 Enregistrer')
+        )
+      ),
+
+      CE('div',{className:'admin-section',style:{border:'2px solid '+(maintenanceOn?'#dc2626':'#e2e8f0'),background:maintenanceOn?'#fff5f5':'#fff'}},
+        CE('h3',null,'🔧 Mode Maintenance'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:16}},"Activez pour bloquer l'accès à l'interface conseiller."),
+        maintenanceLoaded&&CE('div',null,
+          CE('div',{style:{display:'flex',alignItems:'center',gap:16,marginBottom:14,padding:'12px 16px',background:maintenanceOn?'#fef2f2':'#f0fdf4',borderRadius:10,border:'1px solid '+(maintenanceOn?'#fca5a5':'#86efac')}},
+            CE('div',{style:{flex:1}},
+              CE('div',{style:{fontWeight:700,fontSize:14,color:maintenanceOn?'#dc2626':'#16a34a'}},maintenanceOn?'🔴 Maintenance ACTIVE':'🟢 Application en ligne'),
+              CE('div',{style:{fontSize:12,color:'#718096',marginTop:2}},maintenanceOn?'Les conseillers voient l\'écran de maintenance.':'Les conseillers ont accès normalement.')
+            ),
+            CE('label',{className:'tgl',style:{flexShrink:0}},
+              CE('input',{type:'checkbox',checked:maintenanceOn,disabled:maintenanceSaving,onChange:e=>handleSaveMaintenance(e.target.checked)}),
+              CE('span',{className:'tgl-track'})
+            )
+          ),
+          CE('div',null,
+            CE('label',{style:{fontSize:12,fontWeight:600,color:'#4a5568',display:'block',marginBottom:6}},'Message (optionnel)'),
+            CE('input',{type:'text',value:maintenanceMsg,onChange:e=>setMaintenanceMsg(e.target.value),placeholder:'Ex: Retour dans 10 minutes.',style:{width:'100%',padding:'8px 12px',border:'1.5px solid #e2e8f0',borderRadius:8,fontSize:13,boxSizing:'border-box'}}),
+            CE('button',{onClick:()=>handleSaveMaintenance(maintenanceOn),disabled:maintenanceSaving,style:{marginTop:8,padding:'6px 16px',background:'#1e3a8a',color:'#fff',border:'none',borderRadius:6,fontSize:12,fontWeight:600,cursor:'pointer'}},maintenanceSaving?'…':'💾 Sauver le message')
+          )
+        )
+      ),
+            CE('div',{className:'admin-section'},
+        CE('h3',null,'🗑️ Réinitialiser la base de données'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:12}},'Vide uniquement le cache local. Le Google Sheet reste intact.'),
+        resetStep>0&&CE('div',{className:'confirm-box'},CE('p',null,resetStep===1?'Êtes-vous sûr ? Cette action vide le cache local.':'Dernière confirmation — cliquez pour confirmer.')),
+        CE('div',{style:{display:'flex',gap:10}},
+          CE('button',{className:'btn btn-danger',onClick:handleReset},resetLabels[resetStep]),
+          resetStep>0&&CE('button',{className:'btn btn-secondary',onClick:()=>setResetStep(0)},'Annuler')
+        )
+      ),
+      CE('div',{className:'admin-section'},
+        CE('h3',null,'📅 Export Timeline Ateliers'),
+        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:14}},'Génère le planning timeline directement depuis les données chargées. Année et conseillers pris depuis la sidebar.'),
+        CE('div',{style:{display:'flex',gap:12,alignItems:'flex-end',flexWrap:'wrap',marginBottom:moisDeb>moisFin?6:10}},
+          CE('div',null,CE('label',null,'Mois début'),CE('select',{value:moisDeb,onChange:e=>changeMoisDeb(+e.target.value),style:{marginTop:4}},MOIS_CAL.map((m,i)=>CE('option',{key:i,value:i+1},m)))),
+          CE('div',null,CE('label',null,'Mois fin'),CE('select',{value:moisFin,onChange:e=>changeMoisFin(+e.target.value),style:{marginTop:4}},MOIS_CAL.map((m,i)=>CE('option',{key:i,value:i+1},m)))),
+          CE('button',{className:'btn btn-success',style:{alignSelf:'flex-end'},disabled:tlRunning||moisDeb>moisFin||entries.filter(e=>e.date&&e.conseiller).length===0,onClick:handleExport},
+            tlRunning?CE('span',null,CE('span',{className:'spinner'}),'Génération…'):'📥 Générer & Télécharger')
+        ),
+        moisDeb>moisFin&&CE('p',{style:{fontSize:12,color:'#c53030',marginBottom:10}},'⚠️ Le mois de début doit être antérieur ou égal au mois de fin.'),
+        !( moisDeb>moisFin)&&CE('div',{style:{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap'}},
+          CE('span',{style:{fontSize:12,background:'#ebf8ff',border:'1px solid #bee3f8',color:'#2b6cb0',borderRadius:6,padding:'3px 10px'}},
+            `📊 ${entries.filter(e=>{if(!e.date||!e.conseiller)return false;const m=String(e.date).match(/^(\d{4})-(\d{2})/);return m&&parseInt(m[1])===parseInt(annee)&&parseInt(m[2])>=moisDeb&&parseInt(m[2])<=moisFin;}).length} ateliers · ${conseillersList?conseillersList.length:0} conseillers`),
+          CE('span',{style:{fontSize:12,background:'#f0fff4',border:'1px solid #9ae6b4',color:'#276749',borderRadius:6,padding:'3px 10px'}},
+            `📅 ${MOIS_SHORT_CAL[moisDeb-1]} → ${MOIS_SHORT_CAL[moisFin-1]} ${annee}`)
+        ),
+        tlLogs.length>0&&CE('div',{style:{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:8,padding:'10px 14px',maxHeight:160,overflowY:'auto',fontSize:12}},
+          tlLogs.map((l,i)=>CE('div',{key:i,className:'log-entry log-'+l.type,style:{marginBottom:4}},CE('span',{className:'log-time'},l.t+' '),CE('span',null,l.msg)))
+        ),
+        lastExport&&CE('div',{style:{marginTop:10,padding:'10px 14px',background:'#f0fff4',border:'1px solid #9ae6b4',borderRadius:8,display:'flex',alignItems:'center',gap:10,fontSize:13}},
+          CE('span',null,'📎 Si le téléchargement ne s\'est pas lancé :'),
+          CE('a',{href:lastExport.url,download:lastExport.name,style:{color:'#276749',fontWeight:700,textDecoration:'underline'}},lastExport.name)
+        )
+      ),
+      CE(ChangerMotDePasse,{adminConseiller}),
+      CE(ReinitialiserMotDePasseCollegue,{conseillers:conseillersList})
+    )
+  );
+}
+
+
+// (évite les conflits de hoisting inter-scripts)
+window.VueAdmin = VueAdminV10;
+
+ReactDOM.createRoot(document.getElementById('root')).render(CE(App));
