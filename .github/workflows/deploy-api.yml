@@ -96,6 +96,7 @@ jobs:
           curl -fsS "https://$COMPTE.alwaysdata.net/api/ping.php" | head -c 60; echo
           # La page d'import doit répondre, et le dossier lib/ rester fermé.
           curl -fsS -o /dev/null "https://$COMPTE.alwaysdata.net/api/import.php"
+          curl -fsS -o /dev/null "https://$COMPTE.alwaysdata.net/api/mailtest.php"
           code=$(curl -s -o /dev/null -w '%{http_code}' "https://$COMPTE.alwaysdata.net/api/lib/schema.sql")
           echo "api/lib/schema.sql → HTTP $code"
           if [ "$code" = "200" ]; then echo "::warning::api/lib/ est lisible depuis internet (.htaccess ignoré ?)"; fi
