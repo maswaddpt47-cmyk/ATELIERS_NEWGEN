@@ -57,6 +57,21 @@ de fermer l'appli à 15 h 30.
 revert du merge sur `main`), retirer la maintenance GAS. Aucune donnée
 perdue tant que personne n'a saisi dans la nouvelle version.
 
+🔒 **Audit de sécurité du 24/09/2026 (soir)** — corrigé côté API :
+`setPassword` exige le mot de passe actuel ; journal au nom de la personne
+connectée + actions d'administration journalisées ; erreurs PHP jamais
+affichées ; `mailtest.php` refusé hors HTTPS ; `ping.php` retiré (et
+effacé du serveur par le déploiement). **Laissé tel quel sur décision de
+l'utilisateur** : le rôle superviseur garde ses pouvoirs quasi admin (via
+Listes : rôles, mails). **À vérifier par l'utilisateur** : HTTPS forcé
+côté Alwaysdata, sauvegardes de la base, double authentification GitHub et
+Alwaysdata, clé d'import aléatoire ≥ 20 caractères. **Après la bascule** :
+ligne `admin_password` du classeur à supprimer, durée d'archive du
+classeur à fixer, export xlsx du 25/09 à supprimer ; consigne de l'audit
+trimestriel à mettre à jour (elle parle encore des failles GAS). Hérités,
+plus tard : jeton non révoqué à la déconnexion, SRI absent sur cdnjs,
+déploiement SSH par mot de passe.
+
 ⚠️ **NEWGEN par défaut reste sur le GAS** après la bascule : l'utilisateur
 doit passer par `?backend=php` en attendant que NEWGEN bascule aussi par
 défaut (à faire juste après, sur son go).
