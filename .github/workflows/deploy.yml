@@ -43,7 +43,7 @@ jobs:
       # RGPD : le dépôt est public. Aucun export de données (classeur, copie
       # de base, CSV) ni fichier d'identifiants ne doit jamais y entrer ;
       # seul le schéma vide de la base est admis.
-      - name: Garde-fou RGPD — aucun fichier de données dans le dépôt
+      - name: "[RGPD-14] Garde-fou RGPD — aucun fichier de données dans le dépôt"
         run: |
           interdits=$(git ls-files | grep -iE '\.(xlsx|xlsm|xls|ods|csv|sql|sql\.gz|gz|age|dump|bak)$|(^|/)config-api\.php$' | grep -vx 'api/lib/schema.sql' || true)
           if [ -n "$interdits" ]; then

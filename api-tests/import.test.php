@@ -26,11 +26,11 @@ verifier(in_array(['atelier_id' => 'entry_1', 'materiel' => 'Classe mobile'], $a
 $cfg = array_column($a['donnees']['config'], 'valeur', 'cle');
 verifier(($cfg['materiels_caches'] ?? null) === '["Tablette"]' && !isset($cfg['materiels_masques']), 'materiels_masques renommée materiels_caches');
 verifier(($cfg['stock_ordinateurs'] ?? null) === '14', 'nombre de Config gardé sans « .0 »');
-verifier(!isset($cfg['admin_password']) && !isset($cfg['app_version']) && !isset($cfg['lock_conseiller_test']), 'clés mortes non importées (dont admin_password)');
+verifier(!isset($cfg['admin_password']) && !isset($cfg['app_version']) && !isset($cfg['lock_conseiller_test']), '[RGPD-08] clés mortes non importées (dont admin_password)');
 verifier((bool) preg_grep('/admin_password.*en clair/', $a['avertissements']), 'admin_password signalée comme mot de passe en clair');
 [$c1, $c2] = $a['donnees']['comptes'];
 verifier(password_verify(hash('sha256', 'secret-test'), $c1['hash']) && $c1['doit_changer'] === 0, 'empreinte SHA-256 reprise : le mot de passe d\'origine reste valable');
-verifier(password_verify(hash('sha256', 'cd47nouveau'), $c2['hash']) && $c2['doit_changer'] === 1 && !str_contains($c2['hash'], 'cd47'), 'mot de passe en clair : haché, changement forcé');
+verifier(password_verify(hash('sha256', 'cd47nouveau'), $c2['hash']) && $c2['doit_changer'] === 1 && !str_contains($c2['hash'], 'cd47'), '[RGPD-07] mot de passe en clair : haché, changement forcé');
 [$j1, $j2] = $a['donnees']['journal'];
 verifier($j1['horodatage'] === '2026-09-24 10:30:00' && $j1['action'] === 'login' && $j1['succes'] === 1 && $j1['source'] === 'index.html', 'journal format récent');
 verifier($j2['action'] === 'checkPassword' && $j2['conseiller'] === 'Conseiller Test' && $j2['succes'] === 1, 'journal ancien format unifié');

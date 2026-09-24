@@ -77,7 +77,7 @@ echo "API — connexion\n";
 $r = appel(['action' => 'getComptes'], [], $ent);
 verifier(in_array('Access-Control-Allow-Origin: https://maswaddpt47-cmyk.github.io', $ent, true), 'CORS limité à github.io');
 verifier($r['ok'] === true && array_column($r['comptes'], 'conseiller') === ['Ancien Collegue', 'Conseiller Test', 'Nouveau Venu'], 'getComptes public : tous les comptes (l\'interrupteur ne ferme que l\'Admin)');
-verifier(!isset($r['comptes'][0]['role']) && !isset($r['comptes'][0]['actif']), 'getComptes public : ni rôle ni état');
+verifier(!isset($r['comptes'][0]['role']) && !isset($r['comptes'][0]['actif']), '[RGPD-01] getComptes public : ni rôle ni état');
 verifier(array_column(appel(['action' => 'getComptes', 'source' => 'admin'])['comptes'], 'conseiller') === ['Conseiller Test', 'Nouveau Venu'], 'getComptes page Admin : interrupteurs activés seuls');
 verifier($r['maintenance'] === false && $r['maintenance_msg'] === '', 'getComptes public : état de maintenance');
 
@@ -92,10 +92,10 @@ verifier(($r['ok'] ?? false) === true, 'interrupteur désactivé : Index ouvert'
 $db->exec('USE ateliers_test_api');
 $db->exec("INSERT INTO journal (horodatage, action, conseiller) VALUES (NOW() - INTERVAL 13 MONTH, 'login', 'Vieux'), (NOW() - INTERVAL 11 MONTH, 'login', 'Recent')");
 $admin = appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => ' secret-test ']);
-verifier($db->query("SELECT GROUP_CONCAT(conseiller) FROM journal WHERE conseiller IN ('Vieux','Recent')")->fetchColumn() === 'Recent', 'journal : plus de 12 mois purgé à la connexion, 11 mois gardé');
+verifier($db->query("SELECT GROUP_CONCAT(conseiller) FROM journal WHERE conseiller IN ('Vieux','Recent')")->fetchColumn() === 'Recent', '[RGPD-03] journal : plus de 12 mois purgé à la connexion, 11 mois gardé');
 verifier($admin['ok'] === true && $admin['role'] === 'admin' && preg_match('/^[0-9a-f]{64}$/', $admin['token']), 'bon mot de passe : jeton et rôle');
 $db->exec('USE ateliers_test_api');
-verifier((int) $db->query("SELECT COUNT(*) FROM sessions WHERE jeton_hash = '" . hash('sha256', $admin['token']) . "'")->fetchColumn() === 1, 'seule l\'empreinte du jeton est en base');
+verifier((int) $db->query("SELECT COUNT(*) FROM sessions WHERE jeton_hash = '" . hash('sha256', $admin['token']) . "'")->fetchColumn() === 1, '[RGPD-05] seule l\'empreinte du jeton est en base');
 $user = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'cd47nouveau']);
 verifier($user['ok'] === true && ($user['doit_changer'] ?? false) === true, 'ancien mot de passe en clair : connexion, avec doit_changer');
 
@@ -141,7 +141,7 @@ verifier($r['maintenance'] === true && $r['maintenance_msg'] === 'Retour à 14 h
 $r = appel(['action' => 'getComptes'], ['token' => $admin['token']]);
 verifier(count($r['comptes']) === 3 && $r['comptes'][0] === ['conseiller' => 'Ancien Collegue', 'role' => 'user', 'actif' => 'NON'], 'getComptes admin : liste complète');
 $r = appel(['action' => 'getComptes'], ['token' => $user['token']]);
-verifier(!isset($r['comptes'][0]['role']), 'getComptes conseiller : liste réduite');
+verifier(!isset($r['comptes'][0]['role']), '[RGPD-02] getComptes conseiller : liste réduite');
 $r = appel(['action' => 'getConfig'], ['token' => $user['token']]);
 verifier($r['ok'] === true && $r['config']['maintenance'] === 'true' && !isset($r['config']['admin_password']), 'getConfig avec jeton');
 verifier(appel(['action' => 'getConfig'])['ok'] === false, 'getConfig sans jeton : refusé');
@@ -231,17 +231,17 @@ verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'login'")
 echo "API — mot de passe oublié\n";
 $mails = function () use ($dossierMails) { $f = glob("$dossierMails/*.txt"); sort($f); return array_map('file_get_contents', $f); };
 $RETOUR = 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/index.html?backend=php';
-verifier(appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => 'https://pirate.example/'])['ok'] === false && $mails() === [], 'lien vers un autre site : refusé, aucun mail');
+verifier(appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => 'https://pirate.example/'])['ok'] === false && $mails() === [], '[RGPD-11] lien vers un autre site : refusé, aucun mail');
 $r1 = appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => $RETOUR]);
 $r2 = appel(['action' => 'demanderReinit'], ['conseiller' => 'Conseiller Test', 'retour' => $RETOUR]);   // pas d'adresse
 $r3 = appel(['action' => 'demanderReinit'], ['conseiller' => 'Personne Inconnue', 'retour' => $RETOUR]);
-verifier($r1 === $r2 && $r2 === $r3 && $r1['ok'] === true, 'réponse identique (adresse, sans adresse, inconnu) : rien ne se devine');
+verifier($r1 === $r2 && $r2 === $r3 && $r1['ok'] === true, '[RGPD-10] réponse identique (adresse, sans adresse, inconnu) : rien ne se devine');
 $m = $mails();
 verifier(count($m) === 1 && str_contains($m[0], 'A: nouveau.venu@example.org'), 'un seul mail, à la bonne adresse');
 preg_match('/[?&]reinit=([0-9a-f]{64})/', $m[0] ?? '', $mm);
 $jetonReinit = $mm[1] ?? '';
 verifier($jetonReinit !== '' && str_contains($m[0], $RETOUR . '&reinit='), 'lien vers la page de départ, ?backend=php conservé');
-verifier((int) $db->query("SELECT COUNT(*) FROM reinitialisations WHERE jeton_hash = '$jetonReinit'")->fetchColumn() === 0, 'jeton jamais stocké en clair');
+verifier((int) $db->query("SELECT COUNT(*) FROM reinitialisations WHERE jeton_hash = '$jetonReinit'")->fetchColumn() === 0, '[RGPD-06] jeton jamais stocké en clair');
 $avant = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'Un-Autre-Mdp-99', 'source' => 'index.html']);
 verifier(appel(['action' => 'reinitMotDePasse'], ['jeton' => $jetonReinit, 'password' => 'court'])['error'] === API_MDP_POLITIQUE, 'mot de passe trop faible refusé, lien pas consommé');
 verifier(appel(['action' => 'reinitMotDePasse', 'jeton' => $jetonReinit, 'password' => 'Nouveau-Mdp-2026!'])['ok'] === false, 'jeton et mot de passe dans l\'URL : ignorés');
