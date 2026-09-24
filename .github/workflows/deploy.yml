@@ -40,6 +40,18 @@ jobs:
       - name: Garde-fou cache-busting
         run: node scripts/check-cache-busting.js "${{ github.event.before }}" "${{ github.sha }}"
 
+      # RGPD : le dépôt est public. Aucun export de données (classeur, copie
+      # de base, CSV) ni fichier d'identifiants ne doit jamais y entrer ;
+      # seul le schéma vide de la base est admis.
+      - name: Garde-fou RGPD — aucun fichier de données dans le dépôt
+        run: |
+          interdits=$(git ls-files | grep -iE '\.(xlsx|xlsm|xls|ods|csv|sql|sql\.gz|gz|age|dump|bak)$|(^|/)config-api\.php$' | grep -vx 'api/lib/schema.sql' || true)
+          if [ -n "$interdits" ]; then
+            echo "::error::Fichier(s) de données ou d'identifiants dans le dépôt public :"
+            echo "$interdits"
+            exit 1
+          fi
+
   # Charge réellement index.html et admin.html dans Chromium et clique chaque
   # onglet. Les suites Node ne testent que des fonctions pures : elles passent
   # même si shared.js lève une erreur au chargement et laisse les deux pages
