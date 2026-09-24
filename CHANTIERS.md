@@ -223,6 +223,17 @@ ne renvoie que les noms actifs, ni rôle ni état).
   Analyser puis Importer. Claude ne peut pas le faire : pas d'accès
   Alwaysdata depuis son environnement, et ne doit pas voir les identifiants.
   Cet import est un **essai** : on refera un export frais le jour J.
+- **✅ 24/09/2026 — import d'essai réussi chez Alwaysdata** (utilisateur,
+  export du 23/09) : base `ateliers-numeriques_ateliers` remplie. Hôte
+  `mysql-<compte>.alwaysdata.net` **vérifié** (plus une hypothèse).
+  À ne pas réapprendre : (1) un secret GitHub ne part au serveur qu'au
+  **déploiement suivant** — après toute modification de secret, relancer
+  « Déploiement API Alwaysdata » ; (2) l'utilisateur MySQL est sensible à
+  la casse (`…_michel`, pas `…_Michel`) ; (3) le workflow manuel
+  « Diagnostic API Alwaysdata » rapporte version PHP (8.4), extensions,
+  présence de `~/config-api.php` et codes HTTP d'`import.php` sans IP —
+  c'est l'œil de Claude sur le serveur. La base d'essai diverge de NextStep
+  dès la première saisie de l'équipe : réimport frais le jour J.
 - **✅ 24/09/2026 — API de lecture écrite** : `api/index.php` +
   `api/lib/api.php` — `checkPassword`, `getComptes`, `getAll` (`year`/`years`),
   `getConfig`, `getVisibility`. Test de contrat `api-tests/api.test.php`
