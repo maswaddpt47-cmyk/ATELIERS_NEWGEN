@@ -284,6 +284,9 @@ ne renvoie que les noms actifs, ni rôle ni état).
   de 12 s : **25/65 = 38 %** d'échecs côté usager avec GAS, 0 % avec
   Alwaysdata. Confirme la nuit du 23-24/09 (9,5 %) et les relevés de jour
   des 22-23/09 (30-45 %) : la perte vient de GAS, pas du poste ni du réseau.
+  **Résumé final (arrêt 14:49 Paris)** : 68 paires, GAS 18 perdus
+  (26,5 %) + 9 > 12 s = **27/68 = 40 %** d'échecs usager, Alwaysdata 0 ;
+  McNemar χ² = 16,06.
   **Arrêtée à mi-journée** (accord du 24/09/2026 : résultat déjà net, la
   soirée n'apporterait rien de décisif). **Étape 0 close.**
 - **✅ RGPD — journal conservé 12 mois** (décision utilisateur 24/09/2026),
