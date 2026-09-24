@@ -276,6 +276,11 @@ ne renvoie que les noms actifs, ni rôle ni état).
   de Claude ne joint pas Alwaysdata. ⚠️ Les écritures faites en mode API
   vont dans la base d'essai, **pas** dans le classeur : ne pas y saisir de
   vrais ateliers.
+- **✅ 24/09/2026 — premier essai réel par l'utilisateur** en mode
+  `?backend=php` : « ça fonctionne, il réagit d'une vitesse
+  extraordinaire » (connexion + affichage, test rapide). Trajet navigateur →
+  Alwaysdata (CORS, POST) donc **vérifié en vrai**. Reste le test complet
+  (liste ci-dessous), à faire sur la base d'essai uniquement.
 - **Utilisateur — prochaine étape** : ouvrir
   `https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/index.html?backend=php`,
   se connecter avec son mot de passe habituel, vérifier que ses ateliers
