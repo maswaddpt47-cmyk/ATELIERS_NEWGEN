@@ -31,14 +31,19 @@ function mail_envoyer(string $a, string $sujet, string $texte, string $html): bo
     $de = mail_expediteur();
     $frontiere = 'b' . bin2hex(random_bytes(12));
     $entetes = implode("\r\n", [
-        'From: Ateliers numériques CD47 <' . $de . '>',
+        // Nom encodé (RFC 2047) : en clair, « numériques » s'affichait
+        // « numÃ©riques » dans Outlook (constaté le 24/09/2026).
+        'From: ' . mb_encode_mimeheader('Ateliers numériques CD47', 'UTF-8', 'B') . ' <' . $de . '>',
         'MIME-Version: 1.0',
         'Content-Type: multipart/alternative; boundary="' . $frontiere . '"',
     ]);
     $corps = "--$frontiere\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n$texte\r\n"
            . "--$frontiere\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n$html\r\n"
            . "--$frontiere--\r\n";
-    $sujetEncode = '=?UTF-8?B?' . base64_encode($sujet) . '?=';
+    // mb_encode_mimeheader découpe l'objet encodé en lignes de 75 caractères
+    // au plus, comme l'exige la norme (un seul bloc trop long peut être mal
+    // décodé par certaines messageries).
+    $sujetEncode = mb_encode_mimeheader($sujet, 'UTF-8', 'B', "\r\n");
     // -f : adresse de retour (bounces) alignée sur l'expéditeur.
     return mail($a, $sujetEncode, $corps, $entetes, '-f' . $de);
 }
