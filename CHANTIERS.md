@@ -63,9 +63,15 @@ connectée + actions d'administration journalisées ; erreurs PHP jamais
 affichées ; `mailtest.php` refusé hors HTTPS ; `ping.php` retiré (et
 effacé du serveur par le déploiement). **Laissé tel quel sur décision de
 l'utilisateur** : le rôle superviseur garde ses pouvoirs quasi admin (via
-Listes : rôles, mails). **HTTPS forcé : vérifié par l'utilisateur le 24/09 (http:// redirigé vers https://)**. **À vérifier par l'utilisateur** :
-sauvegardes de la base, double authentification GitHub et
-Alwaysdata, clé d'import aléatoire ≥ 20 caractères. **Après la bascule** :
+Listes : rôles, mails). **HTTPS forcé : vérifié par l'utilisateur le 24/09 (http:// redirigé vers https://)**. **Double authentification Alwaysdata activée le 24/09** (application
+TOTP). **Sauvegardes** : quotidiennes et automatiques d'après la doc
+Alwaysdata, conservation selon l'offre (3 jours en Free, jusqu'à 30 en
+payant) — liste encore vide le 24/09 au soir (base remplie le jour même) :
+**vérifier le 25/09 avant 15 h 30 qu'une date du 25/09 apparaît**
+(Avancé → Restauration de sauvegardes, déplier la liste SANS valider).
+Si offre Free : après la bascule, offre payante ou export hebdomadaire
+hors Alwaysdata. **À vérifier par l'utilisateur** : double authentification
+GitHub, clé d'import aléatoire ≥ 20 caractères. **Après la bascule** :
 ligne `admin_password` du classeur à supprimer, durée d'archive du
 classeur à fixer, export xlsx du 25/09 à supprimer ; consigne de l'audit
 trimestriel à mettre à jour (elle parle encore des failles GAS). Hérités,
