@@ -1,5 +1,6 @@
 <?php
-// Actions de l'API (remplaçant du GAS NEWGEN) — étape « lecture ».
+// Actions de l'API (remplaçant du GAS NEWGEN) : routage, connexion, lectures.
+// Les écritures sont dans ecriture.php.
 //
 // Contrat : mêmes noms d'action et mêmes formes de réponse que
 // gas/GAS_NEWGEN.js, pour que le client change le moins possible. Écarts
@@ -14,11 +15,16 @@
 // tableau à encoder en JSON.
 
 require_once __DIR__ . '/base.php';
+require_once __DIR__ . '/ecriture.php';
 
 const API_JETON_DUREE_S = 6 * 3600;          // comme TOKEN_TTL_SECONDS du GAS
 const API_ECHECS_MAX = 5;                    // 5 échecs → blocage 15 min
 const API_BLOCAGE_S = 15 * 60;
 const API_ROLES_ADMIN = ['admin', 'superviseur'];
+// Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
+const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex'];
+// Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
+const API_ACTIONS_ADMIN = ['saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'setPassword', 'getLogs'];
 
 // Ordre des champs d'un atelier dans la réponse (contract.test.js:12-34).
 const API_CHAMPS_ATELIER = [
@@ -46,14 +52,41 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
             return action_check_password($db, $p);
         case 'getComptes':
             return action_get_comptes($db, api_session($db, $jeton));
-        case 'getAll':
-        case 'getConfig':
-        case 'getVisibility':
-            $session = api_session($db, $jeton);
-            if ($session === null) return ['ok' => false, 'error' => 'Non autorisé : jeton manquant ou expiré', 'auth' => true];
-            if ($action === 'getAll') return action_get_all($db, $p, $session);
-            if ($action === 'getConfig') return ['ok' => true, 'config' => api_config_base($db)];
-            return ['ok' => true, 'visibility' => api_json(api_config_base($db)['visibility'] ?? '', (object) [])];
+        case 'logLogin':
+            // Journalisé par checkPassword ; gardé pour le client actuel.
+            return ['ok' => true];
+    }
+
+    // Toutes les autres actions exigent un jeton valide.
+    if (!in_array($action, API_ACTIONS_CONSEILLER, true) && !in_array($action, API_ACTIONS_ADMIN, true)) {
+        return ['ok' => false, 'error' => 'action inconnue: ' . $action];
+    }
+    $session = api_session($db, $jeton);
+    if ($session === null) return ['ok' => false, 'error' => 'Non autorisé : jeton manquant ou expiré', 'auth' => true];
+    if (in_array($action, API_ACTIONS_ADMIN, true) && !in_array($session['role'], API_ROLES_ADMIN, true)) {
+        return ['ok' => false, 'error' => 'Non autorisé : réservé aux administrateurs'];
+    }
+
+    switch ($action) {
+        case 'getAll':          return action_get_all($db, $p, $session);
+        case 'getConfig':       return ['ok' => true, 'config' => api_config_base($db)];
+        case 'getVisibility':   return ['ok' => true, 'visibility' => api_json(api_config_base($db)['visibility'] ?? '', (object) [])];
+        case 'saveEntry':       return action_save_entry($db, $p);
+        case 'saveMany':        return action_save_many($db, $p);
+        case 'delete':          return action_delete($db, $p);
+        case 'verifierIds':     return action_verifier_ids($db, $p);
+        case 'selfSetPassword': return action_self_set_password($db, $p, $session);
+        case 'logAccesIndex':   return action_log_acces_index($db, $p);
+        case 'saveLists':       return action_save_lists($db, $p);
+        case 'saveConfig':
+        case 'setConfig':       return action_set_config($db, $p);
+        case 'saveVisibility':  return action_set_json($db, 'visibility', $p['visibility'] ?? null);
+        case 'saveColors':      return action_set_json($db, 'conseiller_colors', $p['colors'] ?? null);
+        case 'saveEmails':      return action_set_json($db, 'emails', $p['emails'] ?? null);
+        case 'saveCompte':      return action_save_compte($db, $p);
+        case 'resetPassword':   return action_reset_password($db, $p);
+        case 'setPassword':     return action_set_password($db, $p);
+        case 'getLogs':         return action_get_logs($db, $p);
     }
     return ['ok' => false, 'error' => 'action inconnue: ' . $action];
 }
@@ -101,7 +134,8 @@ function action_check_password(PDO $db, array $p): array
     $db->exec('DELETE FROM sessions WHERE expire < NOW()');
     $db->prepare('INSERT INTO sessions (jeton_hash, conseiller, role, expire) VALUES (?, ?, ?, ?)')
        ->execute([hash('sha256', $jeton), $nom, $compte['role'], date('Y-m-d H:i:s', time() + API_JETON_DUREE_S)]);
-    // Pas de journal ici : le client appelle logLogin ensuite (comme le GAS).
+    // Journalisé ici (le GAS attendait un logLogin du client, falsifiable).
+    api_journal($db, 'login', $nom, '', $compte['role'], 1, 0, (string) ($p['userAgent'] ?? ''), (string) ($p['source'] ?? ''));
     $r = ['ok' => true, 'role' => $compte['role'], 'token' => $jeton];
     if ((int) $compte['doit_changer'] === 1) $r['doit_changer'] = true;   // ajout, ignoré par le client actuel
     return $r;
