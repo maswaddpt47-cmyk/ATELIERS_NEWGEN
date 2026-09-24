@@ -301,6 +301,14 @@ ne renvoie que les noms actifs, ni rôle ni état).
   sur l'adresse pro `@lotetgaronne.fr` (pas en indésirables). Défaut
   d'encodage du nom d'expéditeur/objet (« numÃ©riques ») corrigé. Gmail non
   testé. → Étape 2 (parcours complet) lancée.
+  **Gmail testé 15:08 : reçu en boîte de réception**, nom d'expéditeur
+  correct après le correctif d'encodage.
+  **✅ Étape 2 faite (24/09/2026)** : `api/lib/reinit.php` (`demanderReinit`,
+  `reinitMotDePasse`), lien « Mot de passe oublié ? » sur les écrans de
+  connexion de NEWGEN (mode API) et du labo NextStep. **Utilisateur** :
+  essai réel — renseigner son adresse dans Listes → Conseillers, demander
+  le lien, choisir un nouveau mot de passe. Prérequis pour l'équipe : une
+  vraie adresse par conseiller (Caroline avait `email@exemple.com`).
 - **✅ RGPD — journal conservé 12 mois** (décision utilisateur 24/09/2026),
   purgé à chaque connexion réussie (`API_JOURNAL_MOIS`, `api/lib/api.php`).
   Point « durée de conservation » d'AG-010 réglé.
