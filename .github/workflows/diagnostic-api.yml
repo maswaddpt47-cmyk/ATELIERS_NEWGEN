@@ -25,4 +25,8 @@ jobs:
             echo "== journaux récents"; find ~/admin/logs -type f -mmin -1440 2>/dev/null | head -20
             echo "== erreurs PHP (24 h)"
             find ~/admin/logs -type f -mmin -1440 2>/dev/null | xargs -r grep -hiE "PHP (Fatal|Parse|Warning|Notice)|Uncaught|Allowed memory|Maximum execution" 2>/dev/null | tail -30
+            echo "== apache.log (20 dernières lignes, adresses IP masquées)"
+            tail -20 ~/admin/logs/apache/apache.log 2>/dev/null | sed -E "s/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/x.x.x.x/g; s/[0-9a-f]*:[0-9a-f:]{6,}/x::x/g"
+            echo "== appels à import.php (requête, code, taille — sans IP)"
+            cat ~/admin/logs/http/2026/http-2026-09-2*.log 2>/dev/null | grep "import.php" | grep -oE "\[[^]]+\] \"[A-Z]+ [^ ]+ [^\"]+\" [0-9]{3} [0-9-]+" | tail -20
           '
