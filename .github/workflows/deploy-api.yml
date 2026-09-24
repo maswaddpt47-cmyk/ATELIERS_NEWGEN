@@ -42,6 +42,7 @@ jobs:
           sudo systemctl start mysql.service
           php api-tests/import.test.php
           php api-tests/api.test.php
+          php api-tests/sauvegarde.test.php
 
       - name: Copier api/ vers ~/www/api/
         env:
@@ -93,6 +94,17 @@ jobs:
             -e "ssh -o StrictHostKeyChecking=accept-new" \
             config-api.php "$COMPTE@ssh-$COMPTE.alwaysdata.net:config-api.php"
           rm -f config-api.php
+
+      # Une copie de la base à chaque déploiement : preuve que la copie de
+      # nuit fonctionne (même script que la tâche planifiée), et filet avant
+      # toute mise en ligne. Le script n'affiche qu'un compte rendu.
+      - name: Copie de la base (api/lib/sauvegarde.php)
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+          SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
+        run: |
+          sshpass -e ssh -o StrictHostKeyChecking=accept-new \
+            "$COMPTE@ssh-$COMPTE.alwaysdata.net" 'php www/api/lib/sauvegarde.php'
 
       - name: Vérifier la réponse en ligne
         env:
