@@ -34,12 +34,22 @@ import, verrouillé ou non). Le lever = requête SQL délibérée (phpMyAdmin).
 
 **Ordre du jour J** — dans cet ordre, la maintenance **avant** l'export,
 sinon une saisie faite entre les deux serait perdue :
-1. GAS NextStep en maintenance (Admin → Configuration).
+1. GAS NextStep en maintenance : c'est l'interrupteur « maintenance » de
+   l'Admin NextStep actuelle (écrit dans la feuille Config du classeur).
 2. Export xlsx du classeur (Fichier → Télécharger → Microsoft Excel).
 3. `api/import.php` : Analyser, puis Importer **avec la case de verrou**.
 4. Fusion de la branche NextStep dans `main` (déploiement 2-3 min).
-5. Vérification par l'utilisateur (Index + Admin, un atelier de test créé
-   puis supprimé), puis mail à l'équipe.
+5. Vérification par l'utilisateur **dans Admin** (un atelier de test créé
+   puis supprimé). La maintenance a voyagé avec l'import (`config`) : Index
+   affiche encore l'écran de maintenance, Admin passe outre (rôle admin).
+   Puis **lever la maintenance dans la nouvelle Admin** et contrôler Index.
+   Le mail à l'équipe est déjà parti le 24/09.
+
+⚠️ La maintenance GAS bloque le **chargement** (`getAll`), pas les
+**écritures** (`GAS_NEXTSTEP.js:435`, `actionSaveEntry` ne la teste pas) :
+une page ouverte avant 15 h 30 peut encore enregistrer dans le classeur
+après l'export, et cette saisie serait perdue. D'où la consigne à l'équipe
+de fermer l'appli à 15 h 30.
 6. Désactiver le déclencheur GAS `envoyerAlertesRetard` (Apps Script →
    Déclencheurs) : il lirait un classeur figé. Rappels à porter plus tard.
 
