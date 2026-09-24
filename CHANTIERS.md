@@ -297,6 +297,10 @@ ne renvoie que les noms actifs, ni rôle ni état).
   seulement**, Index reste ouvert. Appliqué en mode API uniquement ; écart
   assumé au GAS (NextStep compris), où « inactif » coupe tout. Couper
   complètement un agent = supprimer son compte.
+  Liste de connexion Admin = interrupteurs activés seuls, Index = tous
+  (demande utilisateur). **Vérifié par l'utilisateur le 24/09/2026 : « ça
+  marche »**. Noms à accès Admin lisibles sans connexion (sans rôle) :
+  écart de confidentialité accepté.
 - **Utilisateur — prochaine étape** : ouvrir
   `https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/index.html?backend=php`,
   se connecter avec son mot de passe habituel, vérifier que ses ateliers
