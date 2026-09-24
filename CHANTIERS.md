@@ -325,6 +325,14 @@ ne renvoie que les noms actifs, ni rôle ni état).
   devient la base publiée à l'URL NextStep le jour J ; sinon on supprime le
   dossier. ⚠️ Toute correction faite dans le vrai NextStep d'ici là devra
   être reportée dans la copie (elle est figée sur `a95d2a6`).
+- **✅ Tranché par l'utilisateur le 24/09/2026 — pas de choix proposé à
+  l'équipe** (« ne pas trop la bousculer ») : **l'équipe garde l'interface
+  NextStep**, l'utilisateur travaille sur NEWGEN (entrée suivante). Le labo
+  NextStep n'est donc plus un comparatif : c'est le **futur front de
+  production** de l'équipe. Reste à choisir au jour J entre publier la copie
+  `labo-nextstep/` à l'URL NextStep, ou reporter la même couche API dans le
+  dépôt NextStep lui-même (probablement plus simple : pas de copie à
+  resynchroniser). Question ci-dessous close :
 - **Question ouverte (24/09/2026) — laisser l'équipe choisir entre
   l'interface NextStep et l'interface NEWGEN ?** Mesuré : l'écart n'est pas
   qu'une question de couleurs. `VueHistorique` diffère de 402 lignes entre
