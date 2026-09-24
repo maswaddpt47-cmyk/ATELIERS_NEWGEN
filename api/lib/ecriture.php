@@ -23,17 +23,17 @@ const API_MDP_POLITIQUE = 'Le mot de passe doit contenir au moins 12 caractères
 
 // ── Ateliers ──────────────────────────────────────────────────────────────
 
-function action_save_entry(PDO $db, array $p): array
+function action_save_entry(PDO $db, array $p, string $acteur = ''): array
 {
     $d = api_objet($p['entry'] ?? null) ?? $p;
     $err = null;
-    $id = api_ecrire_atelier($db, $d, $err);
+    $id = api_ecrire_atelier($db, $d, $err, $acteur);
     return $id === null ? ['ok' => false, 'error' => $err] : ['ok' => true, '_id' => $id];
 }
 
 // Comme le GAS : chaque entrée est écrite indépendamment, les erreurs sont
 // rapportées ensemble. Rejouer le lot est sûr (_id fournis par le client).
-function action_save_many(PDO $db, array $p): array
+function action_save_many(PDO $db, array $p, string $acteur = ''): array
 {
     $entries = $p['entries'] ?? null;
     if (is_string($entries)) {
@@ -44,7 +44,7 @@ function action_save_many(PDO $db, array $p): array
     $erreurs = [];
     foreach ($entries as $i => $e) {
         $err = null;
-        if (!is_array($e) || api_ecrire_atelier($db, $e, $err) === null) {
+        if (!is_array($e) || api_ecrire_atelier($db, $e, $err, $acteur) === null) {
             $erreurs[] = ['idx' => $i, 'error' => $err ?? 'entrée invalide'];
         }
     }
@@ -52,7 +52,7 @@ function action_save_many(PDO $db, array $p): array
     return ['ok' => true, 'count' => count($entries)];
 }
 
-function action_delete(PDO $db, array $p): array
+function action_delete(PDO $db, array $p, string $acteur = ''): array
 {
     $id = trim((string) ($p['_id'] ?? ''));
     if ($id === '') return ['ok' => false, 'error' => 'ID manquant'];
@@ -63,7 +63,9 @@ function action_delete(PDO $db, array $p): array
         $conseiller = $s->fetchColumn();
         if ($conseiller === false) { $db->rollBack(); return ['ok' => false, 'error' => 'Entrée introuvable']; }
         $db->prepare('DELETE FROM ateliers WHERE id = ?')->execute([$id]);   // matériel : ON DELETE CASCADE
-        api_journal($db, 'delete', (string) $conseiller, $id, '', 1, 0, '', '');
+        // Auteur = la personne connectée ; le conseiller de l'atelier supprimé
+        // reste lisible dans ref (l'atelier n'existe plus pour le retrouver).
+        api_journal($db, 'delete', $acteur !== '' ? $acteur : (string) $conseiller, mb_substr("$id ($conseiller)", 0, 100), '', 1, 0, '', '');
         $db->commit();
     } catch (Throwable $e) { $db->rollBack(); throw $e; }
     return ['ok' => true];
@@ -82,7 +84,7 @@ function action_verifier_ids(PDO $db, array $p): array
 
 // Valide puis écrit un atelier (création ou remplacement). Renvoie son _id,
 // ou null avec la raison dans $err.
-function api_ecrire_atelier(PDO $db, array $d, ?string &$err): ?string
+function api_ecrire_atelier(PDO $db, array $d, ?string &$err, string $acteur = ''): ?string
 {
     $l = api_valider_atelier($d, $err);
     if ($l === null) return null;
@@ -108,7 +110,7 @@ function api_ecrire_atelier(PDO $db, array $d, ?string &$err): ?string
         $db->prepare('DELETE FROM ateliers_materiel WHERE atelier_id = ?')->execute([$l['id']]);
         $ins = $db->prepare('INSERT INTO ateliers_materiel (atelier_id, materiel) VALUES (?, ?)');
         foreach ($materiel as $m) $ins->execute([$l['id'], $m]);
-        api_journal($db, 'saveEntry', $l['conseiller'], $l['id'], '', 1, 0, '', '');
+        api_journal($db, 'saveEntry', $acteur !== '' ? $acteur : (string) $l['conseiller'], $l['id'], '', 1, 0, '', '');
         $db->commit();
     } catch (Throwable $e) {
         $db->rollBack();
@@ -226,14 +228,14 @@ function action_log_acces_index(PDO $db, array $p, array $session): array
 function action_get_logs(PDO $db, array $p): array
 {
     $n = max(1, min(1000, (int) ($p['n'] ?? 100) ?: 100));
-    $l = $db->query("SELECT horodatage, action, conseiller, role, succes, tentatives, user_agent, source FROM journal ORDER BY id DESC LIMIT $n")->fetchAll(PDO::FETCH_ASSOC);
+    $l = $db->query("SELECT horodatage, action, conseiller, ref, role, succes, tentatives, user_agent, source FROM journal ORDER BY id DESC LIMIT $n")->fetchAll(PDO::FETCH_ASSOC);
     $paris = new DateTimeZone('Europe/Paris');
     return ['ok' => true, 'logs' => array_map(fn($r) => [
         // Même format que le GAS : ISO 8601 en UTC.
         'timestamp' => (new DateTimeImmutable($r['horodatage'], $paris))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s.v\Z'),
         'conseiller' => $r['conseiller'], 'role' => $r['role'] !== '' ? $r['role'] : 'user',
         'success' => (int) $r['succes'] === 1, 'tentatives' => (int) $r['tentatives'],
-        'user_agent' => $r['user_agent'], 'source' => $r['source'], 'action' => $r['action'],
+        'user_agent' => $r['user_agent'], 'source' => $r['source'], 'action' => $r['action'], 'ref' => $r['ref'],
     ], $l)];
 }
 
@@ -324,10 +326,26 @@ function action_reset_password(PDO $db, array $p): array
     return ['ok' => true, 'newPassword' => $mdp];
 }
 
-// Admin : fixe le mot de passe d'un compte (GAS_NEWGEN.js:921-932).
-function action_set_password(PDO $db, array $p): array
+// Admin : change le mot de passe d'un compte (écran « Changer mon mot de
+// passe »). Le mot de passe ACTUEL de ce compte est exigé (audit du
+// 24/09/2026 : sans lui, un Admin resté ouvert suffisait à prendre le
+// compte) ; un échec compte comme une connexion ratée. Pour un collègue qui
+// a oublié le sien : resetPassword, ou « mot de passe oublié ».
+function action_set_password(PDO $db, array $p, array $session): array
 {
-    return api_changer_mdp($db, trim((string) ($p['conseiller'] ?? '')), (string) ($p['password'] ?? ''));
+    $nom = trim((string) ($p['conseiller'] ?? ''));
+    $actuel = trim((string) ($p['currentPwd'] ?? ''));
+    if ($nom === '' || $actuel === '') return ['ok' => false, 'error' => 'Mot de passe actuel requis'];
+    $bloque = api_blocage($db, $nom);
+    if ($bloque !== null) return ['ok' => false, 'error' => $bloque];
+    $s = $db->prepare('SELECT hash FROM comptes WHERE conseiller = ?');
+    $s->execute([$nom]);
+    $hash = $s->fetchColumn();
+    if (!$hash || !password_verify(hash('sha256', $actuel), $hash)) {
+        if ($hash !== false) api_echec_mdp($db, $nom, '', 'admin');
+        return ['ok' => false, 'error' => 'Mot de passe actuel incorrect'];
+    }
+    return api_changer_mdp($db, $nom, (string) ($p['password'] ?? ''));
 }
 
 // Conseiller : change SON mot de passe — toujours celui du jeton.

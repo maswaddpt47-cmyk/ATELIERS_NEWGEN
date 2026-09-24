@@ -7,6 +7,10 @@
 // application/x-www-form-urlencoded, sans en-tête personnalisé) : le
 // navigateur n'envoie pas de pré-vol OPTIONS, un aller-retour de moins.
 
+// Jamais d'erreur PHP dans la réponse (elle révélerait des chemins du
+// serveur) : elles vont au journal d'erreurs de l'hébergeur.
+ini_set('display_errors', '0');
+
 require_once __DIR__ . '/lib/api.php';
 
 // Seules les pages servies par GitHub Pages peuvent lire les réponses.

@@ -6,6 +6,7 @@
 // oublié ». Protégée par la clé d'import. L'adresse testée n'est ni
 // enregistrée ni journalisée.
 
+ini_set('display_errors', '0');
 require_once __DIR__ . '/lib/mail.php';
 
 header('Content-Type: text/html; charset=utf-8');
@@ -17,9 +18,12 @@ header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; 
 function h(string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
 
 $cle = trim((string) (api_config()['cle_import'] ?? ''));
+$https = ($_SERVER['HTTPS'] ?? '') === 'on' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
 $message = null;
 if (strlen($cle) < 20) {
     $message = ['erreur', "Page désactivée : aucune clé configurée sur le serveur."];
+} elseif (!$https) {
+    $message = ['erreur', 'Refusé hors HTTPS : ouvrez cette page en https://.'];
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $a = trim((string) ($_POST['adresse'] ?? ''));
     if (!hash_equals($cle, trim((string) ($_POST['cle'] ?? '')))) {
