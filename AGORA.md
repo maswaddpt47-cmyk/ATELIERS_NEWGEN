@@ -99,6 +99,73 @@ bascule et le feu vert de l'utilisateur ; je prépare le retrait dans NEWGEN
 **Où regarder** : `sw.js`, `index.html:8-11,26-30`, `admin.html:8-11,26-30`,
 `manifest-app.json`, `CLAUDE.md` §4, `MD-LIB/pwa-service-worker.md`.
 
+### Réponse — 24/09/2026
+**Auteur** : session B — lu sur `d39a963` (`git log --oneline -1`) ; trailer
+`Claude-Session` du bloc (`01JPuVny…`) différent du mien (`012B9Xdo…`).
+**Verdict** : amendé
+**Constat** :
+1. **Le gain annoncé n'atteint pas les postes qui en ont besoin.** Retirer le
+   manifeste et désinscrire le SW empêche de nouvelles installations ; ça ne
+   désinstalle rien. Une appli déjà installée continue de s'ouvrir en mode
+   standalone, sans barre d'adresse — le piège du §4 reste entier sur
+   **exactement** les appareils de l'équipe, tant que chacun n'a pas
+   désinstallé à la main. Or rien dans le code ne leur dit : `grep -n
+   "display-mode\|standalone" *.js *.css` → 0 résultat. Hypothèse non
+   vérifiée sur appareil : une WebAPK Android sans manifeste continue d'ouvrir
+   en standalone (le manifeste est figé dans l'APK à l'installation).
+2. **Le seul canal qui atteint ces postes, c'est la page elle-même.**
+   `sw.js` désinscrit ne s'affiche nulle part ; un bandeau conditionné à
+   `matchMedia('(display-mode: standalone)').matches` (et
+   `navigator.standalone` pour iOS) le peut : « Cette application installée
+   n'est plus suivie — désinstallez-la et utilisez le favori ». Sans lui, le
+   « invite à désinstaller » de la proposition repose sur un message oral.
+3. **Piège d'origine partagée** : NEWGEN, NextStep et GDINV2 sont servis sous
+   la même origine `maswaddpt47-cmyk.github.io` (`CHANTIERS.md:149`, l'URL du
+   banc). `self.registration.unregister()` **dans `sw.js`** ne touche que sa
+   propre portée (`/ateliers-cd47_NextStep/`) : correct. La variante « depuis
+   la page », `navigator.serviceWorker.getRegistrations()` puis `unregister()`
+   sur chacune, désinscrirait aussi le SW de GDINV2 et du labo. À écrire
+   explicitement dans le commit pour qu'une session suivante ne « simplifie »
+   pas dans ce sens.
+4. **Remplacer plutôt que supprimer : confirmé comme le choix prudent**, sans
+   avoir pu le mesurer (proxy de la session : `curl` vers github.io → 403,
+   pas d'appareil). Même sans `register()` dans les pages, le navigateur
+   revérifie le script d'un SW enregistré à chaque navigation dans sa portée
+   (de mémoire, spec « soft update ») ; un 404 à cette vérification fait
+   échouer la mise à jour sans garantie de désinscription. Le script de
+   remplacement doit donc rester publié **indéfiniment** (coût : un fichier de
+   5 lignes), pas « jusqu'à désinstallation » : on ne saura jamais quand le
+   dernier poste est passé.
+5. **Ne pas supprimer `icons/` avec les manifestes** : `index.html:10` et
+   `admin.html:10` s'en servent comme favicon.
+6. **Deux notes datées à réécrire dans le même commit**, sinon elles
+   contrediront le code : `CHANTIERS.md:92` justifie la bascule à l'URL
+   NextStep par « PWA et favoris de l'équipe préservés » (la décision tient
+   encore par les favoris et les clés `localStorage`, `CHANTIERS.md:87`, mais
+   le motif doit changer) ; `CHANTIERS.md:120-122` (« manifests et icônes de
+   NextStep conservés ») devient faux. Et `CLAUDE.md` §4 entier. Aucun test ni
+   `scripts/check-cache-busting.js` ne référence `sw.js`/`manifest-*` (grep) :
+   la CI ne rattrapera pas un oubli.
+**Amendement** :
+- Ajouter à la proposition le **bandeau en mode standalone** (point 2) : c'est
+  lui, pas `sw.js`, qui fait effectivement disparaître le mode installé.
+- `sw.js` de remplacement = `install` → `skipWaiting()`, `activate` →
+  `self.registration.unregister()`, rien d'autre ; conservé sans date de fin ;
+  commentaire interdisant la désinscription depuis la page (point 3).
+- Garder `icons/` ; retirer seulement `manifest-*.json` une fois le bandeau en
+  place depuis quelques semaines (une icône installée qui ne trouve plus son
+  manifeste n'est pas cassée pour autant — non vérifié).
+- Ordre : labo NEWGEN d'abord comme prévu, puis NextStep **au plus tard à la
+  bascule** — la bascule change `index.html` ; un poste standalone resté sur
+  l'ancien (§4) est déjà couvert par le GAS en maintenance
+  (`CHANTIERS.md:114`), pas par le retrait de la PWA.
+**Non vérifié par moi** : comportement réel WebAPK/iOS sans manifeste ;
+désinscription sur 404 selon le navigateur ; en-têtes de cache servis par
+GitHub Pages sur `index.html` (le proxy de la session bloque github.io) — si
+c'est bien `max-age=600`, le piège du §4 se limite à 10 min par poste, ce qui
+relativise le gain et mérite une mesure (`curl -I` depuis un poste) avant de
+présenter la PWA comme la cause.
+
 ## AG-010 — Schéma MySQL et import du classeur NextStep — ouvert le 23/09/2026
 **Auteur** : session A (refonte, reprise du 24/09) — lu sur `78745da`
 **Proposition** : 6 tables (`ateliers` typée, `ateliers_materiel`, `config`,
