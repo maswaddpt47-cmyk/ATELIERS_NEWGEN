@@ -302,6 +302,19 @@ ne renvoie que les noms actifs, ni rôle ni état).
   publié sans date de fin ; `icons/` gardé ; `CLAUDE.md` §4 réécrit. Bandeau
   « mode installé » non fait (seul l'utilisateur a installé). **À faire** :
   NextStep le jour de la bascule ; l'utilisateur désinstalle ses icônes.
+- **Décidé par l'utilisateur le 24/09/2026 — deux interfaces après la
+  bascule** : l'utilisateur travaillera sur l'interface **NEWGEN**, l'équipe
+  sur l'interface **NextStep**, **même API, même base** (le serveur ne sait
+  pas quel écran lui parle). Conséquences à traiter au plus tard le jour J :
+  (1) deux fronts à maintenir — toute évolution de l'API vérifiée sur les
+  deux (`appels.test.js` + `labo-nextstep.test.js` en CI) ; (2) NEWGEN n'est
+  plus un labo une fois branché sur la base de production → créer une
+  **seconde base d'essai** Alwaysdata si un terrain d'essai reste utile ;
+  (3) les fonctions propres à NEWGEN (plusieurs années, `verifierIds`,
+  interrupteur Admin…) ne profitent à l'équipe que si on les reporte dans
+  NextStep. **D'ici la bascule** : les vrais ateliers se saisissent dans
+  NextStep (classeur Google) ; NEWGEN `?backend=php` = base d'essai figée
+  au 23/09, invisible pour l'équipe.
 - **✅ 24/09/2026 — labo NextStep en ligne** (demande utilisateur) :
   `labo-nextstep/` = copie du front NextStep `a95d2a6` branchée sur l'API,
   pour comparer les deux interfaces sur la même base d'essai. Adresse :
