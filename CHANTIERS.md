@@ -19,6 +19,36 @@ effectué — AG-001 a corrigé le protocole du banc avant la série.
 
 ---
 
+## 🚀 24/09/2026 — Bascule prête, prévue le 25/09/2026 vers 15 h (reprendre ici)
+
+**NextStep officielle** : branche `claude/architecture-refonte-migration-wqlanb`
+de `ateliers-cd47_NextStep`, poussée, **non fusionnée** (son `deploy.yml` ne
+part que de `main` : la production reste sur le GAS). Code du labo sans ses
+particularités (espace de noms `nextstep` gardé, pas de bandeau), 33 tests
+e2e verts dont « plus aucun appel au GAS ». **Verrou d'import** : case
+« Import de la bascule : verrouiller ensuite » sur `api/import.php`, posée
+dans la même transaction que l'import ; la page affiche l'état (dernier
+import, verrouillé ou non). Le lever = requête SQL délibérée (phpMyAdmin).
+
+**Ordre du jour J** — dans cet ordre, la maintenance **avant** l'export,
+sinon une saisie faite entre les deux serait perdue :
+1. GAS NextStep en maintenance (Admin → Configuration).
+2. Export xlsx du classeur (Fichier → Télécharger → Microsoft Excel).
+3. `api/import.php` : Analyser, puis Importer **avec la case de verrou**.
+4. Fusion de la branche NextStep dans `main` (déploiement 2-3 min).
+5. Vérification par l'utilisateur (Index + Admin, un atelier de test créé
+   puis supprimé), puis mail à l'équipe.
+6. Désactiver le déclencheur GAS `envoyerAlertesRetard` (Apps Script →
+   Déclencheurs) : il lirait un classeur figé. Rappels à porter plus tard.
+
+**Retour arrière** si la vérification échoue : ne pas fusionner (ou
+revert du merge sur `main`), retirer la maintenance GAS. Aucune donnée
+perdue tant que personne n'a saisi dans la nouvelle version.
+
+⚠️ **NEWGEN par défaut reste sur le GAS** après la bascule : l'utilisateur
+doit passer par `?backend=php` en attendant que NEWGEN bascule aussi par
+défaut (à faire juste après, sur son go).
+
 ## 🧭 23/09/2026 — Refonte d'architecture : cap décidé, AG-009 tranché, étape 0 (mesure) en cours
 
 Session de réflexion demandée par l'utilisateur (« prendre du recul, ne rien
@@ -369,8 +399,8 @@ ne renvoie que les noms actifs, ni rôle ni état).
   même adresse, reconnexion avec le mot de passe habituel (vérifié : les
   empreintes du classeur sont reprises), lien « mot de passe oublié ».
   **Rien publié sur la NextStep officielle** (consigne : « ne la publie pas
-  encore »). Jour J à fixer avec l'utilisateur : export frais → import →
-  GAS NextStep en maintenance → publication.
+  encore »). Jour J fixé au 25/09/2026 vers 15 h — ordre corrigé
+  (maintenance d'abord) dans le bloc « Bascule prête » en tête de fichier.
 - **✅ 24/09/2026 — labo NextStep en ligne** (demande utilisateur) :
   `labo-nextstep/` = copie du front NextStep `a95d2a6` branchée sur l'API,
   pour comparer les deux interfaces sur la même base d'essai. Adresse :

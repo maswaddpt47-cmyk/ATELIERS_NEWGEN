@@ -66,8 +66,10 @@ if (strlen($cle) < 20) {
                 } elseif (($_POST['confirme'] ?? '') !== 'oui') {
                     $message = ['erreur', "Rien n'a été importé : cochez la case de confirmation."];
                 } else {
-                    import_charger(api_base(), $analyse, $empreinte);
-                    $message = ['ok', 'Import terminé : la base contient maintenant les données de ce fichier.'];
+                    $verrouiller = ($_POST['verrouiller'] ?? '') === 'oui';
+                    import_charger(api_base(), $analyse, $empreinte, $verrouiller);
+                    $message = ['ok', 'Import terminé : la base contient maintenant les données de ce fichier.'
+                        . ($verrouiller ? ' Import verrouillé : plus aucun import ne sera accepté.' : '')];
                 }
             } else {
                 $message = $analyse['erreurs']
@@ -80,6 +82,15 @@ if (strlen($cle) < 20) {
             @unlink($fichier['tmp_name']);
         }
     }
+}
+
+// État affiché en tête de page : date du dernier import, verrou posé ou non.
+$etat = null;
+if (strlen($cle) >= 20) {
+    try {
+        $m = api_base()->query("SELECT cle, valeur FROM meta WHERE cle IN ('dernier_import', 'import_verrouille')")->fetchAll(PDO::FETCH_KEY_PAIR);
+        $etat = ['dernier' => $m['dernier_import'] ?? null, 'verrouille' => ($m['import_verrouille'] ?? '') === '1'];
+    } catch (Throwable $e) { /* base vide ou injoignable : rien à afficher */ }
 }
 ?><!doctype html>
 <html lang="fr">
@@ -107,6 +118,11 @@ if (strlen($cle) < 20) {
 <p>Déposez l'export du classeur Google Sheets (<em>Fichier → Télécharger → Microsoft Excel</em>).
 Commencez par <strong>Analyser</strong> : rien n'est écrit.
 <strong>Importer</strong> remplace tout le contenu de la base.</p>
+
+<?php if ($etat): ?>
+<p>Dernier import : <strong><?= h($etat['dernier'] ?? 'aucun') ?></strong>
+<?= $etat['verrouille'] ? ' — <strong>import verrouillé</strong> (base en production)' : ' — import ouvert' ?></p>
+<?php endif; ?>
 
 <?php if ($message): ?>
 <p class="<?= h($message[0]) ?>"><?= h($message[1]) ?></p>
@@ -136,6 +152,8 @@ Commencez par <strong>Analyser</strong> : rien n'est écrit.
   <input type="file" id="fichier" name="fichier" accept=".xlsx" required>
   <label class="confirme"><input type="checkbox" name="confirme" value="oui">
     Je confirme : l'import remplace tous les ateliers, comptes, réglages et le journal de la base.</label>
+  <label class="confirme"><input type="checkbox" name="verrouiller" value="oui">
+    Import de la bascule : verrouiller ensuite (plus aucun import possible, pour ne jamais écraser les saisies de l'équipe).</label>
   <button type="submit" name="mode" value="analyser">Analyser</button>
   <button type="submit" name="mode" value="importer">Importer</button>
 </form>

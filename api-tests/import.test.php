@@ -67,7 +67,7 @@ if ($mysql) {
     verifier($l === ['date' => '2026-09-24', 'horaire' => '13:30', 'presents' => null], 'relu en base : ' . json_encode($l));
     verifier($db->query("SELECT presents FROM ateliers WHERE id = 'entry_2'")->fetchColumn() === 0, 'presents 0 distinct de vide en base');
     verifier((int) $db->query('SELECT COUNT(*) FROM ateliers_materiel')->fetchColumn() === 4, 'matériel en base');
-    $db->exec("REPLACE INTO meta VALUES ('import_verrouille', '1')");
+    import_charger($db, $a, 'empreinte', true); // import de la bascule : pose le verrou
     try { import_charger($db, $a, 'x'); $refuse = false; } catch (RuntimeException $e) { $refuse = str_contains($e->getMessage(), 'verrouillé'); }
     verifier($refuse, 'import refusé après la bascule (verrou)');
     $mauvais = analyser(classeur([atelier('entry_9', ['date' => 'demain'])]));
