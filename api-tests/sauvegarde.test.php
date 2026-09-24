@@ -37,17 +37,17 @@ file_put_contents($vieille, 'x');
 touch($vieille, time() - 40 * 86400);
 [$code, $sortie] = $lancer($mdp);
 $fichiers = glob("$dossier/ateliers-*.sql.gz");
-verifier($code === 0 && count($fichiers) === 1 && str_contains($sortie, '1 purgée(s)'), "copie écrite, copie de plus de 30 jours purgée : $sortie");
+verifier($code === 0 && count($fichiers) === 1 && str_contains($sortie, '1 purgée(s)'), "[RGPD-04] copie écrite, copie de plus de 30 jours purgée : $sortie");
 $sql = (string) shell_exec('gzip -dc ' . escapeshellarg($fichiers[0]));
 verifier(str_contains($sql, "'entry_1','Nérac'") && str_contains($sql, 'Dump completed'), 'la copie contient les données, complète');
 // La vraie preuve : la copie se recharge dans une base vide.
 $db->exec('DROP DATABASE IF EXISTS ateliers_test_restau');
 $db->exec('CREATE DATABASE ateliers_test_restau CHARACTER SET utf8mb4');
 exec('gzip -dc ' . escapeshellarg($fichiers[0]) . ' | mysql -h ' . escapeshellarg($hote) . ' -u ' . escapeshellarg($util) . ' --password=' . escapeshellarg($mdp) . ' ateliers_test_restau 2>&1', $o, $cr);
-verifier($cr === 0 && $db->query('SELECT commune FROM ateliers_test_restau.ateliers')->fetchColumn() === 'Nérac', 'restauration dans une base vide : données retrouvées');
+verifier($cr === 0 && $db->query('SELECT commune FROM ateliers_test_restau.ateliers')->fetchColumn() === 'Nérac', '[RGPD-13] restauration dans une base vide : données retrouvées');
 $db->exec('DROP DATABASE ateliers_test_restau');
-verifier((fileperms($fichiers[0]) & 0777) === 0600, 'copie lisible par le seul compte (600)');
-verifier(!str_contains($sortie, 'Nérac') && !str_contains($sortie, $mdp === '' ? "\0" : $mdp), 'compte rendu sans donnée ni mot de passe');
+verifier((fileperms($fichiers[0]) & 0777) === 0600, '[RGPD-09] copie lisible par le seul compte (600)');
+verifier(!str_contains($sortie, 'Nérac') && !str_contains($sortie, $mdp === '' ? "\0" : $mdp), '[RGPD-12] compte rendu sans donnée ni mot de passe');
 
 [$code, $sortie] = $lancer('mauvais-mot-de-passe');
 verifier($code === 1 && str_contains($sortie, 'ÉCHEC') && count(glob("$dossier/ateliers-*")) === 1, 'échec signalé, aucun fichier partiel laissé');
