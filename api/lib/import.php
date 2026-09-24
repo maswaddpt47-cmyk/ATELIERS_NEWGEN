@@ -422,7 +422,10 @@ function import_lettre(int $i): string
 // l'analyse, en une transaction : soit tout passe, soit rien ne change.
 // Les jetons de connexion et les compteurs d'échecs sont vidés aussi : toute
 // l'équipe se reconnecte (AG-009).
-function import_charger(PDO $db, array $analyse, string $empreinteFichier): void
+// $verrouiller : import de la bascule, pose le verrou dans la même
+// transaction — aucun import ne pourra plus écraser les saisies de l'équipe.
+// Le lever demande une requête SQL délibérée (phpMyAdmin), pas un clic.
+function import_charger(PDO $db, array $analyse, string $empreinteFichier, bool $verrouiller = false): void
 {
     if ($analyse['erreurs']) throw new RuntimeException("Import refusé : l'analyse contient des erreurs.");
 
@@ -455,6 +458,7 @@ function import_charger(PDO $db, array $analyse, string $empreinteFichier): void
         $meta = $db->prepare('REPLACE INTO meta (cle, valeur) VALUES (?, ?)');
         $meta->execute(['dernier_import', date('Y-m-d H:i:s')]);
         $meta->execute(['dernier_import_empreinte', $empreinteFichier]);
+        if ($verrouiller) $meta->execute(['import_verrouille', '1']);
         $db->commit();
     } catch (Throwable $e) {
         $db->rollBack();
