@@ -309,6 +309,13 @@ ne renvoie que les noms actifs, ni rôle ni état).
   essai réel — renseigner son adresse dans Listes → Conseillers, demander
   le lien, choisir un nouveau mot de passe. Prérequis pour l'équipe : une
   vraie adresse par conseiller (Caroline avait `email@exemple.com`).
+  **✅ Validé par l'utilisateur le 24/09/2026** : « marche à merveille sur
+  les 2 » (NEWGEN et labo NextStep).
+- **24/09/2026 — déconnexion automatique d'Index après 30 min
+  d'inactivité** (demande utilisateur ; bouton Déconnexion conservé), NEWGEN
+  et labo NextStep. **Choix de conception signalé** : jamais pendant la
+  saisie d'un atelier (aucun brouillon n'est gardé) — à revoir si l'on
+  ajoute un brouillon de saisie.
 - **✅ RGPD — journal conservé 12 mois** (décision utilisateur 24/09/2026),
   purgé à chaque connexion réussie (`API_JOURNAL_MOIS`, `api/lib/api.php`).
   Point « durée de conservation » d'AG-010 réglé.
