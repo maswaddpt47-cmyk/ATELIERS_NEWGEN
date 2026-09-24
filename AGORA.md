@@ -68,6 +68,42 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-011 — Contrat de lecture de l'API (qui lit quoi, avant et après connexion) — ouvert le 24/09/2026
+**Auteur** : session A (refonte) — lu sur `3e29db4`
+**Proposition** : `api/index.php?action=…`, mêmes noms d'action et mêmes
+formes de réponse que le GAS NEWGEN. Mais **jeton exigé** pour `getAll`,
+`getConfig`, `getVisibility` ; jeton passé **dans le corps POST**
+(`application/x-www-form-urlencoded`, pas de pré-vol), jamais dans l'URL.
+**Public** : `checkPassword` (POST) et `getComptes` réduit
+`{ok, comptes:[{conseiller}], maintenance, maintenance_msg}` (actifs seuls) —
+c'est lui qui alimente la liste de connexion **et** l'écran de maintenance
+avant connexion. Avec un jeton admin/superviseur, `getComptes` rend la liste
+complète (rôle, actif). Maintenance levée par le **rôle du jeton**, plus par
+`source=admin` (falsifiable).
+**Critère déclencheur** : 1 (contrat entre `shared.js` et le serveur) et 2
+(options écartées : jeton en URL comme aujourd'hui ; action publique dédiée
+`getAccueil` au lieu d'élargir `getComptes`).
+**Ce que ça engage** : l'ordre de démarrage d'Index change — aujourd'hui
+`getAll` part **avant** la connexion (`app.js:345-350`, liste de connexion tirée
+de `lists.conseillers`, `app.js:438-439`) ; demain il ne peut partir
+qu'après. `app.js:354` (inactifs via `getComptes`) et `admin_app.js:204-210`
+(filtre des rôles pour la liste admin) perdent leur source publique.
+Nombre d'appels au démarrage inchangé (2), mais `appels.test.js` devra
+suivre.
+**Non vérifié par l'auteur** : que rien d'autre ne lise `getAll` avant
+connexion (recherche limitée à `app.js`/`admin_app.js`/`shared.js`) ; que
+`lists.conseillers` (Config) et la feuille Comptes contiennent les mêmes
+noms — sinon la liste de connexion change de contenu ; comportement d'un
+jeton expiré en cours de session (aujourd'hui `getAll` ne l'exige pas, donc
+jamais d'erreur 6 h après connexion — demain, oui : prévoir un retour à
+l'écran de connexion).
+**Si personne ne répond, je fais quoi ?** J'écris l'API ainsi (réversible :
+aucun client ne l'appelle encore), mais je ne touche pas `shared.js`/`app.js`
+avant que l'utilisateur ait tranché sur l'ordre de démarrage.
+**Où regarder** : `gas/GAS_NEWGEN.js:398-425` (routage), `:649-731` (getAll),
+`shared.js:1488-1523` (`apiFetch`), `:1550-1571` (`rawGetAll`, sans jeton),
+`app.js:345-355`, `:430-441`, `admin_app.js:197-210`.
+
 ## AG-010 — Schéma MySQL et import du classeur NextStep — ouvert le 23/09/2026
 **Auteur** : session A (refonte, reprise du 24/09) — lu sur `78745da`
 **Proposition** : 6 tables (`ateliers` typée, `ateliers_materiel`, `config`,
