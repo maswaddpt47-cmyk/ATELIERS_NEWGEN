@@ -276,6 +276,11 @@ ne renvoie que les noms actifs, ni rôle ni état).
   de Claude ne joint pas Alwaysdata. ⚠️ Les écritures faites en mode API
   vont dans la base d'essai, **pas** dans le classeur : ne pas y saisir de
   vrais ateliers.
+- **24/09/2026 12:23 (Paris) — une paire du banc** relevée par l'utilisateur
+  en journée (lieu **à confirmer**, a priori le bureau) : GAS livré en
+  5,4 s, Alwaysdata **livré** en 1,1 s. Si c'est bien le réseau CD47 : il
+  laisse passer `alwaysdata.net`, le point bloquant de la bascule est levé.
+  Une paire ne dit rien des taux de perte (McNemar non significatif).
 - **✅ 24/09/2026 — premier essai réel par l'utilisateur** en mode
   `?backend=php` : « ça fonctionne, il réagit d'une vitesse
   extraordinaire » (connexion + affichage, test rapide). Trajet navigateur →
