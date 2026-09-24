@@ -216,6 +216,69 @@ function verifier(nom, condition, detail) {
     await ctx.close();
   }
 
+  // 4 à 6. Mode API (?backend=php, AG-011) : l'API refuse getAll/getConfig
+  //    sans jeton. Avant connexion, seul getComptes (public) doit partir ;
+  //    après, tout part en POST avec le jeton dans le corps, jamais dans
+  //    l'URL ; une réponse {auth:true} ramène à l'écran de connexion.
+  const JETON = 'a'.repeat(64);
+  async function preparerApi(browser) {
+    const p = await preparer(browser);
+    p.requetes = [];
+    p.jetonRefuse = false;
+    await p.ctx.route('**/ateliers-numeriques.alwaysdata.net/**', route => {
+      const req = route.request();
+      const action = new URL(req.url()).searchParams.get('action') || '?';
+      const corps = new URLSearchParams(req.postData() || '');
+      p.appels.push(action);
+      p.requetes.push({ action, methode: req.method(), url: req.url(), jeton: corps.get('token') });
+      let rep = { ok: true };
+      if (action === 'getComptes') rep = { ok: true, comptes: [{ conseiller: 'Alice Martin' }], maintenance: false, maintenance_msg: '' };
+      else if (action === 'checkPassword') rep = { ok: true, role: 'admin', token: JETON };
+      else if (p.jetonRefuse) rep = { ok: false, error: 'Non autorisé : jeton manquant ou expiré', auth: true };
+      else if (action === 'getAll') rep = { ...JSON.parse(MOCK), conseillers_inactifs: [] };
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rep) });
+    });
+    return p;
+  }
+  const ecranConnexion = page => page.locator('input[type="password"]').first().isVisible({ timeout: 4000 }).catch(() => false);
+
+  {
+    const p = await preparerApi(browser);
+    await p.page.goto(`http://127.0.0.1:${PORT}/index.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
+    await p.page.waitForTimeout(1200);
+    verifier('api — index avant connexion : getComptes seul', p.appels.join(',') === 'getComptes', p.appels.join(', ') || 'aucun');
+    verifier('api — aucun appel GAS en mode API', !p.appels.includes('?') && p.requetes.length === p.appels.length);
+    await connecter(p.page);
+    await p.page.waitForTimeout(800);
+    const getAll = p.requetes.find(r => r.action === 'getAll');
+    verifier('api — index après connexion : getAll part', !!getAll, p.appels.join(', '));
+    verifier('api — POST, jeton dans le corps, rien dans l\'URL',
+      !!getAll && getAll.methode === 'POST' && getAll.jeton === JETON && !/token|password/.test(getAll.url),
+      getAll ? `${getAll.methode} ${getAll.url}` : '');
+    verifier('api — pas de getComptes après connexion (inactifs dans getAll)', p.appels.filter(a => a === 'getComptes').length === 1, p.appels.join(', '));
+    p.jetonRefuse = true;
+    await p.page.evaluate(() => window.fetchAll(new Date().getFullYear(), { force: true }).catch(() => {}));
+    await p.page.waitForTimeout(800);
+    verifier('api — index : jeton refusé → écran de connexion', await ecranConnexion(p.page));
+    await p.ctx.close();
+  }
+  {
+    const p = await preparerApi(browser);
+    await p.page.goto(`http://127.0.0.1:${PORT}/admin.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
+    await p.page.waitForTimeout(1200);
+    verifier('api — admin avant connexion : ni getAll ni getConfig', p.appels.join(',') === 'getComptes', p.appels.join(', ') || 'aucun');
+    const pwd = p.page.locator('input[type="password"]').first();
+    await pwd.fill('test');
+    await p.page.getByRole('button', { name:/Connexion/ }).click();
+    await p.page.waitForTimeout(1500);
+    verifier('api — admin après connexion : getAll part', p.appels.includes('getAll'), p.appels.join(', '));
+    p.jetonRefuse = true;
+    await p.page.evaluate(() => window.fetchAll(new Date().getFullYear(), { force: true, source: 'admin' }).catch(() => {}));
+    await p.page.waitForTimeout(800);
+    verifier('api — admin : jeton refusé → écran de connexion', await ecranConnexion(p.page));
+    await p.ctx.close();
+  }
+
   await browser.close();
   server.close();
 

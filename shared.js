@@ -681,6 +681,33 @@ function FadeItem({children,delay=0,style={}}){
 }
 
 const GS_URL = 'https://script.google.com/macros/s/AKfycbwsNMoPSEIMss4kG0V13PWSr1mKEo34IFMWClxJuXkUvZ7Cgo-OWY0ud1lQtrUBqDbP/exec';
+// ── Interrupteur de serveur (refonte GAS → PHP, AG-009 / AG-011) ──────────
+// Par défaut : GAS, comme avant. « ?backend=php » dans l'adresse bascule CET
+// onglet sur l'API Alwaysdata (mémorisé dans sessionStorage), « ?backend=gas »
+// revient en arrière. Rien ne change pour qui n'a pas ouvert ce lien.
+// En mode API :
+//   - tout part en POST form-urlencoded (requête « simple » : pas de pré-vol
+//     CORS), jeton et mot de passe dans le corps, jamais dans l'URL ;
+//   - le jeton accompagne toutes les actions (l'API l'exige en lecture) ;
+//   - une réponse {auth:true} (jeton absent ou expiré) déclenche l'événement
+//     « ateliers:auth-expiree » : les deux applis reviennent à l'écran de
+//     connexion (amendement 3 d'AG-011).
+const API_PHP_URL = 'https://ateliers-numeriques.alwaysdata.net/api/index.php';
+window.BACKEND_PHP = (function(){
+  try{
+    const q = new URLSearchParams(window.location.search).get('backend');
+    if(q==='php' || q==='gas') sessionStorage.setItem('ateliers_backend', q);
+    return sessionStorage.getItem('ateliers_backend') === 'php';
+  }catch(_){ return false; }
+})();
+// Adresse et corps d'un appel : GAS en GET (paramètres dans l'URL), API en
+// POST (action dans l'URL pour lire les journaux, le reste dans le corps).
+window.requeteServeur = function(params){
+  if(!window.BACKEND_PHP) return {url:`${GS_URL}?${params.toString()}`, corps:null};
+  const token = window.authToken && window.authToken.get();
+  if(token && !params.has('token')) params.set('token', token);
+  return {url:`${API_PHP_URL}?action=${encodeURIComponent(params.get('action')||'')}`, corps:params.toString()};
+};
 // ── Politique d'appel GAS ──────────────────────────────────────────────────
 // MESURÉ le 18/09/2026 (journal Admin, PC et Android, 221 ateliers) : la
 // livraison Apps Script est BIMODALE, pas lente. Livrée, une réponse arrive en
@@ -764,14 +791,17 @@ window.logGas = function(action, attempt, ms, issue){
 // l'appel lui-même (cas du doublage : dès que l'un des deux répond, l'autre
 // n'a plus lieu d'être). Marquer ctrl.inutile avant d'annuler évite de
 // journaliser en rouge un appel qu'on a sciemment arrêté.
-window.gasUnAppel = async function(url, action, numero, timeoutMs, ctrlFourni){
+// corps : chaîne form-urlencoded → POST (mode API) ; absent → GET (GAS).
+window.gasUnAppel = async function(url, action, numero, timeoutMs, ctrlFourni, corps){
   const plafond = timeoutMs || GAS_TIMEOUT_LECTURE_MS;
   const t0 = Date.now();
   const ctrl = ctrlFourni || new AbortController();
   const chien = setTimeout(()=>ctrl.abort(), plafond);
   let res;
   try{
-    res = await fetch(url, {signal:ctrl.signal});
+    res = await fetch(url, corps
+      ? {method:'POST', body:corps, headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ctrl.signal}
+      : {signal:ctrl.signal});
   }catch(err){
     if(ctrl.inutile){
       // Le jumeau a répondu : ce n'est PAS un échec. Journalisé quand même
@@ -815,6 +845,10 @@ window.gasUnAppel = async function(url, action, numero, timeoutMs, ctrlFourni){
   // resumeLogsTexte le compte a part.
   const refus = data && data.ok === false ? 'serveur : ' + (data.error || 'refus') : undefined;
   logGas(action, numero, Date.now()-t0, refus);
+  // Jeton refusé par l'API : retour à l'écran de connexion (AG-011).
+  if(data && data.auth === true){
+    try{ window.dispatchEvent(new Event('ateliers:auth-expiree')); }catch(_){}
+  }
   return data;
 };
 
@@ -827,7 +861,7 @@ window.gasUnAppel = async function(url, action, numero, timeoutMs, ctrlFourni){
 // n'est pas en train de calculer (les réponses saines arrivent en 1-3 s), sa
 // réponse est perdue en chemin — le relancer est le seul moyen d'en obtenir
 // une, et attendre son abandon ne fait qu'ajouter le délai du plafond.
-function gasLectureDoublee(url, action, numero, plafond){
+function gasLectureDoublee(url, action, numero, plafond, corps){
   return new Promise((resolve, reject)=>{
     let termine=false, partis=1, echecs=0, derniere=null;
     let minuteurDoublon=null;
@@ -855,7 +889,7 @@ function gasLectureDoublee(url, action, numero, plafond){
     const lancer=(num)=>{
       const ctrl=new AbortController();
       ctrls.push(ctrl);
-      gasUnAppel(url, action, num, plafond, ctrl).then(d=>gagner(d, ctrl), perdre);
+      gasUnAppel(url, action, num, plafond, ctrl, corps).then(d=>gagner(d, ctrl), perdre);
     };
     lancer(numero);
     minuteurDoublon=setTimeout(()=>{
@@ -890,7 +924,7 @@ const GAS_SANS_DOUBLON = new Set(['checkPassword']);
 // Le régime (lecture doublée / écriture séquentielle) se déduit de l'action
 // via GAS_ACTIONS_ECRITURE — l'appelant n'a rien à déclarer, donc rien à
 // oublier.
-window.gasAppel = async function(url, action){
+window.gasAppel = async function(url, action, corps){
   const ecriture   = GAS_ACTIONS_ECRITURE.has(action);
   const plafond    = !ecriture
     ? GAS_TIMEOUT_LECTURE_MS
@@ -903,8 +937,8 @@ window.gasAppel = async function(url, action){
   for(let n=1; n<=tentatives; n++){
     try{
       return doubler
-        ? await gasLectureDoublee(url, action, n, plafond)
-        : await gasUnAppel(url, action, n, plafond);
+        ? await gasLectureDoublee(url, action, n, plafond, corps)
+        : await gasUnAppel(url, action, n, plafond, undefined, corps);
     }catch(err){
       derniere = err;
       // Erreur définitive (403, réponse non-JSON, déploiement cassé) : insister
@@ -1442,8 +1476,10 @@ window.onLoginSuccess = function(conseiller, res){
     window.authToken.set(res.token);
     window.authToken.setRole(res.role || 'user');
     sessionStorage.setItem('gs_conseiller', conseiller);
-    // fire-and-forget : log écrit après connexion, sans bloquer l'utilisateur
-    setTimeout(function(){
+    // fire-and-forget : log écrit après connexion, sans bloquer l'utilisateur.
+    // Mode API : checkPassword journalise déjà la connexion, logLogin n'y
+    // fait plus rien — inutile de payer l'appel.
+    if(!window.BACKEND_PHP) setTimeout(function(){
       window.apiFetch && window.apiFetch('logLogin',{
         conseiller: conseiller,
         role: res.role || 'user',
@@ -1517,14 +1553,14 @@ window.onLogout = function(){
       });
     }
 
-    const url = `${GS_URL}?${params.toString()}`;
+    const {url, corps} = window.requeteServeur(params);
 
     // Plafonds et reprises : gasAppel (voir la note de révision du 18/09/2026
     // en tête de ce fichier). Le paramètre _attempt est conservé pour ne pas
     // casser les appelants qui le passent encore, mais il ne sert plus : la
     // boucle de reprise vit désormais dans gasAppel, qui déduit seul le
     // régime (lecture doublée / écriture séquentielle) du nom de l'action.
-    return window.gasAppel(url, action);
+    return window.gasAppel(url, action, corps);
   };
 })();
 
@@ -1553,7 +1589,8 @@ window.onLogout = function(){
     const params = new URLSearchParams({action:'getAll'});
     params.set(String(year).indexOf(',')>=0 ? 'years' : 'year', String(year));
     if(source) params.set('source', source);
-    const data = await window.gasAppel(`${GS_URL}?${params.toString()}`, 'getAll');
+    const req = window.requeteServeur(params);
+    const data = await window.gasAppel(req.url, 'getAll', req.corps);
     // Maintenance : GAS répond {ok:false, maintenance:true, msg} aux appels
     // non-admin (_actionGetAllFresh). Ce n'est pas une panne mais une réponse
     // valide — la traiter en erreur affichait « Erreur serveur » au lieu du
@@ -1600,7 +1637,8 @@ window.onLogout = function(){
   let cache = null; // {promise, inflight, ts}
 
   async function rawGetConfig(){
-    const data = await window.gasAppel(`${GS_URL}?action=getConfig`, 'getConfig');
+    const req = window.requeteServeur(new URLSearchParams({action:'getConfig'}));
+    const data = await window.gasAppel(req.url, 'getConfig', req.corps);
     if(!data || !data.ok) throw new Error((data && data.error) || 'Erreur serveur');
     return data;
   }
