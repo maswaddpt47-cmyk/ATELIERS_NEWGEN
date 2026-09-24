@@ -86,7 +86,10 @@ $r = appel(['action' => 'checkPassword'], ['conseiller' => 'Ancien Collegue', 'p
 verifier(($r['error'] ?? '') === "Accès à l'Admin non autorisé pour ce compte", 'interrupteur désactivé : Admin refusé');
 $r = appel(['action' => 'checkPassword'], ['conseiller' => 'Ancien Collegue', 'password' => 'x', 'source' => 'index.html']);
 verifier(($r['ok'] ?? false) === true, 'interrupteur désactivé : Index ouvert');
+$db->exec('USE ateliers_test_api');
+$db->exec("INSERT INTO journal (horodatage, action, conseiller) VALUES (NOW() - INTERVAL 13 MONTH, 'login', 'Vieux'), (NOW() - INTERVAL 11 MONTH, 'login', 'Recent')");
 $admin = appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => ' secret-test ']);
+verifier($db->query("SELECT GROUP_CONCAT(conseiller) FROM journal WHERE conseiller IN ('Vieux','Recent')")->fetchColumn() === 'Recent', 'journal : plus de 12 mois purgé à la connexion, 11 mois gardé');
 verifier($admin['ok'] === true && $admin['role'] === 'admin' && preg_match('/^[0-9a-f]{64}$/', $admin['token']), 'bon mot de passe : jeton et rôle');
 $db->exec('USE ateliers_test_api');
 verifier((int) $db->query("SELECT COUNT(*) FROM sessions WHERE jeton_hash = '" . hash('sha256', $admin['token']) . "'")->fetchColumn() === 1, 'seule l\'empreinte du jeton est en base');

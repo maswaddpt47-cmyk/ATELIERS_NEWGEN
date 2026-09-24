@@ -25,6 +25,9 @@ const API_JETON_DUREE_S = 6 * 3600;          // comme TOKEN_TTL_SECONDS du GAS
 const API_ECHECS_MAX = 5;                    // 5 échecs → blocage 15 min
 const API_BLOCAGE_S = 15 * 60;
 const API_ROLES_ADMIN = ['admin', 'superviseur'];
+// RGPD : durée de conservation du journal, décidée par l'utilisateur le
+// 24/09/2026. Purge à chaque connexion réussie (pas besoin de tâche planifiée).
+const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
 const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
@@ -141,6 +144,7 @@ function action_check_password(PDO $db, array $p): array
     // Jeton aléatoire ; seule son empreinte est gardée en base.
     $jeton = bin2hex(random_bytes(32));
     $db->exec('DELETE FROM sessions WHERE expire < NOW()');
+    $db->exec('DELETE FROM journal WHERE horodatage < NOW() - INTERVAL ' . API_JOURNAL_MOIS . ' MONTH');
     $db->prepare('INSERT INTO sessions (jeton_hash, conseiller, role, expire) VALUES (?, ?, ?, ?)')
        ->execute([hash('sha256', $jeton), $nom, $compte['role'], date('Y-m-d H:i:s', time() + API_JETON_DUREE_S)]);
     // Journalisé ici (le GAS attendait un logLogin du client, falsifiable).
