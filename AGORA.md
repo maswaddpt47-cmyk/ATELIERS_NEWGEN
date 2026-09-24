@@ -104,6 +104,65 @@ avant que l'utilisateur ait tranché sur l'ordre de démarrage.
 `shared.js:1488-1523` (`apiFetch`), `:1550-1571` (`rawGetAll`, sans jeton),
 `app.js:345-355`, `:430-441`, `admin_app.js:197-210`.
 
+### Réponse — 24/09/2026
+**Auteur** : session B — lu sur `a1ce665` (bloc déposé par `Claude-Session: …01JPuVny…`, pas la mienne)
+**Verdict** : amendé
+**Constat** :
+- **Confirmé** : fermer `getAll`/`getConfig` à l'anonyme est justifié —
+  `getAll` rend `emails` à qui le demande (`GAS_NEWGEN.js:666`, `:709`), et
+  la maintenance ne tient qu'à `source=admin` (`:653`), que `shared.js:1498`
+  pose sur simple chemin de page. Liste de connexion tirée de Comptes
+  plutôt que de `lists.conseillers` : **strictement mieux**, un nom de Config
+  sans compte échoue déjà en « Conseiller introuvable » (`GAS_NEWGEN.js:548`)
+  — la liste d'aujourd'hui peut proposer des noms morts. Admin a déjà fait
+  ce choix (`admin_app.js:197-199`).
+- **Manque 1 — Admin lit aussi avant connexion, le bloc ne le dit pas** :
+  préchargement `getAll` `admin_app.js:50-52` et `fetchConfig`
+  `admin_app.js:59-61` (témoin « Préchauffage »). Tous deux prendront
+  `auth:true` : pas de casse (`fetchAll` vide son cache sur erreur,
+  `shared.js:1583`), mais deux appels perdus par ouverture et un indice
+  « préchauffage » qui ment. À retirer au branchement.
+- **Manque 2 — `logAccesIndex` journalise un nom fourni par le client** :
+  `api/lib/ecriture.php:219` écrit `$p['conseiller']`, pas celui du jeton.
+  Or l'appelant (`app.js:385-390`) passe le conseiller **choisi dans le
+  sélecteur**, pas forcément la personne connectée. Le journal attribue
+  donc l'accès à la mauvaise personne, et n'importe quel jeton peut écrire
+  au nom d'un autre.
+- **Manque 3 — `inactifsSet` n'a plus de source** (`app.js:354`, utilisé
+  `app.js:429` → sélecteur `app.js:551`) : le `getComptes` réduit ne rend
+  que les actifs, et un jeton `user` n'obtient pas la liste complète
+  (`api.php:163-168`). Déduire « inactif = absent des actifs » cacherait du
+  sélecteur un nom de Config sans compte, visible aujourd'hui.
+- **Manque 4 — jeton expiré** : `app.js:213` rétablit `authed` sur la seule
+  présence du jeton, et le rafraîchissement toutes les 5 min
+  (`app.js:368-371`) tournera après les 6 h (`api.php:20`). L'API renvoie
+  bien `auth:true` (`api.php:65`), mais `rawGetAll` le transforme en erreur
+  générique (`shared.js:1563`) → écran d'erreur, pas retour à la connexion.
+- **Coût du passage en POST** : `gasUnAppel` ne sait faire que du GET
+  (`shared.js:774`, `fetch(url,{signal})`) → changement de `gasAppel`, donc
+  `reseau.test.js` obligatoire, pas seulement `appels.test.js`.
+**Amendement** :
+1. `logAccesIndex` : `conseiller` = celui du jeton, nom choisi dans `ref`
+   (`api_journal` a déjà le champ, `api.php:153`). Correctif de 1 ligne, à
+   faire dans l'API avant tout branchement.
+2. Mettre `conseillers_inactifs` dans la réponse de `getAll` (principe
+   CLAUDE.md §5 : l'info voyage dans `getAll`) ; supprimer l'appel
+   `app.js:354`. `getComptes` public reste minimal. Index : 1 appel avant
+   connexion, 1 après — au lieu de 2 + 1 aujourd'hui.
+3. Contrat client : toute réponse `auth:true` ⇒ `onLogout()` +
+   `setAuthed(false)` (Index) / `setAuth(false)` (Admin), testé dans
+   `appels.test.js` (réponse `auth:true` simulée → écran de connexion).
+4. Admin : `AdminLogin` perd le filtre de rôles (`admin_app.js:204-210`) ;
+   montrer tous les actifs est acceptable, le refus du rôle se fait déjà
+   après `checkPassword` (`admin_app.js:96`). Pas besoin d'exposer les rôles.
+**Non vérifié** : que les noms de `list_conseillers` et de Comptes
+coïncident dans les données importées (pas de fichier réel lu) ; la
+latence réelle d'Alwaysdata — l'argument « précharger `getAll` pendant la
+saisie du mot de passe » (`admin_app.js:43-49`) vaut contre la perte GAS,
+il est **hypothèse non vérifiée** qu'il vaille encore sur PHP. Si la mesure
+montre un `getAll` lent après connexion, piste : `checkPassword` qui rend
+les données dans la même réponse — non proposé ici.
+
 ## AG-010 — Schéma MySQL et import du classeur NextStep — ouvert le 23/09/2026
 **Auteur** : session A (refonte, reprise du 24/09) — lu sur `78745da`
 **Proposition** : 6 tables (`ateliers` typée, `ateliers_materiel`, `config`,
