@@ -70,6 +70,8 @@ async function preparer(browser) {
     let rep = { ok:true };
     if (action === 'getComptes') rep = { ok:true, comptes:[{ conseiller:'Alice Martin' }], maintenance:false, maintenance_msg:'' };
     else if (action === 'checkPassword') rep = { ok:true, role:'admin', token:JETON };
+    else if (action === 'demanderReinit') rep = { ok:true, message:'Si une adresse mail est enregistrée pour ce compte, un lien vient d\'y être envoyé.' };
+    else if (action === 'reinitMotDePasse') rep = { ok:true, conseiller:'Alice Martin' };
     else if (p.jetonRefuse) rep = { ok:false, error:'Non autorisé : jeton manquant ou expiré', auth:true };
     else if (action === 'getAll') rep = GETALL;
     route.fulfill({ status:200, contentType:'application/json', body:JSON.stringify(rep) });
@@ -130,6 +132,23 @@ const ecranConnexion = page => page.locator('input[type="password"]').first().is
     verifier('admin : jeton refusé → écran de connexion', await ecranConnexion(p.page));
     verifier('admin : aucune erreur JS', p.erreurs.length === 0, p.erreurs.join(' | '));
     verifier('admin : aucun appel au GAS de production', p.gas.length === 0, p.gas.join(', '));
+    await p.ctx.close();
+  }
+
+  {
+    const p = await preparer(browser);
+    await p.page.goto(`http://127.0.0.1:${PORT}/labo-nextstep/index.html`, { waitUntil:'networkidle', timeout:20000 });
+    await p.page.getByRole('button', { name:'Mot de passe oublié ?' }).click();
+    await p.page.getByRole('button', { name:/Recevoir un lien/ }).click();
+    await p.page.waitForTimeout(600);
+    verifier('mot de passe oublié : demande envoyée à l\'API', p.appels.includes('demanderReinit'), p.appels.join(', '));
+    await p.page.goto(`http://127.0.0.1:${PORT}/labo-nextstep/index.html?reinit=${'d'.repeat(64)}`, { waitUntil:'networkidle', timeout:20000 });
+    await p.page.getByPlaceholder('Nouveau mot de passe').fill('Nouveau-Mdp-2026!');
+    await p.page.getByPlaceholder('Confirmer').fill('Nouveau-Mdp-2026!');
+    await p.page.getByRole('button', { name:/Valider/ }).click();
+    await p.page.waitForTimeout(600);
+    verifier('lien reçu : nouveau mot de passe enregistré', p.appels.includes('reinitMotDePasse') && await p.page.getByText(/Mot de passe changé/).isVisible().catch(() => false));
+    verifier('mot de passe oublié : aucune erreur JS, aucun appel GAS', p.erreurs.length === 0 && p.gas.length === 0, p.erreurs.join(' | '));
     await p.ctx.close();
   }
 

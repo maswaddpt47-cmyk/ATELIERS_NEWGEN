@@ -234,6 +234,9 @@ function verifier(nom, condition, detail) {
       let rep = { ok: true };
       if (action === 'getComptes') rep = { ok: true, comptes: [{ conseiller: 'Alice Martin' }], maintenance: false, maintenance_msg: '' };
       else if (action === 'checkPassword') rep = { ok: true, role: 'admin', token: JETON };
+      else if (action === 'demanderReinit') rep = { ok: true, message: 'Si une adresse mail est enregistrée pour ce compte, un lien vient d\'y être envoyé.' };
+      else if (action === 'reinitMotDePasse') rep = { ok: true, conseiller: 'Alice Martin' };
+      if (action === 'demanderReinit' || action === 'reinitMotDePasse') p.corpsReinit = Object.fromEntries(corps);
       else if (p.jetonRefuse) rep = { ok: false, error: 'Non autorisé : jeton manquant ou expiré', auth: true };
       else if (action === 'getAll') rep = { ...JSON.parse(MOCK), conseillers_inactifs: [] };
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rep) });
@@ -276,6 +279,33 @@ function verifier(nom, condition, detail) {
     await p.page.evaluate(() => window.fetchAll(new Date().getFullYear(), { force: true, source: 'admin' }).catch(() => {}));
     await p.page.waitForTimeout(800);
     verifier('api — admin : jeton refusé → écran de connexion', await ecranConnexion(p.page));
+    await p.ctx.close();
+  }
+
+  // 7. Mot de passe oublié (AG-013) : lien sur l'écran de connexion, puis
+  //    formulaire ouvert par le lien reçu par mail (?reinit=…).
+  {
+    const p = await preparerApi(browser);
+    await p.page.goto(`http://127.0.0.1:${PORT}/index.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
+    await p.page.getByRole('button', { name:'Mot de passe oublié ?' }).click();
+    await p.page.getByRole('button', { name:/Recevoir un lien/ }).click();
+    await p.page.waitForTimeout(600);
+    const retour = (p.corpsReinit && p.corpsReinit.retour) || '';
+    verifier('api — mot de passe oublié : demande envoyée, retour vers la page en mode API',
+      p.appels.includes('demanderReinit') && /\/index\.html\?backend=php$/.test(retour), retour);
+    verifier('api — mot de passe oublié : message affiché',
+      await p.page.getByText(/un lien vient d/).isVisible().catch(() => false));
+    const jeton = 'c'.repeat(64);
+    await p.page.goto(`http://127.0.0.1:${PORT}/index.html?backend=php&reinit=${jeton}`, { waitUntil:'networkidle', timeout:20000 });
+    await p.page.getByPlaceholder('Nouveau mot de passe').fill('Nouveau-Mdp-2026!');
+    await p.page.getByPlaceholder('Confirmer').fill('Nouveau-Mdp-2026!');
+    await p.page.getByRole('button', { name:/Valider/ }).click();
+    await p.page.waitForTimeout(600);
+    const req = p.requetes.filter(r => r.action === 'reinitMotDePasse').pop();
+    verifier('api — lien reçu : jeton et mot de passe dans le corps POST, pas dans l\'URL',
+      !!req && req.methode === 'POST' && p.corpsReinit.jeton === jeton && !/jeton|password/.test(req.url));
+    verifier('api — lien reçu : succès affiché, jeton retiré de la barre d\'adresse',
+      await p.page.getByText(/Mot de passe changé/).isVisible().catch(() => false) && !p.page.url().includes('reinit='), p.page.url());
     await p.ctx.close();
   }
 

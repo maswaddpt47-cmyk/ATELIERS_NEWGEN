@@ -26,6 +26,13 @@ function mail_expediteur(): string
 function mail_envoyer(string $a, string $sujet, string $texte, string $html): bool
 {
     if (!filter_var($a, FILTER_VALIDATE_EMAIL)) return false;
+    // Tests : le mail est écrit dans un dossier au lieu d'être envoyé
+    // (api-tests/api.test.php y relit le lien de réinitialisation).
+    $dossierTest = getenv('ATELIERS_MAIL_TEST_DIR');
+    if ($dossierTest) {
+        file_put_contents($dossierTest . '/' . microtime(true) . '.txt', "A: $a\nObjet: $sujet\n\n$texte");
+        return true;
+    }
     // Pas de saut de ligne dans un en-tête : empêche l'injection d'en-têtes.
     $sujet = str_replace(["\r", "\n"], ' ', $sujet);
     $de = mail_expediteur();

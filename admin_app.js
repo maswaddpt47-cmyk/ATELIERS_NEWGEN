@@ -158,7 +158,8 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
             ),
             err&&CE('p',{style:{color:'#c53030',fontSize:13,marginBottom:8}},err),
             hint&&!err&&CE('p',{style:{color:'#718096',fontSize:12,marginBottom:8,display:'flex',alignItems:'center',gap:6}},CE('span',{className:'spinner',style:{width:12,height:12,borderWidth:2}}),hint),
-            CE('button',{onClick:handleSubmit,disabled:loading||!pwd.trim(),style:{width:'100%',padding:'11px',background:'#1e3a8a',color:'#fff',border:'none',borderRadius:8,fontSize:14,fontWeight:700,cursor:'pointer'}},loading?'Vérification…':'Connexion')
+            CE('button',{onClick:handleSubmit,disabled:loading||!pwd.trim(),style:{width:'100%',padding:'11px',background:'#1e3a8a',color:'#fff',border:'none',borderRadius:8,fontSize:14,fontWeight:700,cursor:'pointer'}},loading?'Vérification…':'Connexion'),
+            CE(LienMotDePasseOublie,{conseiller})
           )
     )
   );
@@ -184,6 +185,8 @@ var VIEW_META = {
 // ── App Admin ──────────────────────────────────────────────
 function App(){
   const[auth,setAuth]           = React.useState(false);
+  // Lien « mot de passe oublié » reçu par mail (?reinit=…, mode API).
+  const[jetonReinit,setJetonReinit]= React.useState(()=>window.BACKEND_PHP?window.jetonReinitUrl():null);
   const[adminConseiller,setAdminConseiller]= React.useState(()=>localStorage.getItem(lsKey('adm_conseiller'))||'');
   const[view,setView]           = React.useState('historique');
   const[entries,setEntries]= React.useState([]);
@@ -475,6 +478,7 @@ const LOGS_KEY = lsKey('adm_logs');
   },[entries]);
 
   const[role,setRole]=React.useState('');
+  if(jetonReinit)return CE('div',{className:'login-wrap'},CE('div',{className:'login-card'},CE(VueReinitMotDePasse,{jeton:jetonReinit,onFini:()=>setJetonReinit(null)})));
   if(!auth)return CE(AdminLogin,{onLogin:(r,nom)=>{setAuth(true);setRole(r||'user');const key=r==='superviseur'?'admin':nom;if(nom){localStorage.setItem(lsKey('adm_conseiller'),key);setAdminConseiller(key);}},savedName:adminConseiller,onResetProfil:()=>{localStorage.removeItem(lsKey('adm_conseiller'));setAdminConseiller('');},conseillers:loginConseillers})
 
   if(!adminConseiller)return CE('div',{className:'login-wrap'},

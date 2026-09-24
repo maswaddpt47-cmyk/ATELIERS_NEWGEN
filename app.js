@@ -205,7 +205,8 @@ function VueLoginIndex({conseillers,onSuccess}){
               CE('button',{onClick:()=>setShow(s=>!s),style:{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#718096',padding:0}},show?'🙈':'👁️')
             ),
             err&&CE('p',{style:{color:'#c53030',fontSize:13,marginBottom:8}},err),
-            CE('button',{className:'accueil-btn',disabled:loading||!pwd.trim(),onClick:handleSubmit},loading?'Vérification…':'🔓 Connexion')
+            CE('button',{className:'accueil-btn',disabled:loading||!pwd.trim(),onClick:handleSubmit},loading?'Vérification…':'🔓 Connexion'),
+            CE(LienMotDePasseOublie,{conseiller})
           )
     )
   );
@@ -236,6 +237,8 @@ function App(){
   // Mode API (AG-011) : liste de connexion tirée de getComptes public (noms
   // des comptes actifs), getAll n'étant plus lisible avant connexion.
   const[nomsConnexion,setNomsConnexion] = React.useState([]);
+  // Lien « mot de passe oublié » reçu par mail (?reinit=…, mode API).
+  const[jetonReinit,setJetonReinit] = React.useState(()=>window.BACKEND_PHP?window.jetonReinitUrl():null);
   const[sidebarPinned,setSidebarPinned] = React.useState(()=>localStorage.getItem(lsKey('sidebar_pinned'))==='1');
   const[darkMode,setDarkMode]=React.useState(()=>localStorage.getItem(lsKey('f_dark'))==='1');
   React.useEffect(()=>{document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');localStorage.setItem(lsKey('f_dark'),darkMode?'1':'0');},[darkMode]);
@@ -459,6 +462,11 @@ function App(){
   // maintenance" : on affiche la landing tout de suite, sans attendre. Seule
   // une confirmation positive de getConfig bascule sur MaintenanceScreen.
   if(maintenance && maintenance!==false) return CE(MaintenanceScreen,{msg:maintenance.msg});
+
+  if(jetonReinit){
+    return CE('div',{className:'accueil-wrap'},CE('div',{className:'accueil-card'},
+      CE(VueReinitMotDePasse,{jeton:jetonReinit,onFini:()=>setJetonReinit(null)})));
+  }
 
   if(!authed){
     return CE(VueLoginIndex,{

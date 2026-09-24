@@ -51,14 +51,21 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
     $p = $post + $get;
     // Secrets : corps POST uniquement.
     $jeton = (string) ($post['token'] ?? '');
-    unset($p['token'], $p['password']);
+    unset($p['token'], $p['password'], $p['jeton']);
     $p['password'] = (string) ($post['password'] ?? '');
+    $p['jeton'] = (string) ($post['jeton'] ?? '');   // lien « mot de passe oublié »
 
     switch ($action) {
         case 'checkPassword':
             return action_check_password($db, $p);
         case 'getComptes':
             return action_get_comptes($db, api_session($db, $jeton), str_contains((string) ($p['source'] ?? ''), 'admin'));
+        case 'demanderReinit':
+            require_once __DIR__ . '/reinit.php';
+            return action_demander_reinit($db, $p);
+        case 'reinitMotDePasse':
+            require_once __DIR__ . '/reinit.php';
+            return action_reinit_mot_de_passe($db, $p);
         case 'logLogin':
             // Journalisé par checkPassword ; gardé pour le client actuel.
             return ['ok' => true];

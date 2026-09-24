@@ -114,3 +114,16 @@ CREATE TABLE IF NOT EXISTS meta (
   valeur TEXT         NOT NULL,
   PRIMARY KEY (cle)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- « Mot de passe oublié » (AG-013) : une ligne par lien envoyé par mail.
+-- Seule l'empreinte SHA-256 du jeton est gardée ; lien valable 30 min,
+-- usage unique. Sert aussi à limiter les demandes (3 par heure et par compte).
+CREATE TABLE IF NOT EXISTS reinitialisations (
+  jeton_hash CHAR(64)     NOT NULL,
+  conseiller VARCHAR(100) NOT NULL,
+  cree       DATETIME     NOT NULL,
+  expire     DATETIME     NOT NULL,
+  utilise    TINYINT(1)   NOT NULL DEFAULT 0,
+  PRIMARY KEY (jeton_hash),
+  KEY idx_conseiller_cree (conseiller, cree)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
