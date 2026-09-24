@@ -284,7 +284,11 @@ ne renvoie que les noms actifs, ni rôle ni état).
   de 12 s : **25/65 = 38 %** d'échecs côté usager avec GAS, 0 % avec
   Alwaysdata. Confirme la nuit du 23-24/09 (9,5 %) et les relevés de jour
   des 22-23/09 (30-45 %) : la perte vient de GAS, pas du poste ni du réseau.
-  Mesure en cours jusqu'au soir (résumé final attendu).
+  **Arrêtée à mi-journée** (accord du 24/09/2026 : résultat déjà net, la
+  soirée n'apporterait rien de décisif). **Étape 0 close.**
+- **✅ RGPD — journal conservé 12 mois** (décision utilisateur 24/09/2026),
+  purgé à chaque connexion réussie (`API_JOURNAL_MOIS`, `api/lib/api.php`).
+  Point « durée de conservation » d'AG-010 réglé.
 - **24/09/2026 12:23 (Paris) — une paire du banc** relevée par l'utilisateur
   depuis son **PC professionnel, VPN et pare-feu du CD47 actifs** (pas le
   réseau filaire du bureau) : GAS livré en 5,4 s, Alwaysdata **livré** en
