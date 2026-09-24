@@ -71,7 +71,8 @@ CREATE TABLE IF NOT EXISTS comptes (
 
 -- Journal des connexions et des actions (feuille « Logs_Connexion », dont
 -- les deux formats historiques sont unifiés à l'import).
--- ⚠️ RGPD : durée de conservation à décider (AG-010), purge à écrire.
+-- RGPD : conservé 12 mois (décision de l'utilisateur, 24/09/2026), purgé à
+-- chaque connexion réussie (API_JOURNAL_MOIS, lib/api.php).
 CREATE TABLE IF NOT EXISTS journal (
   id          BIGINT       NOT NULL AUTO_INCREMENT,
   horodatage  DATETIME     NOT NULL,                -- heure de Paris
