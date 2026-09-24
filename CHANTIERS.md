@@ -244,8 +244,20 @@ ne renvoie que les noms actifs, ni rôle ni état).
   par le rôle). ⚠️ **Le client n'est pas branché** : `shared.js`/`app.js`
   inchangés tant que l'utilisateur n'a pas tranché AG-011 (l'ordre de
   démarrage d'Index change : `getAll` après la connexion).
-- **Puis Claude** : écritures (`saveEntry`, `saveMany`, `delete`, `logLogin`,
-  actions admin), puis `shared.js` derrière un interrupteur.
+- **✅ 24/09/2026 — API d'écriture écrite** (`api/lib/ecriture.php`) : les
+  22 actions du GAS NEWGEN ont leur équivalent. 68 cas dans
+  `api-tests/api.test.php`. Écarts de sécurité assumés (déviation de la
+  règle « 1:1 », signalée) : `resetPassword` rend un mot de passe provisoire
+  **aléatoire** (plus `cd47`+prénom) avec `doit_changer` ; `saveLists` crée
+  les comptes **sans** mot de passe ; `logLogin` ne fait plus rien
+  (`checkPassword` journalise) ; `logAccesIndex` exige un jeton ; un compte
+  désactivé ou changé de rôle perd ses connexions en cours. ⚠️ Conséquence
+  client : le changement obligatoire d'Index (`app.js:45-70`) détecte
+  aujourd'hui `cd47`+prénom ; il devra lire `doit_changer` de la réponse.
+- **Puis Claude** : brancher `shared.js`/`app.js`/`admin_app.js` NEWGEN sur
+  l'API derrière un interrupteur — **attend la décision AG-011** (ordre de
+  démarrage d'Index). Mocks des suites navigateur à paramétrer dans le même
+  commit que le changement d'URL (AG-009).
 
 ---
 
