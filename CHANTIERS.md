@@ -70,11 +70,16 @@ payant) — liste encore vide le 24/09 au soir (base remplie le jour même) :
 **vérifier le 25/09 avant 15 h 30 qu'une date du 25/09 apparaît**
 (Avancé → Restauration de sauvegardes, déplier la liste SANS valider).
 **Offre Free confirmée par l'utilisateur le 24/09 → 3 jours seulement.**
-Après la bascule, proposé : tâche planifiée Alwaysdata, chaque nuit,
-`mysqldump` compressé dans `~/sauvegardes/` (hors `www/`), 30 jours gardés
-(quelques Mo, dans le quota) ; les données restent en France. Ne protège
-pas contre une perte du compte : pour ça, offre payante (à voir avec la
-hiérarchie) ou copie chiffrée ailleurs. **À vérifier par l'utilisateur** : double authentification
+**Copie de nuit en place le 24/09** (demande de l'utilisateur, avant la
+bascule) : `api/lib/sauvegarde.php` → `~/sauvegardes/ateliers-*.sql.gz`
+(600, hors `www/`), 30 jours gardés, lancée aussi à chaque déploiement ;
+`api-tests/sauvegarde.test.php` prouve qu'une copie se **restaure**.
+**Reste à l'utilisateur : créer la tâche planifiée** (Avancé → Tâches
+planifiées → Ajouter : commande `php $HOME/www/api/lib/sauvegarde.php`,
+chaque jour à 3 h, mail en cas d'erreur). Ne protège pas contre une perte
+du compte : **copie chiffrée dans un dépôt GitHub privé** (clé publique
+dans GitHub, clé privée chez l'utilisateur seul — RGPD : GitHub est
+américain), à faire après la bascule. **À vérifier par l'utilisateur** : double authentification
 GitHub, clé d'import aléatoire ≥ 20 caractères. **Après la bascule** :
 ligne `admin_password` du classeur à supprimer, durée d'archive du
 classeur à fixer, export xlsx du 25/09 à supprimer ; consigne de l'audit
