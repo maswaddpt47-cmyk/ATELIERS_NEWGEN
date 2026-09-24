@@ -310,9 +310,14 @@ ne renvoie que les noms actifs, ni rôle ni état).
   deux (`appels.test.js` + `labo-nextstep.test.js` en CI) ; (2) NEWGEN n'est
   plus un labo une fois branché sur la base de production → créer une
   **seconde base d'essai** Alwaysdata si un terrain d'essai reste utile ;
-  (3) les fonctions propres à NEWGEN (plusieurs années, `verifierIds`,
-  interrupteur Admin…) ne profitent à l'équipe que si on les reporte dans
-  NextStep. **D'ici la bascule** : les vrais ateliers se saisissent dans
+  (3) ~~les fonctions propres à NEWGEN (plusieurs années, `verifierIds`…)~~
+  **corrigé le 24/09/2026** : vérifié dans le dépôt NextStep (`a95d2a6`),
+  le sélecteur multi-années (`ChoixAnnees`, `years=`) et `verifierIds` y sont
+  déjà, GAS v10.21.0 déployé le 23/09 (`NextStep/CHANTIERS.md:240-255`) — et
+  donc aussi dans `labo-nextstep/`. L'interrupteur « accès Admin » est un
+  comportement de l'API : il vaut pour les deux interfaces (seul le libellé
+  du labo dit encore « login/inactif »). Aucune liste d'écarts fonctionnels
+  NEWGEN/NextStep n'a été dressée : ne rien affirmer sans la faire. **D'ici la bascule** : les vrais ateliers se saisissent dans
   NextStep (classeur Google) ; NEWGEN `?backend=php` = base d'essai figée
   au 23/09, invisible pour l'équipe.
 - **✅ 24/09/2026 — labo NextStep en ligne** (demande utilisateur) :
