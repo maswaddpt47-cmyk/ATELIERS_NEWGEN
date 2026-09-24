@@ -284,6 +284,11 @@ ne renvoie que les noms actifs, ni rôle ni état).
   interne (tunnel partagé, hypothèse non vérifiée), Alwaysdata est sorti
   par la box. Une paire au bureau le 25/09 reste utile (1 min).
   Une paire ne dit rien des taux de perte (McNemar non significatif).
+- **Décidé par l'utilisateur le 24/09/2026** : (1) la bascule se fait bien
+  **à l'adresse NextStep** (pas de redirection : elle casserait l'appli
+  installée) ; (2) **plus de PWA** dans la version convergée — l'accès nomade
+  se fait en ligne, par le navigateur. Retrait soumis en **AG-012**
+  (critères 5 et 6) ; rien n'est fait tant que l'utilisateur n'a pas dit quand.
 - **✅ 24/09/2026 — premier essai réel par l'utilisateur** en mode
   `?backend=php` : « ça fonctionne, il réagit d'une vitesse
   extraordinaire » (connexion + affichage, test rapide). Trajet navigateur →

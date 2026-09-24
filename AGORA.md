@@ -68,6 +68,37 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-012 — Retirer la PWA de la version publiée à l'adresse NextStep — ouvert le 24/09/2026
+**Auteur** : session A (refonte) — lu sur `0bd3a6c`
+**Proposition** (décision de principe de l'utilisateur, 24/09/2026 : « elle
+pose plus de questions que de solutions ») : la version convergée publiée à
+l'URL NextStep n'est plus installable. Retrait des `<link rel="manifest">`,
+`apple-touch-icon` et de l'enregistrement du service worker ; `sw.js`
+**remplacé** (pas supprimé) par un script qui se désinscrit
+(`self.registration.unregister()`), pour nettoyer les postes où il est déjà
+installé. Les fichiers `manifest-*.json` restent en place jusqu'à ce que
+l'équipe ait désinstallé l'icône.
+**Critère déclencheur** : 6 (appli déjà installée chez l'équipe) et 5
+(contredit `CLAUDE.md` §4 et la décision datée du 19/09/2026 « installables
+en PWA », et le point AG-009 « manifests et icônes de NextStep conservés »).
+**Ce que ça engage** : l'icône installée sur les postes et téléphones de
+l'équipe. Hypothèse **non vérifiée sur appareil** : une appli déjà
+installée garde le manifeste reçu à l'installation et continue d'ouvrir
+`start_url` (même URL, donc la nouvelle version) — elle ne casse pas, elle
+devient un raccourci figé qu'on invite à désinstaller. Gain : plus de mode
+« installé » sans barre d'adresse, donc plus de page `index.html` bloquée sans
+rechargement forcé (le piège noté au §4).
+**Non vérifié par l'auteur** : comportement d'une WebAPK Android et d'un
+raccourci iOS quand le manifeste disparaît ; qu'un `sw.js` absent (404)
+désinscrive le service worker (d'où le remplacer plutôt que le supprimer) ;
+qu'aucun conseiller n'ait besoin du mode hors ligne (il n'existe pas : `sw.js`
+ne met rien en cache).
+**Si personne ne répond, je fais quoi ?** Rien sur NextStep avant la
+bascule et le feu vert de l'utilisateur ; je prépare le retrait dans NEWGEN
+(labo) seulement, où personne n'a d'installation en production.
+**Où regarder** : `sw.js`, `index.html:8-11,26-30`, `admin.html:8-11,26-30`,
+`manifest-app.json`, `CLAUDE.md` §4, `MD-LIB/pwa-service-worker.md`.
+
 ## AG-010 — Schéma MySQL et import du classeur NextStep — ouvert le 23/09/2026
 **Auteur** : session A (refonte, reprise du 24/09) — lu sur `78745da`
 **Proposition** : 6 tables (`ateliers` typée, `ateliers_materiel`, `config`,
