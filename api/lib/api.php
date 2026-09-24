@@ -55,7 +55,7 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
         case 'checkPassword':
             return action_check_password($db, $p);
         case 'getComptes':
-            return action_get_comptes($db, api_session($db, $jeton));
+            return action_get_comptes($db, api_session($db, $jeton), str_contains((string) ($p['source'] ?? ''), 'admin'));
         case 'logLogin':
             // Journalisé par checkPassword ; gardé pour le client actuel.
             return ['ok' => true];
@@ -177,7 +177,7 @@ function api_journal(PDO $db, string $action, string $conseiller, string $ref, s
 
 // ── Lectures ──────────────────────────────────────────────────────────────
 
-function action_get_comptes(PDO $db, ?array $session): array
+function action_get_comptes(PDO $db, ?array $session, bool $pageAdmin = false): array
 {
     if ($session !== null && api_acces_admin($db, $session)) {
         $l = $db->query('SELECT conseiller, role, actif FROM comptes ORDER BY conseiller')->fetchAll(PDO::FETCH_ASSOC);
@@ -185,9 +185,12 @@ function action_get_comptes(PDO $db, ?array $session): array
             'conseiller' => $c['conseiller'], 'role' => $c['role'], 'actif' => (int) $c['actif'] === 1 ? 'OUI' : 'NON',
         ], $l)];
     }
-    // Public : les noms nécessaires à la liste de connexion, rien d'autre
-    // (tous les comptes : l'interrupteur ne ferme que l'Admin).
-    $noms = $db->query('SELECT conseiller FROM comptes ORDER BY conseiller')->fetchAll(PDO::FETCH_COLUMN);
+    // Public : les noms nécessaires à la liste de connexion, rien d'autre.
+    // Index : tous les comptes (l'interrupteur ne ferme que l'Admin).
+    // Admin : les seuls comptes à l'interrupteur activé (demande de
+    // l'utilisateur, 24/09/2026) — ce qui rend publique la liste des noms
+    // ayant accès à l'Admin, sans leur rôle.
+    $noms = $db->query('SELECT conseiller FROM comptes' . ($pageAdmin ? ' WHERE actif = 1' : '') . ' ORDER BY conseiller')->fetchAll(PDO::FETCH_COLUMN);
     $cfg = api_config_base($db);
     return [
         'ok' => true,
