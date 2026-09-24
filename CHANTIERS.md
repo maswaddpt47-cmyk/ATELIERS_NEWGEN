@@ -82,7 +82,8 @@ du compte : **copie chiffrée dans le dépôt privé
 secrets `ALWAYSDATA_COMPTE`/`ALWAYSDATA_SSH_PASSWORD` dans ce dépôt, paire de
 clés `age` générée par lui (clé privée hors ligne, jamais vue par Claude),
 clé publique à déposer dans `cle-publique.txt`. Tâche planifiée Alwaysdata
-créée le 24/09 au soir (03:00). **À vérifier par l'utilisateur** : double authentification
+(03:00) : formulaire rempli le 24/09 au soir, validation non confirmée —
+vérifier le 25/09 qu'une copie datée d'environ 03:00 existe. **À vérifier par l'utilisateur** : double authentification
 GitHub, clé d'import aléatoire ≥ 20 caractères. **Après la bascule** :
 ligne `admin_password` du classeur à supprimer, durée d'archive du
 classeur à fixer, export xlsx du 25/09 à supprimer ; consigne de l'audit
