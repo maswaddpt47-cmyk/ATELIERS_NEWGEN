@@ -12,6 +12,7 @@ const {
   anneeReference,
   anneeIncluse,
   lsKey, migrerLocalStorage,
+  presentsSuperieursInscrits,
 } = require('./utils.js');
 
 // ── normCommune ────────────────────────────────────────────
@@ -517,5 +518,20 @@ describe('années chargées', () => {
     assert.equal(anneeReference(`${c-2},${c-1}`), String(c-1));
     assert.equal(anneeIncluse('2026,2027', '2027-03-15'), true);
     assert.equal(anneeIncluse('2026', '2027-03-15'), false);
+  });
+});
+
+describe('presentsSuperieursInscrits', () => {
+  it('signale plus de présents que d\'inscrits, en nombres et non en texte ("9" > "10")', () => {
+    assert.equal(presentsSuperieursInscrits({ presents: '11', inscrits: '10' }), true);
+    assert.equal(presentsSuperieursInscrits({ presents: 9, inscrits: 10 }), false);
+    assert.equal(presentsSuperieursInscrits({ presents: '9', inscrits: '10' }), false);
+    assert.equal(presentsSuperieursInscrits({ presents: '10', inscrits: '10' }), false);
+  });
+  it('ignore les champs vides ou non numériques', () => {
+    assert.equal(presentsSuperieursInscrits({ presents: '5', inscrits: '' }), false);
+    assert.equal(presentsSuperieursInscrits({ presents: '', inscrits: '3' }), false);
+    assert.equal(presentsSuperieursInscrits({ presents: '5', inscrits: 'n/c' }), false);
+    assert.equal(presentsSuperieursInscrits({}), false);
   });
 });
