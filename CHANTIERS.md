@@ -19,6 +19,18 @@ effectué — AG-001 a corrigé le protocole du banc avant la série.
 
 ---
 
+## ✅ 25/09/2026 — Bascule faite le matin (avancée par l'utilisateur)
+
+Déroulé réel : maintenance posée à la main dans Config (l'interrupteur de
+l'ancienne Admin et la ligne du classeur restaient sans effet sur l'Index —
+cache `getAll` servi avant le test de maintenance, `GAS_NEXTSTEP.js:398-406` ;
+non creusé, code retiré) → **accès du GAS NextStep passé à « Seulement moi »**
+(coupe l'ancienne appli, y compris les onglets ouverts ; réversible) → export
+xlsx → Analyser (0 erreur) → Importer **verrouillé** → fusion NextStep
+`a75fb91`, CI verte, **en ligne à 10:12** → déclencheur `envoyerAlertesRetard`
+supprimé. **Contrôle utilisateur (Admin, atelier de test, levée de la
+maintenance, Index) : en attente.**
+
 ## 🚀 24/09/2026 — Bascule prête, fixée au 25/09/2026 à 15 h 30 (reprendre ici)
 
 **Mail envoyé à l'équipe le 24/09/2026** (date et heure annoncées : 25/09 à 15 h 30).
