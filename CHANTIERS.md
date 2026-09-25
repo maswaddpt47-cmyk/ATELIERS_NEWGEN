@@ -83,8 +83,12 @@ secrets `ALWAYSDATA_COMPTE`/`ALWAYSDATA_SSH_PASSWORD` dans ce dépôt, paire de
 clés `age` générée par lui (clé privée hors ligne, jamais vue par Claude),
 clé publique à déposer dans `cle-publique.txt`. Tâche planifiée Alwaysdata
 (03:00, `php /home/ateliers-numeriques/www/api/lib/sauvegarde.php`, mail
-d'erreur) : validée par l'utilisateur le 24/09 à 21:40 — vérifier le 25/09
-qu'une copie datée d'environ 03:00 existe. **À vérifier par l'utilisateur** : double authentification
+d'erreur) : validée le 24/09 à 21:40. **Vérifié le 25/09 à 07:44
+(diagnostic)** : tâche lancée à 03:00:51, code de sortie 0, copie
+`ateliers-2026-09-25_030044.sql.gz` (25 Ko). **Sauvegarde Alwaysdata : liste
+encore vide le 25/09 à 07:41** (`~/admin/backup` vide ou lien) — cause non
+vérifiée ; à revoir le 26/09, sinon question au support Alwaysdata.
+2FA GitHub activée et clé d'import confirmée par l'utilisateur le 25/09. **À vérifier par l'utilisateur** : double authentification
 GitHub, clé d'import aléatoire ≥ 20 caractères. **Après la bascule** :
 ligne `admin_password` du classeur à supprimer, durée d'archive du
 classeur à fixer, export xlsx du 25/09 à supprimer ; consigne de l'audit
