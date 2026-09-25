@@ -158,6 +158,15 @@ window.L = {
   await ctx.route('**cdnjs.cloudflare.com/ajax/libs/echarts/**', route => {
     route.fulfill({ status:200, contentType:'application/javascript; charset=utf-8', body: ECHARTS_STUB });
   });
+  // API Alwaysdata (serveur par défaut depuis le 25/09/2026) → même mock,
+  // avec un jeton pour la connexion.
+  await ctx.route('**/ateliers-numeriques.alwaysdata.net/**', route => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ...JSON.parse(MOCK_RESPONSE), token: 'a'.repeat(64) }),
+    });
+  });
   // Intercepter les appels GAS → réponse mock
   await ctx.route('**/script.google.com/**', route => {
     route.fulfill({

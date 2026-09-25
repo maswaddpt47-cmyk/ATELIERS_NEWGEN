@@ -687,9 +687,11 @@ function FadeItem({children,delay=0,style={}}){
 
 const GS_URL = 'https://script.google.com/macros/s/AKfycbwsNMoPSEIMss4kG0V13PWSr1mKEo34IFMWClxJuXkUvZ7Cgo-OWY0ud1lQtrUBqDbP/exec';
 // ── Interrupteur de serveur (refonte GAS → PHP, AG-009 / AG-011) ──────────
-// Par défaut : GAS, comme avant. « ?backend=php » dans l'adresse bascule CET
-// onglet sur l'API Alwaysdata (mémorisé dans sessionStorage), « ?backend=gas »
-// revient en arrière. Rien ne change pour qui n'a pas ouvert ce lien.
+// Par défaut : API Alwaysdata, depuis la bascule du 25/09/2026 (les données
+// de production y sont). « ?backend=gas » dans l'adresse ramène CET onglet
+// sur l'ancien GAS NEWGEN (mémorisé dans sessionStorage) — porte de secours
+// seulement : ses données sont figées et ne sont plus celles de l'équipe.
+// « ?backend=php » (ancien lien de test) reste accepté.
 // En mode API :
 //   - tout part en POST form-urlencoded (requête « simple » : pas de pré-vol
 //     CORS), jeton et mot de passe dans le corps, jamais dans l'URL ;
@@ -702,13 +704,13 @@ window.BACKEND_PHP = (function(){
   try{
     const q = new URLSearchParams(window.location.search).get('backend');
     if(q==='php' || q==='gas') sessionStorage.setItem('ateliers_backend', q);
-    return sessionStorage.getItem('ateliers_backend') === 'php';
-  }catch(_){ return false; }
+    return sessionStorage.getItem('ateliers_backend') !== 'gas';
+  }catch(_){ return true; }
 })();
 // Adresse et corps d'un appel : GAS en GET (paramètres dans l'URL), API en
 // POST (action dans l'URL pour lire les journaux, le reste dans le corps).
-// Lien « mot de passe oublié » : il doit rouvrir la page en mode API.
-window.RETOUR_REINIT_SUFFIXE = window.BACKEND_PHP ? '?backend=php' : '';
+// Lien « mot de passe oublié » : la page s'ouvre en mode API par défaut.
+window.RETOUR_REINIT_SUFFIXE = '';
 window.requeteServeur = function(params){
   if(!window.BACKEND_PHP) return {url:`${GS_URL}?${params.toString()}`, corps:null};
   const token = window.authToken && window.authToken.get();
