@@ -92,9 +92,9 @@ Ne protège pas contre une perte
 du compte : **copie chiffrée dans le dépôt privé
 `maswaddpt47-cmyk/ateliers-backups`** (créé le 24/09, workflow `copie.yml`
 à 04:15 : récupère la copie de nuit, la chiffre avec `age`, la range ;
-échoue si la copie de nuit a plus de 26 h). **En attente de l'utilisateur** :
-secrets `ALWAYSDATA_COMPTE`/`ALWAYSDATA_SSH_PASSWORD` dans ce dépôt, paire de
-clés `age` générée par lui (clé privée hors ligne, jamais vue par Claude),
+échoue si la copie de nuit a plus de 26 h). **Secrets créés le 25/09.** **En attente de l'utilisateur** : paire de
+clés `age` à générer sur son PC personnel (PC pro : exécutable bloqué ;
+clé privée hors ligne, jamais vue par Claude),
 clé publique à déposer dans `cle-publique.txt`. Tâche planifiée Alwaysdata
 (03:00, `php /home/ateliers-numeriques/www/api/lib/sauvegarde.php`, mail
 d'erreur) : validée le 24/09 à 21:40. **Vérifié le 25/09 à 07:44
