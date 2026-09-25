@@ -52,8 +52,9 @@ déclencheurs supprimés ; import verrouillé ; rappels 08:00 ; copie de nuit
 **Reste ouvert, hors chantier** (à reprendre sur demande) :
 - relève du journal le 30/09 (rappel planifié) ; sauvegardes Alwaysdata
   encore vides le 25/09 → recontrôler, sinon support ;
-- sécurité : jeton annulé à la déconnexion, adresses mail réservées aux
-  admins, bibliothèques JS hébergées (SRI/CDN), déploiement par clé SSH ;
+- sécurité : jeton annulé à la déconnexion, ~~adresses mail réservées aux
+  admins~~ (fait le 25/09/2026 : `getAll`/`getConfig` ne les rendent plus
+  qu'à une session admin/superviseur, tests `[RGPD]` d'`api.test.php`), bibliothèques JS hébergées (SRI/CDN), déploiement par clé SSH ;
 - consigne de l'audit trimestriel à mettre à jour avant le 01/10/2026 ;
 - AGORA AG-010 et AG-013 à clore ; `manifest-*.json` à retirer plus tard ;
 - purge : copies chiffrées conservées sans limite (durée à fixer).
