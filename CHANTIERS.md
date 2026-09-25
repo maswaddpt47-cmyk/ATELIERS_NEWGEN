@@ -103,8 +103,8 @@ d'erreur) : validée le 24/09 à 21:40. **Vérifié le 25/09 à 07:44
 encore vide le 25/09 à 07:41** (`~/admin/backup` vide ou lien) — cause non
 vérifiée ; à revoir le 26/09, sinon question au support Alwaysdata.
 2FA GitHub activée et clé d'import confirmée par l'utilisateur le 25/09. **À vérifier par l'utilisateur** : double authentification
-GitHub, clé d'import aléatoire ≥ 20 caractères. **Après la bascule** :
-ligne `admin_password` du classeur à supprimer, durée d'archive du
+GitHub, clé d'import aléatoire ≥ 20 caractères. **Après la bascule — fait par l'utilisateur le 25/09** : export xlsx supprimé, mail d'annonce envoyé,
+ligne `admin_password` du classeur supprimée, durée d'archive du
 classeur à fixer, export xlsx du 25/09 à supprimer ; consigne de l'audit
 trimestriel à mettre à jour (elle parle encore des failles GAS). Hérités,
 plus tard : jeton non révoqué à la déconnexion, SRI absent sur cdnjs,
