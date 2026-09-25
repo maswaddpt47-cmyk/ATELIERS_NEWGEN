@@ -69,6 +69,8 @@ function startServer() {
   });
 }
 
+const JETON = 'a'.repeat(64);
+
 const STUBS = {
   leaflet: `window.L={map:id=>{const m={setView:()=>m,remove:()=>{},invalidateSize:()=>{},off:()=>{}};return m;},tileLayer:()=>({addTo:()=>{}}),circleMarker:()=>({addTo:()=>({bindPopup:()=>({})}),bindPopup:()=>({})}),popup:()=>({setLatLng:()=>({setContent:()=>({openOn:()=>{}})})})};`,
   echarts: `window.echarts={init:()=>({setOption:()=>{},resize:()=>{},dispose:()=>{},off:()=>{}}),registerMap:()=>{}};`,
@@ -92,14 +94,36 @@ async function preparer(browser) {
   await ctx.route('**/tile.openstreetmap.fr/**', r => r.abort());
   await ctx.route('**/tiles.stadiamaps.com/**',   r => r.abort());
 
+  const gas = [];
   await ctx.route('**/script.google.com/**', route => {
     const action = new URL(route.request().url()).searchParams.get('action') || '?';
     appels.push(action);
+    gas.push(action);
     route.fulfill({ status:200, contentType:'application/json', body:MOCK });
   });
 
-  const page = await ctx.newPage();
-  return { ctx, page, appels };
+  // API Alwaysdata : serveur par défaut depuis la bascule du 25/09/2026.
+  // Refuse getAll/getConfig sans jeton ; jetonRefuse simule un jeton expiré.
+  const p = { ctx, appels, gas, requetes: [], jetonRefuse: false };
+  await ctx.route('**/ateliers-numeriques.alwaysdata.net/**', route => {
+    const req = route.request();
+    const action = new URL(req.url()).searchParams.get('action') || '?';
+    const corps = new URLSearchParams(req.postData() || '');
+    appels.push(action);
+    p.requetes.push({ action, methode: req.method(), url: req.url(), jeton: corps.get('token') });
+    let rep = { ok: true };
+    if (action === 'getComptes') rep = { ok: true, comptes: [{ conseiller: 'Alice Martin' }], maintenance: false, maintenance_msg: '' };
+    else if (action === 'checkPassword') rep = { ok: true, role: 'admin', token: JETON };
+    else if (action === 'demanderReinit') rep = { ok: true, message: 'Si une adresse mail est enregistrée pour ce compte, un lien vient d\'y être envoyé.' };
+    else if (action === 'reinitMotDePasse') rep = { ok: true, conseiller: 'Alice Martin' };
+    if (action === 'demanderReinit' || action === 'reinitMotDePasse') p.corpsReinit = Object.fromEntries(corps);
+    else if (p.jetonRefuse) rep = { ok: false, error: 'Non autorisé : jeton manquant ou expiré', auth: true };
+    else if (action === 'getAll') rep = { ...JSON.parse(MOCK), conseillers_inactifs: [] };
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rep) });
+  });
+
+  p.page = await ctx.newPage();
+  return p;
 }
 
 async function connecter(page) {
@@ -135,9 +159,11 @@ function verifier(nom, condition, detail) {
   // 1. Ouverture d'index.html : getConfig ne doit plus partir (le drapeau
   //    maintenance voyage dans getAll).
   {
-    const { ctx, page, appels } = await preparer(browser);
+    const { ctx, page, appels, gas } = await preparer(browser);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil:'networkidle', timeout:20000 });
     await page.waitForTimeout(1500);
+    // Bascule du 25/09/2026 : sans paramètre, plus aucun appel au GAS.
+    verifier('index — par défaut : API Alwaysdata, aucun appel GAS', gas.length === 0 && appels.length > 0, gas.join(', ') || 'aucun');
     verifier(
       'index — ouverture sans getConfig dédié',
       !appels.includes('getConfig'),
@@ -220,29 +246,7 @@ function verifier(nom, condition, detail) {
   //    sans jeton. Avant connexion, seul getComptes (public) doit partir ;
   //    après, tout part en POST avec le jeton dans le corps, jamais dans
   //    l'URL ; une réponse {auth:true} ramène à l'écran de connexion.
-  const JETON = 'a'.repeat(64);
-  async function preparerApi(browser) {
-    const p = await preparer(browser);
-    p.requetes = [];
-    p.jetonRefuse = false;
-    await p.ctx.route('**/ateliers-numeriques.alwaysdata.net/**', route => {
-      const req = route.request();
-      const action = new URL(req.url()).searchParams.get('action') || '?';
-      const corps = new URLSearchParams(req.postData() || '');
-      p.appels.push(action);
-      p.requetes.push({ action, methode: req.method(), url: req.url(), jeton: corps.get('token') });
-      let rep = { ok: true };
-      if (action === 'getComptes') rep = { ok: true, comptes: [{ conseiller: 'Alice Martin' }], maintenance: false, maintenance_msg: '' };
-      else if (action === 'checkPassword') rep = { ok: true, role: 'admin', token: JETON };
-      else if (action === 'demanderReinit') rep = { ok: true, message: 'Si une adresse mail est enregistrée pour ce compte, un lien vient d\'y être envoyé.' };
-      else if (action === 'reinitMotDePasse') rep = { ok: true, conseiller: 'Alice Martin' };
-      if (action === 'demanderReinit' || action === 'reinitMotDePasse') p.corpsReinit = Object.fromEntries(corps);
-      else if (p.jetonRefuse) rep = { ok: false, error: 'Non autorisé : jeton manquant ou expiré', auth: true };
-      else if (action === 'getAll') rep = { ...JSON.parse(MOCK), conseillers_inactifs: [] };
-      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rep) });
-    });
-    return p;
-  }
+  const preparerApi = preparer;
   const ecranConnexion = page => page.locator('input[type="password"]').first().isVisible({ timeout: 4000 }).catch(() => false);
 
   {
@@ -315,8 +319,8 @@ function verifier(nom, condition, detail) {
     await p.page.getByRole('button', { name:/Recevoir un lien/ }).click();
     await p.page.waitForTimeout(600);
     const retour = (p.corpsReinit && p.corpsReinit.retour) || '';
-    verifier('api — mot de passe oublié : demande envoyée, retour vers la page en mode API',
-      p.appels.includes('demanderReinit') && /\/index\.html\?backend=php$/.test(retour), retour);
+    verifier('api — mot de passe oublié : demande envoyée, retour vers la page (API par défaut)',
+      p.appels.includes('demanderReinit') && /\/index\.html$/.test(retour), retour);
     verifier('api — mot de passe oublié : message affiché',
       await p.page.getByText(/un lien vient d/).isVisible().catch(() => false));
     const jeton = 'c'.repeat(64);
