@@ -19,6 +19,23 @@ effectué — AG-001 a corrigé le protocole du banc avant la série.
 
 ---
 
+## 🏁 25/09/2026 — Chantier « Refonte d'architecture » clos par l'utilisateur
+
+En production : NextStep (équipe) et NEWGEN (utilisateur) sur l'API
+Alwaysdata, même base ; GAS NextStep et NEWGEN coupés (« Seulement moi »),
+déclencheurs supprimés ; import verrouillé ; rappels 08:00 ; copie de nuit
+03:00 (30 j) + copie chiffrée hors site 04:15 (déchiffrement testé) ;
+2FA GitHub et Alwaysdata ; registre de sécurité v1.0 (hors dépôt).
+
+**Reste ouvert, hors chantier** (à reprendre sur demande) :
+- relève du journal le 30/09 (rappel planifié) ; sauvegardes Alwaysdata
+  encore vides le 25/09 → recontrôler, sinon support ;
+- sécurité : jeton annulé à la déconnexion, adresses mail réservées aux
+  admins, bibliothèques JS hébergées (SRI/CDN), déploiement par clé SSH ;
+- consigne de l'audit trimestriel à mettre à jour avant le 01/10/2026 ;
+- AGORA AG-010 et AG-013 à clore ; `manifest-*.json` à retirer plus tard ;
+- purge : copies chiffrées conservées sans limite (durée à fixer).
+
 ## ✅ 25/09/2026 — Bascule faite le matin (avancée par l'utilisateur)
 
 Déroulé réel : maintenance posée à la main dans Config (l'interrupteur de
