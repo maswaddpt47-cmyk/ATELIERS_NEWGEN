@@ -112,7 +112,11 @@ $r = appel(['action' => 'getAll', 'year' => '2026', 'token' => $admin['token']])
 verifier(($r['ok'] ?? null) === false, 'jeton dans l\'URL : refusé');
 $r = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']]);
 verifier($r['ok'] === true, 'jeton dans le corps : accepté');
-verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'emails', 'stockOrdinateurs', 'materielsCaches', 'conseillers_inactifs'], 'clés de la réponse = GAS NEWGEN + conseillers_inactifs : ' . implode(',', array_keys($r)));
+verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'stockOrdinateurs', 'materielsCaches', 'conseillers_inactifs'], 'clés de la réponse conseiller = GAS NEWGEN sans emails : ' . implode(',', array_keys($r)));
+// RGPD (25/09/2026) : les adresses mail ne vont qu'à l'Admin.
+verifier(!str_contains(json_encode($r), 'nouveau.venu@example.org'), '[RGPD] getAll conseiller : aucune adresse mail');
+$ra = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $admin['token']]);
+verifier(($ra['emails']['Nouveau Venu'] ?? '') === 'nouveau.venu@example.org', 'getAll admin : adresses mail présentes');
 verifier($r['conseillers_inactifs'] === [], 'conseillers_inactifs vide : personne masqué du sélecteur');
 verifier(count($r['entries']) === 2, '2026 seule : 2 ateliers');
 $parId = array_column($r['entries'], null, '_id');
@@ -146,6 +150,8 @@ verifier(!isset($r['comptes'][0]['role']), '[RGPD-02] getComptes conseiller : li
 $r = appel(['action' => 'getConfig'], ['token' => $user['token']]);
 verifier($r['ok'] === true && $r['config']['maintenance'] === 'true' && !isset($r['config']['admin_password']), 'getConfig avec jeton');
 verifier(appel(['action' => 'getConfig'])['ok'] === false, 'getConfig sans jeton : refusé');
+verifier(!array_key_exists('emails', $r['config']), '[RGPD] getConfig conseiller : clé emails retirée');
+verifier(isset(appel(['action' => 'getConfig'], ['token' => $admin['token']])['config']['emails']), 'getConfig admin : clé emails présente');
 verifier(appel(['action' => 'getVisibility'], ['token' => $user['token']]) === ['ok' => true, 'visibility' => []], 'getVisibility');
 echo "API — écritures d'ateliers\n";
 $db->exec("UPDATE config SET valeur = 'false' WHERE cle = 'maintenance'");
