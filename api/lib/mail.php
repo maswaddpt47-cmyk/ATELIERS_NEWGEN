@@ -17,7 +17,10 @@ function mail_expediteur(): string
 {
     $c = api_config();
     if (!empty($c['mail_expediteur'])) return (string) $c['mail_expediteur'];
-    $hote = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    $hote = (string) ($_SERVER['HTTP_HOST'] ?? '');
+    // En ligne de commande (tâche planifiée : rappels), pas de HTTP_HOST : le
+    // domaine du compte se déduit de l'hôte MySQL (mysql-<compte>.alwaysdata.net).
+    if ($hote === '') $hote = preg_replace('/^mysql-/', '', (string) ($c['db_hote'] ?? '')) ?: 'localhost';
     return 'noreply@' . preg_replace('/[^a-z0-9.-]/i', '', $hote);
 }
 
