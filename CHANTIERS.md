@@ -123,6 +123,10 @@ appels vont à l'API — remplacer par « appels serveur » dans les trois, test
 journal du labo du 25/09 : `demanderReinit` (qui n'existe que dans l'API)
 y figure, médiane 0,3 s, 0 perte sur 27.~~
 
+✅ **25/09 après-midi — premier cycle d'ateliers saisi en production sur l'API**
+(`saveMany`) : fonctionne d'après l'utilisateur. Le doublon de cycle du 23/09
+(GAS) ne peut pas se reproduire : `_id` fournis par le client, clé primaire.
+
 ✅ **Rappels d'ateliers en retard portés le 25/09** (`api/lib/rappels.php`,
 déployé 11:53, 7 tests) : « Planifié » à date passée, un mail par conseiller ;
 écart voulu : interrupteur individuel `rappels_actifs` respecté (le GAS
