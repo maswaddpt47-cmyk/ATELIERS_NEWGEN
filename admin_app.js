@@ -159,7 +159,8 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
             err&&CE('p',{style:{color:'#c53030',fontSize:13,marginBottom:8}},err),
             hint&&!err&&CE('p',{style:{color:'#718096',fontSize:12,marginBottom:8,display:'flex',alignItems:'center',gap:6}},CE('span',{className:'spinner',style:{width:12,height:12,borderWidth:2}}),hint),
             CE('button',{onClick:handleSubmit,disabled:loading||!pwd.trim(),style:{width:'100%',padding:'11px',background:'#1e3a8a',color:'#fff',border:'none',borderRadius:8,fontSize:14,fontWeight:700,cursor:'pointer'}},loading?'Vérification…':'Connexion'),
-            CE(LienMotDePasseOublie,{conseiller})
+            CE(LienMotDePasseOublie,{conseiller}),
+            CE(MentionVersion)
           )
     )
   );
@@ -522,6 +523,7 @@ const LOGS_KEY = lsKey('adm_logs');
       ),
       CE('div',{className:'app-topbar-v2-right'},
         CE('span',{className:'sidebar-admin-badge'},'ADMIN'),
+        CE('span',{title:window.VERSION_APPLI,style:{fontSize:11,fontWeight:700,color:window.BACKEND_PHP?'var(--text-3)':'#c53030'}},window.BACKEND_PHP?'v2':'⚠️ GAS'),
         entries.length>0&&CE('span',{style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},entries.length),
         CE(ChoixAnnees,{className:'topbar-year-sel',value:annee,onChange:setAnnee,title:'Années chargées'}),
         CE('button',{
