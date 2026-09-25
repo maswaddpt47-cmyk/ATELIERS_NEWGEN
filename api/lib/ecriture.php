@@ -52,16 +52,47 @@ function action_save_many(PDO $db, array $p, string $acteur = ''): array
     return ['ok' => true, 'count' => count($entries)];
 }
 
+const CORBEILLE_JOURS = 30;
+
+// Crée la table de la corbeille si besoin (apparue après la bascule du
+// 25/09/2026). CREATE TABLE valide toute transaction : appelé avant.
+function corbeille_schema(PDO $db): void
+{
+    foreach (import_requetes_schema() as $sql) {
+        if (str_contains($sql, 'ateliers_corbeille')) $db->exec($sql);
+    }
+}
+
+// Un atelier au format du client (celui de getAll), ou null.
+function api_atelier_par_id(PDO $db, string $id): ?array
+{
+    $cols = implode(', ', array_map(fn($c) => "`$c`", array_values(API_CHAMPS_ATELIER)));
+    $s = $db->prepare("SELECT $cols FROM ateliers WHERE id = ?");
+    $s->execute([$id]);
+    $l = $s->fetch(PDO::FETCH_ASSOC);
+    if (!$l) return null;
+    $e = [];
+    foreach (API_CHAMPS_ATELIER as $cle => $col) $e[$cle] = $l[$col] ?? '';
+    $m = $db->prepare('SELECT materiel FROM ateliers_materiel WHERE atelier_id = ? ORDER BY materiel');
+    $m->execute([$id]);
+    $e['materiel'] = $m->fetchAll(PDO::FETCH_COLUMN);
+    return $e;
+}
+
 function action_delete(PDO $db, array $p, string $acteur = ''): array
 {
     $id = trim((string) ($p['_id'] ?? ''));
     if ($id === '') return ['ok' => false, 'error' => 'ID manquant'];
+    corbeille_schema($db);
     $db->beginTransaction();
     try {
         $s = $db->prepare('SELECT conseiller FROM ateliers WHERE id = ? FOR UPDATE');
         $s->execute([$id]);
         $conseiller = $s->fetchColumn();
         if ($conseiller === false) { $db->rollBack(); return ['ok' => false, 'error' => 'Entrée introuvable']; }
+        // Corbeille (AG-014) : copie complète avant suppression, 30 jours.
+        $db->prepare('REPLACE INTO ateliers_corbeille (id, donnees, supprime_le, supprime_par) VALUES (?, ?, NOW(), ?)')
+           ->execute([$id, json_encode(api_atelier_par_id($db, $id), JSON_UNESCAPED_UNICODE), mb_substr($acteur, 0, 100)]);
         $db->prepare('DELETE FROM ateliers WHERE id = ?')->execute([$id]);   // matériel : ON DELETE CASCADE
         // Auteur = la personne connectée ; le conseiller de l'atelier supprimé
         // reste lisible dans ref (l'atelier n'existe plus pour le retrouver).
@@ -370,4 +401,66 @@ function api_changer_mdp(PDO $db, string $nom, string $mdp): array
         if (!$s->fetchColumn()) return ['ok' => false, 'error' => 'Conseiller introuvable'];
     }
     return ['ok' => true];
+}
+
+// ── Corbeille (AG-014) ────────────────────────────────────────────────────
+
+function action_get_corbeille(PDO $db): array
+{
+    corbeille_schema($db);
+    $db->exec('DELETE FROM ateliers_corbeille WHERE supprime_le < NOW() - INTERVAL ' . CORBEILLE_JOURS . ' DAY');
+    $l = $db->query('SELECT id, donnees, supprime_le, supprime_par FROM ateliers_corbeille ORDER BY supprime_le DESC')->fetchAll(PDO::FETCH_ASSOC);
+    return ['ok' => true, 'jours' => CORBEILLE_JOURS, 'ateliers' => array_map(function ($r) {
+        $e = json_decode($r['donnees'], true) ?: [];
+        return ['_id' => $r['id'], 'supprime_le' => $r['supprime_le'], 'supprime_par' => $r['supprime_par'],
+                'date' => $e['date'] ?? '', 'horaire' => $e['horaire'] ?? '', 'thematique' => $e['thematique'] ?? '',
+                'commune' => $e['commune'] ?? '', 'conseiller' => $e['conseiller'] ?? ''];
+    }, $l)];
+}
+
+// Remet l'atelier tel qu'il était. Refusé si un atelier de même _id existe
+// (recréé entre-temps) : jamais d'écrasement silencieux.
+function action_restaurer_corbeille(PDO $db, array $p, string $acteur): array
+{
+    $id = trim((string) ($p['_id'] ?? ''));
+    if ($id === '') return ['ok' => false, 'error' => 'ID manquant'];
+    corbeille_schema($db);
+    $s = $db->prepare('SELECT donnees FROM ateliers_corbeille WHERE id = ?');
+    $s->execute([$id]);
+    $donnees = $s->fetchColumn();
+    if ($donnees === false) return ['ok' => false, 'error' => 'Atelier absent de la corbeille (déjà restauré ou purgé)'];
+    if (api_atelier_par_id($db, $id) !== null) return ['ok' => false, 'error' => 'Un atelier avec cet identifiant existe déjà'];
+    $d = json_decode($donnees, true);
+    if (!is_array($d)) return ['ok' => false, 'error' => 'Données de la corbeille illisibles'];
+    $err = null;
+    if (api_ecrire_atelier($db, $d, $err, $acteur) === null) return ['ok' => false, 'error' => $err];
+    $db->prepare('DELETE FROM ateliers_corbeille WHERE id = ?')->execute([$id]);
+    return ['ok' => true, 'entry' => api_atelier_par_id($db, $id)];
+}
+
+// ── Sauvegardes (AG-014) : état en lecture seule, copie à la demande ─────
+
+function action_etat_sauvegardes(): array
+{
+    require_once __DIR__ . '/copie.php';
+    $d = sauvegarde_dossier();
+    $f = glob("$d/ateliers-*.sql.gz") ?: [];
+    rsort($f);
+    // Marqueur déposé par le workflow de la copie chiffrée (ateliers-backups).
+    $m = "$d/.derniere-copie-chiffree";
+    return ['ok' => true, 'jours' => SAUVEGARDE_JOURS,
+        'copies' => array_map(fn($x) => ['nom' => basename($x), 'ko' => (int) ceil(filesize($x) / 1024), 'date' => date('Y-m-d H:i:s', filemtime($x))], $f),
+        'chiffree' => is_file($m) ? trim((string) file_get_contents($m)) : ''];
+}
+
+// Au plus une copie toutes les 5 minutes : le bouton ne doit pas pouvoir
+// remplir l'espace disque du compte.
+function action_copie_maintenant(): array
+{
+    require_once __DIR__ . '/copie.php';
+    $f = glob(sauvegarde_dossier() . '/ateliers-*.sql.gz') ?: [];
+    $derniere = $f ? max(array_map('filemtime', $f)) : 0;
+    if ($derniere > time() - 300) return ['ok' => false, 'error' => 'Une copie a déjà été faite il y a moins de 5 minutes.'];
+    $r = sauvegarde_faire();
+    return $r['ok'] ? ['ok' => true, 'fichier' => $r['fichier']] : ['ok' => false, 'error' => 'Copie impossible : ' . $r['message']];
 }

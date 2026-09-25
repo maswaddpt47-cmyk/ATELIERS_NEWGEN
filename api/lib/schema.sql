@@ -127,3 +127,15 @@ CREATE TABLE IF NOT EXISTS reinitialisations (
   PRIMARY KEY (jeton_hash),
   KEY idx_conseiller_cree (conseiller, cree)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Corbeille (AG-014, 25/09/2026) : un atelier supprimé y reste 30 jours,
+-- restaurable depuis l'Admin. donnees = l'atelier au format du client
+-- (champs + matériel), figé à la date de suppression.
+CREATE TABLE IF NOT EXISTS ateliers_corbeille (
+  id           VARCHAR(64)  NOT NULL,
+  donnees      MEDIUMTEXT   NOT NULL,
+  supprime_le  DATETIME     NOT NULL,
+  supprime_par VARCHAR(100) NOT NULL DEFAULT '',
+  PRIMARY KEY (id),
+  KEY idx_supprime_le (supprime_le)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

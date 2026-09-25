@@ -31,7 +31,7 @@ const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
 const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
-const API_ACTIONS_ADMIN = ['saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'setPassword', 'getLogs'];
+const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'setPassword', 'getLogs'];
 
 // Ordre des champs d'un atelier dans la réponse (contract.test.js:12-34).
 const API_CHAMPS_ATELIER = [
@@ -85,8 +85,8 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
     $r = api_action_protegee($db, $action, $p, $session);
     // Traçabilité : toute action d'administration réussie est journalisée au
     // nom de la personne CONNECTÉE (audit du 24/09/2026), avec sa cible.
-    if (($r['ok'] ?? false) === true && (in_array($action, API_ACTIONS_ADMIN, true) || $action === 'selfSetPassword') && $action !== 'getLogs') {
-        $cible = (string) ($p['conseiller'] ?? $p['key'] ?? '');
+    if (($r['ok'] ?? false) === true && (in_array($action, API_ACTIONS_ADMIN, true) || $action === 'selfSetPassword') && !in_array($action, ['getLogs', 'getCorbeille', 'etatSauvegardes'], true)) {
+        $cible = (string) ($p['conseiller'] ?? $p['key'] ?? $p['_id'] ?? '');
         if ($action === 'setConfig' && in_array($cible, ['maintenance', 'stock_ordinateurs'], true)) $cible .= '=' . (string) ($p['value'] ?? '');
         api_journal($db, $action, $session['conseiller'], $cible, $session['role'], 1, 0, '', 'admin');
     }
@@ -115,6 +115,10 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'resetPassword':   return action_reset_password($db, $p);
         case 'setPassword':     return action_set_password($db, $p, $session);
         case 'getLogs':         return action_get_logs($db, $p);
+        case 'getCorbeille':    return action_get_corbeille($db);
+        case 'etatSauvegardes': return action_etat_sauvegardes();
+        case 'copieMaintenant': return action_copie_maintenant();
+        case 'restaurerCorbeille': return action_restaurer_corbeille($db, $p, $session['conseiller']);
     }
     return ['ok' => false, 'error' => 'action inconnue: ' . $action];
 }
