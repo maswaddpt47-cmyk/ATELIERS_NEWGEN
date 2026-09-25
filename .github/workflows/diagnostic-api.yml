@@ -27,6 +27,15 @@ jobs:
             find ~/admin/logs -type f -mmin -1440 2>/dev/null | xargs -r grep -hiE "PHP (Fatal|Parse|Warning|Notice)|Uncaught|Allowed memory|Maximum execution" 2>/dev/null | tail -30
             echo "== apache.log (20 dernières lignes, adresses IP masquées)"
             tail -20 ~/admin/logs/apache/apache.log 2>/dev/null | sed -E "s/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/x.x.x.x/g; s/[0-9a-f]*:[0-9a-f:]{6,}/x::x/g"
+            echo "== copies de nuit (~/sauvegardes : noms, tailles, dates — jamais le contenu)"
+            ls -l --time-style=+%F_%T ~/sauvegardes 2>&1 | awk "{print \$5, \$6, \$7}"
+            echo "== sauvegardes Alwaysdata (~/admin/backup)"
+            ls -l --time-style=+%F_%T ~/admin/backup 2>&1 | awk "{print \$6, \$7}" | head -20
+            echo "== dossiers de journaux"
+            find ~/admin/logs -maxdepth 2 -type d 2>/dev/null | head -20
+            echo "== traces de la tâche planifiée (lignes « sauvegarde », 48 h)"
+            find ~/admin/logs -type f -mmin -2880 2>/dev/null | xargs -r grep -h "sauvegarde" 2>/dev/null | grep -v "GET \|POST " | tail -15
+            echo "== heure du serveur"; date
             echo "== appels à import.php (requête, code, taille — sans IP)"
             cat ~/admin/logs/http/2026/http-2026-09-2*.log 2>/dev/null | grep "import.php" | grep -oE "\[[^]]+\] \"[A-Z]+ [^ ]+ [^\"]+\" [0-9]{3} [0-9-]+" | tail -20
           '
