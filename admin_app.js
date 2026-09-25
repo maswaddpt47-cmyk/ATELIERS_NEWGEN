@@ -1516,17 +1516,6 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
         }},'🔍 Analyser ('+entries.length+' ateliers)')
       ),
 
-      // Lien vers la page d'import du classeur (demande de l'utilisateur,
-      // 24/09/2026). Mode API seulement, onglet réservé au rôle admin. La page
-      // reste à part et protégée par la clé d'import : l'import remplace TOUTE
-      // la base, il n'a rien à faire dans un bouton du quotidien.
-      window.BACKEND_PHP&&CE('div',{className:'admin-section'},
-        CE('h3',null,'📥 Import du classeur Google Sheets'),
-        CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:12}},
-          "Remplace tout le contenu de la base (ateliers, comptes, réglages, journal) par un export .xlsx du classeur. Clé d'import demandée. Toujours « Analyser » avant « Importer »."),
-        CE('a',{href:'https://ateliers-numeriques.alwaysdata.net/api/import.php',target:'_blank',rel:'noopener',className:'btn btn-primary',style:{textDecoration:'none',display:'inline-block'}},'Ouvrir la page d\u2019import ↗')
-      ),
-
       CE('div',{className:'admin-section',style:{border:'2px solid '+(maintenanceOn?'#dc2626':'#e2e8f0'),background:maintenanceOn?'#fff5f5':'#fff'}},
         CE('h3',null,'🔧 Mode Maintenance'),
         CE('p',{style:{fontSize:12,color:'#4a5568',marginBottom:16}},"Activez pour bloquer l'accès à l'interface conseiller."),
