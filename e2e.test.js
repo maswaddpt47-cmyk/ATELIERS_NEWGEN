@@ -97,6 +97,8 @@ const ADMIN_VIEWS = [
   { label: 'Anomalies',  ariaLabel: 'Anomalies'  },
   { label: 'Gestion ordi', ariaLabel: 'Gestion ordi' },
   { label: 'Admin',      ariaLabel: 'Admin'      },
+  { label: 'Corbeille',  ariaLabel: 'Corbeille'  },
+  { label: 'Sauvegardes', ariaLabel: 'Sauvegardes' },
 ];
 
 // ── Collecte les erreurs et intercepte les requêtes GAS ──────────────────
