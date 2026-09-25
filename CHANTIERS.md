@@ -92,23 +92,11 @@ Ne protège pas contre une perte
 du compte : **copie chiffrée dans le dépôt privé
 `maswaddpt47-cmyk/ateliers-backups`** (créé le 24/09, workflow `copie.yml`
 à 04:15 : récupère la copie de nuit, la chiffre avec `age`, la range ;
-échoue si la copie de nuit a plus de 26 h). **Secrets créés le 25/09.** **En attente de l'utilisateur** : paire de
-clés `age` à générer sur son PC personnel (PC pro : exécutable bloqué ;
-clé privée hors ligne, jamais vue par Claude),
-clé publique à déposer dans `cle-publique.txt`. Tâche planifiée Alwaysdata
-(03:00, `php /home/ateliers-numeriques/www/api/lib/sauvegarde.php`, mail
-d'erreur) : validée le 24/09 à 21:40. **Vérifié le 25/09 à 07:44
-(diagnostic)** : tâche lancée à 03:00:51, code de sortie 0, copie
-`ateliers-2026-09-25_030044.sql.gz` (25 Ko). **Sauvegarde Alwaysdata : liste
-encore vide le 25/09 à 07:41** (`~/admin/backup` vide ou lien) — cause non
-vérifiée ; à revoir le 26/09, sinon question au support Alwaysdata.
-2FA GitHub activée et clé d'import confirmée par l'utilisateur le 25/09. **À vérifier par l'utilisateur** : double authentification
-GitHub, clé d'import aléatoire ≥ 20 caractères. **Après la bascule — fait par l'utilisateur le 25/09** : export xlsx supprimé, mail d'annonce envoyé,
-ligne `admin_password` du classeur supprimée, durée d'archive du
-classeur à fixer, export xlsx du 25/09 à supprimer ; consigne de l'audit
-trimestriel à mettre à jour (elle parle encore des failles GAS). Hérités,
-plus tard : jeton non révoqué à la déconnexion, SRI absent sur cdnjs,
-déploiement SSH par mot de passe.
+échoue si la copie de nuit a plus de 26 h). **✅ En service le 25/09 à 17:55** : secrets créés, clé publique `age`
+déposée (clé privée générée par l'utilisateur sur son PC, jamais vue par
+Claude), première copie `ateliers-2026-09-25_120509.sql.gz.age` (26 Ko)
+rangée par le workflow. Chaque nuit à 04:15. **Reste** : un essai de
+déchiffrement par l'utilisateur (le registre annonce la restauration testée).
 
 📅 **Relève du journal le 30/09/2026** (demande de l'utilisateur ; rappel
 planifié dans la session) : journal Admin NextStep depuis la bascule, à
