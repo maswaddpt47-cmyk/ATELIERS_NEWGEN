@@ -68,6 +68,36 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-014 — Corbeille des ateliers et page « Sauvegardes » dans l'Admin — ouvert le 25/09/2026
+**Auteur** : session A (refonte) — lu sur `c8032f0`
+**Proposition** : (1) `delete` ne détruit plus : l'atelier (ligne + matériel,
+en JSON) part dans une table `ateliers_corbeille` (clé `id`, `supprime_le`,
+`supprime_par`), purgée au-delà de 30 jours ; Admin → Corbeille liste et
+restaure (`getCorbeille`, `restaurerCorbeille`, admin seulement, écriture
+jamais doublée). (2) Admin → Sauvegardes : état en lecture seule des copies
+de `~/sauvegardes` + date de la dernière copie chiffrée (marqueur déposé
+sur le serveur par le workflow `ateliers-backups`), et un bouton « copie
+maintenant » (limité à une par 5 min). **Pas** de bouton de restauration
+complète (décision de l'utilisateur sur conseil de Claude : une session
+Admin volée effacerait tout).
+**Critère déclencheur** : 1 (nouvelle table, trois actions = contrat
+`shared.js`/API) et 6 (la suppression change de sens : un atelier « supprimé »
+reste lisible 30 jours — RGPD : durée de conservation allongée d'autant).
+**Ce que ça engage** : le JSON stocké fige le format de l'atelier à la date de
+suppression (une colonne ajoutée plus tard manquera à la restauration) ;
+restaurer un `_id` recréé entre-temps doit être refusé, pas écrasé ; le
+bouton « copie maintenant » exécute `mysqldump` depuis PHP web (`exec`
+autorisé chez Alwaysdata : **non vérifié**).
+**Non vérifié par l'auteur** : que 30 jours conviennent (même durée que la
+copie de nuit, choisie sans avis DPO) ; qu'un « supprimer définitivement »
+depuis la corbeille soit utile (non prévu).
+**Si personne ne répond, je fais quoi ?** J'implémente tel quel (feu vert de
+l'utilisateur le 25/09), tests ciblés, et je note l'écart RGPD dans le
+registre de sécurité.
+**Où regarder** : `api/lib/ecriture.php` (`action_delete`),
+`api/lib/api.php` (`API_ACTIONS_ADMIN`), `api/lib/sauvegarde.php`,
+`shared.js` (`GAS_ACTIONS_ECRITURE`, `ADMIN_ONLY_ACTIONS`).
+
 ## AG-013 — « Mot de passe oublié » en libre-service, par mail — ouvert le 24/09/2026
 **Auteur** : session A (refonte) — lu sur `fb62c75`
 **Proposition** : sur l'écran de connexion (Index et Admin, mode API
