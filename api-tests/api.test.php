@@ -114,7 +114,7 @@ $r = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']]
 verifier($r['ok'] === true, 'jeton dans le corps : accepté');
 verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'stockOrdinateurs', 'materielsCaches', 'conseillers_inactifs'], 'clés de la réponse conseiller = GAS NEWGEN sans emails : ' . implode(',', array_keys($r)));
 // RGPD (25/09/2026) : les adresses mail ne vont qu'à l'Admin.
-verifier(!str_contains(json_encode($r), 'nouveau.venu@example.org'), '[RGPD] getAll conseiller : aucune adresse mail');
+verifier(!str_contains(json_encode($r), 'nouveau.venu@example.org'), '[RGPD-15] getAll conseiller : aucune adresse mail');
 $ra = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $admin['token']]);
 verifier(($ra['emails']['Nouveau Venu'] ?? '') === 'nouveau.venu@example.org', 'getAll admin : adresses mail présentes');
 verifier($r['conseillers_inactifs'] === [], 'conseillers_inactifs vide : personne masqué du sélecteur');
@@ -150,7 +150,7 @@ verifier(!isset($r['comptes'][0]['role']), '[RGPD-02] getComptes conseiller : li
 $r = appel(['action' => 'getConfig'], ['token' => $user['token']]);
 verifier($r['ok'] === true && $r['config']['maintenance'] === 'true' && !isset($r['config']['admin_password']), 'getConfig avec jeton');
 verifier(appel(['action' => 'getConfig'])['ok'] === false, 'getConfig sans jeton : refusé');
-verifier(!array_key_exists('emails', $r['config']), '[RGPD] getConfig conseiller : clé emails retirée');
+verifier(!array_key_exists('emails', $r['config']), '[RGPD-15] getConfig conseiller : clé emails retirée');
 verifier(isset(appel(['action' => 'getConfig'], ['token' => $admin['token']])['config']['emails']), 'getConfig admin : clé emails présente');
 verifier(appel(['action' => 'getVisibility'], ['token' => $user['token']]) === ['ok' => true, 'visibility' => []], 'getVisibility');
 echo "API — déconnexion\n";
@@ -160,7 +160,7 @@ $db->prepare('INSERT INTO sessions (jeton_hash, conseiller, role, expire) VALUES
    ->execute([hash('sha256', $jetonTemp), 'Nouveau Venu', 'user', date('Y-m-d H:i:s', time() + 3600)]);
 verifier((appel(['action' => 'getVisibility'], ['token' => $jetonTemp])['ok'] ?? false) === true, 'jeton valable avant logout');
 verifier(appel(['action' => 'logout'], ['token' => $jetonTemp]) === ['ok' => true], 'logout : ok');
-verifier((appel(['action' => 'getVisibility'], ['token' => $jetonTemp])['auth'] ?? false) === true, '[SEC] jeton refusé après logout');
+verifier((appel(['action' => 'getVisibility'], ['token' => $jetonTemp])['auth'] ?? false) === true, '[RGPD-16] jeton refusé après logout');
 verifier(appel(['action' => 'logout'], ['token' => 'nimportequoi']) === ['ok' => true], 'logout sans jeton valable : ok, rien d\'effacé');
 verifier((appel(['action' => 'getVisibility'], ['token' => $user['token']])['ok'] ?? false) === true, 'logout ne touche pas les autres sessions');
 echo "API — écritures d'ateliers\n";
