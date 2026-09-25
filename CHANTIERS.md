@@ -95,8 +95,9 @@ du compte : **copie chiffrée dans le dépôt privé
 échoue si la copie de nuit a plus de 26 h). **✅ En service le 25/09 à 17:55** : secrets créés, clé publique `age`
 déposée (clé privée générée par l'utilisateur sur son PC, jamais vue par
 Claude), première copie `ateliers-2026-09-25_120509.sql.gz.age` (26 Ko)
-rangée par le workflow. Chaque nuit à 04:15. **Reste** : un essai de
-déchiffrement par l'utilisateur (le registre annonce la restauration testée).
+rangée par le workflow. Chaque nuit à 04:15. **Déchiffrement testé par
+l'utilisateur le 25/09 au soir** sur son PC perso : `test.sql.gz` obtenu avec
+sa clé privée — chaîne complète vérifiée (clé privée rangée par lui).
 
 📅 **Relève du journal le 30/09/2026** (demande de l'utilisateur ; rappel
 planifié dans la session) : journal Admin NextStep depuis la bascule, à
