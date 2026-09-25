@@ -28,8 +28,10 @@ non creusé, code retiré) → **accès du GAS NextStep passé à « Seulement m
 (coupe l'ancienne appli, y compris les onglets ouverts ; réversible) → export
 xlsx → Analyser (0 erreur) → Importer **verrouillé** → fusion NextStep
 `a75fb91`, CI verte, **en ligne à 10:12** → déclencheur `envoyerAlertesRetard`
-supprimé. **Contrôle utilisateur (Admin, atelier de test, levée de la
-maintenance, Index) : en attente.**
+supprimé. **Contrôlé par l'utilisateur le 25/09 vers 10:25** : Admin et Index
+(atelier de test créé puis supprimé sur les deux), maintenance levée depuis
+la nouvelle Admin. Mention « Version 2 — serveur Alwaysdata » ajoutée
+(NextStep `69afc72`, en ligne 10:19). **Bascule terminée.**
 
 ## 🚀 24/09/2026 — Bascule prête, fixée au 25/09/2026 à 15 h 30 (reprendre ici)
 
