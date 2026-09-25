@@ -96,6 +96,11 @@ trimestriel à mettre à jour (elle parle encore des failles GAS). Hérités,
 plus tard : jeton non révoqué à la déconnexion, SRI absent sur cdnjs,
 déploiement SSH par mot de passe.
 
+📅 **Relève du journal le 30/09/2026** (demande de l'utilisateur ; rappel
+planifié dans la session) : journal Admin NextStep depuis la bascule, à
+comparer au labo du 24-25/09 (0/27 perdus, médiane 0,3 s, p90 0,6 s — un
+seul utilisateur) ; regarder `getAll` et les heures de pointe.
+
 📝 **Après la bascule (demande de l'utilisateur, 25/09)** : le résumé du
 journal écrit « N appels GAS » en dur (`utils.js:171`,
 `labo-nextstep/utils.js:209`, et le `utils.js` de NextStep) alors que les
