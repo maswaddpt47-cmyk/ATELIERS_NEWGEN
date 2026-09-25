@@ -776,7 +776,9 @@ const GAS_ACTIONS_ECRITURE = new Set([
   'logLogin','logAccesIndex',
   // Mot de passe oublié (AG-013) : doubler enverrait deux mails et
   // consommerait deux fois le quota de 3 demandes par heure.
-  'demanderReinit','reinitMotDePasse'
+  'demanderReinit','reinitMotDePasse',
+  // Corbeille et copie à la demande (AG-014) : écritures, jamais doublées.
+  'restaurerCorbeille','copieMaintenant'
 ]);
 const GAS_HEDGE_MS            = 7000;   // délai avant de doubler une lecture
 const GAS_TENTATIVES_LECTURE  = 3;
@@ -1600,7 +1602,7 @@ window.onLogout = function(){
     'saveLists','saveConfig','setConfig',
     'saveVisibility','saveColors','saveEmails',
     'saveCompte','resetPassword','setPassword',
-    'getLogs'
+    'getLogs','getCorbeille','restaurerCorbeille','etatSauvegardes','copieMaintenant'
   ]);
   const WRITE_ACTIONS = new Set([
     'saveEntry','saveMany','delete','selfSetPassword',

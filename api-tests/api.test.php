@@ -39,6 +39,7 @@ $db->exec("UPDATE comptes SET role = 'user' WHERE conseiller = 'Nouveau Venu'");
 
 $dossierMails = sys_get_temp_dir() . '/mails_' . getmypid();
 @mkdir($dossierMails);
+$dossierSauv = sys_get_temp_dir() . '/sauv_api_' . getmypid();
 $cfg = tempnam(sys_get_temp_dir(), 'cfg');
 file_put_contents($cfg, '<?php return ' . var_export(['db_hote' => $hote, 'db_nom' => 'ateliers_test_api', 'db_utilisateur' => $util, 'db_mot_de_passe' => $mdp], true) . ';');
 
@@ -46,7 +47,7 @@ file_put_contents($cfg, '<?php return ' . var_export(['db_hote' => $hote, 'db_no
 $port = 8700 + random_int(0, 99);
 $srv = proc_open([PHP_BINARY, '-S', "127.0.0.1:$port", '-t', __DIR__ . '/../api'],
     [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $tubes, null,
-    ['ATELIERS_API_CONFIG' => $cfg, 'ATELIERS_MAIL_TEST_DIR' => $dossierMails] + getenv());
+    ['ATELIERS_API_CONFIG' => $cfg, 'ATELIERS_MAIL_TEST_DIR' => $dossierMails, 'ATELIERS_SAUVEGARDE_DIR' => $dossierSauv] + getenv());
 register_shutdown_function(function () use ($srv, $cfg, $db) {
     proc_terminate($srv);
     @unlink($cfg);
@@ -186,6 +187,28 @@ verifier($db->query("SELECT conseiller FROM journal WHERE action = 'delete' ORDE
 
 echo "API — administration\n";
 $A = ['token' => $admin['token']];
+// Corbeille (AG-014) : lot_1, supprimé plus haut, doit y être.
+verifier(str_contains(appel(['action' => 'getCorbeille'], $T)['error'] ?? '', 'administrateurs'), 'corbeille réservée aux administrateurs');
+$cb = appel(['action' => 'getCorbeille'], $A);
+verifier(($cb['ok'] ?? false) && in_array('lot_1', array_column($cb['ateliers'], '_id'), true) && $cb['ateliers'][0]['supprime_par'] === 'Nouveau Venu', 'atelier supprimé : dans la corbeille, avec son auteur');
+$r = appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'lot_1']);
+verifier(($r['ok'] ?? false) && ($r['entry']['_id'] ?? '') === 'lot_1' && $r['entry']['date'] === '2026-11-02' && $lire('lot_1') !== null, 'restauration : atelier revenu à l\'identique');
+verifier(!in_array('lot_1', array_column(appel(['action' => 'getCorbeille'], $A)['ateliers'], '_id'), true), 'restauré : retiré de la corbeille');
+appel(['action' => 'delete'], $T + ['_id' => 'lot_1']);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'lot_1', 'date' => '2026-12-01'])]);
+$r = appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'lot_1']);
+verifier(($r['ok'] ?? true) === false && str_contains($r['error'], 'existe déjà') && $lire('lot_1')['date'] === '2026-12-01', 'restauration refusée si l\'atelier a été recréé : jamais d\'écrasement');
+$db->exec("UPDATE ateliers_corbeille SET supprime_le = NOW() - INTERVAL 31 DAY");
+verifier(appel(['action' => 'getCorbeille'], $A)['ateliers'] === [], 'corbeille purgée au-delà de 30 jours');
+// Sauvegardes (AG-014) : état en lecture, copie à la demande limitée.
+verifier(str_contains(appel(['action' => 'copieMaintenant'], $T)['error'] ?? '', 'administrateurs'), 'copie à la demande réservée aux administrateurs');
+$r = appel(['action' => 'copieMaintenant'], $A);
+$e = appel(['action' => 'etatSauvegardes'], $A);
+verifier(($r['ok'] ?? false) && count($e['copies'] ?? []) === 1 && $e['copies'][0]['nom'] === $r['fichier'] && $e['chiffree'] === '', 'copie à la demande faite, visible dans l\'état des sauvegardes');
+verifier(str_contains(appel(['action' => 'copieMaintenant'], $A)['error'] ?? '', '5 minutes'), 'seconde copie dans les 5 minutes : refusée');
+file_put_contents("$dossierSauv/.derniere-copie-chiffree", '2026-09-25 04:15');
+verifier(appel(['action' => 'etatSauvegardes'], $A)['chiffree'] === '2026-09-25 04:15', 'date de la dernière copie chiffrée lue');
+exec('rm -rf ' . escapeshellarg($dossierSauv));
 verifier(str_contains(appel(['action' => 'setConfig'], $T + ['key' => 'stock_ordinateurs', 'value' => '20'])['error'] ?? '', 'administrateurs'), 'action admin refusée à un conseiller');
 appel(['action' => 'setConfig'], $A + ['key' => 'stock_ordinateurs', 'value' => '20']);
 appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'carte' => false])]);
