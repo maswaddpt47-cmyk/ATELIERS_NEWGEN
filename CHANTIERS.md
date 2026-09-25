@@ -96,6 +96,14 @@ trimestriel à mettre à jour (elle parle encore des failles GAS). Hérités,
 plus tard : jeton non révoqué à la déconnexion, SRI absent sur cdnjs,
 déploiement SSH par mot de passe.
 
+📝 **Après la bascule (demande de l'utilisateur, 25/09)** : le résumé du
+journal écrit « N appels GAS » en dur (`utils.js:171`,
+`labo-nextstep/utils.js:209`, et le `utils.js` de NextStep) alors que les
+appels vont à l'API — remplacer par « appels serveur » dans les trois, test
+`utils.test.js:413/435` mis à jour dans le même commit. Constaté sur le
+journal du labo du 25/09 : `demanderReinit` (qui n'existe que dans l'API)
+y figure, médiane 0,3 s, 0 perte sur 27.
+
 ⚠️ **NEWGEN par défaut reste sur le GAS** après la bascule : l'utilisateur
 doit passer par `?backend=php` en attendant que NEWGEN bascule aussi par
 défaut (à faire juste après, sur son go).
