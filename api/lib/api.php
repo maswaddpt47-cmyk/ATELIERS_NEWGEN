@@ -70,6 +70,15 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
         case 'logLogin':
             // Journalisé par checkPassword ; gardé pour le client actuel.
             return ['ok' => true];
+        case 'logout':
+            // Déconnexion (25/09/2026) : l'empreinte du jeton est effacée, le
+            // jeton ne vaut plus rien même s'il a été copié. Sans cela il
+            // restait valable jusqu'à son expiration (6 h), déconnexion ou non.
+            // Toujours ok : un jeton déjà expiré ou inconnu n'a rien à effacer.
+            if (preg_match('/^[0-9a-f]{64}$/', $jeton)) {
+                $db->prepare('DELETE FROM sessions WHERE jeton_hash = ?')->execute([hash('sha256', $jeton)]);
+            }
+            return ['ok' => true];
     }
 
     // Toutes les autres actions exigent un jeton valide.
