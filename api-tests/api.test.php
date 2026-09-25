@@ -153,6 +153,16 @@ verifier(appel(['action' => 'getConfig'])['ok'] === false, 'getConfig sans jeton
 verifier(!array_key_exists('emails', $r['config']), '[RGPD] getConfig conseiller : clé emails retirée');
 verifier(isset(appel(['action' => 'getConfig'], ['token' => $admin['token']])['config']['emails']), 'getConfig admin : clé emails présente');
 verifier(appel(['action' => 'getVisibility'], ['token' => $user['token']]) === ['ok' => true, 'visibility' => []], 'getVisibility');
+echo "API — déconnexion\n";
+// Un jeton rendu par la connexion ne doit plus rien valoir après logout.
+$jetonTemp = bin2hex(random_bytes(32));
+$db->prepare('INSERT INTO sessions (jeton_hash, conseiller, role, expire) VALUES (?, ?, ?, ?)')
+   ->execute([hash('sha256', $jetonTemp), 'Nouveau Venu', 'user', date('Y-m-d H:i:s', time() + 3600)]);
+verifier((appel(['action' => 'getVisibility'], ['token' => $jetonTemp])['ok'] ?? false) === true, 'jeton valable avant logout');
+verifier(appel(['action' => 'logout'], ['token' => $jetonTemp]) === ['ok' => true], 'logout : ok');
+verifier((appel(['action' => 'getVisibility'], ['token' => $jetonTemp])['auth'] ?? false) === true, '[SEC] jeton refusé après logout');
+verifier(appel(['action' => 'logout'], ['token' => 'nimportequoi']) === ['ok' => true], 'logout sans jeton valable : ok, rien d\'effacé');
+verifier((appel(['action' => 'getVisibility'], ['token' => $user['token']])['ok'] ?? false) === true, 'logout ne touche pas les autres sessions');
 echo "API — écritures d'ateliers\n";
 $db->exec("UPDATE config SET valeur = 'false' WHERE cle = 'maintenance'");
 $T = ['token' => $user['token']];
