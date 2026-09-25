@@ -129,6 +129,7 @@ async function preparer(browser) {
 async function connecter(page) {
   const pwd = page.locator('input[type="password"]').first();
   if (await pwd.isVisible({ timeout: 4000 }).catch(() => false)) {
+    await page.locator('select').first().selectOption({ index: 1 }).catch(() => {});  // aucun nom présélectionné (25/09/2026)
     await pwd.fill('test');
     await page.getByRole('button', { name: /Connexion/ }).click();
     await page.waitForTimeout(1200);
@@ -214,6 +215,7 @@ function verifier(nom, condition, detail) {
       await page.goto(`http://127.0.0.1:${PORT}/admin.html`, { waitUntil:'networkidle', timeout:20000 });
       const pwd = page.locator('input[type="password"]').first();
       if (await pwd.isVisible({ timeout:4000 }).catch(() => false)) {
+        await page.locator('select').first().selectOption({ index: 1 }).catch(() => {});  // aucun nom présélectionné (25/09/2026)
         await pwd.fill('test');
         await page.getByRole('button', { name:/Connexion/ }).click();
         await page.waitForTimeout(1500);
@@ -275,6 +277,7 @@ function verifier(nom, condition, detail) {
     await p.page.waitForTimeout(1200);
     verifier('api — admin avant connexion : ni getAll ni getConfig', p.appels.join(',') === 'getComptes', p.appels.join(', ') || 'aucun');
     const pwd = p.page.locator('input[type="password"]').first();
+    await p.page.locator('select').first().selectOption({ index: 1 }).catch(() => {});  // aucun nom présélectionné (25/09/2026)
     await pwd.fill('test');
     await p.page.getByRole('button', { name:/Connexion/ }).click();
     await p.page.waitForTimeout(1500);
@@ -315,7 +318,12 @@ function verifier(nom, condition, detail) {
   {
     const p = await preparerApi(browser);
     await p.page.goto(`http://127.0.0.1:${PORT}/index.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
+    // Aucun nom présélectionné (25/09/2026) : sans choix, le lien ne peut
+    // rien demander — vérifié ici, avant de choisir.
     await p.page.getByRole('button', { name:'Mot de passe oublié ?' }).click();
+    verifier('index — aucun nom présélectionné : demande de lien impossible sans choix',
+      await p.page.getByRole('button', { name:/Recevoir un lien/ }).isDisabled());
+    await p.page.locator('select').first().selectOption({ index: 1 });
     await p.page.getByRole('button', { name:/Recevoir un lien/ }).click();
     await p.page.waitForTimeout(600);
     const retour = (p.corpsReinit && p.corpsReinit.retour) || '';

@@ -191,6 +191,7 @@ window.L = {
     try {
       const pwdInput = page.locator('input[type="password"]').first();
       if (await pwdInput.isVisible({ timeout: 3000 })) {
+        await page.locator('select').first().selectOption({ index: 1 }).catch(() => {});  // aucun nom présélectionné (25/09/2026)
         await pwdInput.fill('test');
         await page.getByRole('button', { name: 'Connexion' }).click();
         await page.waitForTimeout(1500);
@@ -211,6 +212,7 @@ window.L = {
     try {
       const pwdInput = page.locator('input[type="password"],input[type="text"][placeholder="Mot de passe"]').first();
       if (await pwdInput.isVisible({ timeout: 3000 })) {
+        await page.locator('select').first().selectOption({ index: 1 }).catch(() => {});  // aucun nom présélectionné (25/09/2026)
         await pwdInput.fill('test');
         await page.getByRole('button', { name: 'Connexion' }).click();
         // Attendre que le formulaire disparaisse et la nav apparaisse
