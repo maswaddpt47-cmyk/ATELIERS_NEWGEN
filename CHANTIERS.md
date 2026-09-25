@@ -115,13 +115,13 @@ planifié dans la session) : journal Admin NextStep depuis la bascule, à
 comparer au labo du 24-25/09 (0/27 perdus, médiane 0,3 s, p90 0,6 s — un
 seul utilisateur) ; regarder `getAll` et les heures de pointe.
 
-📝 **Après la bascule (demande de l'utilisateur, 25/09)** : le résumé du
+✅ **Fait le 25/09** (NEWGEN, labo, NextStep — utils.js v14). ~~📝 Après la bascule : le résumé du
 journal écrit « N appels GAS » en dur (`utils.js:171`,
 `labo-nextstep/utils.js:209`, et le `utils.js` de NextStep) alors que les
 appels vont à l'API — remplacer par « appels serveur » dans les trois, test
 `utils.test.js:413/435` mis à jour dans le même commit. Constaté sur le
 journal du labo du 25/09 : `demanderReinit` (qui n'existe que dans l'API)
-y figure, médiane 0,3 s, 0 perte sur 27.
+y figure, médiane 0,3 s, 0 perte sur 27.~~
 
 ✅ **NEWGEN sur l'API par défaut depuis le 25/09 à 10:35** (`9324cb1`) :
 `?backend=gas` = porte de secours vers l'ancien GAS NEWGEN (données figées).
