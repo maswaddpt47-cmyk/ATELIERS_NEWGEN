@@ -321,6 +321,17 @@ if (typeof window !== 'undefined') {
   try { migrerLocalStorage(window.localStorage); } catch (e) {}
 }
 
+// ── Anomalie de chiffres : plus de présents que d'inscrits ───────────────────
+// Repris de l'ancienne « Vérification cohérence » de l'Admin (retirée le
+// 25/09/2026) : seul de ses contrôles que l'onglet Anomalies ne faisait pas.
+// Ici et non dans logic.js : NEWGEN ne charge pas logic.js dans ses pages.
+// Un champ vide ou non numérique n'est pas une anomalie de chiffres.
+function presentsSuperieursInscrits(e) {
+  const txt = v => String(v == null ? '' : v).trim();
+  if (!/^\d+$/.test(txt(e && e.presents)) || !/^\d+$/.test(txt(e && e.inscrits))) return false;
+  return parseInt(txt(e.presents), 10) > parseInt(txt(e.inscrits), 10);
+}
+
 if (typeof module !== 'undefined') {
   module.exports={
     normCommune,normalizeCommune,stripAccents,htmlEsc,
@@ -332,5 +343,6 @@ if (typeof module !== 'undefined') {
     anneeReference,
     anneeIncluse,
   lsKey, migrerLocalStorage, LS_A_MIGRER,
+    presentsSuperieursInscrits,
   };
 }

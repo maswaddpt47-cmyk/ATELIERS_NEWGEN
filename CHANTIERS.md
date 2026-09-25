@@ -19,6 +19,22 @@ effectué — AG-001 a corrigé le protocole du banc avant la série.
 
 ---
 
+## ✅ 25/09/2026 (nuit) — Ménage de l'onglet Admin (NextStep et NEWGEN)
+
+Demande de l'utilisateur, après audit. **Retirés** : panneau KPI (doublon du
+Dashboard), Import CSV et Import XLSX (écriture en masse `saveMany`, devenue
+inutile et risquée depuis la bascule), Vérification cohérence (doublon
+d'Anomalies ; doublons d'`_id` impossibles en base, « à plus de 30 jours »
+n'est pas une anomalie), Réinitialiser la BDD (ne faisait qu'un
+rechargement, texte « Google Sheet intact » obsolète). **Déplacé** :
+« présents > inscrits » devient une catégorie de l'onglet Anomalies
+(`presentsSuperieursInscrits`, `logic.js` NextStep / `utils.js` NEWGEN,
+testé). **Corrigé** : textes de la réinitialisation pour un collègue
+(mot de passe provisoire, plus de « Erreur GAS »). Restent : couleurs,
+visibilité, stock ordinateurs, maintenance, export Timeline, mots de passe
+(+ exports Partenaire sur NEWGEN). `labo-nextstep/` non touché.
+Rendu à vérifier à l'œil : onglet Admin et tuile orange d'Anomalies.
+
 ## ✅ 25/09/2026 (soir) — Corbeille, page Sauvegardes, procédure de restauration (AG-014)
 
 Demande de l'utilisateur. **Pas de bouton de restauration complète** dans
