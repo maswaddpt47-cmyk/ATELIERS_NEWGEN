@@ -97,7 +97,7 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
 {
     switch ($action) {
         case 'getAll':          return action_get_all($db, $p, $session);
-        case 'getConfig':       return ['ok' => true, 'config' => api_config_base($db)];
+        case 'getConfig':       return ['ok' => true, 'config' => api_config_pour($db, $session)];
         case 'getVisibility':   return ['ok' => true, 'visibility' => api_json(api_config_base($db)['visibility'] ?? '', (object) [])];
         case 'saveEntry':       return action_save_entry($db, $p, $session['conseiller']);
         case 'saveMany':        return action_save_many($db, $p, $session['conseiller']);
@@ -288,6 +288,10 @@ function action_get_all(PDO $db, array $p, array $session): array
         // sélecteur d'Index. Gardée pour ne pas changer la forme de réponse.
         'conseillers_inactifs' => [],
     ];
+    // RGPD, minimisation (art. 5.1.c) : les adresses mail ne servent qu'à
+    // l'Admin (Listes → Conseillers, rappels). Index les recevait sans s'en
+    // servir, lisibles par tout agent connecté (constaté le 25/09/2026).
+    if (!api_acces_admin($db, $session)) unset($r['emails']);
     if (isset($p['years'])) $r['years'] = $annees;
     return $r;
 }
@@ -330,6 +334,18 @@ function api_ateliers(PDO $db, array $annees): array
 }
 
 // ── Config ────────────────────────────────────────────────────────────────
+
+// Clés de config réservées à l'Admin : retirées de getConfig pour les autres
+// rôles (même raison que dans action_get_all).
+const API_CONFIG_ADMIN_SEULEMENT = ['emails'];
+function api_config_pour(PDO $db, array $session): array
+{
+    $cfg = api_config_base($db);
+    if (!api_acces_admin($db, $session)) {
+        foreach (API_CONFIG_ADMIN_SEULEMENT as $k) unset($cfg[$k]);
+    }
+    return $cfg;
+}
 
 function api_config_base(PDO $db): array
 {
