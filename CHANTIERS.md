@@ -19,6 +19,20 @@ effectué — AG-001 a corrigé le protocole du banc avant la série.
 
 ---
 
+## ✅ 25/09/2026 (soir) — Corbeille, page Sauvegardes, procédure de restauration (AG-014)
+
+Demande de l'utilisateur. **Pas de bouton de restauration complète** dans
+l'Admin (conseil suivi : une session volée effacerait tout). En ligne :
+API (`ateliers_corbeille`, `getCorbeille`, `restaurerCorbeille`,
+`etatSauvegardes`, `copieMaintenant` limité à 1/5 min, copie partagée dans
+`lib/copie.php`) + onglets Corbeille et Sauvegardes (NextStep et NEWGEN) ;
+le workflow `ateliers-backups` dépose la date de la copie chiffrée sur le
+serveur. Tests : 10 cas API, onglets en e2e. Procédure de restauration en
+PDF (2 pages, hors dépôt) ; registre de sécurité mis à jour.
+**Non vérifié en production** : que `exec`/`mysqldump` passe depuis PHP web
+chez Alwaysdata (bouton « copie maintenant ») — à essayer par l'utilisateur.
+AG-014 ouvert, sans réponse.
+
 ## 🏁 25/09/2026 — Chantier « Refonte d'architecture » clos par l'utilisateur
 
 En production : NextStep (équipe) et NEWGEN (utilisateur) sur l'API
