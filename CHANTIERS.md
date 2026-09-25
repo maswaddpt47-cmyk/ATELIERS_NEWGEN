@@ -29,9 +29,17 @@ API (`ateliers_corbeille`, `getCorbeille`, `restaurerCorbeille`,
 le workflow `ateliers-backups` dépose la date de la copie chiffrée sur le
 serveur. Tests : 10 cas API, onglets en e2e. Procédure de restauration en
 PDF (2 pages, hors dépôt) ; registre de sécurité mis à jour.
-**Non vérifié en production** : que `exec`/`mysqldump` passe depuis PHP web
-chez Alwaysdata (bouton « copie maintenant ») — à essayer par l'utilisateur.
-AG-014 ouvert, sans réponse.
+**Vérifié en production le 25/09/2026 à 22:25** : le bouton « copie
+maintenant » a produit une copie (26 Ko) visible dans la liste — `exec` et
+`mysqldump` passent depuis PHP web chez Alwaysdata.
+**AG-014 tranché le 25/09/2026 (amendé)**, appliqué : restauration avec le
+numéro #N d'origine, en une transaction (`FOR UPDATE`), purge de la corbeille
+à chaque connexion ; texte « passe par un administrateur » dans l'onglet.
+**Copies chiffrées conservées 90 jours** (décision de l'utilisateur, RGPD
+art. 5.1.e) : purge dans `ateliers-backups/copie.yml`. ⚠️ Limite : un fichier
+retiré reste dans l'historique git du dépôt privé ; la réécriture
+d'historique (dépôt ramené à un seul commit) a été bloquée par le garde-fou
+de la session — décision à prendre par l'utilisateur.
 
 ## 🏁 25/09/2026 — Chantier « Refonte d'architecture » clos par l'utilisateur
 
