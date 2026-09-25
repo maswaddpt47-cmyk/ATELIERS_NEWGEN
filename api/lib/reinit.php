@@ -69,7 +69,7 @@ function action_demander_reinit(PDO $db, array $p): array
     mail_envoyer($adresse, 'Réinitialisation de votre mot de passe — Ateliers numériques',
         "Bonjour $nom,\n\nUne réinitialisation de votre mot de passe a été demandée.\nPour choisir un nouveau mot de passe, ouvrez ce lien (valable 30 minutes, une seule fois) :\n$lien\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce mail : votre mot de passe actuel reste valable.",
         '<p>Bonjour ' . $h($nom) . ',</p><p>Une réinitialisation de votre mot de passe a été demandée.</p>'
-        . '<p><a href="' . $h($lien) . '" style="display:inline-block;background:#1e3a8a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:700">Choisir un nouveau mot de passe</a></p>'
+        . '<p><a href="' . $h($lien) . '" style="display:inline-block;background:#1e3a8a;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:700"><span style="color:#ffffff">Choisir un nouveau mot de passe</span></a></p>'
         . '<p style="color:#718096;font-size:13px">Lien valable 30 minutes, utilisable une seule fois. Si vous n\'êtes pas à l\'origine de cette demande, ignorez ce mail : votre mot de passe actuel reste valable.</p>');
     api_journal($db, 'reinitDemande', $nom, '', '', 1, 0, (string) ($p['userAgent'] ?? ''), '');
     return $reponse;
