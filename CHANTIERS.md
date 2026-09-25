@@ -123,9 +123,9 @@ appels vont à l'API — remplacer par « appels serveur » dans les trois, test
 journal du labo du 25/09 : `demanderReinit` (qui n'existe que dans l'API)
 y figure, médiane 0,3 s, 0 perte sur 27.
 
-⚠️ **NEWGEN par défaut reste sur le GAS** après la bascule : l'utilisateur
-doit passer par `?backend=php` en attendant que NEWGEN bascule aussi par
-défaut (à faire juste après, sur son go).
+✅ **NEWGEN sur l'API par défaut depuis le 25/09 à 10:35** (`9324cb1`) :
+`?backend=gas` = porte de secours vers l'ancien GAS NEWGEN (données figées).
+Déclencheurs du GAS NEWGEN à vérifier par l'utilisateur.
 
 ## 🧭 23/09/2026 — Refonte d'architecture : cap décidé, AG-009 tranché, étape 0 (mesure) en cours
 
