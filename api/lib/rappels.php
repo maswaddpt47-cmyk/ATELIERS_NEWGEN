@@ -79,7 +79,7 @@ function rappels_mail(string $nom, array $retards, bool $test): array
           . '<th style="padding:8px 10px;text-align:left;color:#718096">Date</th><th style="padding:8px 10px;text-align:left;color:#718096">Atelier</th>'
           . '<th style="padding:8px 10px;text-align:left;color:#718096">Conseiller</th><th style="padding:8px 10px;text-align:left;color:#718096">Commune</th>'
           . '</tr></thead><tbody>' . $lignes . '</tbody></table>'
-          . '<div style="text-align:center;margin-top:20px"><a href="' . $h(RAPPELS_URL_APPLI) . '" style="display:inline-block;background:#1e3a8a;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700">Ouvrir l\'application</a></div>'
+          . '<div style="text-align:center;margin-top:20px"><a href="' . $h(RAPPELS_URL_APPLI) . '" style="display:inline-block;background:#1e3a8a;color:#ffffff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700"><span style="color:#ffffff">Ouvrir l\'application</span></a></div>'
           . '</div></div>';
     return [$sujet, $texte, $html];
 }
