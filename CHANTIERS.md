@@ -123,6 +123,12 @@ appels vont à l'API — remplacer par « appels serveur » dans les trois, test
 journal du labo du 25/09 : `demanderReinit` (qui n'existe que dans l'API)
 y figure, médiane 0,3 s, 0 perte sur 27.~~
 
+✅ **Rappels d'ateliers en retard portés le 25/09** (`api/lib/rappels.php`,
+déployé 11:53, 7 tests) : « Planifié » à date passée, un mail par conseiller ;
+écart voulu : interrupteur individuel `rappels_actifs` respecté (le GAS
+l'ignorait). **Reste à l'utilisateur** : essai `--test=adresse` puis tâche
+planifiée Alwaysdata (fréquence de l'ancien déclencheur, sinon 08:00).
+
 ✅ **NEWGEN sur l'API par défaut depuis le 25/09 à 10:35** (`9324cb1`) :
 `?backend=gas` = porte de secours vers l'ancien GAS NEWGEN (données figées).
 Déclencheurs du GAS NEWGEN à vérifier par l'utilisateur.
