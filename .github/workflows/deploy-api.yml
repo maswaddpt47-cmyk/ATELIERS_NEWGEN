@@ -43,6 +43,7 @@ jobs:
           php api-tests/import.test.php
           php api-tests/api.test.php
           php api-tests/sauvegarde.test.php
+          php api-tests/rappels.test.php
 
       - name: Copier api/ vers ~/www/api/
         env:
