@@ -161,6 +161,10 @@ function action_check_password(PDO $db, array $p): array
     $jeton = bin2hex(random_bytes(32));
     $db->exec('DELETE FROM sessions WHERE expire < NOW()');
     $db->exec('DELETE FROM journal WHERE horodatage < NOW() - INTERVAL ' . API_JOURNAL_MOIS . ' MONTH');
+    // Corbeille purgée ici aussi : sans cela, rien n'effaçait un atelier que
+    // personne n'allait voir dans la corbeille (amendement AG-014).
+    corbeille_schema($db);
+    $db->exec('DELETE FROM ateliers_corbeille WHERE supprime_le < NOW() - INTERVAL ' . CORBEILLE_JOURS . ' DAY');
     $db->prepare('INSERT INTO sessions (jeton_hash, conseiller, role, expire) VALUES (?, ?, ?, ?)')
        ->execute([hash('sha256', $jeton), $nom, $compte['role'], date('Y-m-d H:i:s', time() + API_JETON_DUREE_S)]);
     // Journalisé ici (le GAS attendait un logLogin du client, falsifiable).

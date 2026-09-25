@@ -115,20 +115,26 @@ function action_verifier_ids(PDO $db, array $p): array
 
 // Valide puis écrit un atelier (création ou remplacement). Renvoie son _id,
 // ou null avec la raison dans $err.
-function api_ecrire_atelier(PDO $db, array $d, ?string &$err, string $acteur = ''): ?string
+// $nImpose : numéro à reprendre pour un atelier absent (restauration depuis
+// la corbeille, AG-014) au lieu du suivant. Dans une transaction déjà
+// ouverte par l'appelant, écrit dedans sans la valider.
+function api_ecrire_atelier(PDO $db, array $d, ?string &$err, string $acteur = '', ?int $nImpose = null): ?string
 {
     $l = api_valider_atelier($d, $err);
     if ($l === null) return null;
     $materiel = api_materiel_canonique($db, $d['materiel'] ?? []);
 
-    $db->beginTransaction();
+    $propre = !$db->inTransaction();
+    if ($propre) $db->beginTransaction();
     try {
         // FOR UPDATE : une seconde écriture du même _id attend la fin de
         // celle-ci au lieu de lire un état à moitié écrit.
         $s = $db->prepare('SELECT n FROM ateliers WHERE id = ? FOR UPDATE');
         $s->execute([$l['id']]);
         $n = $s->fetchColumn();
-        if ($n === false) {
+        if ($n === false && $nImpose !== null) {
+            $n = $nImpose;   // n n'est pas unique (schema.sql) : aucun conflit
+        } elseif ($n === false) {
             // Nouveau : numéro suivant, comme le numéro de ligne du GAS.
             $n = (int) $db->query('SELECT COALESCE(MAX(n), 0) + 1 FROM ateliers FOR UPDATE')->fetchColumn();
         }
@@ -142,9 +148,9 @@ function api_ecrire_atelier(PDO $db, array $d, ?string &$err, string $acteur = '
         $ins = $db->prepare('INSERT INTO ateliers_materiel (atelier_id, materiel) VALUES (?, ?)');
         foreach ($materiel as $m) $ins->execute([$l['id'], $m]);
         api_journal($db, 'saveEntry', $acteur !== '' ? $acteur : (string) $l['conseiller'], $l['id'], '', 1, 0, '', '');
-        $db->commit();
+        if ($propre) $db->commit();
     } catch (Throwable $e) {
-        $db->rollBack();
+        if ($propre) $db->rollBack();
         throw $e;
     }
     return $l['id'];
@@ -425,16 +431,27 @@ function action_restaurer_corbeille(PDO $db, array $p, string $acteur): array
     $id = trim((string) ($p['_id'] ?? ''));
     if ($id === '') return ['ok' => false, 'error' => 'ID manquant'];
     corbeille_schema($db);
-    $s = $db->prepare('SELECT donnees FROM ateliers_corbeille WHERE id = ?');
-    $s->execute([$id]);
-    $donnees = $s->fetchColumn();
-    if ($donnees === false) return ['ok' => false, 'error' => 'Atelier absent de la corbeille (déjà restauré ou purgé)'];
-    if (api_atelier_par_id($db, $id) !== null) return ['ok' => false, 'error' => 'Un atelier avec cet identifiant existe déjà'];
-    $d = json_decode($donnees, true);
-    if (!is_array($d)) return ['ok' => false, 'error' => 'Données de la corbeille illisibles'];
-    $err = null;
-    if (api_ecrire_atelier($db, $d, $err, $acteur) === null) return ['ok' => false, 'error' => $err];
-    $db->prepare('DELETE FROM ateliers_corbeille WHERE id = ?')->execute([$id]);
+    // Une seule transaction : vérification, écriture et retrait de la
+    // corbeille passent ensemble ou pas du tout (amendement AG-014).
+    $db->beginTransaction();
+    try {
+        $s = $db->prepare('SELECT donnees FROM ateliers_corbeille WHERE id = ? FOR UPDATE');
+        $s->execute([$id]);
+        $donnees = $s->fetchColumn();
+        $s = $db->prepare('SELECT 1 FROM ateliers WHERE id = ? FOR UPDATE');
+        $s->execute([$id]);
+        $d = $donnees === false ? null : json_decode($donnees, true);
+        $err = null;
+        if ($donnees === false) $err = 'Atelier absent de la corbeille (déjà restauré ou purgé)';
+        elseif ($s->fetchColumn() !== false) $err = 'Un atelier avec cet identifiant existe déjà';
+        elseif (!is_array($d)) $err = 'Données de la corbeille illisibles';
+        // Chemin d'écriture normal : validé comme une saisie, numéro d'origine repris.
+        elseif (api_ecrire_atelier($db, $d, $err, $acteur, (int) ($d['_n'] ?? 0) ?: null) !== null) {
+            $db->prepare('DELETE FROM ateliers_corbeille WHERE id = ?')->execute([$id]);
+        }
+        if ($err !== null) { $db->rollBack(); return ['ok' => false, 'error' => $err]; }
+        $db->commit();
+    } catch (Throwable $e) { $db->rollBack(); throw $e; }
     return ['ok' => true, 'entry' => api_atelier_par_id($db, $id)];
 }
 

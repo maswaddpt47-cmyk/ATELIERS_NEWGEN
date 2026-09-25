@@ -191,15 +191,21 @@ $A = ['token' => $admin['token']];
 verifier(str_contains(appel(['action' => 'getCorbeille'], $T)['error'] ?? '', 'administrateurs'), 'corbeille réservée aux administrateurs');
 $cb = appel(['action' => 'getCorbeille'], $A);
 verifier(($cb['ok'] ?? false) && in_array('lot_1', array_column($cb['ateliers'], '_id'), true) && $cb['ateliers'][0]['supprime_par'] === 'Nouveau Venu', 'atelier supprimé : dans la corbeille, avec son auteur');
+$nAvant = json_decode($db->query("SELECT donnees FROM ateliers_corbeille WHERE id = 'lot_1'")->fetchColumn(), true)['_n'];
+$db->exec("INSERT INTO ateliers (id, n, statut, date, horaire, thematique, conseiller, commune, orienteur, lieu, co_animateur, residence, remarques)
+           VALUES ('bouche_trou', 999, 'Planifié', '2026-01-01', '', '', '', '', '', '', '', '', '')");   // MAX(n)+1 ≠ numéro d'origine
 $r = appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'lot_1']);
+$db->exec("DELETE FROM ateliers WHERE id = 'bouche_trou'");
 verifier(($r['ok'] ?? false) && ($r['entry']['_id'] ?? '') === 'lot_1' && $r['entry']['date'] === '2026-11-02' && $lire('lot_1') !== null, 'restauration : atelier revenu à l\'identique');
+verifier($nAvant > 0 && ($r['entry']['_n'] ?? 0) === $nAvant, "restauration : numéro #N d'origine repris, pas le suivant");
 verifier(!in_array('lot_1', array_column(appel(['action' => 'getCorbeille'], $A)['ateliers'], '_id'), true), 'restauré : retiré de la corbeille');
 appel(['action' => 'delete'], $T + ['_id' => 'lot_1']);
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'lot_1', 'date' => '2026-12-01'])]);
 $r = appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'lot_1']);
 verifier(($r['ok'] ?? true) === false && str_contains($r['error'], 'existe déjà') && $lire('lot_1')['date'] === '2026-12-01', 'restauration refusée si l\'atelier a été recréé : jamais d\'écrasement');
 $db->exec("UPDATE ateliers_corbeille SET supprime_le = NOW() - INTERVAL 31 DAY");
-verifier(appel(['action' => 'getCorbeille'], $A)['ateliers'] === [], 'corbeille purgée au-delà de 30 jours');
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+verifier((int) $db->query('SELECT COUNT(*) FROM ateliers_corbeille')->fetchColumn() === 0, 'corbeille purgée au-delà de 30 jours, dès une connexion');
 // Sauvegardes (AG-014) : état en lecture, copie à la demande limitée.
 verifier(str_contains(appel(['action' => 'copieMaintenant'], $T)['error'] ?? '', 'administrateurs'), 'copie à la demande réservée aux administrateurs');
 $r = appel(['action' => 'copieMaintenant'], $A);
