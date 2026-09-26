@@ -30,11 +30,11 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2362",
-      "NextStep shared.js:2177"
+      "NEWGEN shared.js:2493",
+      "NextStep shared.js:2308"
     ],
-    "newgen": "133e103433/133e103433",
-    "nextstep": "737ce1a7a8/737ce1a7a8",
+    "newgen": "84d9189bb3/84d9189bb3",
+    "nextstep": "1c902ed214/1c902ed214",
     "note": "Design v2 (NEWGEN) contre ancien (NextStep) — question posée le 26/09/2026. Comportements déjà communs : panneau, mise en évidence."
   },
   "shared.js:IIFE injectCSS": {
