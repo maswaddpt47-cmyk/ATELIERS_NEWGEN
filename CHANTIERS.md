@@ -87,7 +87,8 @@ déclencheurs supprimés ; import verrouillé ; rappels 08:00 ; copie de nuit
 - `manifest-*.json` à retirer plus tard ;
 - ~~ligne `admin_password` du classeur Google~~ : supprimée par l'utilisateur
   le 26/09/2026 ;
-- classeur Google (NextStep et ancien NEWGEN), GAS et export xlsx du 25/09 :
+- ~~export xlsx du 25/09~~ : supprimé par l'utilisateur le 26/09/2026 ;
+- classeur Google (NextStep et ancien NEWGEN) et GAS :
   gardés figés, partagés avec l'utilisateur seul, **jusqu'à fin octobre
   2026** (point de comparaison si un trou d'import apparaît) ; puis
   suppression groupée, après avis des Archives départementales si elles le
