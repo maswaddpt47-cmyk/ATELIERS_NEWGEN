@@ -130,6 +130,11 @@ par l'utilisateur le 25/09.
     faussent le taux de présence. Audit du 26/09/2026 : 8 calculs corrigés
     sur NEWGEN, 10 sur NextStep ; tout nouveau calcul doit filtrer
     `statut === 'Réalisé'`.
+  - **Panneau latéral** (Historique et Calendrier) : date, horaire, public,
+    ordinateurs prêtés modifiables ; thématique en auto-proposition
+    (`ComboThematique`). ⚠️ Pas de contrôle de conflit de matériel à cet
+    endroit, contrairement au formulaire complet — non testé en automatique
+    (enregistrement vérifié à l'œil par l'utilisateur).
   - **« Effacer »** (filtres de l'Historique NEWGEN) vide tout, statut
     compris ; « Voir tous » remet le statut par défaut (Planifié).
   - **Liste de connexion Admin** (bouton « Changer », session ouverte) :
