@@ -81,6 +81,13 @@ verifier($r['ok'] === true && array_column($r['comptes'], 'conseiller') === ['An
 verifier(!isset($r['comptes'][0]['role']) && !isset($r['comptes'][0]['actif']), '[RGPD-01] getComptes public : ni rôle ni état');
 verifier(array_column(appel(['action' => 'getComptes', 'source' => 'admin'])['comptes'], 'conseiller') === ['Conseiller Test', 'Nouveau Venu'], 'getComptes page Admin : interrupteurs activés seuls');
 verifier($r['maintenance'] === false && $r['maintenance_msg'] === '', 'getComptes public : état de maintenance');
+$db->exec('USE ateliers_test_api');
+$roleAvant = $db->query("SELECT role FROM comptes WHERE conseiller = 'Conseiller Test'")->fetchColumn();
+$db->exec("UPDATE comptes SET role = 'superviseur' WHERE conseiller = 'Conseiller Test'");
+verifier(!in_array('Conseiller Test', array_column(appel(['action' => 'getComptes'])['comptes'], 'conseiller'), true), 'getComptes Index : sans les superviseurs');
+verifier(in_array('Conseiller Test', array_column(appel(['action' => 'getComptes', 'source' => 'admin'])['comptes'], 'conseiller'), true), 'getComptes page Admin : superviseur présent');
+$db->exec('USE ateliers_test_api');
+$db->prepare('UPDATE comptes SET role = ? WHERE conseiller = ?')->execute([$roleAvant, 'Conseiller Test']);
 
 $r = appel(['action' => 'checkPassword', 'conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
 verifier($r === ['ok' => false, 'error' => 'Paramètres manquants'], 'mot de passe dans l\'URL ignoré');

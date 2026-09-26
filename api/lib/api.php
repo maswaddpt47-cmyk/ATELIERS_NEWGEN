@@ -243,11 +243,13 @@ function action_get_comptes(PDO $db, ?array $session, bool $pageAdmin = false): 
         ], $l)];
     }
     // Public : les noms nécessaires à la liste de connexion, rien d'autre.
-    // Index : tous les comptes (l'interrupteur ne ferme que l'Admin).
+    // Index : tous les comptes sauf les superviseurs (l'interrupteur ne ferme que l'Admin).
     // Admin : les seuls comptes à l'interrupteur activé (demande de
     // l'utilisateur, 24/09/2026) — ce qui rend publique la liste des noms
     // ayant accès à l'Admin, sans leur rôle.
-    $noms = $db->query('SELECT conseiller FROM comptes' . ($pageAdmin ? ' WHERE actif = 1' : '') . ' ORDER BY conseiller')->fetchAll(PDO::FETCH_COLUMN);
+    // Index : sans les superviseurs (demande de l'utilisateur, 26/09/2026) —
+    // ils pilotent depuis l'Admin, où ils ont toutes les fonctions et plus.
+    $noms = $db->query('SELECT conseiller FROM comptes' . ($pageAdmin ? ' WHERE actif = 1' : " WHERE role <> 'superviseur'") . ' ORDER BY conseiller')->fetchAll(PDO::FETCH_COLUMN);
     $cfg = api_config_base($db);
     return [
         'ok' => true,

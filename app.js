@@ -436,7 +436,9 @@ function App(){
   React.useEffect(()=>{
     apiFetch('getComptes').then(res=>{
       if(!res.ok||!res.comptes)return;
-      setNomsConnexion(res.comptes.map(c=>c.conseiller).filter(Boolean));
+      // Superviseurs absents d'Index : l'API les écarte déjà ; ce filtre couvre
+      // le cas d'une session admin encore ouverte (liste complète, avec rôle).
+      setNomsConnexion(res.comptes.filter(c=>c.role!=='superviseur').map(c=>c.conseiller).filter(Boolean));
       if(res.maintenance) setMaintenance({msg:res.maintenance_msg||''});
     }).catch(()=>{});
   },[]);
