@@ -2,6 +2,9 @@
 # Session start hook — ATELIERS_NEWGEN
 # Exécuté au démarrage de chaque session Claude Code (remote uniquement)
 
+# Rappel de ménage de CHANTIERS.md — toutes sessions, locale comprise.
+bash "$CLAUDE_PROJECT_DIR/scripts/check-chantiers.sh" "$CLAUDE_PROJECT_DIR/CHANTIERS.md"
+
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi

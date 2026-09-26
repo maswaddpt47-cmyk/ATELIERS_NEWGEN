@@ -4,7 +4,10 @@
 > [`CHANTIERS.md`](CHANTIERS.md).** À lire en début de session — une session
 > ne transmet rien à la suivante, seul ce qui est commité survit. À
 > réactualiser **à chaque avancée**, pas en fin de session : une session peut
-> s'interrompre sans préavis.
+> s'interrompre sans préavis. Une tâche finie s'en **retire** (son récit va
+> dans `git log`) ; `scripts/check-chantiers.sh`, lancé au démarrage de
+> session, signale quand le ménage est dû (> 300 lignes, en-tête de plus de
+> 7 jours, tâches ✅ ou barrées).
 >
 > **Contradiction d'une proposition par une autre session :
 > [`AGORA.md`](AGORA.md)** — quand la déclencher, section 8.
