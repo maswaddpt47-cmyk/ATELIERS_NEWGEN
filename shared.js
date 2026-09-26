@@ -438,6 +438,8 @@ tr:hover td{background:#f7fafc}
 [data-theme="dark"] .chip.active{background:var(--primary);color:#fff}
 /* ══ KPI strip maquette v2 ══════════════════════════════════ */
 .kpi-strip-v2{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:12px}
+.kpi-histo{grid-template-columns:repeat(6,1fr)}
+@media(max-width:600px){.kpi-histo{grid-template-columns:repeat(3,1fr)}}
 .kpi-mini-v2{
   background:linear-gradient(180deg,var(--surface) 0%,var(--surface-2) 100%);
   border:1px solid var(--border);border-radius:12px;padding:9px 5px 8px;
@@ -2635,9 +2637,9 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
   const conseillersHist=React.useMemo(()=>{const s=new Set();entries.forEach(e=>{if(e.conseiller)s.add(e.conseiller);});return[...Array.from(s).sort()];},[entries]);
   const CHIP_STATUTS=[{key:'Tous',label:'Tous',cls:'chip-all'},{key:'Planifié',label:'Planifié',cls:'chip-planifie',dot:'#3b82f6'},{key:'Réalisé',label:'Réalisé',cls:'chip-realise',dot:'#22c55e'},{key:'Annulé',label:'Annulé',cls:'chip-annule',dot:'#ef4444'},{key:'Reporté',label:'Reporté',cls:'chip-reporte',dot:'#f59e0b'},{key:'Non réalisé',label:'Non réalisé',cls:'chip-nonrealise',dot:'#94a3b8'}];
   const counts=React.useMemo(()=>{const c={Tous:entries.length};STATUTS.forEach(s=>{c[s]=entries.filter(e=>e.statut===s).length;});return c;},[entries]);
-  const filtered=React.useMemo(()=>{
+  // Tous les filtres sauf le statut : base des tuiles (kpiHistorique).
+  const sansStatut=React.useMemo(()=>{
     let r=entries;
-    if(filtStatut!=='Tous')r=r.filter(e=>e.statut===filtStatut);
     if(filtMois!=='Tous')r=r.filter(e=>e.date&&e.date.startsWith(filtMois));
     if(filtCommune!=='Toutes'){const normFilt=filtCommune.replace(/\s*\(\d+\)\s*/g,'').trim().toUpperCase();r=r.filter(e=>e.commune===filtCommune||e.commune.replace(/\s*\(\d+\)\s*/g,'').trim().toUpperCase()===normFilt);}
     if(filtConseiller!=='Tous')r=r.filter(e=>e.conseiller===filtConseiller);
@@ -2649,10 +2651,11 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
     // mis en évidence n'existe plus (supprimé juste après), il ne montrerait
     // que « 0 sur N » : on l'ignore (constaté le 23/09/2026 sur NextStep).
     if(newIdsFilter&&newIdsFilter.size>0&&entries.some(e=>newIdsFilter.has(e._id)))r=r.filter(e=>newIdsFilter.has(e._id));
-    return[...r].sort((a,b)=>comparerHistorique(a,b,sortDir));
-  },[entries,filtStatut,filtMois,filtCommune,filtConseiller,filtPublic,dSearch,sortDir,dateFrom,dateTo,newIdsFilter]);
+    return r;
+  },[entries,filtMois,filtCommune,filtConseiller,filtPublic,dSearch,dateFrom,dateTo,newIdsFilter]);
+  const filtered=React.useMemo(()=>[...(filtStatut!=='Tous'?sansStatut.filter(e=>e.statut===filtStatut):sansStatut)].sort((a,b)=>comparerHistorique(a,b,sortDir)),[sansStatut,filtStatut,sortDir]);
 
-  const kpi=React.useMemo(()=>{const realises=filtered.filter(e=>e.statut==='Réalisé');const annules=filtered.filter(e=>e.statut==='Annulé').length;const inscrits=realises.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);const presents=realises.reduce((s,e)=>s+(parseInt(e.presents)||0),0);const tx=inscrits>0?Math.round(presents/inscrits*100):0;return{total:filtered.length,realises:realises.length,annules,inscrits,presents,tx};},[filtered]);
+  const kpi=React.useMemo(()=>kpiHistorique(sansStatut),[sansStatut]);
   const nRetard=React.useMemo(()=>entries.filter(e=>isRetard(e)&&(filtConseiller==='Tous'||e.conseiller===filtConseiller)).length,[entries,filtConseiller]);
 
   function openPanel(e){setPanel(e);setPanelStatut(e.statut);setPanelInscrits(e.inscrits===undefined||e.inscrits===''?'':String(e.inscrits));setPanelPresents(e.presents===undefined||e.presents===''?'':String(e.presents));setPanelThematique(e.thematique||'');setPanelNote(e.remarques||'');}
@@ -2727,12 +2730,13 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
 
   return CE('div',null,
     // KPI strip v2
-    CE('div',{className:'kpi-strip-v2'},
+    CE('div',{className:'kpi-strip-v2 kpi-histo'},
       CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--primary)'}},CE('b',null,kpi.total),CE('span',null,'Total')),
-      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--ok)'}},CE('b',null,kpi.realises),CE('span',null,'Réalisés'),kpi.total?CE('small',null,Math.round(kpi.realises/kpi.total*100)+'%'):null),
-      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--err)'}},CE('b',null,kpi.annules),CE('span',null,'Annulés'),kpi.total?CE('small',null,Math.round(kpi.annules/kpi.total*100)+'%'):null),
-      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--info)'}},CE('b',null,kpi.inscrits),CE('span',null,'Inscrits')),
-      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--warn)'}},CE('b',null,kpi.presents),CE('span',null,'Présents'),kpi.inscrits?CE('small',null,kpi.tx+'%'):null)
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--info)'}},CE('b',null,kpi.planifies),CE('span',null,'Planifiés'),kpi.total?CE('small',null,kpi.pct.planifies+'%'):null),
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--ok)'}},CE('b',null,kpi.realises),CE('span',null,'Réalisés'),kpi.total?CE('small',null,kpi.pct.realises+'%'):null),
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--err)'}},CE('b',null,kpi.annules),CE('span',null,'Annulés'),kpi.total?CE('small',null,kpi.pct.annules+'%'):null),
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--text-3)'},title:'Reportés et non réalisés'},CE('b',null,kpi.autres),CE('span',null,'Autres'),kpi.total?CE('small',null,kpi.pct.autres+'%'):null),
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--warn)'},title:'Présents / inscrits des ateliers réalisés'},CE('b',null,kpi.presents+'/'+kpi.inscrits),CE('span',null,'Présents'),kpi.inscrits?CE('small',null,kpi.tx+'%'):null)
     ),
     // Alerte retards v2
     nRetard>0&&CE('div',{className:'alerte-retard-v2'},
