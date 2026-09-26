@@ -141,7 +141,9 @@ par l'utilisateur le 25/09.
     Alerte non bloquante si l'atelier, tel qu'il sera
     enregistré, dépasse le stock d'ordinateurs ou partage la Classe mobile
     (`conflitsDeLEntree`, `utils.js`, testé ; vérifiée dans un navigateur
-    le 26/09 sur NEWGEN).
+    le 26/09 sur NEWGEN ; **validée en production par l'utilisateur le
+    26/09**). Dates de prélèvement et de retour dans le panneau, facultatives,
+    prises en compte dans l'alerte.
   - **Filtre public de l'Historique à choix multiples** (26/09/2026) :
     état `filtPublic` = tableau, `[]` = tous ; pastilles à cocher
     (« Tout afficher » vide la sélection — **pas** « Tous (les) publics »,
