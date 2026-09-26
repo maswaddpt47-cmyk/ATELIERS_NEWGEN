@@ -114,9 +114,11 @@ par l'utilisateur le 25/09.
     réalisés, regroupés), Présents/inscrits **des seuls réalisés** ; % sur
     le total (`kpiHistorique`, testé). Pas de tuile « inscrits prévus ».
   - **Calendrier** : l'orienteur sur sa propre ligne dans la pastille.
-  - **Liste de connexion Admin NextStep : ne pas y toucher** (« déjà
-    fonctionnelle », utilisateur, 26/09). Le filtre « sans Admin » avec
-    session ouverte n'est appliqué qu'à NEWGEN (`appels.test.js`).
+  - **Liste de connexion Admin** (bouton « Changer », session ouverte) :
+    seuls les comptes à « accès Admin » — filtre `actif !== 'NON'` côté
+    page, sur les deux sites (NEWGEN testé par `appels.test.js`). Retiré de
+    NextStep puis remis le 26/09 : sans lui, tous les conseillers
+    réapparaissent.
 
 ### 🔒 AG-002 (23/09/2026) — la journée entière reste la règle sur un prêt multi-jours
 
