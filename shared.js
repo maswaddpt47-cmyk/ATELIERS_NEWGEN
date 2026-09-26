@@ -2560,7 +2560,9 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
   const[filtMois,setFiltMois]=React.useState('Tous');
   const[filtCommune,setFiltCommune]=React.useState('Toutes');
   const[filtConseiller,setFiltConseiller]=React.useState(initConseiller||'Tous');
-  const[filtPublic,setFiltPublic]=React.useState('Tous');
+  // Plusieurs publics sélectionnables (26/09/2026) : [] = tous.
+  const[filtPublic,setFiltPublic]=React.useState([]);
+  const basculerPublic=p=>setFiltPublic(l=>l.includes(p)?l.filter(x=>x!==p):[...l,p]);
   const[sortDir,setSortDir]=React.useState(1);
   const[dateFrom,setDateFrom]=React.useState('');
   const[dateTo,setDateTo]=React.useState('');
@@ -2586,7 +2588,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
     if(filtConseiller!=='Tous')n++;
     if(filtMois!=='Tous')n++;
     if(filtCommune!=='Toutes')n++;
-    if(filtPublic!=='Tous')n++;
+    if(filtPublic.length)n++;
     if(dateFrom||dateTo)n++;
     return n;
   },[filtStatut,filtConseiller,filtMois,filtCommune,filtPublic,dateFrom,dateTo]);
@@ -2597,7 +2599,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
     const handler = (e)=>{
       const ids = e.detail?.ids || [];
       setFiltStatut('Tous');setFiltMois('Tous');setFiltCommune('Toutes');
-      setFiltConseiller('Tous');setFiltPublic('Tous');setDateFrom('');setDateTo('');
+      setFiltConseiller('Tous');setFiltPublic([]);setDateFrom('');setDateTo('');
       setSearch('');setDSearch('');
       setNewIdsFilter(new Set(ids));
     };
@@ -2611,7 +2613,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
       const found = ids.some(id=>entries.find(e2=>e2._id===id));
       if(!found)return;
       setFiltStatut('Tous');setFiltMois('Tous');setFiltCommune('Toutes');
-      setFiltConseiller('Tous');setFiltPublic('Tous');setDateFrom('');setDateTo('');
+      setFiltConseiller('Tous');setFiltPublic([]);setDateFrom('');setDateTo('');
       setSearch('');setDSearch('');
       setNewIdsFilter(new Set(ids));
     };
@@ -2629,7 +2631,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
     if(filtMois!=='Tous')r=r.filter(e=>e.date&&e.date.startsWith(filtMois));
     if(filtCommune!=='Toutes'){const normFilt=filtCommune.replace(/\s*\(\d+\)\s*/g,'').trim().toUpperCase();r=r.filter(e=>e.commune===filtCommune||e.commune.replace(/\s*\(\d+\)\s*/g,'').trim().toUpperCase()===normFilt);}
     if(filtConseiller!=='Tous')r=r.filter(e=>e.conseiller===filtConseiller);
-    if(filtPublic!=='Tous')r=r.filter(e=>(e.public||'Tous publics')===filtPublic);
+    if(filtPublic.length)r=r.filter(e=>filtPublic.includes(e.public||'Tous publics'));
     if(dateFrom)r=r.filter(e=>e.date>=dateFrom);
     if(dateTo)r=r.filter(e=>e.date<=dateTo);
     if(dSearch){const q=stripAccents(dSearch);r=r.filter(e=>[e.lieu,e.thematique,e.orienteur,e.commune,e.public,e.remarques].some(v=>stripAccents(String(v||'')).includes(q)));}
@@ -2669,7 +2671,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
     finally{setSaving(false);}
   }
 
-  function resetFiltres(statut='Planifié'){setSearch('');setDSearch('');setFiltStatut(statut);setFiltMois('Tous');setFiltCommune('Toutes');setFiltConseiller('Tous');setFiltPublic('Tous');setDateFrom('');setDateTo('');setNewIdsFilter(null);if(onResetConseiller)onResetConseiller();}
+  function resetFiltres(statut='Planifié'){setSearch('');setDSearch('');setFiltStatut(statut);setFiltMois('Tous');setFiltCommune('Toutes');setFiltConseiller('Tous');setFiltPublic([]);setDateFrom('');setDateTo('');setNewIdsFilter(null);if(onResetConseiller)onResetConseiller();}
 
   async function exportXLSX(){
     // Chargement différé — ne bloque plus le démarrage (~800 Ko)
@@ -2765,7 +2767,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
           filtConseiller!=='Tous'&&CE('span',{className:'filter-tag'},filtConseiller,CE('button',{onClick:()=>{setFiltConseiller('Tous');if(onChangeConseiller)onChangeConseiller('Tous');}},'✕')),
           filtMois!=='Tous'&&CE('span',{className:'filter-tag'},filtMois,CE('button',{onClick:()=>setFiltMois('Tous')},'✕')),
           filtCommune!=='Toutes'&&CE('span',{className:'filter-tag'},filtCommune,CE('button',{onClick:()=>setFiltCommune('Toutes')},'✕')),
-          filtPublic!=='Tous'&&CE('span',{className:'filter-tag'},filtPublic,CE('button',{onClick:()=>setFiltPublic('Tous')},'✕')),
+          ...filtPublic.map(p=>CE('span',{key:'pub-'+p,className:'filter-tag'},p,CE('button',{onClick:()=>basculerPublic(p)},'✕'))),
           (dateFrom||dateTo)&&CE('span',{className:'filter-tag'},(dateFrom||'…')+' → '+(dateTo||'…'),CE('button',{onClick:()=>{setDateFrom('');setDateTo('');}},'✕'))
         ),
         // Section Statut
@@ -2843,14 +2845,13 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
             CE('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
               CE('path',{d:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'}),CE('circle',{cx:9,cy:7,r:4}),CE('path',{d:'M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'})),
             'Public & commune',
-            (filtPublic!=='Tous'||filtCommune!=='Toutes')&&CE('span',{className:'fs-badge-v2'},'actif'),
+            (filtPublic.length>0||filtCommune!=='Toutes')&&CE('span',{className:'fs-badge-v2'},'actif'),
             CE('span',{className:'fs-chev'},'▾')
           ),
           CE('div',{className:'fs-body-v2'+(secPublicOpen?' open':'')},
-            CE('div',{className:'f-sel-wrap-v2'},
-              CE('select',{className:'f-select-v2',value:filtPublic,onChange:e=>setFiltPublic(e.target.value)},
-                CE('option',{value:'Tous'},'Tous les publics'),PUBLICS.map(p=>CE('option',{key:p,value:p},p))),
-              CE('span',{className:'f-sel-ico'},'▾')
+            CE('div',{className:'pill-group-v2'},
+              CE('button',{className:'pill-v2'+(filtPublic.length===0?' active':''),onClick:()=>setFiltPublic([])},'Tous les publics'),
+              PUBLICS.map(p=>CE('button',{key:p,className:'pill-v2'+(filtPublic.includes(p)?' active':''),onClick:()=>basculerPublic(p)},p))
             ),
             CE('div',{className:'f-sel-wrap-v2'},
               CE('select',{className:'f-select-v2',value:filtCommune,onChange:e=>setFiltCommune(e.target.value)},
