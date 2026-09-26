@@ -2012,10 +2012,13 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       // _n reste vide : seul GAS connaît le vrai numéro de ligne, il arrivera
       // au prochain rechargement réel sans que ça bloque l'affichage ici.
       if(onNewEntry&&!editId)onNewEntry({...entry,_n:'',materiel:form.materiel||[]});
-      if(!editId) document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:[entry._id]}}));
-      // L'entrée est transmise à onSaved pour que la modification s'applique
-      // localement : jusqu'ici, éditer un atelier déclenchait un getAll complet
-      // juste pour relire ce qu'on venait d'écrire.
+      // Mise en évidence dans Historique : _pendingHighlight est lu au montage
+      // (l'Historique n'est pas encore affiché au moment de l'enregistrement),
+      // l'événement sert quand il l'est déjà.
+      if(!editId){ window._pendingHighlight=[entry._id]; document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:[entry._id]}})); }
+      // Application locale, sans relire le serveur : entreeSauvegardee (les
+      // deux applis) et onSaved(isNew, entry) (NEWGEN).
+      entreeSauvegardee({...entry,materiel:form.materiel||[]});
       onSaved(!editId,{...entry,materiel:form.materiel||[]});reset();
     };
     try{
@@ -2040,23 +2043,36 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     setSaving(true);
     try{
       const entries=rowsFilled.map(row=>({_id:idsLotRef.current[row.id]||(idsLotRef.current[row.id]=genId()),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:row.ampm,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0,nb_ordinateurs:lotForm.nb_ordinateurs===''?'':parseInt(lotForm.nb_ordinateurs)||0,date_prelevement_materiel:row.date_prelevement_materiel||'',date_retour_materiel:row.date_retour_materiel||''}));
-      const reussir=()=>{
       // Même conversion materiel string→tableau que le mode unique.
-      entries.forEach(entry=>{if(onNewEntry)onNewEntry({...entry,materiel:lotForm.materiel||[]});});
-      const createdIds=entries.map(e=>e._id);
-      showToast(`✅ ${entries.length} atelier(s) créé(s)`);
-      document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:createdIds}}));
-      onSaved(true);resetLot();
+      const appliquer=liste=>{
+        liste.forEach(entry=>{const loc={...entry,materiel:lotForm.materiel||[]};if(onNewEntry)onNewEntry(loc);entreeSauvegardee(loc);});
+        const ids=liste.map(e=>e._id);
+        window._pendingHighlight=ids;
+        document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids}}));
       };
-      try{
-        const res=await apiFetch('saveMany',{entries});
-        if(!res.ok)throw Object.assign(new Error(res.error),{refus:true});
-        reussir();
-      }catch(err){
-        // Réponse perdue : on vérifie dans la feuille avant d'annoncer un échec.
-        if(!err.refus&&await verifierEnregistres(entries.map(e=>e._id))){reussir();return;}
+      const reussir=(verifie)=>{appliquer(entries);showToast(`✅ ${entries.length} atelier(s) créé(s)`+(verifie?' — confirmé après vérification':''));onSaved(true);resetLot();};
+      let res;
+      try{ res=await apiFetch('saveMany',{entries}); }
+      catch(err){
+        // Réponse perdue : on vérifie en base avant d'annoncer un échec.
+        if(await verifierEnregistres(entries.map(e=>e._id))){reussir(true);return;}
         throw err;
       }
+      if(res.ok){reussir();return;}
+      // L'API n'est pas transactionnelle (api/lib/ecriture.php, action_save_many) :
+      // un refus peut ne toucher qu'une partie des dates, listées dans
+      // « Erreurs batch: [{idx,error}] ». Les dates écrites s'affichent, celles
+      // en échec restent dans le tableau pour être corrigées (repris de NextStep,
+      // qui vidait le tableau, 26/09/2026).
+      let echecs=null;
+      try{const m=/Erreurs batch: (.+)/.exec(res.error||'');if(m)echecs=JSON.parse(m[1]).map(e=>e.idx);}catch(_){}
+      if(!echecs||!echecs.length) throw Object.assign(new Error(res.error||'Erreur serveur'),{refus:true});
+      const ecrites=entries.filter((_,i)=>!echecs.includes(i));
+      if(ecrites.length) appliquer(ecrites);
+      setLotRows(rowsFilled.filter((_,i)=>echecs.includes(i)));
+      const dates=echecs.map(i=>fmtDate(entries[i]&&entries[i].date)||('#'+(i+1))).join(', ');
+      setFormError(`${ecrites.length}/${entries.length} atelier(s) créé(s). Échec sur : ${dates} — ces dates restent dans le tableau.`);
+      showToast(`⚠️ ${ecrites.length}/${entries.length} créé(s) — échec sur ${dates}`,false);
     }catch(err){showToast('❌ '+err.message+(err.refus?'':' — les dates ont peut-être été enregistrées quand même : recliquez sur Enregistrer, cela ne créera pas de doublon.'),false);}
     finally{setSaving(false);}
   }
@@ -2292,7 +2308,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
             // Ligne 2 : Thématique pleine largeur
             CE('div',{style:{padding:'0 10px 8px'}},
               lbl('Thématique *',rErr.thematique),
-              CE(ComboThematique,{value:row.thematique,onChange:v=>setRow(row.id,'thematique',v),entries:entries,hasError:!!rErr.thematique})
+              CE(ComboThematiqueFixed,{value:row.thematique,onChange:v=>setRow(row.id,'thematique',v),entries:entries,hasError:!!rErr.thematique})
             ),
             // Ligne 3 : Inscrits + Présents
             CE('div',{style:{display:'flex',gap:8,padding:'0 10px 9px',borderTop:`1px solid ${acLight}`}},

@@ -89,8 +89,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:4659",
-      "NextStep shared.js:4336"
+      "NEWGEN shared.js:4675",
+      "NextStep shared.js:4329"
     ],
     "newgen": "d78d310868/d78d310868",
     "nextstep": "00bd3ad596/00bd3ad596",
@@ -101,8 +101,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2821",
-      "NextStep shared.js:2508"
+      "NEWGEN shared.js:2837",
+      "NextStep shared.js:2501"
     ],
     "newgen": "7c579b0043/7c579b0043",
     "nextstep": "03d06ac9e7/03d06ac9e7",
@@ -113,8 +113,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:3980",
-      "NextStep shared.js:3655"
+      "NEWGEN shared.js:3996",
+      "NextStep shared.js:3648"
     ],
     "newgen": "d01d97ec79/d01d97ec79",
     "nextstep": "b1f963b12c/b1f963b12c",
@@ -125,8 +125,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2342",
-      "NextStep shared.js:2180"
+      "NEWGEN shared.js:2358",
+      "NextStep shared.js:2173"
     ],
     "newgen": "6550f3a504/6550f3a504",
     "nextstep": "737ce1a7a8/737ce1a7a8",
@@ -142,30 +142,6 @@
     ],
     "newgen": "39b04f1a0e",
     "nextstep": "7de2a82916",
-    "note": ""
-  },
-  "VueSaisie": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1885",
-      "NextStep shared.js:1700"
-    ],
-    "newgen": "78cc547ca4/78cc547ca4",
-    "nextstep": "e80b9dae72/e80b9dae72",
-    "note": ""
-  },
-  "emptyRow": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1883",
-      "NextStep shared.js:1698"
-    ],
-    "newgen": "a40296d8f4/a40296d8f4",
-    "nextstep": "28f9c7a43f/28f9c7a43f",
     "note": ""
   },
   "shared.js:IIFE injectCSS": {
