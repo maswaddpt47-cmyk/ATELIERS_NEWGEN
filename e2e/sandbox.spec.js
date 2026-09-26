@@ -6,9 +6,9 @@ const path = require('path');
 const GLOBALES = [
   'normCommune', 'normalizeCommune', 'stripAccents', 'htmlEsc',
   'normalizeDate', 'normalizeHoraire', 'fmtDate', 'fmtCardDate', 'buildICS',
-  'normalizeMateriel', 'parseMateriel',
-  'validateLotRow', 'validateLotForm', 'filterLotRows',
-  'computeKpi', 'isEntryRetard', 'isEntryPasse', 'applyFilters',
+  'trunc', 'todayLocal', 'matIncludes',
+  'filterMaterielsVisibles', 'findMobileClassConflicts', 'findOrdinateursConflicts',
+  'getPretsMateriel', 'estConflitPasse',
 ];
 
 test('utils.js + logic.js chargent proprement, toutes les fonctions présentes', async ({ page }) => {

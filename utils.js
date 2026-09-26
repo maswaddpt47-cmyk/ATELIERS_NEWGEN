@@ -23,11 +23,20 @@ function normalizeCommune(c){
 function stripAccents(str){
   return String(str||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 }
+// Libellés de graphiques : n caractères au plus, « … » compris.
+function trunc(s,n){
+  s=String(s||'');
+  return s.length>n?s.slice(0,n-1)+'…':s;
+}
 function htmlEsc(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ── Dates ──────────────────────────────────────────────────
+function todayLocal(){
+  const d=new Date();
+  return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 function normalizeDate(val){
   if(!val)return'';
   const s=String(val).trim();
@@ -133,7 +142,8 @@ function resumeLogsTexte(logs, appli){
   if(!gas.length) return 'JOURNAL ' + appli + ' : aucun appel serveur enregistré.';
   var lus = [];
   gas.forEach(function(l){
-    var m = l.msg.match(/^(?:GAS|API) (\S+) #(\S+) — (.+) en ([\d.]+) s$/);
+    // Suffixe « (file N s) » toléré : lignes journalisées du 22 au 23/09/2026.
+    var m = l.msg.match(/^(?:GAS|API) (\S+) #(\S+) — (.+) en ([\d.]+) s(?: \(file [\d.]+ s\))?$/);
     if(!m) return;
     var d = l.ts ? new Date(l.ts) : null;
     lus.push({
@@ -432,7 +442,7 @@ function kpiHistorique(liste) {
 // ── Matériel (déplacé de shared.js le 26/09/2026, AG-015 lot 0) ─────────────
 // Versions exécutées par NEWGEN, reprises telles quelles. NextStep a les
 // siennes (utils.js) : écart à aligner au lot 1, pas ici.
-function normalizeMat(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'').replace(/s$/,'');}
+function normalizeMat(s){return stripAccents(s).replace(/\s+/g,'').replace(/s$/,'');}
 // Le format « a|b » (époque GAS) est accepté : l'API renvoie des tableaux
 // (api/lib/api.php:339), mais une chaîne rendait « aucun conflit » en silence
 // — logic.test.js l'exigeait d'une version que les pages n'exécutaient pas.
@@ -440,8 +450,8 @@ function matIncludes(arr,m){if(typeof arr==='string')arr=arr.split('|').filter(B
 if (typeof module !== 'undefined') {
   module.exports={
     normalizeMat, matIncludes,
-    normCommune,normalizeCommune,stripAccents,htmlEsc,
-    normalizeDate,normalizeHoraire,fmtDate,fmtCardDate,addJoursIso,
+    normCommune,normalizeCommune,stripAccents,htmlEsc,trunc,
+    normalizeDate,normalizeHoraire,fmtDate,fmtCardDate,todayLocal,addJoursIso,
     escapeICS,foldICSLine,parseHoraireICS,parseDateICS,buildICS,
     resumeLogsTexte,
     suppressionAboutie,
