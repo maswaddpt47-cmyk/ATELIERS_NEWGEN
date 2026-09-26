@@ -62,10 +62,8 @@ puis NEWGEN**, sinon `parite.yml` compare au vieux NextStep.
 - **Question en attente — `VueHistorique`** : NEWGEN en design v2, NextStep
   dans l'ancien (filtres rendus repliables le 26/09, en-tête au modèle de
   NEWGEN avec bouton « Effacer » — **validé par l'utilisateur le 26/09**). Aligner, ou passer en `voulu` ? Recommandé : `voulu`.
-- **À vérifier par l'utilisateur sur NextStep** (arrivé sans question
-  explicite le 26/09) : Calendrier, Agenda (volet modifiable), connexion,
-  accueil, maintenance, saisie simple et par cycle — **avant le 28/09**,
-  jour où l'équipe s'en sert.
+- **Vérification terrain de NextStep faite par l'utilisateur le 26/09/2026**
+  (« tout fonctionne ») : Agenda (volet modifiable), connexion, saisie.
 
 ## Reste ouvert
 
