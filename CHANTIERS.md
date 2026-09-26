@@ -75,9 +75,12 @@ déclencheurs supprimés ; import verrouillé ; rappels 08:00 ; copie de nuit
 2FA GitHub et Alwaysdata ; registre de sécurité v1.0 (hors dépôt).
 
 **Reste ouvert, hors chantier** — bilan refait le 26/09/2026 :
-- relève du journal le 30/09 (rappel planifié) ; **sauvegardes natives
-  Alwaysdata** encore vides le 25/09 → à recontrôler par l'utilisateur
-  (Avancé → Restauration de sauvegardes), sinon support ;
+- relève du journal le 30/09 (rappel planifié) ; ~~sauvegardes natives
+  Alwaysdata~~ : **présentes le 26/09/2026** (2026-09-25 et 2026-09-26 dans
+  Avancé → Restauration de sauvegardes, capture de l'utilisateur) ;
+- ~~adresse mail de chaque conseiller~~, ~~clé privée rangée à deux
+  endroits~~, ~~export xlsx effacé du téléchargement et de la corbeille~~ :
+  vérifiés par l'utilisateur le 26/09/2026 ;
 - sécurité : ~~jeton annulé à la déconnexion~~ (fait le 25/09/2026 :
   action `logout`, appelée par `authToken.clear()`), ~~adresses mail réservées aux
   admins~~ (fait le 25/09/2026 : `getAll`/`getConfig` ne les rendent plus
