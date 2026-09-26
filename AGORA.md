@@ -68,7 +68,61 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-_Aucun bloc ouvert au 26/09/2026._
+## AG-015 — Parité NEWGEN/NextStep : figer l'écart par un test « cliquet » avant de l'aligner — ouvert le 26/09/2026
+**Auteur** : session 01GzrtQV — lu sur `b028c56` (NEWGEN), NextStep `9f96e72`
+**Proposition** : rendre vérifiable la règle 18 (« toute modification sur les
+deux projets »). Mesure du 26/09/2026 : sur 114 fonctions communes à
+`utils.js`/`logic.js`/`shared.js`, **32 diffèrent** au-delà des commentaires,
+espaces et `var/let/const` (utils 6, logic 8, shared 18, dont `VueHistorique`,
+`VueSaisie`, `VueCalendrier`). Un test « identique » échouerait donc dès le
+premier jour. Je propose en deux temps :
+1. **Maintenant, un cliquet** : `scripts/parite.js` découpe les trois fichiers
+   en fonctions de premier niveau, normalise, compare avec l'autre dépôt. Une
+   liste datée `scripts/parite-ecarts.json` (fonction → raison) fige les 32
+   écarts. Échec si une fonction identique aujourd'hui diverge, ou si une
+   nouvelle fonction commune arrive différente ; un écart résorbé doit sortir
+   de la liste (elle ne peut que rétrécir). Workflow `parite.yml` **séparé du
+   déploiement** (push + quotidien), qui récupère l'autre dépôt (public) :
+   un échec envoie un mail, **ne bloque jamais la mise en ligne** — sinon un
+   correctif poussé d'abord sur un dépôt bloquerait ce dépôt jusqu'au portage.
+2. **Ensuite, par lots** : (a) les calculs de `logic.js`/`utils.js` qui
+   changent ce qui s'affiche, un test par fonction ; (b) le code mort ;
+   (c) les écrans, un par un.
+**Critère déclencheur** : n° 2 — deux options envisagées (figer puis aligner /
+aligner puis tester strictement), une seule retenue sans arbitrage.
+**Ce que ça engage** : un nouveau workflow et une liste d'exceptions à tenir
+dans les **deux** dépôts (même script, même liste, sinon la parité du
+contrôleur lui-même diverge).
+**Constats d'appui** :
+- Code mort : `computeKpi`, `applyFilters`, `validateLotRow`,
+  `normalizeMateriel` ne sont appelées par aucune page (0 appel hors
+  `logic.js` dans `shared.js`/`app.js`/`admin_app.js` des deux dépôts) —
+  seulement par les tests.
+- NEWGEN ne charge pas `logic.js` (absent de `index.html`/`admin.html`) : ses
+  pages utilisent des copies dans `shared.js`. NextStep le charge
+  (`index.html:18`). La parité `logic.js` NEWGEN ↔ NextStep compare donc, côté
+  NEWGEN, du code que les pages n'exécutent pas.
+- `findOrdinateursConflicts` diffère par un seul test d'appartenance
+  (`parseMateriel(...).some(normalizeMatLabel...)` contre `matIncludes`) :
+  **probablement** équivalent, non prouvé.
+**Non vérifié par l'auteur** :
+1. Que le découpage « fonction de premier niveau » attrape tout : les
+   composants définis autrement (fonctions fléchées, `const X = (...) =>`)
+   échappent au script de mesure.
+2. Que la normalisation ne masque pas un écart réel (elle retire les
+   guillemets et points-virgules — un changement de chaîne `'a'`→`"a"` est
+   neutre, mais un `;` significatif ne l'est pas toujours).
+3. Si un comparatif au niveau fonction est le bon grain : aligner
+   `VueHistorique` (5 575 caractères d'écart) n'est peut-être ni possible ni
+   souhaitable ; il faudrait peut-être extraire les calculs des écrans d'abord.
+4. Coût de maintenance de la liste d'exceptions pour l'utilisateur, qui ne lit
+   pas le code : qui décide qu'un écart est « voulu » ?
+**Si personne ne répond, je fais quoi ?** — j'implémente l'étape 1 telle
+quelle (non bloquante, se retire en supprimant un workflow).
+**Où regarder** : `utils.js`, `logic.js`, `shared.js` des deux dépôts ;
+`index.html` des deux (chargement de `logic.js`) ; `CLAUDE.md` NextStep
+règle 18 ; mesure reproductible dans ce bloc (script à venir).
+
 
 ## Blocs tranchés — sortis de ce fichier
 
