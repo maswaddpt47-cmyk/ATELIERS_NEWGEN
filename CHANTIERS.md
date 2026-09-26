@@ -136,7 +136,8 @@ par l'utilisateur le 25/09.
     (`ComboThematique`). **Case « Classe mobile »** : le nombre d'ordinateurs
     n'apparaît et ne compte que si elle est cochée, comme dans le formulaire
     (`matierePanneau`, `utils.js`, testé). Des ateliers anciens peuvent avoir
-    un nombre sans la case : ignorés du stock, à corriger à l'ouverture.
+    un nombre sans la case : ignorés du stock, **recensés dans Anomalies →
+    « Ordinateurs sans Classe mobile »** (`ordiSansClasseMobile`, testé).
     Alerte non bloquante si l'atelier, tel qu'il sera
     enregistré, dépasse le stock d'ordinateurs ou partage la Classe mobile
     (`conflitsDeLEntree`, `utils.js`, testé ; vérifiée dans un navigateur
