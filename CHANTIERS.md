@@ -54,6 +54,11 @@ par l'utilisateur le 25/09.
   11 scénarios à vrais délais (7 à 25 s) joués l'un après l'autre. Plan :
   un test Playwright par scénario, en parallèle ; mêmes vérifications, mêmes
   seuils ; les anciens scripts ne partent qu'une fois le portage vert.
+  Avancement : `playwright.config.js`, `e2e/server.js` ; **portés et
+  contre-éprouvés** : `sandbox`, `reseau` (85 s → 32 s à 4 processus ;
+  retrait de `saveEntry` des écritures attrapé comme par l'ancien script),
+  `smoke` (ex-`e2e`, 20 s → 13 s ; onglet Corbeille cassé exprès attrapé).
+  Reste : `appels`, puis la CI.
 
 - 📅 **30/09/2026 — relève du journal** (rappel planifié) : journal Admin
   NextStep depuis la bascule. Point de comparaison : labo du 24-25/09, 0/27
