@@ -80,7 +80,7 @@ local, sinon `npx playwright install chromium`).
 ## 3. Cache-busting obligatoire
 
 `index.html` et `admin.html` chargent `app.css`/`admin.css`, `utils.js`,
-`shared.js`, `app.js`/`admin_app.js`/`admin_config.js`/`xlsxstyle.js` avec un
+`logic.js` (depuis le 26/09/2026), `shared.js`, `app.js`/`admin_app.js`/`admin_config.js`/`xlsxstyle.js` avec un
 paramètre `?v=N`. À chaque commit qui modifie le **contenu** d'un de ces
 fichiers, incrémenter son `?v=` dans **chaque** page HTML qui le charge —
 `shared.js` est partagé par les deux pages et doit être bumpé dans les deux,
