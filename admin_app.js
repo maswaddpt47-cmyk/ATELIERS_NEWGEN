@@ -157,12 +157,13 @@ var VIEW_META = {
   graphiques: { ico: '📊',  label: 'Statistiques',   group: 'Analyser' },
   bingo:      { ico: '🎯',  label: 'Bingo',          group: 'Analyser' },
   anomalies:  { ico: '⚠️',  label: 'Anomalies',      group: 'Analyser' },
-  gestion_ordi:{ ico: '🖥️', label: 'Gestion ordi',   group: 'Analyser' },
+  gestion_ordi: { ico: '🖥️', label: 'Gestion ordi',  group: 'Analyser' },
   powerbi:    { ico: '📈',  label: 'Power BI',       group: 'Analyser' },
   admin:      { ico: '⚙️', label: 'Admin',          group: 'Config' },
-  logs:       { ico: '📜',  label: 'Logs',           group: 'Config' },
-  corbeille:  { ico: '🗑️',  label: 'Corbeille',      group: 'Config' },
-  sauvegardes:{ ico: '💾',  label: 'Sauvegardes',    group: 'Config' },
+  logs:            { ico: '📜',  label: 'Logs',        group: 'Config' },
+  logs_connexion:  { ico: '🔐',  label: 'Connexions',  group: 'Config' },
+  corbeille:       { ico: '🗑️',  label: 'Corbeille',   group: 'Config' },
+  sauvegardes:     { ico: '💾',  label: 'Sauvegardes', group: 'Config' },
 };
 
 // ── App Admin ──────────────────────────────────────────────
@@ -433,6 +434,13 @@ const LOGS_KEY = lsKey('adm_logs');
     setLastSync(new Date());
   }
   function retirerEntree(id){ setEntries(prev=>prev.filter(e=>e._id!==id)); setLastSync(new Date()); }
+  // Points d'entrée pour shared.js (entreeSauvegardee) : même mécanisme que
+  // NextStep. La Corbeille (restauration) l'appelait déjà sans qu'il existe.
+  React.useEffect(()=>{
+    window.__entreeSauvegardee = appliquerEntree;
+    window.__entreeSupprimee   = retirerEntree;
+    return()=>{ window.__entreeSauvegardee=null; window.__entreeSupprimee=null; };
+  }); // sans dépendances : appliquerEntree lit `annee`, il faut la version du dernier rendu.
   async function handleDelete(id){
     try{const res=await apiFetch('delete',{_id:id});if(!suppressionAboutie(res))throw new Error(res.error);showToast('✅ Atelier supprimé');addLog('Suppression '+id,'ok');retirerEntree(id);}
     catch(err){showToast('❌ '+err.message,false);}

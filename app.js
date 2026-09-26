@@ -2,6 +2,7 @@
 var VIEW_META_F = {
   saisie:     {ico:'✏️',  label:'Nouveau',      group:'Action'},
   historique: {ico:'📋',  label:'Historique',   group:'Voir'},
+  dashboard:  {ico:'📊',  label:'Dashboard',    group:'Voir'},
   agenda:     {ico:'🗓️', label:'Agenda',        group:'Voir'},
   calendrier: {ico:'📅',  label:'Calendrier',   group:'Voir'},
   carte:      {ico:'🗺️', label:'Carte',        group:'Voir'},
@@ -470,6 +471,13 @@ function App(){
     setLastSync(new Date());
   }
   function retirerEntree(id){ setEntries(prev=>prev.filter(e=>e._id!==id)); setLastSync(new Date()); }
+  // Points d'entrée pour shared.js (entreeSauvegardee) : même mécanisme que
+  // NextStep. La Corbeille (restauration) l'appelait déjà sans qu'il existe.
+  React.useEffect(()=>{
+    window.__entreeSauvegardee = appliquerEntree;
+    window.__entreeSupprimee   = retirerEntree;
+    return()=>{ window.__entreeSauvegardee=null; window.__entreeSupprimee=null; };
+  }); // sans dépendances : appliquerEntree lit `annee`, il faut la version du dernier rendu.
   // isNewEntry=true : le(s) nouvel(aux) atelier(s) est/sont déjà dans `entries`
   // via onNewEntry (insertion locale) — inutile d'attendre un aller-retour
   // GAS complet pour afficher Historique. Le prochain rechargement réel
