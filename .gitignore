@@ -23,3 +23,7 @@ node_modules/
 *.sql.gz
 *.age
 config-api.php
+
+# Playwright (résultats locaux)
+test-results/
+playwright-report/
