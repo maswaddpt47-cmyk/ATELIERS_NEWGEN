@@ -71,8 +71,31 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   `GAS_ACTIONS_ECRITURE`), **77 `à trancher`**. Signalé en plus : `trunc`
   (NextStep) et `TableCommunes` (les deux) déclarés deux fois, la seconde
   écrase la première en silence.
-- **Reste : trancher les 77**, par paquets (Claude fournit la preuve de
-  chaque écart, l'utilisateur tranche). Puis aligner les `à aligner`.
+- **Alignement en cours (26/09/2026, session 01GzrtQV) — 80 → 16 écarts.**
+  L'utilisateur a délégué le choix (« choisis le meilleur des scénarios »),
+  en ne posant que les vrais choix visibles. Faits, poussés, tests verts :
+  `utils.js`/`logic.js` identiques (fonctions mortes retirées), couche
+  d'appel identique, Bingo/Graphiques/Anomalies/Journal/Listes/thématiques.
+  **Ordre de push : NextStep d'abord, puis NEWGEN** — sinon `parite.yml`
+  compare au vieux NextStep et échoue (arrivé une fois le 26/09).
+  Outils : `node scripts/parite.js ../ateliers-cd47_NextStep` (constat),
+  `--maj` (réécrit la liste après alignement).
+- **Reste (16)** : `VueSaisie`, `VueHistorique`, `VueCalendrier`,
+  `VueGestionOrdi`, `AttenteGAS`, `emptyRow`, CSS `injectCSS`, `App` (index
+  et admin), `VueAdminV10`, `AdminLogin`, `VueLoginIndex`, `VueAccueilStatic`,
+  `MaintenanceScreen`, `AnnonceNouvelleVersion`, `APP_NS` (voulu).
+  Constats pour `VueSaisie` : NextStep gère l'échec partiel de `saveMany`
+  (l'API n'est pas transactionnelle, `api/lib/ecriture.php:44-51`) et valide
+  au blur ; NEWGEN applique en local via `onSaved(isNew, entry)`.
+- **Questions à poser à l'utilisateur avant de continuer** (choix visibles) :
+  1. saisie par cycle : inscrits/présents par ligne, 4 pré-rempli (NEWGEN),
+     ou « à compléter après » (NextStep) ?
+  2. mode sombre : NEWGEN l'a partout, NextStep seulement en admin — l'ajouter
+     à l'index NextStep ?
+  3. écran d'attente : bobine détaillée (NEWGEN) ou bobine simple + astuces
+     (NextStep) ?
+  4. navigation : barre NEWGEN (`navBtn`) et menu latéral NextStep
+     (`sideBtn`) — garder chacune (voulu) ou aligner ?
 
 ## Reste ouvert
 
