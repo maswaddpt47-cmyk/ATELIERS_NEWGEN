@@ -133,7 +133,11 @@ par l'utilisateur le 25/09.
     elle, pas par un filtre recopié.
   - **Panneau latéral** (Historique et Calendrier) : date, horaire, public,
     ordinateurs prêtés modifiables ; thématique en auto-proposition
-    (`ComboThematique`). Alerte non bloquante si l'atelier, tel qu'il sera
+    (`ComboThematique`). **Case « Classe mobile »** : le nombre d'ordinateurs
+    n'apparaît et ne compte que si elle est cochée, comme dans le formulaire
+    (`matierePanneau`, `utils.js`, testé). Des ateliers anciens peuvent avoir
+    un nombre sans la case : ignorés du stock, à corriger à l'ouverture.
+    Alerte non bloquante si l'atelier, tel qu'il sera
     enregistré, dépasse le stock d'ordinateurs ou partage la Classe mobile
     (`conflitsDeLEntree`, `utils.js`, testé ; vérifiée dans un navigateur
     le 26/09 sur NEWGEN).
