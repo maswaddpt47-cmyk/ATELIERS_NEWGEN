@@ -101,6 +101,23 @@ par l'utilisateur le 25/09.
   travaille sur NEWGEN (24/09) ; toute modification d'interface se fait sur
   les deux (`CLAUDE.md` règle 18). NEWGEN n'est plus un labo.
 
+- **Interfaces, décidé le 26/09/2026** (appliqué NEWGEN + NextStep) :
+  - **Historique trié** par date, puis **horaire** (chronologique), puis
+    orienteur seulement à heure égale (`comparerHistorique`, `utils.js`,
+    testé). Le bouton ↑/↓ Date n'inverse que les dates. Première version
+    (orienteur avant horaire) rejetée par l'utilisateur.
+  - **AM/PM pré-rempli** d'après l'horaire (avant 12:00 = AM), **toujours
+    modifiable** à la main ; recalculé si l'horaire change
+    (`ampmDepuisHoraire`, testé).
+  - **Tuiles de l'Historique** sur la liste filtrée **sans** le filtre de
+    statut : Total, Planifiés, Réalisés, Annulés, Autres (= Reportés + Non
+    réalisés, regroupés), Présents/inscrits **des seuls réalisés** ; % sur
+    le total (`kpiHistorique`, testé). Pas de tuile « inscrits prévus ».
+  - **Calendrier** : l'orienteur sur sa propre ligne dans la pastille.
+  - **Liste de connexion Admin NextStep : ne pas y toucher** (« déjà
+    fonctionnelle », utilisateur, 26/09). Le filtre « sans Admin » avec
+    session ouverte n'est appliqué qu'à NEWGEN (`appels.test.js`).
+
 ### 🔒 AG-002 (23/09/2026) — la journée entière reste la règle sur un prêt multi-jours
 
 Décision de l'utilisateur : laisser tel quel, aucune fausse alerte constatée.
@@ -117,6 +134,12 @@ coûte une vérification, une alerte manquante un conseiller sans matériel.
 libre.
 
 ## ⚠️ Pièges connus
+
+- **Page HTML en cache sur téléphone** (26/09/2026) : `index.html` n'est pas
+  versionné ; tant que l'ancien reste en cache, il charge l'ancien `utils.js`
+  même si le nouveau est en ligne (Historique encore trié à l'ancienne sur le
+  téléphone de l'utilisateur, 2026 comme 2027). Avant de chercher un bug
+  après livraison : faire recharger ou effacer les données du site.
 
 - **La logique du stock est dupliquée** (vérifié le 26/09/2026) :
   `periodePretMateriel`, `findOrdinateursConflicts`, `getPretsMateriel`,
