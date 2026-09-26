@@ -10,7 +10,7 @@ est soldé. Ce n'est pas de la documentation permanente (cf.
 file d'attente, relevés de pertes, AG-001 à AG-008, préparation de la
 bascule) a été retiré. Texte complet : `git log -p CHANTIERS.md`, avant
 `49e4013`. Contradiction d'une proposition par une autre session :
-`AGORA.md` (section 8 du `CLAUDE.md`) — aucun bloc ouvert au 26/09/2026.
+`AGORA.md` (section 8 du `CLAUDE.md`) — AG-015 tranché le 26/09/2026.
 
 ---
 
@@ -44,6 +44,24 @@ par l'utilisateur le 25/09.
   CI) ; HTTPS forcé ; 2FA GitHub et Alwaysdata ; journal conservé 12 mois ;
   registre de sécurité v1.0 (hors dépôt).
 - Plus de PWA (AG-012) : `sw.js` de désinstallation publié sans date de fin.
+
+## 🔧 Chantier parité NEWGEN/NextStep (AG-015, tranché le 26/09/2026)
+
+Décision de l'utilisateur : amendements de la session B, dans cet ordre.
+- **Lot 0** — NEWGEN charge `logic.js` dans ses pages et supprime les 16
+  copies de `shared.js`. Aujourd'hui les pages exécutent ces copies (déjà
+  identiques à NextStep), tandis que `logic.test.js` teste un `logic.js` qui a
+  divergé : les tests ne testent pas ce qui tourne. Garde-fou : un nom
+  déclaré deux fois casse le chargement, `smoke.spec.js` doit rester vert.
+- **Lot 1** — contrôle de parité : **un seul script et une seule liste,
+  dans NEWGEN**, comparaison à l'arbre (acorn), toutes les instructions de
+  premier niveau (fonctions, `window.X = …`, IIFE dont le CSS, constantes),
+  paires = ce que les pages exécutent. Workflow séparé, push + quotidien,
+  **jamais bloquant** pour la mise en ligne. Chaque écart listé porte un
+  statut `voulu` / `à aligner`, que l'utilisateur tranche ; Claude fournit la
+  preuve.
+- Premier `à aligner` déjà connu : `logAccesIndex` encore appelé au démarrage
+  par NEWGEN (`app.js:454`), retiré de NextStep (`app.js:556`).
 
 ## Reste ouvert
 

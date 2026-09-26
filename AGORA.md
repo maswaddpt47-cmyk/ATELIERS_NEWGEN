@@ -188,6 +188,11 @@ global ailleurs (ordre de chargement, `const` redéclarée entre deux scripts
 classiques = erreur au chargement : à prouver par `smoke.spec.js`) ; le
 contenu des 3 IIFE anonymes ; l'équivalence de `filterMaterielsVisibles`.
 
+### Tranché le 26/09/2026 — décision : amendements de la session B
+Décision de l'utilisateur : chantier inscrit dans `CHANTIERS.md` d'abord,
+puis lot 0 (NEWGEN charge `logic.js`, copies de `shared.js` supprimées), puis
+contrôle de parité selon l'amendement (arbre, toutes instructions, un seul
+script dans NEWGEN, statut `voulu`/`à aligner`, non bloquant).
 
 ## Blocs tranchés — sortis de ce fichier
 
