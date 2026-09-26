@@ -124,6 +124,14 @@ par l'utilisateur le 25/09.
     réalisés, regroupés), Présents/inscrits **des seuls réalisés** ; % sur
     le total (`kpiHistorique`, testé). Pas de tuile « inscrits prévus ».
   - **Calendrier** : l'orienteur sur sa propre ligne dans la pastille.
+  - **Présents et inscrits : toujours sur les seuls ateliers réalisés**,
+    partout (Historique, Dashboard, détail communes, conseillers, Calendrier,
+    Agenda, Admin) — sinon les inscrits des ateliers planifiés ou annulés
+    faussent le taux de présence. Audit du 26/09/2026 : 8 calculs corrigés
+    sur NEWGEN, 10 sur NextStep ; tout nouveau calcul doit filtrer
+    `statut === 'Réalisé'`.
+  - **« Effacer »** (filtres de l'Historique NEWGEN) vide tout, statut
+    compris ; « Voir tous » remet le statut par défaut (Planifié).
   - **Liste de connexion Admin** (bouton « Changer », session ouverte) :
     seuls les comptes à « accès Admin » — filtre `actif !== 'NON'` côté
     page, sur les deux sites (NEWGEN testé par `appels.test.js`). Retiré de
