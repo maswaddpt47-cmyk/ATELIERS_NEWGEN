@@ -89,35 +89,11 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:4675",
-      "NextStep shared.js:4329"
+      "NEWGEN shared.js:4684",
+      "NextStep shared.js:4356"
     ],
     "newgen": "d78d310868/d78d310868",
     "nextstep": "00bd3ad596/00bd3ad596",
-    "note": ""
-  },
-  "VueCalendrier": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:2837",
-      "NextStep shared.js:2501"
-    ],
-    "newgen": "7c579b0043/7c579b0043",
-    "nextstep": "03d06ac9e7/03d06ac9e7",
-    "note": ""
-  },
-  "VueGestionOrdi": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:3996",
-      "NextStep shared.js:3648"
-    ],
-    "newgen": "d01d97ec79/d01d97ec79",
-    "nextstep": "b1f963b12c/b1f963b12c",
     "note": ""
   },
   "VueHistorique": {
@@ -128,7 +104,7 @@
       "NEWGEN shared.js:2358",
       "NextStep shared.js:2173"
     ],
-    "newgen": "6550f3a504/6550f3a504",
+    "newgen": "133e103433/133e103433",
     "nextstep": "737ce1a7a8/737ce1a7a8",
     "note": ""
   },

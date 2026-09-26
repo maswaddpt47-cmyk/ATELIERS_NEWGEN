@@ -2420,6 +2420,13 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
       setNewIdsFilter(new Set(ids));
     };
     document.addEventListener('ateliers:highlight', handler);
+    // Création depuis Saisie : Historique n'était pas affiché quand l'événement
+    // est parti ; VueSaisie laisse les _id dans window._pendingHighlight.
+    const ids=window._pendingHighlight;
+    if(ids&&ids.length&&ids.some(id=>entries.find(e2=>e2._id===id))){
+      window._pendingHighlight=null;
+      handler({detail:{ids}});
+    }
     return()=>document.removeEventListener('ateliers:highlight', handler);
   },[entries]);
 
@@ -2468,8 +2475,9 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
       // servait ici, réaffichait l'ancien jusqu'au rechargement (26/09/2026).
       // Le prochain rechargement réel (auto 5 min, changement d'année, bouton
       // Rafraîchir) resynchronise avec la feuille.
-      if(onEntryUpdated) onEntryUpdated({...updated,materiel:matierePanneau(panel,panelMobile)});
-      else onRefresh();
+      // onEntryUpdated (NEWGEN) ou, à défaut, entreeSauvegardee (les deux applis).
+      const loc={...updated,materiel:matierePanneau(panel,panelMobile)};
+      if(onEntryUpdated) onEntryUpdated(loc); else entreeSauvegardee(loc,onRefresh);
     }catch(err){showToast('❌ '+err.message,false);}
     finally{setSaving(false);}
   }
@@ -2917,8 +2925,9 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
       // servait ici, réaffichait l'ancien jusqu'au rechargement (26/09/2026).
       // Le prochain rechargement réel (auto 5 min, changement d'année, bouton
       // Rafraîchir) resynchronise avec la feuille.
-      if(onEntryUpdated) onEntryUpdated({...updated,materiel:matierePanneau(panel,panelMobile)});
-      else onRefresh();
+      // onEntryUpdated (NEWGEN) ou, à défaut, entreeSauvegardee (les deux applis).
+      const loc={...updated,materiel:matierePanneau(panel,panelMobile)};
+      if(onEntryUpdated) onEntryUpdated(loc); else entreeSauvegardee(loc,onRefresh);
     }catch(err){showToast('❌ '+err.message,false);}
     finally{setSaving(false);}
   }
@@ -4004,37 +4013,37 @@ function VueGestionOrdi({entries,onEdit}){
   return CE(React.Fragment,null,
     CE(FriseMateriel,{entries,onEdit}),
     CE('div',{className:'card',style:{maxWidth:900,margin:'0 auto'}},
-    CE('div',{style:{display:'flex',alignItems:'center',gap:12,marginBottom:16}},
-      CE('span',{style:{fontSize:22}},'🖥️'),
-      CE('div',null,
-        CE('h2',{style:{margin:0,fontSize:16,fontWeight:700}},'Gestion ordi'),
-        CE('p',{style:{margin:0,fontSize:12,color:'#6b7280'}},'Classe mobile & stock de '+STOCK_ORDINATEURS+' ordinateurs prêtés aux participants')
-      )
-    ),
-    CE('div',{style:{display:'flex',gap:10,marginBottom:16,flexWrap:'wrap'}},
-      CE('div',{style:{background:'#ffedd5',borderRadius:8,padding:'8px 14px',flex:'1',minWidth:120}},
-        CE('div',{style:{fontSize:20,fontWeight:700,color:'#9a3412'}},nbActifsMobile),
-        CE('div',{style:{fontSize:11,color:'#7c2d12'}},'⚠️ Conflits Classe mobile')
+      CE('div',{style:{display:'flex',alignItems:'center',gap:12,marginBottom:16}},
+        CE('span',{style:{fontSize:22}},'🖥️'),
+        CE('div',null,
+          CE('h2',{style:{margin:0,fontSize:16,fontWeight:700}},'Gestion ordi'),
+          CE('p',{style:{margin:0,fontSize:12,color:'#6b7280'}},'Classe mobile & stock de '+STOCK_ORDINATEURS+' ordinateurs prêtés aux participants')
+        )
       ),
-      CE('div',{style:{background:'#fee2e2',borderRadius:8,padding:'8px 14px',flex:'1',minWidth:120}},
-        CE('div',{style:{fontSize:20,fontWeight:700,color:'#991b1b'}},nbActifsOrdi),
-        CE('div',{style:{fontSize:11,color:'#7f1d1d'}},'🖥️ Stock ordinateurs dépassé')
-      )
-    ),
-    CE('div',{style:{marginBottom:8,fontSize:12,fontWeight:700,color:'#9a3412'}},'Classe mobile'),
-    BlocConflits({
-      groupes:conflitsMobile, vide:'Aucun conflit Classe mobile',
-      bg:'#fff7ed', border:'#fed7aa', titreColor:'#9a3412',
-      renderTitre:g=>'📅 '+fmtDate(g.date)+' '+libelleDemi(g.demi)+' — Classe mobile réservée par '+g.entries.length+' conseillers',
-      renderItem:itemConflitMobile(onEdit)
-    }),
-    CE('div',{style:{margin:'20px 0 8px',fontSize:12,fontWeight:700,color:'#991b1b'}},'Stock ordinateurs'),
-    BlocConflits({
-      groupes:conflitsOrdi, vide:'Aucun dépassement de stock',
-      bg:'#fef2f2', border:'#fecaca', titreColor:'#991b1b',
-      renderTitre:titreConflitOrdi,
-      renderItem:itemConflitOrdi(onEdit)
-    })
+      CE('div',{style:{display:'flex',gap:10,marginBottom:16,flexWrap:'wrap'}},
+        CE('div',{style:{background:'#ffedd5',borderRadius:8,padding:'8px 14px',flex:'1',minWidth:120}},
+          CE('div',{style:{fontSize:20,fontWeight:700,color:'#9a3412'}},nbActifsMobile),
+          CE('div',{style:{fontSize:11,color:'#7c2d12'}},'⚠️ Conflits Classe mobile')
+        ),
+        CE('div',{style:{background:'#fee2e2',borderRadius:8,padding:'8px 14px',flex:'1',minWidth:120}},
+          CE('div',{style:{fontSize:20,fontWeight:700,color:'#991b1b'}},nbActifsOrdi),
+          CE('div',{style:{fontSize:11,color:'#7f1d1d'}},'🖥️ Stock ordinateurs dépassé')
+        )
+      ),
+      CE('div',{style:{marginBottom:8,fontSize:12,fontWeight:700,color:'#9a3412'}},'Classe mobile'),
+      CE(BlocConflits,{
+        groupes:conflitsMobile, vide:'Aucun conflit Classe mobile',
+        bg:'#fff7ed', border:'#fed7aa', titreColor:'#9a3412',
+        renderTitre:g=>'📅 '+fmtDate(g.date)+' '+libelleDemi(g.demi)+' — Classe mobile réservée par '+g.entries.length+' conseillers',
+        renderItem:itemConflitMobile(onEdit)
+      }),
+      CE('div',{style:{margin:'20px 0 8px',fontSize:12,fontWeight:700,color:'#991b1b'}},'Stock ordinateurs'),
+      CE(BlocConflits,{
+        groupes:conflitsOrdi, vide:'Aucun dépassement de stock',
+        bg:'#fef2f2', border:'#fecaca', titreColor:'#991b1b',
+        renderTitre:titreConflitOrdi,
+        renderItem:itemConflitOrdi(onEdit)
+      })
     )
   );
 }
