@@ -2649,7 +2649,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
     // mis en évidence n'existe plus (supprimé juste après), il ne montrerait
     // que « 0 sur N » : on l'ignore (constaté le 23/09/2026 sur NextStep).
     if(newIdsFilter&&newIdsFilter.size>0&&entries.some(e=>newIdsFilter.has(e._id)))r=r.filter(e=>newIdsFilter.has(e._id));
-    return[...r].sort((a,b)=>{const va=a.date||'',vb=b.date||'';return va<vb?-sortDir:va>vb?sortDir:0;});
+    return[...r].sort((a,b)=>comparerHistorique(a,b,sortDir));
   },[entries,filtStatut,filtMois,filtCommune,filtConseiller,filtPublic,dSearch,sortDir,dateFrom,dateTo,newIdsFilter]);
 
   const kpi=React.useMemo(()=>{const realises=filtered.filter(e=>e.statut==='Réalisé');const annules=filtered.filter(e=>e.statut==='Annulé').length;const inscrits=realises.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);const presents=realises.reduce((s,e)=>s+(parseInt(e.presents)||0),0);const tx=inscrits>0?Math.round(presents/inscrits*100):0;return{total:filtered.length,realises:realises.length,annules,inscrits,presents,tx};},[filtered]);
