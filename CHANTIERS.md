@@ -85,6 +85,7 @@ déclencheurs supprimés ; import verrouillé ; rappels 08:00 ; copie de nuit
   xlsx, html2canvas, jsPDF dans `vendor/` des deux projets, plus aucun CDN), déploiement par clé SSH ;
 - consigne de l'audit trimestriel à mettre à jour avant le 01/10/2026 ;
 - `manifest-*.json` à retirer plus tard ;
+- ~~test sur le réseau filaire du bureau~~ : **bon, d'après l'utilisateur le 26/09/2026** ;
 - réécriture de l'historique d'`ateliers-backups` (sinon une copie de plus
   de 90 jours reste lisible dans l'historique git) : décision de
   l'utilisateur, avant fin décembre 2026.
