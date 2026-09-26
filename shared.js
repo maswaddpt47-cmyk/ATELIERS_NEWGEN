@@ -2413,11 +2413,12 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
       // lieu d'un, et le second au pire tarif (actionSaveEntry invalide le
       // cache getAll juste avant, donc la relecture repart de la feuille).
       // On applique la même entrée localement, comme le fait déjà la création
-      // d'atelier. `materiel` repart en tableau : c'est le format attendu
-      // partout ailleurs, la chaîne '|' n'existe que pour GAS.
+      // d'atelier. `materiel` repart en tableau, et c'est celui qui vient
+      // d'être enregistré (case Classe mobile comprise) — panel.materiel, qui
+      // servait ici, réaffichait l'ancien jusqu'au rechargement (26/09/2026).
       // Le prochain rechargement réel (auto 5 min, changement d'année, bouton
       // Rafraîchir) resynchronise avec la feuille.
-      if(onEntryUpdated) onEntryUpdated({...updated,materiel:(panel.materiel||[])});
+      if(onEntryUpdated) onEntryUpdated({...updated,materiel:matierePanneau(panel,panelMobile)});
       else onRefresh();
     }catch(err){showToast('❌ '+err.message,false);}
     finally{setSaving(false);}
@@ -2861,11 +2862,12 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
       // lieu d'un, et le second au pire tarif (actionSaveEntry invalide le
       // cache getAll juste avant, donc la relecture repart de la feuille).
       // On applique la même entrée localement, comme le fait déjà la création
-      // d'atelier. `materiel` repart en tableau : c'est le format attendu
-      // partout ailleurs, la chaîne '|' n'existe que pour GAS.
+      // d'atelier. `materiel` repart en tableau, et c'est celui qui vient
+      // d'être enregistré (case Classe mobile comprise) — panel.materiel, qui
+      // servait ici, réaffichait l'ancien jusqu'au rechargement (26/09/2026).
       // Le prochain rechargement réel (auto 5 min, changement d'année, bouton
       // Rafraîchir) resynchronise avec la feuille.
-      if(onEntryUpdated) onEntryUpdated({...updated,materiel:(panel.materiel||[])});
+      if(onEntryUpdated) onEntryUpdated({...updated,materiel:matierePanneau(panel,panelMobile)});
       else onRefresh();
     }catch(err){showToast('❌ '+err.message,false);}
     finally{setSaving(false);}
