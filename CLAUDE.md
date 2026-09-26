@@ -14,8 +14,9 @@
 >
 > Avant d'ajouter une règle ici, lire `MD-LIB/hygiene-instructions.md` : une
 > contrainte formulable en test doit devenir un test, pas un paragraphe de
-> plus. Ce fichier est passé de 298 à 229 lignes le 19/09/2026 ; le laisser
-> regrossir, c'est le rendre moins appliqué, pas mieux.
+> plus. Ce fichier est passé de 298 à 229 lignes le 19/09/2026, était remonté à
+> 297 le 26/09/2026 et ramené à ~264 ; le laisser regrossir, c'est le rendre
+> moins appliqué, pas mieux.
 
 ## 1. Workflow git
 
@@ -43,7 +44,7 @@ git checkout main && git merge <branche> --no-ff && git push origin main
 |---|---|
 | `node --test utils.test.js` | `utils.js` — dates, ICS, communes |
 | `node --test logic.test.js` | `logic.js` — KPI, validation, filtres, matériel |
-| `node --test contract.test.js` | format des données envoyées à GAS |
+| `node --test contract.test.js` | format des données envoyées à l'API |
 | `npx playwright test` | tests navigateur, en parallèle (`e2e/`, ~45 s) : |
 | ↳ `e2e/sandbox.spec.js` | `utils.js`+`logic.js` chargent dans un navigateur |
 | ↳ `e2e/smoke.spec.js` | les deux pages s'ouvrent, chaque onglet répond, sans erreur JS |
@@ -61,9 +62,7 @@ local, sinon `npx playwright install chromium`).
 - `utils.js`, `logic.js` ou le format entry modifiés → les trois suites Node.
 - `gasAppel`, `gasUnAppel`, `gasLectureDoublee` ou une constante `GAS_*`
   modifiée → **`e2e/reseau.spec.js`**. Il verrouille notamment qu'une
-  écriture n'est jamais doublée : deux `saveEntry` en vol en même temps
-  peuvent tous deux conclure « ligne absente » et faire chacun leur
-  `appendRow`, soit un atelier en double dans le classeur.
+  écriture n'est jamais doublée.
 - Effets de démarrage d'`app.js`/`admin_app.js`, chemin d'écriture ou
   `addLog` modifiés → **`e2e/appels.spec.js`**.
 - Changement mineur (texte, style, élément UI sans logique) → pas besoin de
@@ -108,65 +107,34 @@ enregistrement de service worker dans les pages.
 - Si une PWA revenait un jour : `MD-LIB/pwa-service-worker.md` (jamais de
   cache, jamais de `respondWith()`).
 
-## 5. Backend GAS
+## 5. Serveur — API PHP chez Alwaysdata (depuis le 25/09/2026)
 
-Le script Google Apps Script (URL dans `shared.js` → `GS_URL`) n'est pas
-déployé depuis ce repo — pas d'API de push GAS, le déploiement reste manuel
-via l'éditeur script.google.com. `gas/GAS_NEWGEN.js` en est une copie de
-référence versionnée (diffable), à tenir à jour manuellement après chaque
-déploiement confirmé — voir `gas/README.md` pour la procédure.
+- Code dans `api/`, tests dans `api-tests/`, déployé par `deploy-api.yml`
+  **seulement si ses tests passent** (base MySQL jetable). NextStep et NEWGEN
+  partagent cette API et cette base : un changement ici touche les deux sites.
+- Tests en local : `ATELIERS_TEST_MYSQL=root@127.0.0.1 ATELIERS_TEST_MYSQL_MDP=…
+  php api-tests/api.test.php` (MariaDB s'installe dans l'environnement de
+  session).
+- Google Apps Script est **coupé** (accès « Seulement moi »). `gas/` n'est
+  qu'une archive ; les mesures de l'époque (pertes de livraison, doublage)
+  sont dans l'historique git de `CHANTIERS.md`.
 
-### Limite connue — la réponse n'est pas lente, elle est perdue
+Règles héritées, toujours valables :
 
-**Mesuré** les 15-16/09/2026 sur NextStep puis le 18/09/2026 sur NEWGEN
-(journal Admin, PC *et* Android, 221 ateliers), captures croisées Journal
-client / Exécutions Apps Script. Le comportement est **bimodal**, pas
-« lent » :
-
-| Livraison réussie | Livraison ratée |
-|---|---|
-| `getAll` ok en **1.1 s** | `getAll` HTTP 404 en **27.3 s** |
-| `getComptes` ok en **1.8 s** | `getConfig` HTTP 404 en **29.8 s** |
-| `checkPassword` ok en **2.7 s** | `getAll` bloqué, abandonné après **35 s** |
-
-Un 404 authentique revient en ~200 ms. **Un 404 au bout de 27 s signifie que
-la réponse est perdue, pas en retard** — l'exécution `doGet` correspondante
-dure moins de 2 s côté serveur. Au-delà d'une dizaine de secondes, attendre
-ne la fera jamais venir. La cause est dans l'acheminement (redirection
-`/exec`), hors de portée du code ; seuls ses effets s'atténuent côté client.
-
-Conséquences, à ne pas réapprendre à chaque session :
-
-- **Ne pas conclure « GAS est lent » ni « le classeur est trop gros »** sur un
-  appel long : quand la livraison passe, 221 ateliers reviennent en 1 s.
-- **Ne jamais rallonger les plafonds.** L'erreur la plus coûteuse : à 35 s,
-  chaque livraison ratée devenait 35 s d'écran d'attente — 84 s relevées pour
-  une seule connexion, dont 51 d'attente pure sur des appels déjà morts.
-  Plafonds actuels : 12 s en lecture, 12 s en écriture, 25 s pour `saveMany`.
-  **Verrouillés par `e2e/reseau.spec.js`** : si un de ses cas échoue, c'est qu'on
-  est en train de refaire l'erreur.
-- **La panne frappe par fenêtres de temps, pas par appel.** Le 18/09 à 22:10,
-  les trois appels d'ouverture meurent dans la même seconde et leurs trois
-  doublons réussissent dans la même seconde. Donc moins d'appels simultanés =
-  moins de chances de tout perdre d'un coup. Avant d'ajouter un appel au
-  démarrage, vérifier que l'info ne voyage pas déjà dans `getAll` (drapeau
-  maintenance, listes, visibilité, couleurs, stock). **`e2e/appels.spec.js`**
-  échoue si un appel supprimé réapparaît.
-- **Rejouer une écriture est sûr** — vérifié en production le 18/09 : le
-  client génère l'`_id` avant l'envoi et `actionSaveEntry` retrouve la ligne
-  pour la remplacer (`saveEntry #1` abandonné, `#2` réussi, aucun doublon
-  constaté dans la feuille). Mais une écriture n'est **jamais doublée**
-  (`GAS_ACTIONS_ECRITURE`). La sérialisation des écritures n'est
-  garantissable que **côté serveur**, par le verrou GAS
-  (`_avecVerrouEcriture`, v11.35) : le client ne voit ni un second onglet ni
-  un second conseiller.
-- **Après une écriture, ne jamais recharger pour relire.** `actionSaveEntry`
-  invalide le cache `getAll` juste avant de rendre la main : le `loadData()`
-  qui suivait relisait la feuille entière, au tarif maximum, pour retrouver ce
-  qu'on venait d'écrire. Les écritures s'appliquent localement
-  (`appliquerEntree`/`retirerEntree`, prop `onEntryUpdated` côté vues).
-- Les Exécutions Apps Script n'affichent que `doGet`, jamais le nom de
-  l'action — comparer par horodatage avec `window.__gasLog`.
+- **Ne jamais rallonger les plafonds d'appel** (12 s lecture et écriture,
+  25 s `saveMany`) : attendre ne récupère aucune réponse perdue, ça allonge
+  l'écran d'attente (84 s relevées le 18/09/2026). Verrouillé par
+  `e2e/reseau.spec.js`.
+- **Une écriture n'est jamais doublée** (`GAS_ACTIONS_ECRITURE`). La rejouer
+  est sûr : l'`_id` vient du client et l'API remplace la ligne existante
+  (`api/lib/ecriture.php:144`).
+- **Avant d'ajouter un appel au démarrage**, vérifier que l'info ne voyage pas
+  déjà dans `getAll`. `e2e/appels.spec.js` échoue si un appel supprimé
+  réapparaît.
+- **Après une écriture, ne jamais recharger pour relire** : les écritures
+  s'appliquent localement (`appliquerEntree`/`retirerEntree`).
+- Les noms `GAS_*`, `gasAppel`, `__gasLog` sont restés dans le code : ils
+  désignent la couche d'appel, plus Google.
 
 ## 6. Routine RGPD & sécurité des accès/données
 
@@ -178,7 +146,7 @@ terminé (formulaire, export, nouvel appel API, stockage, authentification).
 Checklist condensée :
 - **RGPD** : minimisation des champs collectés, base légale de la collecte,
   durée de conservation/purge, droits des personnes (accès/rectification/
-  suppression), sous-traitants et hébergement (GAS, CDN — hors UE ?), données
+  suppression), sous-traitants et hébergement (hébergeur, CDN — hors UE ?), données
   sensibles, traçabilité des traitements.
 - **Sécurité** : pas de secret/clé/token en clair dans le code ou poussé sur
   le repo, action sensible protégée par authentification réelle, échanges en
@@ -213,8 +181,8 @@ Extrait du guide de collaboration multi-projets, adapté pour ce dépôt.
 8. Après toute reprise de session ou résumé de contexte, relire l'état réel du fichier concerné avant de le modifier ou de le renvoyer — ne jamais présumer qu'un correctif précédent est encore en place.
 8bis. Utiliser des dates explicites (JJ/MM ou JJ/MM/AAAA) plutôt que des termes relatifs ("hier", "aujourd'hui", "la semaine dernière", "demain") : la perception du temps de Claude vient d'un contexte injecté en début de session, pas d'une horloge en temps réel — elle devient peu fiable sur une session qui s'étale sur plusieurs jours ou plusieurs reprises.
 9. Avant de pousser un changement visuel (CSS/layout), vérifier mentalement les interactions connues à risque (stacking context, overflow, position sticky/fixed) sur les zones sensibles existantes.
-10. Sur tout problème réseau/GAS qui dure plus de 3 itérations : demander une capture Network DevTools ou les Exécutions GAS avant de continuer à supposer.
-11. Vérifier l'état exact du déploiement GAS (version + URL active dans `shared.js` → `GS_URL`) en début de session dès qu'un bug réseau est signalé.
+10. Sur tout problème réseau qui dure plus de 3 itérations : demander une capture Network DevTools ou le journal Admin avant de continuer à supposer.
+11. Dès qu'un bug réseau ou serveur est signalé, vérifier d'abord que le dernier `deploy-api.yml` a réussi et à quelle heure.
 
 14. **Doser les tests à leur valeur, pas à la prudence.** Les suites navigateur de ce dépôt coûtent cher à chaque lancement (`npx playwright test` ~45 s en tout ; un seul fichier : `npx playwright test e2e/reseau.spec.js`) : les lancer une seule fois, juste avant le commit, jamais à chaque étape intermédiaire — la section 2 dit déjà laquelle se déclenche sur quoi. `node --check` et les suites Node, elles, sont quasi gratuites : les lancer librement. Écrire un ou deux tests ciblés par correctif, pas quatre à six ; réserver la contre-preuve — celle qui rejoue l'implémentation fautive — aux pièges réellement subtils, ceux qu'on remettrait sans s'en apercevoir.
 15. **Les tests ne trouvent pas les défauts de sens.** Ils vérifient des calculs et des états, pas ce qu'un écran est censé signifier : un affichage peut calculer juste et raconter faux. Un test écrit après coup empêche la régression, il ne découvre rien. Ne jamais présenter une suite verte comme une garantie que l'affichage est correct, ni s'en servir pour décharger l'utilisateur du contrôle visuel.
@@ -233,7 +201,7 @@ Extrait du guide de collaboration multi-projets, adapté pour ce dépôt.
 
 1. Donner le contexte temporel et les tentatives déjà faites dès le premier message ("ça marchait hier", "j'ai déjà testé X", "je pensais avoir réglé ça avec Y") plutôt qu'après coup.
 2. Pour un bug visuel, "bizarre" ou réseau, ajouter une ligne de description du symptôme précis, une capture annotée ou le Network DevTools plutôt qu'une formule vague.
-3. Signaler explicitement en début de message tout changement d'état fait hors session (redéploiement GAS, changement d'URL, config, branche renommée, settings modifiés).
+3. Signaler explicitement en début de message tout changement d'état fait hors session (déploiement de l'API, changement d'URL, config, branche renommée, settings modifiés).
 4. Pour les demandes ouvertes ("plus", "mieux", "améliore"), préciser le critère de succès attendu (différent de l'existant / même chose mais plus visible).
 5. Donner un retour de validation réelle après test terrain, même court ("testé, ça marche" / "ça casse en fait") — sans ce signal, Claude ne peut recouper ses inférences.
 6. Quand on revient en arrière, préciser ce qui est conservé vs jeté — "on revient à hier" sans liste efface du travail potentiellement utile.
