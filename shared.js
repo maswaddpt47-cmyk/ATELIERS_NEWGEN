@@ -2850,7 +2850,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
           ),
           CE('div',{className:'fs-body-v2'+(secPublicOpen?' open':'')},
             CE('div',{className:'pill-group-v2'},
-              CE('button',{className:'pill-v2'+(filtPublic.length===0?' active':''),onClick:()=>setFiltPublic([])},'Tous les publics'),
+              CE('button',{className:'pill-v2'+(filtPublic.length===0?' active':''),onClick:()=>setFiltPublic([]),title:'Retirer le filtre de public'},'Tout afficher'),
               PUBLICS.map(p=>CE('button',{key:p,className:'pill-v2'+(filtPublic.includes(p)?' active':''),onClick:()=>basculerPublic(p)},p))
             ),
             CE('div',{className:'f-sel-wrap-v2'},
