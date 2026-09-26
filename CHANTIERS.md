@@ -48,8 +48,15 @@ par l'utilisateur le 25/09.
 ## 🔧 Chantier parité NEWGEN/NextStep (AG-015, tranché le 26/09/2026)
 
 Décision de l'utilisateur : amendements de la session B, dans cet ordre.
-- **Lot 0** — NEWGEN charge `logic.js` dans ses pages et supprime les 16
-  copies de `shared.js`. Aujourd'hui les pages exécutent ces copies (déjà
+- **Lot 0 — fait le 26/09/2026.** NEWGEN charge `logic.js` dans ses pages et
+  les 16 copies de `shared.js` sont supprimées (`normalizeMat`/`matIncludes`
+  déplacées dans `utils.js`, comme NextStep). `logic.js` a repris les 4
+  versions qui tournaient (`findMobileClassConflicts`,
+  `findOrdinateursConflicts`, `getPretsMateriel`, `filterMaterielsVisibles`).
+  Seul écart de comportement : `matIncludes` accepte l'ancien format « a|b »
+  (l'API renvoie des tableaux ; une chaîne donnait « aucun conflit » en
+  silence). Suites Node et navigateur vertes.
+  Constat de départ : Aujourd'hui les pages exécutent ces copies (déjà
   identiques à NextStep), tandis que `logic.test.js` teste un `logic.js` qui a
   divergé : les tests ne testent pas ce qui tourne. Garde-fou : un nom
   déclaré deux fois casse le chargement, `smoke.spec.js` doit rester vert.
@@ -181,7 +188,7 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
 ### 🔒 AG-002 (23/09/2026) — la journée entière reste la règle sur un prêt multi-jours
 
 Décision de l'utilisateur : laisser tel quel, aucune fausse alerte constatée.
-`occupeCreneauMateriel` (`logic.js` **et** `shared.js`) :
+`occupeCreneauMateriel` (`logic.js`) :
 - prêt d'**un seul jour** → seule la demi-journée de l'atelier est réservée ;
 - prêt sur **plusieurs jours** → journées entières, du prélèvement à la
   veille du retour (le retour se fait le matin, il ne réserve rien).
@@ -201,13 +208,6 @@ libre.
   téléphone de l'utilisateur, 2026 comme 2027). Avant de chercher un bug
   après livraison : faire recharger ou effacer les données du site.
 
-- **La logique du stock est dupliquée** (vérifié le 26/09/2026) :
-  `periodePretMateriel`, `findOrdinateursConflicts`, `getPretsMateriel`,
-  `totauxParJourMateriel`, `totalJourParConseiller` existent dans `logic.js`
-  (testé par les suites Node) **et** dans `shared.js` (servi aux pages —
-  `logic.js` n'est chargé par aucune page NEWGEN). Corriger `logic.js` seul
-  laisse l'appli sur l'ancien calcul, suites au vert. Toucher aux deux.
-  NextStep n'a pas ce défaut (son `shared.js` consomme `logic.js`).
 - **« Ordinateurs prêtés » vidé au premier enregistrement** (signalé le
   23/09, non reproduit, cause inconnue). Hypothèse non vérifiée : molette de
   la souris sur le champ numérique encore actif. Si ça revient : demander si

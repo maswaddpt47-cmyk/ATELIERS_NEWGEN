@@ -1,9 +1,11 @@
-// logic.js — fonctions pures métier testables sous Node.js
-// Miroir de la logique embarquée dans les composants React de shared.js.
-// Chargé uniquement pour les tests (node --test logic.test.js).
+// logic.js — fonctions pures métier, testées sous Node.js (logic.test.js).
+// Chargé par index.html et admin.html depuis le 26/09/2026 (AG-015, lot 0),
+// entre utils.js et shared.js : les pages exécutent ce que les tests testent.
+// Avant, les pages exécutaient des copies placées dans shared.js, et ce
+// fichier avait divergé d'elles sans que rien ne le montre.
 
 if (typeof require !== 'undefined') {
-  var {stripAccents, normCommune, addJoursIso} = require('./utils.js');
+  var {stripAccents, normCommune, addJoursIso, matIncludes} = require('./utils.js');
 }
 // En contexte navigateur, stripAccents et normCommune sont déjà des globals (utils.js chargé avant)
 
@@ -35,13 +37,8 @@ function parseMateriel(val) {
 // les ateliers déjà enregistrés). Un matériel masqué mais déjà sélectionné
 // (édition d'un atelier existant) reste affiché pour ne pas le désélectionner
 // silencieusement.
-function filterMaterielsVisibles(materiels, caches, selectionnes) {
-  const cachesNorm = (caches || []).map(normalizeMatLabel);
-  const selNorm = (selectionnes || []).map(normalizeMatLabel);
-  return (materiels || []).filter(m => {
-    const n = normalizeMatLabel(m);
-    return cachesNorm.indexOf(n) === -1 || selNorm.indexOf(n) !== -1;
-  });
+function filterMaterielsVisibles(materiels,caches,selectionnes){
+  return (materiels||[]).filter(m=>!matIncludes(caches,m)||matIncludes(selectionnes,m));
 }
 
 // ── Validation lot ────────────────────────────────────────────
@@ -166,7 +163,7 @@ function findMobileClassConflicts(entries) {
   entries.forEach(e => {
     if (e.statut === 'Annulé') return;
     if (!e.date) return;
-    if (!parseMateriel(e.materiel).some(m => normalizeMatLabel(m) === 'classemobile')) return;
+    if (!matIncludes(e.materiel,'Classe mobile')) return;
     const demi = demiJourneeAtelier(e);
     (demi ? [demi] : ['AM', 'PM']).forEach(d => {
       const k = e.date + '|' + d;
@@ -308,7 +305,7 @@ function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
   (entries || []).forEach(e => {
     if (e.statut === 'Annulé') return;
     if (!e.date) return;
-    if (!parseMateriel(e.materiel).some(m => normalizeMatLabel(m) === 'classemobile')) return;
+    if (!matIncludes(e.materiel,'Classe mobile')) return;
     // Classe mobile cochée sans quantité renseignée (entrées historiques
     // antérieures au champ obligatoire, ou import) → on suppose 1 ordinateur
     // plutôt que d'exclure l'entrée : sinon elle disparaît silencieusement
@@ -387,7 +384,7 @@ function findOrdinateursConflicts(entries, stock = STOCK_ORDINATEURS) {
 function getPretsMateriel(entries) {
   return (entries || [])
     .filter(e => e.statut !== 'Annulé' && e.date
-      && parseMateriel(e.materiel).some(m => normalizeMatLabel(m) === 'classemobile'))
+      && matIncludes(e.materiel,'Classe mobile'))
     .map(e => {
       const { debut, fin } = periodePretMateriel(e);
       return {
