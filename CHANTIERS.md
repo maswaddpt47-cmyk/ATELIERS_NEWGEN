@@ -71,7 +71,7 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   `GAS_ACTIONS_ECRITURE`), **77 `à trancher`**. Signalé en plus : `trunc`
   (NextStep) et `TableCommunes` (les deux) déclarés deux fois, la seconde
   écrase la première en silence.
-- **Alignement en cours (26/09/2026, session 01GzrtQV) — 80 → 15 écarts.**
+- **Alignement en cours (26/09/2026, session 01GzrtQV) — 80 → 13 écarts.**
   L'utilisateur a délégué le choix (« choisis le meilleur des scénarios »),
   en ne posant que les vrais choix visibles. Faits, poussés, tests verts :
   `utils.js`/`logic.js` identiques (fonctions mortes retirées), couche
@@ -97,7 +97,8 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
      (`voulu`).
   Fait : 2 (bouton 🌙 dans le menu NextStep, CSS de admin.css recopié dans
   app.css) et 3 (AttenteGAS + CSS). `App` et `injectCSS` passés en `voulu`
-  (design propre à chaque appli). En cours : 1 (`VueSaisie`).
+  (design propre à chaque appli). Fait : 1 (`VueSaisie` + `emptyRow`
+  identiques, échec partiel de cycle géré). Suivant : `VueHistorique`.
 
 ## Reste ouvert
 
