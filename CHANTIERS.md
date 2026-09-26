@@ -70,7 +70,9 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   (`App` d'index — `logAccesIndex` au démarrage, NEWGEN `app.js:454` ;
   `GAS_ACTIONS_ECRITURE`), **77 `à trancher`**. Signalé en plus : `trunc`
   (NextStep) et `TableCommunes` (les deux) déclarés deux fois, la seconde
-  écrase la première en silence.
+  écrase la première en silence. **`TableCommunes` corrigé le 26/09/2026** : un seul
+  `TableCommunesDashboard` dans `shared.js` (version Admin, validée), copie
+  d'`admin_app.js` retirée ; `parite.js` ne signale plus d'écrasement.
 - **Alignement en cours (26/09/2026, session 01GzrtQV) — 80 → 4 écarts (3 `voulu`).**
   L'utilisateur a délégué le choix (« choisis le meilleur des scénarios »),
   en ne posant que les vrais choix visibles. Faits, poussés, tests verts :
