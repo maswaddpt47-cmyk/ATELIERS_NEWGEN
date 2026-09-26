@@ -104,6 +104,13 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   partenaire ICS/PDF), Agenda identiques ; `NOM_APPLI` (utils.js) porte le
   nom affiché ; NextStep rattache les variables de couleur NEWGEN à sa
   palette (fin de app.css et admin.css). `App` passé en `voulu`.
+- **Garde-fou (demande de l'utilisateur, 26/09/2026) : ne pas uniformiser la
+  charte graphique.** Chaque appli garde son design (couleurs, navigation,
+  Historique) ; seuls le fonctionnement et les choix explicitement validés
+  passent d'une appli à l'autre. À vérifier par l'utilisateur, arrivé sur
+  NextStep sans question explicite : Calendrier (panneau de filtres
+  repliable), Agenda, connexion/accueil/maintenance (code NEWGEN, couleurs
+  rattachées à la palette NextStep).
 - **Question en attente (26/09/2026)** : `VueHistorique` — NEWGEN a le
   design v2 (panneau de filtres repliable, cartes et compteurs v2, bouton
   PDF), NextStep l'ancien (puces de filtre, boutons XLSX/ICS/Sync). Aligner
