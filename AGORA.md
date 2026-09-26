@@ -68,82 +68,7 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-## AG-013 — « Mot de passe oublié » en libre-service, par mail — ouvert le 24/09/2026
-**Auteur** : session A (refonte) — lu sur `fb62c75`
-**Proposition** : sur l'écran de connexion (Index et Admin, mode API
-seulement), lien « Mot de passe oublié ? ». Le conseiller choisit son nom →
-action publique `demanderReinit` : si une adresse existe dans la config
-`emails` (Listes → Conseillers), l'API tire un jeton aléatoire (32 octets),
-n'en garde que l'empreinte, valable **30 min, usage unique**, et envoie par
-`mail()` d'Alwaysdata un lien `…/index.html?reinit=<jeton>`. Réponse
-**toujours identique** (« si une adresse est enregistrée, un mail est
-parti »). Le lien ouvre un formulaire « nouveau mot de passe » (politique
-existante, 12 caractères…) → action publique `reinitMotDePasse` : consomme
-le jeton, pose le hash, `doit_changer = 0`, coupe les sessions du compte.
-Limite : 3 demandes par compte et par heure.
-**Critère déclencheur** : 1 (nouvelle table `reinitialisations`, deux actions
-publiques = contrat) et 2 (options écartées : code à 6 chiffres par mail au
-lieu d'un lien ; réinitialisation par l'admin seulement, l'existant).
-**Ce que ça engage** : une porte d'entrée publique sur les comptes — la
-sécurité du compte devient celle de la boîte mail du conseiller ; une
-dépendance à la délivrabilité des mails d'Alwaysdata (expéditeur
-`…@alwaysdata.net` vers des adresses Gmail : risque de spam, **non testé**).
-**Non vérifié par l'auteur** : que `mail()` fonctionne chez Alwaysdata sans
-réglage (SPF/DKIM de l'expéditeur) ; que les 5 comptes ont une adresse
-valide (une capture du 24/09 montre `email@exemple.com` pour un compte) ;
-quelle interface reçoit le lien pour l'équipe (NextStep) quand elle est
-encore sur GAS — la fonction n'existe qu'en mode API ; qu'aucun conseiller
-ne partage une boîte mail avec un autre.
-**Si personne ne répond, je fais quoi ?** J'attends le feu vert de
-l'utilisateur sur le principe, puis je commence par un **mail de test**
-envoyé depuis Alwaysdata : sans délivrabilité prouvée, le reste ne sert à rien.
-**Où regarder** : `api/lib/api.php` (`checkPassword`, `tentatives`),
-`api/lib/ecriture.php` (`api_changer_mdp`, `API_MDP_POLITIQUE`),
-`gas/GAS_NEWGEN.js:1107-1114` (envoi de mail côté GAS), config `emails`.
-
-## AG-010 — Schéma MySQL et import du classeur NextStep — ouvert le 23/09/2026
-**Auteur** : session A (refonte, reprise du 24/09) — lu sur `78745da`
-**Proposition** : 6 tables (`ateliers` typée, `ateliers_materiel`, `config`,
-`comptes`, `journal`, `sessions` + `tentatives`) ; dates en `DATE`, `horaire`
-en `CHAR(5)`, compteurs en `INT NULL` (vide ⇒ `NULL` ⇒ renvoyé `''`), reste en
-texte. Import par une page PHP sur Alwaysdata (ZipArchive + SimpleXML, sans
-bibliothèque), protégée par une clé tirée des Secrets GitHub, **à blanc
-d'abord** (compte rendu), puis réel en une transaction qui vide et recharge.
-**Refus** de toute colonne inconnue ou valeur non convertible, avec n° de ligne.
-**Critère déclencheur** : 1 (schéma de données) et 2 (alternative écartée sans
-arbitrage : tout en `TEXT`, copie 1:1 de la feuille, qui n'aurait rien refusé).
-**Ce que ça engage** : le format que l'API lira et que `shared.js` recevra ;
-typer fait échouer l'import sur des cellules historiques mal saisies (à
-corriger dans Sheets avant bascule, pas dans le code). Réversible tant que
-la bascule n'a pas eu lieu (l'import recrée tout) ; figé après.
-**Non vérifié par l'auteur** :
-- en-têtes `Ateliers_next_step` fournis par l'utilisateur (29 colonnes,
-  identiques à `contrat` + 9 matériels de `GAS_NEXTSTEP.js:482`) ; ceux de
-  `Comptes`, `Config` et `Logs_Connexion` **déduits du code seulement** ;
-- comment l'export xlsx de Sheets encode une date saisie en texte, une heure
-  (fraction de jour ?), un `OUI` ; aucun fichier réel lu ;
-- `zip`/`SimpleXML` activés chez Alwaysdata, version MariaDB — de mémoire ;
-- `_n` : numéro de ligne à la création, jamais recalculé côté GAS — des
-  doublons ou trous existent peut-être ; proposé `INT NULL` non unique ;
-- le journal (`Logs_Connexion`, deux formats mêlés) est converti par la même
-  logique que `actionGetLogs` (`GAS_NEXTSTEP.js:958-980`) — ⚠️ RGPD : aucune
-  durée de conservation définie aujourd'hui, à décider (12 mois ?).
-**Si personne ne répond, je fais quoi ?** Je garde le typage, mais l'import à
-blanc liste chaque valeur refusée et l'utilisateur décide, au vu de la liste,
-entre corriger le classeur et assouplir la colonne — pas moi seul.
-**Où regarder** : `migration/INVENTAIRE.md` §1 et §4, `contract.test.js:12-34`,
-`GAS_NEXTSTEP.js:469-520` (lecture), `:652-700` (écriture), `:944-990` (journal),
-`shared.js:1972` (valeurs vides attendues par le formulaire).
-**Complément de l'auteur, 23/09/2026 (même session, avant toute réponse)** :
-l'export réel a été fourni. Vérifié dessus : 29 en-têtes conformes, dates et
-heures en cellules typées (formats 165/166), 0 valeur refusée sur 262
-ateliers. Restent non vérifiés : `Comptes`/`Logs_Connexion` n'ont été lus
-que sur ce fichier, Alwaysdata (extensions, MariaDB, hôte MySQL). Code
-écrit depuis : `db9634d` — le contradicteur peut le lire, sans biais de
-statu quo à craindre, l'import étant rejouable jusqu'à la bascule.
-
-
----
+_Aucun bloc ouvert au 26/09/2026._
 
 ## Blocs tranchés — sortis de ce fichier
 
@@ -163,6 +88,8 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 | AG-009 | remplacer GAS + Sheets par PHP + MySQL (Alwaysdata) — amendé | 23/09/2026 |
 | AG-011 | contrat de lecture de l'API (jeton, ordre de démarrage) — amendé | 24/09/2026 |
 | AG-012 | retirer la PWA (sw.js de désinstallation, icônes gardées) — amendé | 24/09/2026 |
+| AG-010 | schéma MySQL et import du classeur — sans réponse, réalisé sur feu vert de l'utilisateur (import du 25/09, verrouillé) | 26/09/2026 |
+| AG-013 | « mot de passe oublié » par mail — sans réponse, réalisé sur feu vert de l'utilisateur (envoi de mail depuis Alwaysdata prouvé par l'essai des rappels du 25/09 ; tests RGPD-06/10/11) | 26/09/2026 |
 | AG-014 | corbeille + page Sauvegardes dans l'Admin — amendé (numéro gardé, transaction, purge à la connexion, copies chiffrées 90 j ; bouton de copie gardé, prouvé en production) | 25/09/2026 |
 
 **Un bloc sort d'ici dès qu'il n'y a plus rien à décider** — proposition
