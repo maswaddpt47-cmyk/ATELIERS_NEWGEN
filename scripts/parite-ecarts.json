@@ -45,7 +45,7 @@
       "NextStep admin_app.js:176"
     ],
     "newgen": "25e5a3cdac/b4a3c22c04",
-    "nextstep": "7906e81198/a770a3359b",
+    "nextstep": "a23e4c38dd/d6757060c6",
     "note": "logAccesIndex retiré de NEWGEN le 26/09/2026. Reste à comparer."
   },
   "AttenteGAS": {
@@ -60,51 +60,6 @@
     "nextstep": "7fa67674a7/7fa67674a7",
     "note": ""
   },
-  "CATALOGUE_THEMATIQUES": {
-    "statut": "à trancher",
-    "nature": "absent de NEWGEN",
-    "pages": "index+admin",
-    "lieux": [
-      "NextStep shared.js:1396"
-    ],
-    "newgen": "-/-",
-    "nextstep": "7aa38fe836/7aa38fe836",
-    "note": ""
-  },
-  "CATALOGUE_THEMATIQUES_GROUPED": {
-    "statut": "à trancher",
-    "nature": "absent de NEWGEN",
-    "pages": "index+admin",
-    "lieux": [
-      "NextStep shared.js:1342"
-    ],
-    "newgen": "-/-",
-    "nextstep": "310377e9d6/310377e9d6",
-    "note": ""
-  },
-  "ComboThematique": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1540",
-      "NextStep shared.js:1413"
-    ],
-    "newgen": "3afa2c6330/3afa2c6330",
-    "nextstep": "02b3966c4e/02b3966c4e",
-    "note": ""
-  },
-  "ComboThematiqueFixed": {
-    "statut": "à trancher",
-    "nature": "absent de NEWGEN",
-    "pages": "index+admin",
-    "lieux": [
-      "NextStep shared.js:1649"
-    ],
-    "newgen": "-/-",
-    "nextstep": "9e84995c95/9e84995c95",
-    "note": ""
-  },
   "MaintenanceScreen": {
     "statut": "à trancher",
     "nature": "différent",
@@ -115,28 +70,6 @@
     ],
     "newgen": "00a0730e70",
     "nextstep": "600a235f49",
-    "note": ""
-  },
-  "THEMATIQUES_CATALOGUE": {
-    "statut": "à trancher",
-    "nature": "absent de NextStep",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1530"
-    ],
-    "newgen": "ade906863a/ade906863a",
-    "nextstep": "-/-",
-    "note": ""
-  },
-  "THEMATIQUES_FLAT": {
-    "statut": "à trancher",
-    "nature": "absent de NextStep",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1538"
-    ],
-    "newgen": "692ac525cc/692ac525cc",
-    "nextstep": "-/-",
     "note": ""
   },
   "VueAccueilStatic": {
@@ -168,8 +101,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:4597",
-      "NextStep shared.js:4329"
+      "NEWGEN shared.js:4659",
+      "NextStep shared.js:4337"
     ],
     "newgen": "d78d310868/d78d310868",
     "nextstep": "00bd3ad596/00bd3ad596",
@@ -180,8 +113,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2759",
-      "NextStep shared.js:2501"
+      "NEWGEN shared.js:2821",
+      "NextStep shared.js:2509"
     ],
     "newgen": "7c579b0043/7c579b0043",
     "nextstep": "03d06ac9e7/03d06ac9e7",
@@ -192,8 +125,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:3918",
-      "NextStep shared.js:3648"
+      "NEWGEN shared.js:3980",
+      "NextStep shared.js:3656"
     ],
     "newgen": "d01d97ec79/d01d97ec79",
     "nextstep": "b1f963b12c/b1f963b12c",
@@ -204,23 +137,11 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2280",
-      "NextStep shared.js:2173"
+      "NEWGEN shared.js:2342",
+      "NextStep shared.js:2181"
     ],
     "newgen": "6550f3a504/6550f3a504",
     "nextstep": "737ce1a7a8/737ce1a7a8",
-    "note": ""
-  },
-  "VueListes": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1617",
-      "NextStep shared.js:1463"
-    ],
-    "newgen": "50ece1572f/50ece1572f",
-    "nextstep": "4c231021db/4c231021db",
     "note": ""
   },
   "VueLoginIndex": {
@@ -240,22 +161,11 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:1823",
-      "NextStep shared.js:1693"
+      "NEWGEN shared.js:1885",
+      "NextStep shared.js:1701"
     ],
     "newgen": "78cc547ca4/78cc547ca4",
-    "nextstep": "945d167456/945d167456",
-    "note": ""
-  },
-  "buildThemGroups": {
-    "statut": "à trancher",
-    "nature": "absent de NEWGEN",
-    "pages": "index+admin",
-    "lieux": [
-      "NextStep shared.js:1398"
-    ],
-    "newgen": "-/-",
-    "nextstep": "6ddd597794/6ddd597794",
+    "nextstep": "e80b9dae72/e80b9dae72",
     "note": ""
   },
   "emptyRow": {
@@ -263,8 +173,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:1821",
-      "NextStep shared.js:1691"
+      "NEWGEN shared.js:1883",
+      "NextStep shared.js:1699"
     ],
     "newgen": "a40296d8f4/a40296d8f4",
     "nextstep": "28f9c7a43f/28f9c7a43f",
