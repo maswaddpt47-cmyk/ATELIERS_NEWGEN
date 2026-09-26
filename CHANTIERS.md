@@ -71,7 +71,7 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   `GAS_ACTIONS_ECRITURE`), **77 `à trancher`**. Signalé en plus : `trunc`
   (NextStep) et `TableCommunes` (les deux) déclarés deux fois, la seconde
   écrase la première en silence.
-- **Alignement en cours (26/09/2026, session 01GzrtQV) — 80 → 13 écarts.**
+- **Alignement en cours (26/09/2026, session 01GzrtQV) — 80 → 11 écarts.**
   L'utilisateur a délégué le choix (« choisis le meilleur des scénarios »),
   en ne posant que les vrais choix visibles. Faits, poussés, tests verts :
   `utils.js`/`logic.js` identiques (fonctions mortes retirées), couche
@@ -98,7 +98,13 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   Fait : 2 (bouton 🌙 dans le menu NextStep, CSS de admin.css recopié dans
   app.css) et 3 (AttenteGAS + CSS). `App` et `injectCSS` passés en `voulu`
   (design propre à chaque appli). Fait : 1 (`VueSaisie` + `emptyRow`
-  identiques, échec partiel de cycle géré). Suivant : `VueHistorique`.
+  identiques, échec partiel de cycle géré). Calendrier (NEWGEN) et Gestion ordi (NextStep)
+  identiques.
+- **Question en attente (26/09/2026)** : `VueHistorique` — NEWGEN a le
+  design v2 (panneau de filtres repliable, cartes et compteurs v2, bouton
+  PDF), NextStep l'ancien (puces de filtre, boutons XLSX/ICS/Sync). Aligner
+  NextStep sur NEWGEN, ou garder chacun (`voulu`) ? Les correctifs de
+  fonctionnement sont déjà communs (panneau, mise en évidence).
 
 ## Reste ouvert
 
