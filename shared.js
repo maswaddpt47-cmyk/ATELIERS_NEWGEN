@@ -4339,7 +4339,7 @@ function TableCommunes({fd}){
   const[tri,setTri]=React.useState({col:'commune',sens:1});
   const lignes=React.useMemo(()=>{
     const m={};
-    fd.forEach(d=>{const c=normCommune(d.commune);if(!c)return;const x=m[c]||(m[c]={commune:c,ateliers:0,presents:0,inscrits:0});x.ateliers++;x.presents+=parseInt(d.presents)||0;x.inscrits+=parseInt(d.inscrits)||0;});
+    fd.forEach(d=>{const c=normCommune(d.commune);if(!c)return;const x=m[c]||(m[c]={commune:c,ateliers:0,presents:0,inscrits:0});x.ateliers++;if(d.statut==='Réalisé'){x.presents+=parseInt(d.presents)||0;x.inscrits+=parseInt(d.inscrits)||0;}});
     return Object.values(m);
   },[fd]);
   const triees=[...lignes].sort((a,b)=>{
@@ -4426,8 +4426,8 @@ function VuePowerBI({entries, conseillers: conseillersList}){
   const total=fd.length;
   const real=fd.filter(d=>d.statut==='Réalisé').length;
   const tReal=total?Math.round(real/total*100):0;
-  const totPre=fd.reduce((s,d)=>s+(parseInt(d.presents)||0),0);
-  const totIns=fd.reduce((s,d)=>s+(parseInt(d.inscrits)||0),0);
+  const totPre=fd.filter(d=>d.statut==='Réalisé').reduce((s,d)=>s+(parseInt(d.presents)||0),0);
+  const totIns=fd.filter(d=>d.statut==='Réalisé').reduce((s,d)=>s+(parseInt(d.inscrits)||0),0);
   const tPres=totIns?Math.round(totPre/totIns*100):0;
 
   // Par mois
@@ -4437,7 +4437,7 @@ function VuePowerBI({entries, conseillers: conseillersList}){
       Réalisés:r.filter(d=>d.statut==='Réalisé').length,
       Planifiés:r.filter(d=>d.statut==='Planifié').length,
       Annulés:r.filter(d=>d.statut==='Annulé').length,
-      Présents:r.reduce((s,d)=>s+(parseInt(d.presents)||0),0)
+      Présents:r.filter(d=>d.statut==='Réalisé').reduce((s,d)=>s+(parseInt(d.presents)||0),0)
     };
   });
 
@@ -4465,7 +4465,7 @@ function VuePowerBI({entries, conseillers: conseillersList}){
   const allComm=[...new Set(fd.map(d=>normCommune(d.commune)).filter(Boolean))];
   const pComm=allComm.map(c=>({
     name:c.length>14?c.slice(0,14)+'…':c,fullName:c,
-    presents:fd.filter(d=>normCommune(d.commune)===c).reduce((s,d)=>s+(parseInt(d.presents)||0),0),
+    presents:fd.filter(d=>normCommune(d.commune)===c&&d.statut==='Réalisé').reduce((s,d)=>s+(parseInt(d.presents)||0),0),
     ateliers:fd.filter(d=>normCommune(d.commune)===c).length
   })).sort((a,b)=>b.presents-a.presents).slice(0,8);
 
@@ -4667,7 +4667,7 @@ function VuePowerBI({entries, conseillers: conseillersList}){
             const r=fd.filter(d=>d.conseiller===c);
             const rl=r.filter(d=>d.statut==='Réalisé').length;
             const pct=r.length?Math.round(rl/r.length*100):0;
-            const pre=r.reduce((s,d)=>s+(parseInt(d.presents)||0),0);
+            const pre=r.filter(d=>d.statut==='Réalisé').reduce((s,d)=>s+(parseInt(d.presents)||0),0);
             const ann=r.filter(d=>d.statut==='Annulé').length;
             return CE('div',{key:c,style:{background:PBI_BG,borderRadius:6,padding:12,boxShadow:'0 1px 6px rgba(0,0,0,.15)',borderTop:`3px solid ${cColor(c)}`}},
               CE('div',{style:{fontSize:11,fontWeight:700,color:cColor(c),marginBottom:8,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},c),
@@ -4703,7 +4703,7 @@ function VuePowerBI({entries, conseillers: conseillersList}){
                 const r=fd.filter(d=>d.conseiller===c);
                 const rl=r.filter(d=>d.statut==='Réalisé').length;
                 const pct=r.length?Math.round(rl/r.length*100):0;
-                const pre=r.reduce((s,d)=>s+(parseInt(d.presents)||0),0);
+                const pre=r.filter(d=>d.statut==='Réalisé').reduce((s,d)=>s+(parseInt(d.presents)||0),0);
                 const ann=r.filter(d=>d.statut==='Annulé').length;
                 return CE('tr',{key:c,style:{background:i%2?PBI_BG2:PBI_BG}},
                   CE('td',{style:{padding:'6px 8px'}},CE('div',{style:{display:'flex',alignItems:'center',gap:5}},
@@ -5085,7 +5085,7 @@ function VueRoadmap({entries,annee,conseillers}){
   const kpis=React.useMemo(()=>{
     const total=filtered.length;
     const realises=filtered.filter(e=>e.statut==='Réalisé').length;
-    const presents=filtered.reduce((s,e)=>s+(parseInt(e.presents)||0),0);
+    const presents=filtered.filter(e=>e.statut==='Réalisé').reduce((s,e)=>s+(parseInt(e.presents)||0),0);
     const taux=total>0?Math.round(realises/total*100):0;
     return{total,realises,presents,taux};
   },[filtered]);
