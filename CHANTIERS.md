@@ -60,8 +60,8 @@ puis NEWGEN**, sinon `parite.yml` compare au vieux NextStep.
   graphique.** Chaque appli garde son design ; seuls le fonctionnement et les
   choix explicitement validés passent de l'une à l'autre.
 - **Question en attente — `VueHistorique`** : NEWGEN en design v2, NextStep
-  dans l'ancien (filtres rendus repliables le 26/09 à la demande de
-  l'utilisateur). Aligner, ou passer en `voulu` ? Recommandé : `voulu`.
+  dans l'ancien (filtres rendus repliables le 26/09, en-tête au modèle de
+  NEWGEN avec bouton « Effacer » — **validé par l'utilisateur le 26/09**). Aligner, ou passer en `voulu` ? Recommandé : `voulu`.
 - **À vérifier par l'utilisateur sur NextStep** (arrivé sans question
   explicite le 26/09) : Calendrier, Agenda (volet modifiable), connexion,
   accueil, maintenance, saisie simple et par cycle — **avant le 28/09**,
@@ -115,6 +115,7 @@ puis NEWGEN**, sinon `parite.yml` compare au vieux NextStep.
 - Le rôle **superviseur** garde ses pouvoirs quasi admin (24/09) et **n'apparaît
   pas dans la liste de connexion d'Index** (26/09 : il travaille depuis
   l'Admin) — filtré par l'API (`action_get_comptes`, testé) et par les pages.
+  **Validé par l'utilisateur le 26/09/2026.**
 - **Déconnexion automatique d'Index après 30 min** d'inactivité, jamais
   pendant la saisie d'un atelier (aucun brouillon n'est gardé — à revoir si
   on en ajoute un).
