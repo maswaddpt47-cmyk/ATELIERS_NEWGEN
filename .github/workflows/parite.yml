@@ -1,0 +1,42 @@
+name: Parité NEWGEN / NextStep
+
+# AG-015 (tranché le 26/09/2026) : compare le code exécuté par les pages des
+# deux applis. Séparé de deploy.yml exprès — jamais bloquant pour la mise en
+# ligne : un échec ici envoie l'alerte mail de GitHub, rien de plus.
+# Quotidien en plus du push : un changement poussé sur NextStep ne déclenche
+# rien ici.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: NextStep
+        uses: actions/checkout@v4
+        with:
+          repository: maswaddpt47-cmyk/ateliers-cd47_NextStep
+          path: nextstep
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: acorn
+        run: npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Comparaison
+        run: node scripts/parite.js nextstep

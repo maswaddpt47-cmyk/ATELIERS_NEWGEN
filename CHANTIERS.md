@@ -60,15 +60,19 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   identiques à NextStep), tandis que `logic.test.js` teste un `logic.js` qui a
   divergé : les tests ne testent pas ce qui tourne. Garde-fou : un nom
   déclaré deux fois casse le chargement, `smoke.spec.js` doit rester vert.
-- **Lot 1** — contrôle de parité : **un seul script et une seule liste,
-  dans NEWGEN**, comparaison à l'arbre (acorn), toutes les instructions de
-  premier niveau (fonctions, `window.X = …`, IIFE dont le CSS, constantes),
-  paires = ce que les pages exécutent. Workflow séparé, push + quotidien,
-  **jamais bloquant** pour la mise en ligne. Chaque écart listé porte un
-  statut `voulu` / `à aligner`, que l'utilisateur tranche ; Claude fournit la
-  preuve.
-- Premier `à aligner` déjà connu : `logAccesIndex` encore appelé au démarrage
-  par NEWGEN (`app.js:454`), retiré de NextStep (`app.js:556`).
+- **Lot 1 — outillé le 26/09/2026.** `scripts/parite.js` + liste
+  `scripts/parite-ecarts.json`, workflow `parite.yml` (push + 05:17 UTC,
+  jamais bloquant). Échoue sur : écart non listé, écart listé qui a bougé
+  (empreinte), écart listé disparu. `--maj` réécrit la liste, tout ce qui a
+  bougé repasse en `à trancher` — **déviation annoncée** : troisième statut,
+  pour ne pas trancher à la place de l'utilisateur.
+  Premier relevé : **80 écarts**, dont 1 `voulu` (`APP_NS`), 2 `à aligner`
+  (`App` d'index — `logAccesIndex` au démarrage, NEWGEN `app.js:454` ;
+  `GAS_ACTIONS_ECRITURE`), **77 `à trancher`**. Signalé en plus : `trunc`
+  (NextStep) et `TableCommunes` (les deux) déclarés deux fois, la seconde
+  écrase la première en silence.
+- **Reste : trancher les 77**, par paquets (Claude fournit la preuve de
+  chaque écart, l'utilisateur tranche). Puis aligner les `à aligner`.
 
 ## Reste ouvert
 
