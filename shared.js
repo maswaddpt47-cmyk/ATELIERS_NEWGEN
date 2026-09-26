@@ -2159,7 +2159,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   function reset(){idNouveauRef.current=null;setForm(empty);setEditId(null);setIsDup(false);setErrors({});}
   function resetLot(){idsLotRef.current={};setLotForm({orienteur:'',commune:'',lieu:'',conseiller:'',co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:''});setLotRows([emptyRow(),emptyRow()]);setLotErrors({});setLotRowErrors({});}
 
-  function set(k,v){setForm(f=>({...f,[k]:v}));setErrors(er=>({...er,[k]:''}));}
+  function set(k,v){const a=k==='horaire'?ampmDepuisHoraire(v):'';setForm(f=>({...f,[k]:v,...(a?{ampm:a}:{})}));setErrors(er=>({...er,[k]:'',...(a?{ampm:''}:{})}));}
   function toggleMat(m){setForm(f=>{const already=matIncludes(f.materiel,m);return{...f,materiel:already?f.materiel.filter(x=>normalizeMat(x)!==normalizeMat(m)):[...f.materiel,m]};});}
   function setLot(k,v){setLotForm(f=>({...f,[k]:v}));setLotErrors(er=>({...er,[k]:''}));}
   function toggleLotMat(m){setLotForm(f=>{const already=matIncludes(f.materiel,m);return{...f,materiel:already?f.materiel.filter(x=>normalizeMat(x)!==normalizeMat(m)):[...f.materiel,m]};});}
@@ -2167,7 +2167,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   // ── lignes du lot ──
   function addRow(){setLotRows(r=>[...r,emptyRow()]);}
   function removeRow(id){if(lotRows.length<=1)return;setLotRows(r=>r.filter(x=>x.id!==id));}
-  function setRow(id,k,v){setLotRows(r=>r.map(x=>x.id===id?{...x,[k]:v}:x));setLotRowErrors(er=>({...er,[id]:{...(er[id]||{}),[k]:''}}));}
+  function setRow(id,k,v){const a=k==='horaire'?ampmDepuisHoraire(v):'';setLotRows(r=>r.map(x=>x.id===id?{...x,[k]:v,...(a?{ampm:a}:{})}:x));setLotRowErrors(er=>({...er,[id]:{...(er[id]||{}),[k]:'',...(a?{ampm:''}:{})}}));}
 
   // ── validation mode unique ──
   const FIELD_LABELS={'statut':'Statut','date':'Date','horaire':'Horaire','ampm':'AM/PM','commune':'Commune','lieu':'Lieu','thematique':'Thématique','conseiller':'Conseiller','orienteur':'Orienteur','public':'Type de public','inscrits':'Inscrits','nb_ordinateurs':'Ordinateurs prêtés'};

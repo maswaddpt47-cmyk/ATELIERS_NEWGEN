@@ -352,6 +352,18 @@ function comparerHistorique(a, b, sens) {
   return ha < hb ? -1 : ha > hb ? 1 : 0;
 }
 
+// AM/PM déduit de l'horaire saisi : avant 12:00 → AM, à partir de 12:00 → PM
+// (même seuil que la répartition du Dashboard). Pré-remplit le champ, qui
+// reste modifiable à la main (décision de l'utilisateur, 26/09/2026).
+// Horaire illisible → '' (le champ n'est alors pas touché).
+function ampmDepuisHoraire(h) {
+  const m = /^\s*(\d{1,2})\s*[:hH]/.exec(String(h == null ? '' : h));
+  if (!m) return '';
+  const heure = parseInt(m[1], 10);
+  if (heure > 23) return '';
+  return heure < 12 ? 'AM' : 'PM';
+}
+
 if (typeof module !== 'undefined') {
   module.exports={
     normCommune,normalizeCommune,stripAccents,htmlEsc,
@@ -364,6 +376,7 @@ if (typeof module !== 'undefined') {
     anneeIncluse,
   lsKey, migrerLocalStorage, LS_A_MIGRER,
   comparerHistorique,
+  ampmDepuisHoraire,
     presentsSuperieursInscrits,
   };
 }
