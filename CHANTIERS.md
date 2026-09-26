@@ -19,6 +19,15 @@ effectué — AG-001 a corrigé le protocole du banc avant la série.
 
 ---
 
+## ✅ 26/09/2026 — Copie chiffrée : rattrapages et bouton de relance
+
+GitHub ne tient pas l'heure des tâches planifiées (25/09 : 5 h 30 de retard ;
+26/09 : pas partie avant 09:30, lancée à la main). `copie.yml` a deux
+rattrapages (11:47 et 17:47, Paris) qui s'arrêtent si la copie est déjà
+rangée, sans toucher la date affichée. Tuile Admin → Sauvegardes : bouton
+« ▶ Relancer sur GitHub » (un lien, pas d'appel serveur : aucun jeton GitHub
+stocké, choix de l'utilisateur). **Validé par l'utilisateur le 26/09/2026.**
+
 ## ✅ 25/09/2026 (nuit) — Ménage de l'onglet Admin (NextStep et NEWGEN)
 
 Demande de l'utilisateur, après audit. **Retirés** : panneau KPI (doublon du
