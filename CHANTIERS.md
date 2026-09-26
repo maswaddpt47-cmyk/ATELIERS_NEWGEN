@@ -135,6 +135,12 @@ par l'utilisateur le 25/09.
     (`ComboThematique`). ⚠️ Pas de contrôle de conflit de matériel à cet
     endroit, contrairement au formulaire complet — non testé en automatique
     (enregistrement vérifié à l'œil par l'utilisateur).
+  - **Filtre public de l'Historique à choix multiples** (26/09/2026) :
+    état `filtPublic` = tableau, `[]` = tous ; pastilles à cocher
+    (« Tous les publics » vide la sélection). Le Calendrier garde son filtre
+    public à choix unique.
+  - Panneau latéral : « Période de prêt » affichée sous « Ordinateurs
+    prêtés » (valeurs enregistrées, mise à jour après Enregistrer).
   - **« Effacer »** (filtres de l'Historique NEWGEN) vide tout, statut
     compris ; « Voir tous » remet le statut par défaut (Planifié).
   - **Liste de connexion Admin** (bouton « Changer », session ouverte) :
