@@ -87,19 +87,15 @@ jobs:
         run: npm ci
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
-      - name: Sandbox navigateur (utils + logic)
-        run: node sandbox.test.js
-
-      - name: Tests e2e (index + admin, tous les onglets)
-        run: node e2e.test.js
-
-      - name: Politique d'appel GAS (plafonds, reprises, doublage)
-        run: node reseau.test.js
-
-      - name: Appels GAS superflus (ouverture, écriture)
-        run: node appels.test.js
+      # sandbox, smoke (tous les onglets), réseau (plafonds, reprises,
+      # doublage), appels (nombre d'appels émis) — un seul lancement, en
+      # parallèle (26/09/2026 : ~140 s en série → ~45 s).
+      - name: Tests navigateur (Playwright)
+        run: npx playwright test
+        env:
+          CI: 'true'
 
 
   deploy:

@@ -44,12 +44,13 @@ git checkout main && git merge <branche> --no-ff && git push origin main
 | `node --test utils.test.js` | `utils.js` — dates, ICS, communes |
 | `node --test logic.test.js` | `logic.js` — KPI, validation, filtres, matériel |
 | `node --test contract.test.js` | format des données envoyées à GAS |
-| `node sandbox.test.js` | `utils.js`+`logic.js` chargent dans un navigateur |
-| `node e2e.test.js` | les deux pages s'ouvrent, chaque onglet répond, sans erreur JS |
-| `node reseau.test.js` | politique d'appel GAS : plafonds, reprises, doublage |
-| `node appels.test.js` | nombre d'appels GAS émis à l'ouverture et après écriture |
+| `npx playwright test` | tests navigateur, en parallèle (`e2e/`, ~45 s) : |
+| ↳ `e2e/sandbox.spec.js` | `utils.js`+`logic.js` chargent dans un navigateur |
+| ↳ `e2e/smoke.spec.js` | les deux pages s'ouvrent, chaque onglet répond, sans erreur JS |
+| ↳ `e2e/reseau.spec.js` | politique d'appel : plafonds, reprises, doublage |
+| ↳ `e2e/appels.spec.js` | nombre d'appels émis à l'ouverture et après écriture |
 
-Les quatre runners navigateur exigent `npm ci` et un Chromium (préinstallé en
+Les tests navigateur exigent `npm ci` et un Chromium (préinstallé en
 local, sinon `npx playwright install chromium`).
 
 **Quand lancer quoi**
@@ -59,14 +60,14 @@ local, sinon `npx playwright install chromium`).
   laisse les deux pages blanches alors que les suites Node passent.
 - `utils.js`, `logic.js` ou le format entry modifiés → les trois suites Node.
 - `gasAppel`, `gasUnAppel`, `gasLectureDoublee` ou une constante `GAS_*`
-  modifiée → **`reseau.test.js`** (~40 s). Il verrouille notamment qu'une
+  modifiée → **`e2e/reseau.spec.js`**. Il verrouille notamment qu'une
   écriture n'est jamais doublée : deux `saveEntry` en vol en même temps
   peuvent tous deux conclure « ligne absente » et faire chacun leur
   `appendRow`, soit un atelier en double dans le classeur.
 - Effets de démarrage d'`app.js`/`admin_app.js`, chemin d'écriture ou
-  `addLog` modifiés → **`appels.test.js`**.
+  `addLog` modifiés → **`e2e/appels.spec.js`**.
 - Changement mineur (texte, style, élément UI sans logique) → pas besoin de
-  relancer `sandbox`/`e2e` localement, la CI s'en charge à chaque push.
+  relancer `sandbox`/`smoke` localement, la CI s'en charge à chaque push.
 
 **Règles de décision**
 
@@ -142,14 +143,14 @@ Conséquences, à ne pas réapprendre à chaque session :
   chaque livraison ratée devenait 35 s d'écran d'attente — 84 s relevées pour
   une seule connexion, dont 51 d'attente pure sur des appels déjà morts.
   Plafonds actuels : 12 s en lecture, 12 s en écriture, 25 s pour `saveMany`.
-  **Verrouillés par `reseau.test.js`** : si un de ses cas échoue, c'est qu'on
+  **Verrouillés par `e2e/reseau.spec.js`** : si un de ses cas échoue, c'est qu'on
   est en train de refaire l'erreur.
 - **La panne frappe par fenêtres de temps, pas par appel.** Le 18/09 à 22:10,
   les trois appels d'ouverture meurent dans la même seconde et leurs trois
   doublons réussissent dans la même seconde. Donc moins d'appels simultanés =
   moins de chances de tout perdre d'un coup. Avant d'ajouter un appel au
   démarrage, vérifier que l'info ne voyage pas déjà dans `getAll` (drapeau
-  maintenance, listes, visibilité, couleurs, stock). **`appels.test.js`**
+  maintenance, listes, visibilité, couleurs, stock). **`e2e/appels.spec.js`**
   échoue si un appel supprimé réapparaît.
 - **Rejouer une écriture est sûr** — vérifié en production le 18/09 : le
   client génère l'`_id` avant l'envoi et `actionSaveEntry` retrouve la ligne
@@ -215,11 +216,11 @@ Extrait du guide de collaboration multi-projets, adapté pour ce dépôt.
 10. Sur tout problème réseau/GAS qui dure plus de 3 itérations : demander une capture Network DevTools ou les Exécutions GAS avant de continuer à supposer.
 11. Vérifier l'état exact du déploiement GAS (version + URL active dans `shared.js` → `GS_URL`) en début de session dès qu'un bug réseau est signalé.
 
-14. **Doser les tests à leur valeur, pas à la prudence.** Les suites navigateur de ce dépôt coûtent cher à chaque lancement (`reseau.test.js` ~40 s, `sandbox`/`e2e` davantage) : les lancer une seule fois, juste avant le commit, jamais à chaque étape intermédiaire — la section 2 dit déjà laquelle se déclenche sur quoi. `node --check` et les suites Node, elles, sont quasi gratuites : les lancer librement. Écrire un ou deux tests ciblés par correctif, pas quatre à six ; réserver la contre-preuve — celle qui rejoue l'implémentation fautive — aux pièges réellement subtils, ceux qu'on remettrait sans s'en apercevoir.
+14. **Doser les tests à leur valeur, pas à la prudence.** Les suites navigateur de ce dépôt coûtent cher à chaque lancement (`npx playwright test` ~45 s en tout ; un seul fichier : `npx playwright test e2e/reseau.spec.js`) : les lancer une seule fois, juste avant le commit, jamais à chaque étape intermédiaire — la section 2 dit déjà laquelle se déclenche sur quoi. `node --check` et les suites Node, elles, sont quasi gratuites : les lancer librement. Écrire un ou deux tests ciblés par correctif, pas quatre à six ; réserver la contre-preuve — celle qui rejoue l'implémentation fautive — aux pièges réellement subtils, ceux qu'on remettrait sans s'en apercevoir.
 15. **Les tests ne trouvent pas les défauts de sens.** Ils vérifient des calculs et des états, pas ce qu'un écran est censé signifier : un affichage peut calculer juste et raconter faux. Un test écrit après coup empêche la régression, il ne découvre rien. Ne jamais présenter une suite verte comme une garantie que l'affichage est correct, ni s'en servir pour décharger l'utilisateur du contrôle visuel.
 16. **Un harnais de vérification qui échoue est du gaspillage, pas de la prudence.** Avant de conclure à une anomalie, éliminer d'abord l'instrument : générateur de données mal distribué, page non chargée, mauvaise sélection. Réutiliser un harnais qui a déjà fonctionné plutôt que le réécrire à chaque fois.
 
-17. **Le rendu se vérifie à ton œil, pas par un test.** Un changement de rendu pur (couleur, libellé, position, CSS, mise en page) ne justifie ni test ni capture : dire quoi regarder et laisser l'utilisateur confirmer coûte moins cher et voit mieux. La ligne de partage est **rendu / calcul**, pas visible / invisible — un calcul, un filtre ou un format de données garde son test ciblé, parce que l'œil ne contrôle que le cas affiché ce jour-là : une régression sur une combinaison de valeurs rare passera inaperçue. `sandbox`/`e2e`/`reseau`/`appels` ne se lancent que si le changement touche ce qu'ils couvrent vraiment (section 2) ; pour le reste la CI au push suffit. Capture avant/après à la demande, pas par défaut.
+17. **Le rendu se vérifie à ton œil, pas par un test.** Un changement de rendu pur (couleur, libellé, position, CSS, mise en page) ne justifie ni test ni capture : dire quoi regarder et laisser l'utilisateur confirmer coûte moins cher et voit mieux. La ligne de partage est **rendu / calcul**, pas visible / invisible — un calcul, un filtre ou un format de données garde son test ciblé, parce que l'œil ne contrôle que le cas affiché ce jour-là : une régression sur une combinaison de valeurs rare passera inaperçue. les tests Playwright ne se lancent que si le changement touche ce qu'ils couvrent vraiment (section 2) ; pour le reste la CI au push suffit. Capture avant/après à la demande, pas par défaut.
 
 18. **Toute modification des interfaces se fait sur NEWGEN *et* NextStep** (demande de l'utilisateur, 26/09/2026) : les deux applis partagent la même API et la même base depuis la bascule du 25/09/2026. Un changement fait sur une seule est l'exception, annoncée comme telle au moment du choix. En fin de livraison, dire en une ligne ce qui est en ligne sur chacune (commit, `?v=`) pour que l'utilisateur sache quoi recharger.
 

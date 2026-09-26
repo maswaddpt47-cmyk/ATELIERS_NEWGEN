@@ -35,25 +35,25 @@ run_suite logic.test.js
 run_suite contract.test.js
 
 # Sandbox navigateur (Playwright — utils.js + logic.js isolés)
-if node sandbox.test.js 2>/dev/null; then
-  echo "✅ sandbox.test.js — chargement navigateur OK"
+if npx playwright test e2e/sandbox.spec.js --reporter=line >/dev/null 2>&1; then
+  echo "✅ sandbox — chargement navigateur OK"
 else
-  echo "❌ sandbox.test.js — erreur de chargement navigateur"
+  echo "❌ sandbox — erreur de chargement navigateur"
   FAIL=$((FAIL + 1))
 fi
 
-# E2E navigateur — uniquement si index.html, admin.html ou shared.js ont changé récemment
+# Smoke navigateur — uniquement si index.html, admin.html ou shared.js ont changé récemment
 UI_CHANGED=$(git log --name-only -5 --format="" 2>/dev/null | grep -E '^(index|admin)\.html$|^shared\.js$' | head -1)
 if [ -n "$UI_CHANGED" ]; then
-  if node e2e.test.js 2>&1 | tail -1 | grep -q "✅"; then
-    echo "✅ e2e.test.js — tous les onglets OK"
+  if npx playwright test e2e/smoke.spec.js --reporter=line >/tmp/smoke.log 2>&1; then
+    echo "✅ smoke — tous les onglets OK"
   else
-    echo "❌ e2e.test.js — erreurs JS détectées"
-    node e2e.test.js 2>&1 | grep "❌"
+    echo "❌ smoke — erreurs JS détectées"
+    grep -E "✘|Error" /tmp/smoke.log | head -10
     FAIL=$((FAIL + 1))
   fi
 else
-  echo "⏭  e2e.test.js — ignoré (pas de changement UI dans les 5 derniers commits)"
+  echo "⏭  smoke — ignoré (pas de changement UI dans les 5 derniers commits)"
 fi
 
 if [ "$FAIL" -eq 0 ]; then

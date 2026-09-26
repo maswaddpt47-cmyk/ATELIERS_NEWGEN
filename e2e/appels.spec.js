@@ -1,31 +1,13 @@
-#!/usr/bin/env node
-/**
- * appels.test.js — Playwright : vérifie ce sur quoi repose le diagnostic de
- * latence — le nombre d'appels GAS réellement émis, et l'intégrité du journal
- * Admin qui sert à les lire.
- *
- * Lance avec : node appels.test.js   (exige `npm ci` + Chromium)
- *
- * Pourquoi : sur ce déploiement Apps Script, une partie des réponses n'est
- * jamais livrée (404 au bout de 27 s, appels abandonnés — voir la note en
- * tête de shared.js). Chaque appel émis est donc un tirage au sort, et le
- * journal du 18/09/2026 montre que la panne frappe par fenêtres de temps :
- * trois appels lancés ensemble à 22:10:09 sont morts ensemble. Le nombre
- * d'appels n'est pas une question de quota, c'est une question de latence
- * ressentie — d'où ce garde-fou, qui échoue si un appel réapparaît.
- */
-
-'use strict';
-
-const { chromium } = require('playwright');
-const http = require('http');
-const fs   = require('fs');
+// Nombre d'appels serveur émis à l'ouverture et après écriture, intégrité du
+// journal Admin, contrat de l'API (jeton, POST), mot de passe oublié. Porté de
+// appels.test.js le 26/09/2026 : mêmes parcours, mêmes contrôles (chaque
+// contrôle reste signalé séparément, expect.soft), un test par parcours, en
+// parallèle. Échoue si un appel supprimé au démarrage réapparaît.
+const { test, expect } = require('@playwright/test');
+const fs = require('fs');
 const path = require('path');
 
-const ROOT = __dirname;
-const PORT = 17343;
-const CHROMIUM_PREINSTALLED = '/opt/pw-browsers/chromium';
-
+const ROOT = path.resolve(__dirname, '..');
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js':   'application/javascript; charset=utf-8',
@@ -55,19 +37,6 @@ const MOCK = JSON.stringify({
     bingo:true, calendrier:true, agenda:true, roadmap:true, gestion_ordi:true,
   },
 });
-
-function startServer() {
-  return new Promise((resolve, reject) => {
-    const server = http.createServer((req, res) => {
-      const filePath = path.join(ROOT, (req.url === '/' ? '/index.html' : req.url).split('?')[0]);
-      if (!filePath.startsWith(ROOT) || !fs.existsSync(filePath)) { res.writeHead(404); res.end('nope'); return; }
-      res.writeHead(200, { 'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream' });
-      fs.createReadStream(filePath).pipe(res);
-    });
-    server.listen(PORT, '127.0.0.1', () => resolve(server));
-    server.on('error', reject);
-  });
-}
 
 const JETON = 'a'.repeat(64);
 
@@ -142,26 +111,18 @@ async function connecter(page) {
   }
 }
 
-const resultats = [];
 function verifier(nom, condition, detail) {
-  resultats.push({ nom, ok: !!condition, detail });
-  console.log(`  ${condition ? '✓' : '✗'} ${nom}${detail ? `  (${detail})` : ''}`);
+  expect.soft(!!condition, detail ? `${nom}  (${detail})` : nom).toBe(true);
 }
 
-(async () => {
-  const server  = await startServer();
-  const browser = await chromium.launch({
-    executablePath: fs.existsSync(CHROMIUM_PREINSTALLED) ? CHROMIUM_PREINSTALLED : undefined,
-    args: ['--no-sandbox'],
-  });
+const preparerApi = preparer;
+const ecranConnexion = page => page.locator('input[type="password"]').first().isVisible({ timeout: 4000 }).catch(() => false);
 
-  console.log('\n── Appels GAS émis ──');
-
-  // 1. Ouverture d'index.html : getConfig ne doit plus partir (le drapeau
-  //    maintenance voyage dans getAll).
-  {
+// 1. Ouverture d'index.html : getConfig ne doit plus partir (le drapeau
+//    maintenance voyage dans getAll).
+test('index — ouverture : API seule, sans getConfig dédié', async ({ browser, baseURL }) => {
     const { ctx, page, appels, gas } = await preparer(browser);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil:'networkidle', timeout:20000 });
+    await page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
     await page.waitForTimeout(1500);
     // Bascule du 25/09/2026 : sans paramètre, plus aucun appel au GAS.
     verifier('index — par défaut : API Alwaysdata, aucun appel GAS', gas.length === 0 && appels.length > 0, gas.join(', ') || 'aucun');
@@ -171,13 +132,13 @@ function verifier(nom, condition, detail) {
       appels.join(', ') || 'aucun',
     );
     await ctx.close();
-  }
+});
 
-  // 2. Modifier un atelier depuis le panneau Historique ne doit PAS
-  //    déclencher de rechargement complet.
-  {
+// 2. Modifier un atelier depuis le panneau Historique ne doit PAS
+//    déclencher de rechargement complet.
+test('index — modifier un atelier : saveEntry seul, pas de getAll', async ({ browser, baseURL }) => {
     const { ctx, page, appels } = await preparer(browser);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil:'networkidle', timeout:20000 });
+    await page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
     await connecter(page);
     await page.waitForTimeout(800);
 
@@ -202,17 +163,17 @@ function verifier(nom, condition, detail) {
       verifier('index — modifier un atelier : saveEntry seul, pas de getAll', false, 'atelier de test introuvable dans Historique');
     }
     await ctx.close();
-  }
+});
 
-  // 3. Deux onglets Admin ouverts en même temps ne doivent pas s'écraser le
-  //    journal — c'est l'outil qui sert à mesurer la latence, et on travaille
-  //    rarement avec un seul onglet quand on diagnostique.
-  //    window.gasLogHook (exposé par admin_app.js) appelle addLog : il permet
-  //    de faire journaliser un onglet précis sans piloter son interface.
-  {
+// 3. Deux onglets Admin ouverts en même temps ne doivent pas s'écraser le
+//    journal — c'est l'outil qui sert à mesurer la latence, et on travaille
+//    rarement avec un seul onglet quand on diagnostique.
+//    window.gasLogHook (exposé par admin_app.js) appelle addLog : il permet
+//    de faire journaliser un onglet précis sans piloter son interface.
+test("admin — deux onglets ne s'écrasent pas le journal", async ({ browser, baseURL }) => {
     const { ctx, page: A } = await preparer(browser);
     const connecterAdmin = async (page) => {
-      await page.goto(`http://127.0.0.1:${PORT}/admin.html`, { waitUntil:'networkidle', timeout:20000 });
+      await page.goto(`${baseURL}/admin.html`, { waitUntil:'networkidle', timeout:20000 });
       const pwd = page.locator('input[type="password"]').first();
       if (await pwd.isVisible({ timeout:4000 }).catch(() => false)) {
         await page.locator('select').first().selectOption({ index: 1 }).catch(() => {});  // aucun nom présélectionné (25/09/2026)
@@ -242,18 +203,15 @@ function verifier(nom, condition, detail) {
       `${msgs.length} entrées conservées`,
     );
     await ctx.close();
-  }
+});
 
-  // 4 à 6. Mode API (?backend=php, AG-011) : l'API refuse getAll/getConfig
-  //    sans jeton. Avant connexion, seul getComptes (public) doit partir ;
-  //    après, tout part en POST avec le jeton dans le corps, jamais dans
-  //    l'URL ; une réponse {auth:true} ramène à l'écran de connexion.
-  const preparerApi = preparer;
-  const ecranConnexion = page => page.locator('input[type="password"]').first().isVisible({ timeout: 4000 }).catch(() => false);
-
-  {
+// 4 à 6. Mode API (?backend=php, AG-011) : l'API refuse getAll/getConfig
+//    sans jeton. Avant connexion, seul getComptes (public) doit partir ;
+//    après, tout part en POST avec le jeton dans le corps, jamais dans
+//    l'URL ; une réponse {auth:true} ramène à l'écran de connexion.
+test('api — index : avant/après connexion, jeton, jeton refusé', async ({ browser, baseURL }) => {
     const p = await preparerApi(browser);
-    await p.page.goto(`http://127.0.0.1:${PORT}/index.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
+    await p.page.goto(`${baseURL}/index.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
     await p.page.waitForTimeout(1200);
     verifier('api — index avant connexion : getComptes seul', p.appels.join(',') === 'getComptes', p.appels.join(', ') || 'aucun');
     verifier('api — aucun appel GAS en mode API', !p.appels.includes('?') && p.requetes.length === p.appels.length);
@@ -265,15 +223,20 @@ function verifier(nom, condition, detail) {
       !!getAll && getAll.methode === 'POST' && getAll.jeton === JETON && !/token|password/.test(getAll.url),
       getAll ? `${getAll.methode} ${getAll.url}` : '');
     verifier('api — pas de getComptes après connexion (inactifs dans getAll)', p.appels.filter(a => a === 'getComptes').length === 1, p.appels.join(', '));
+    // Ajouté au portage (26/09/2026) : depuis la bascule, rien ne se charge
+    // avant la connexion, donc « ouverture sans getConfig » ne voyait plus
+    // rien. Le drapeau maintenance voyage dans getAll : pas d'appel dédié.
+    verifier('api — index après connexion : pas de getConfig dédié', !p.appels.includes('getConfig'), p.appels.join(', '));
     p.jetonRefuse = true;
     await p.page.evaluate(() => window.fetchAll(new Date().getFullYear(), { force: true }).catch(() => {}));
     await p.page.waitForTimeout(800);
     verifier('api — index : jeton refusé → écran de connexion', await ecranConnexion(p.page));
     await p.ctx.close();
-  }
-  {
+});
+
+test('api — admin : avant/après connexion, jeton refusé', async ({ browser, baseURL }) => {
     const p = await preparerApi(browser);
-    await p.page.goto(`http://127.0.0.1:${PORT}/admin.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
+    await p.page.goto(`${baseURL}/admin.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
     await p.page.waitForTimeout(1200);
     verifier('api — admin avant connexion : ni getAll ni getConfig', p.appels.join(',') === 'getComptes', p.appels.join(', ') || 'aucun');
     const pwd = p.page.locator('input[type="password"]').first();
@@ -287,8 +250,9 @@ function verifier(nom, condition, detail) {
     await p.page.waitForTimeout(800);
     verifier('api — admin : jeton refusé → écran de connexion', await ecranConnexion(p.page));
     await p.ctx.close();
-  }
-  {
+});
+
+test('api — liste de connexion Admin sans les comptes « sans Admin »', async ({ browser, baseURL }) => {
     // Connecté en admin, getComptes rend TOUS les comptes avec leur
     // interrupteur (onglet Listes) : la liste de connexion (bouton « Changer »)
     // ne doit garder que les « accès Admin » (26/09/2026).
@@ -297,19 +261,19 @@ function verifier(nom, condition, detail) {
       { conseiller: 'Alice Martin', role: 'admin', actif: 'OUI' },
       { conseiller: 'Bruno Sansadmin', role: 'user', actif: 'NON' },
     ];
-    await p.page.goto(`http://127.0.0.1:${PORT}/admin.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
+    await p.page.goto(`${baseURL}/admin.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
     await p.page.waitForTimeout(1200);
     const noms = await p.page.locator('select').first().locator('option').allTextContents();
     verifier('api — liste de connexion Admin sans les comptes « sans Admin »',
       noms.includes('Alice Martin') && !noms.includes('Bruno Sansadmin'), noms.join(', '));
     await p.ctx.close();
-  }
+});
 
-  // 8. Déconnexion automatique après 30 min d'inactivité (24/09/2026),
-  //    sauf pendant la saisie d'un atelier (rien n'est gardé en brouillon).
-  {
+// 8. Déconnexion automatique après 30 min d'inactivité (24/09/2026),
+//    sauf pendant la saisie d'un atelier (rien n'est gardé en brouillon).
+test("index — déconnexion après 30 min d'inactivité, sauf en saisie", async ({ browser, baseURL }) => {
     const { ctx, page } = await preparer(browser);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil:'networkidle', timeout:20000 });
+    await page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
     await connecter(page);
     const vieillir = () => page.evaluate(() => {
       localStorage.setItem('newgen:idx_derniere_activite', String(Date.now() - 31 * 60 * 1000));
@@ -327,13 +291,13 @@ function verifier(nom, condition, detail) {
     await vieillir(); await page.waitForTimeout(400);
     verifier('index — 30 min d\'inactivité hors saisie : retour à la connexion', await pwdVisible());
     await ctx.close();
-  }
+});
 
-  // 7. Mot de passe oublié (AG-013) : lien sur l'écran de connexion, puis
-  //    formulaire ouvert par le lien reçu par mail (?reinit=…).
-  {
+// 7. Mot de passe oublié (AG-013) : lien sur l'écran de connexion, puis
+//    formulaire ouvert par le lien reçu par mail (?reinit=…).
+test('api — mot de passe oublié et lien reçu', async ({ browser, baseURL }) => {
     const p = await preparerApi(browser);
-    await p.page.goto(`http://127.0.0.1:${PORT}/index.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
+    await p.page.goto(`${baseURL}/index.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
     // Aucun nom présélectionné (25/09/2026) : sans choix, le lien ne peut
     // rien demander — vérifié ici, avant de choisir.
     await p.page.getByRole('button', { name:'Mot de passe oublié ?' }).click();
@@ -348,7 +312,7 @@ function verifier(nom, condition, detail) {
     verifier('api — mot de passe oublié : message affiché',
       await p.page.getByText(/un lien vient d/).isVisible().catch(() => false));
     const jeton = 'c'.repeat(64);
-    await p.page.goto(`http://127.0.0.1:${PORT}/index.html?backend=php&reinit=${jeton}`, { waitUntil:'networkidle', timeout:20000 });
+    await p.page.goto(`${baseURL}/index.html?backend=php&reinit=${jeton}`, { waitUntil:'networkidle', timeout:20000 });
     await p.page.getByPlaceholder('Nouveau mot de passe').fill('Nouveau-Mdp-2026!');
     await p.page.getByPlaceholder('Confirmer').fill('Nouveau-Mdp-2026!');
     await p.page.getByRole('button', { name:/Valider/ }).click();
@@ -359,13 +323,5 @@ function verifier(nom, condition, detail) {
     verifier('api — lien reçu : succès affiché, jeton retiré de la barre d\'adresse',
       await p.page.getByText(/Mot de passe changé/).isVisible().catch(() => false) && !p.page.url().includes('reinit='), p.page.url());
     await p.ctx.close();
-  }
+});
 
-  await browser.close();
-  server.close();
-
-  const echecs = resultats.filter(r => !r.ok).length;
-  if (echecs === 0) console.log('\n✅ appels — aucun appel GAS superflu sur les parcours couverts');
-  else console.log(`\n❌ appels — ${echecs} problème(s) détecté(s)`);
-  process.exit(echecs > 0 ? 1 : 0);
-})();

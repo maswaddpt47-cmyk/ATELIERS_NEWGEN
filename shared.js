@@ -726,7 +726,7 @@ window.requeteServeur = function(params){
 // NE JAMAIS RALLONGER CES PLAFONDS. Attendre ne récupère aucune réponse
 // perdue, ça ne fait qu'allonger l'écran d'attente — à 35 s, une connexion a
 // été relevée à 84 s, dont 51 d'attente pure sur des appels déjà morts.
-// Les valeurs et les comportements sont verrouillés par reseau.test.js : si
+// Les valeurs et les comportements sont verrouillés par e2e/reseau.spec.js : si
 // un de ses cas échoue, c'est qu'on est en train de refaire l'erreur.
 //
 // Lectures  : coupées tôt, plusieurs tentatives, et appel DOUBLÉ passé un

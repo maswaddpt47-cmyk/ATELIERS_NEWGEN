@@ -47,18 +47,6 @@ par l'utilisateur le 25/09.
 
 ## Reste ouvert
 
-- **En cours (26/09/2026, demande de l'utilisateur) — tests navigateur de
-  NEWGEN passés à Playwright, comme NextStep.** Mesuré avant : sandbox 1 s,
-  e2e 20 s, réseau 85 s, appels 34 s, soit ~140 s en série (+ ~1 min
-  d'installation de Chromium avec `--with-deps` en CI). Le réseau pèse 60 % :
-  11 scénarios à vrais délais (7 à 25 s) joués l'un après l'autre. Plan :
-  un test Playwright par scénario, en parallèle ; mêmes vérifications, mêmes
-  seuils ; les anciens scripts ne partent qu'une fois le portage vert.
-  Avancement : `playwright.config.js`, `e2e/server.js` ; **portés et
-  contre-éprouvés** : `sandbox`, `reseau` (85 s → 32 s à 4 processus ;
-  retrait de `saveEntry` des écritures attrapé comme par l'ancien script),
-  `smoke` (ex-`e2e`, 20 s → 13 s ; onglet Corbeille cassé exprès attrapé).
-  Reste : `appels`, puis la CI.
 
 - 📅 **30/09/2026 — relève du journal** (rappel planifié) : journal Admin
   NextStep depuis la bascule. Point de comparaison : labo du 24-25/09, 0/27
@@ -168,7 +156,7 @@ par l'utilisateur le 25/09.
     compris ; « Voir tous » remet le statut par défaut (Planifié).
   - **Liste de connexion Admin** (bouton « Changer », session ouverte) :
     seuls les comptes à « accès Admin » — filtre `actif !== 'NON'` côté
-    page, sur les deux sites (NEWGEN testé par `appels.test.js`). Retiré de
+    page, sur les deux sites (NEWGEN testé par `e2e/appels.spec.js`). Retiré de
     NextStep puis remis le 26/09 : sans lui, tous les conseillers
     réapparaissent.
 
@@ -216,10 +204,10 @@ libre.
 - **Les écritures ne sont jamais doublées** par la couche réseau
   (`GAS_ACTIONS_ECRITURE`, décidé par la couche, pas par l'appelant).
 - **Plafonds : 12 s lecture, 12 s écriture, 25 s `saveMany`** — verrouillés
-  par `reseau.test.js`. Les rallonger n'a jamais récupéré une réponse.
+  par `e2e/reseau.spec.js`. Les rallonger n'a jamais récupéré une réponse.
 - **Aucun appel superflu au démarrage ni après une écriture** : les écritures
   s'appliquent localement (`appliquerEntree`/`retirerEntree`), pas de
-  rechargement pour relire. Verrouillé par `appels.test.js`.
+  rechargement pour relire. Verrouillé par `e2e/appels.spec.js`.
 - **`sw.js` reste publié** et ne fait que se désinscrire ; jamais de
   désinscription depuis la page (origine partagée avec NextStep et GDINV2).
 - **`periodePretMateriel` retombe sur la date de l'atelier** quand les dates
