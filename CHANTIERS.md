@@ -74,17 +74,23 @@ déclencheurs supprimés ; import verrouillé ; rappels 08:00 ; copie de nuit
 03:00 (30 j) + copie chiffrée hors site 04:15 (déchiffrement testé) ;
 2FA GitHub et Alwaysdata ; registre de sécurité v1.0 (hors dépôt).
 
-**Reste ouvert, hors chantier** (à reprendre sur demande) :
-- relève du journal le 30/09 (rappel planifié) ; sauvegardes Alwaysdata
-  encore vides le 25/09 → recontrôler, sinon support ;
+**Reste ouvert, hors chantier** — bilan refait le 26/09/2026 :
+- relève du journal le 30/09 (rappel planifié) ; **sauvegardes natives
+  Alwaysdata** encore vides le 25/09 → à recontrôler par l'utilisateur
+  (Avancé → Restauration de sauvegardes), sinon support ;
 - sécurité : ~~jeton annulé à la déconnexion~~ (fait le 25/09/2026 :
   action `logout`, appelée par `authToken.clear()`), ~~adresses mail réservées aux
   admins~~ (fait le 25/09/2026 : `getAll`/`getConfig` ne les rendent plus
   qu'à une session admin/superviseur, tests `[RGPD]` d'`api.test.php`), ~~bibliothèques JS hébergées~~ (fait le 25/09/2026 : React, ECharts,
   xlsx, html2canvas, jsPDF dans `vendor/` des deux projets, plus aucun CDN), déploiement par clé SSH ;
 - consigne de l'audit trimestriel à mettre à jour avant le 01/10/2026 ;
-- AGORA AG-010 et AG-013 à clore ; `manifest-*.json` à retirer plus tard ;
-- purge : copies chiffrées conservées sans limite (durée à fixer).
+- `manifest-*.json` à retirer plus tard ;
+- réécriture de l'historique d'`ateliers-backups` (sinon une copie de plus
+  de 90 jours reste lisible dans l'historique git) : décision de
+  l'utilisateur, avant fin décembre 2026.
+- ~~AGORA AG-010 et AG-013~~ clos le 26/09/2026 ; ~~durée des copies
+  chiffrées~~ fixée à 90 jours le 25/09/2026 (AG-014) ; ~~porte de secours
+  `?backend=gas`~~ et ~~`labo-nextstep/`~~ retirés le 26/09/2026.
 
 ## ✅ 25/09/2026 — Bascule faite le matin (avancée par l'utilisateur)
 
@@ -100,7 +106,7 @@ supprimé. **Contrôlé par l'utilisateur le 25/09 vers 10:25** : Admin et Index
 la nouvelle Admin. Mention « Version 2 — serveur Alwaysdata » ajoutée
 (NextStep `69afc72`, en ligne 10:19). **Bascule terminée.**
 
-## 🚀 24/09/2026 — Bascule prête, fixée au 25/09/2026 à 15 h 30 (reprendre ici)
+## 🚀 24/09/2026 — Bascule prête, fixée au 25/09/2026 à 15 h 30
 
 **Mail envoyé à l'équipe le 24/09/2026** (date et heure annoncées : 25/09 à 15 h 30).
 
@@ -189,14 +195,14 @@ déployé 11:53, 7 tests) : « Planifié » à date passée, un mail par conseil
 l'ignorait). Essai `--test` reçu le 25/09 à 12:01 (Outlook, bouton corrigé en
 blanc) ; **tâche planifiée créée le 25/09 : tous les jours à 08:00**.
 
-✅ **NEWGEN sur l'API par défaut depuis le 25/09 à 10:35** (`9324cb1`) :
-`?backend=gas` = porte de secours vers l'ancien GAS NEWGEN (données figées).
-Déclencheurs du GAS NEWGEN à vérifier par l'utilisateur.
+✅ **NEWGEN sur l'API par défaut depuis le 25/09 à 10:35** (`9324cb1`) ;
+GAS NEWGEN passé à « Seulement moi » et déclencheur supprimé par
+l'utilisateur le 25/09 ; porte de secours `?backend=gas` retirée le 26/09.
 
 ## 🧭 23/09/2026 — Refonte d'architecture : cap décidé, AG-009 tranché, étape 0 (mesure) en cours
 
 Session de réflexion demandée par l'utilisateur (« prendre du recul, ne rien
-faire sauf proposer »). Aucun code touché. **Reprendre ici.**
+faire sauf proposer »). Aucun code touché.
 
 **Réponses de l'utilisateur (23/09/2026)** :
 - Aucune différence métier NextStep / NEWGEN : NEWGEN devait **prendre la
@@ -871,68 +877,13 @@ ce jour, mais c'est la même cause. Correction : préfixer ces clés comme pour
 le journal, en migrant l'existant pour ne pas réinitialiser les préférences
 des conseillers.
 
-## 2. Le proxy se justifie-t-il ? — répondu à moitié le 22/09/2026
+## 2 à 5 et 7. Sans objet depuis la bascule du 25/09/2026
 
-La série du banc donne les deux chiffres, et ils ne disent pas la même chose :
-
-- **Taux de perte par appel : 30 à 38 %** (premier appel, première tentative
-  — 30 % quand un seul appel est en vol, 38 % quand plusieurs partent
-  ensemble). Dans la fourchette « 30-40 % » qui justifiait le proxy.
-- **Taux d'échec ressenti avec le doublage : 4 %.** Sous le seuil des ~15 %
-  en dessous duquel le `banc/README.md` dit « ne rien construire de plus,
-  l'appli est utilisable ».
-
-**Lecture retenue : le doublage d'abord, le proxy ensuite et sans urgence.**
-Le doublage divise les échecs par cinq pour le coût d'un fichier déjà écrit ;
-le proxy demande un hébergement qu'on n'a toujours pas (§3). Ce qui resterait
-à gagner après le portage, c'est la latence — 11,9 s de médiane, ça reste
-lent — pas la fiabilité.
-
-À rouvrir si, après le portage, le taux ressenti remonte au-dessus de 15 %.
-
-## 3. Chantier conditionnel — proxy pour supprimer la perte
-
-La couche de reprise côté client a atteint sa limite : plafonds courts,
-appels superflus supprimés, doublons annulés. À 54 % de pertes, aucune
-politique de reprise ne compense.
-
-Le proxy appellerait GAS **côté serveur** : la redirection `/exec →
-googleusercontent`, qui expire avant d'être suivie depuis un mobile, serait
-suivie en quelques dizaines de millisecondes depuis un datacenter. En bonus :
-cache court mutualisé pour toute l'équipe, URL `/exec` retirée du JS public
-(cf. §4), et les deux projets alignés sur la même couche réseau.
-
-**Bloqué par une question sans réponse au 20/09/2026 :** l'utilisateur
-dispose-t-il d'un hébergement exécutant PHP en HTTPS ? Recherche faite dans
-les trois repos (fichiers `.php`, `.htaccess`, `CNAME`, workflows FTP,
-domaines cités, historique git) : **aucune trace**. Les 13 dépôts sont
-publics et vivent sur GitHub Pages, qui ne sert que du statique.
-
-Alternative si aucun hébergement : Cloudflare Workers (gratuit, HTTPS
-d'office, ~20 lignes). ⚠️ Ajoute un sous-traitant américain de plus dans la
-chaîne — à assumer explicitement pour une collectivité.
-
-## 4. ⚠️ Sécurité — endpoints accessibles sans token
-
-`getAll`, `getComptes` et `getConfig` sont dans `READ_ACTIONS` côté GAS :
-accessibles **sans aucun token**. L'URL `/exec` est en clair dans
-`shared.js`, dans un dépôt **public**. Qui la lit peut récupérer les ateliers
-de l'année, la liste des agents avec rôles et état actif, et la clé `emails`
-de la config.
-
-Chantier séparé, décidé le 18/09. Implique un redéploiement GAS manuel et de
-revoir l'écran de connexion, qui appelle `getComptes` avant d'avoir un token.
-
-## 5. Nettoyage restant — changelog dans `gas/GAS_NEWGEN.js`
-
-35 entrées de version (~200 lignes sur 1020) subsistent en en-tête. Non
-retirées volontairement : ce fichier est la **copie de référence diffable**
-du script collé à la main dans l'éditeur Apps Script. Le nettoyer maintenant
-désynchroniserait la copie et rendrait illisible le prochain diff avant
-déploiement.
-
-→ À faire **au prochain déploiement GAS réel**, quand le fichier doit de
-toute façon être recollé dans l'éditeur.
+Retirés le 26/09/2026 (texte complet dans l'historique git de ce fichier) :
+proxy pour la perte des réponses GAS (l'API Alwaysdata l'a remplacé), points
+d'accès GAS sans jeton (GAS coupé, l'API exige un jeton), changelog de
+`gas/GAS_NEWGEN.js` (plus de déploiement GAS), vérifications PWA (plus de
+PWA depuis AG-012).
 
 ## 6. ⚠️ Piège — la logique du stock est dupliquée dans `shared.js`
 
@@ -952,21 +903,6 @@ NextStep n'a pas cette duplication : son `shared.js` consomme `logic.js`,
 chargé avant lui dans les deux pages. C'est un argument de plus pour la piste
 `gas-client.js` du §6 de NextStep — le même principe appliqué à la couche
 matériel.
-
-## 7. Vérifications terrain en attente (PWA, 19/09/2026)
-
-Deux points livrés le 19/09 mais jamais vérifiés en dehors des tests
-automatisés (qui ne peuvent pas les couvrir) :
-
-- **Installabilité PWA** : confirmer sur un Android réel que "Installer
-  l'application" apparaît bien pour `index.html` et `admin.html` (manifest +
-  icônes + service worker déployés — voir `MD-LIB/pwa-service-worker.md`).
-- **Lisibilité des couleurs de la Frise du parc** : les barres de
-  `FriseMateriel` (`shared.js`) sont colorées par conum depuis le 19/09 —
-  pas de vérification visuelle du contraste texte/fond pour chaque
-  conseiller existant.
-
----
 
 ## ⚖️ AG-008 tranché le 23/09/2026 — mon mécanisme ne tenait pas, le gaspillage si
 

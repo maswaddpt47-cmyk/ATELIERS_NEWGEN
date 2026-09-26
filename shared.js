@@ -687,11 +687,10 @@ function FadeItem({children,delay=0,style={}}){
 
 const GS_URL = 'https://script.google.com/macros/s/AKfycbwsNMoPSEIMss4kG0V13PWSr1mKEo34IFMWClxJuXkUvZ7Cgo-OWY0ud1lQtrUBqDbP/exec';
 // ── Interrupteur de serveur (refonte GAS → PHP, AG-009 / AG-011) ──────────
-// Par défaut : API Alwaysdata, depuis la bascule du 25/09/2026 (les données
-// de production y sont). « ?backend=gas » dans l'adresse ramène CET onglet
-// sur l'ancien GAS NEWGEN (mémorisé dans sessionStorage) — porte de secours
-// seulement : ses données sont figées et ne sont plus celles de l'équipe.
-// « ?backend=php » (ancien lien de test) reste accepté.
+// Toujours l'API Alwaysdata. La porte de secours « ?backend=gas » a été
+// retirée le 26/09/2026 (demande de l'utilisateur) : le GAS est coupé
+// (« Seulement moi ») et ses données sont figées depuis la bascule du
+// 25/09/2026. Les branches « GAS » restées dans le code ne servent plus.
 // En mode API :
 //   - tout part en POST form-urlencoded (requête « simple » : pas de pré-vol
 //     CORS), jeton et mot de passe dans le corps, jamais dans l'URL ;
@@ -700,13 +699,9 @@ const GS_URL = 'https://script.google.com/macros/s/AKfycbwsNMoPSEIMss4kG0V13PWSr
 //     « ateliers:auth-expiree » : les deux applis reviennent à l'écran de
 //     connexion (amendement 3 d'AG-011).
 const API_PHP_URL = 'https://ateliers-numeriques.alwaysdata.net/api/index.php';
-window.BACKEND_PHP = (function(){
-  try{
-    const q = new URLSearchParams(window.location.search).get('backend');
-    if(q==='php' || q==='gas') sessionStorage.setItem('ateliers_backend', q);
-    return sessionStorage.getItem('ateliers_backend') !== 'gas';
-  }catch(_){ return true; }
-})();
+window.BACKEND_PHP = true;
+// Un onglet resté sur ?backend=gas l'avait mémorisé : on l'efface.
+try{ sessionStorage.removeItem('ateliers_backend'); }catch(_){}
 // Adresse et corps d'un appel : GAS en GET (paramètres dans l'URL), API en
 // POST (action dans l'URL pour lire les journaux, le reste dans le corps).
 // Lien « mot de passe oublié » : la page s'ouvre en mode API par défaut.
@@ -1498,8 +1493,7 @@ const REINIT_CHAMP={width:'100%',padding:'10px 14px',border:'1px solid var(--bor
 const REINIT_BTN={width:'100%',padding:'11px',background:'#1e3a8a',color:'#fff',border:'none',borderRadius:8,fontSize:14,fontWeight:700,cursor:'pointer'};
 const REINIT_LIEN={background:'none',border:'none',color:'#1e3a8a',cursor:'pointer',fontSize:12,textDecoration:'underline',padding:0};
 
-// Repère visible du serveur (demande de l'utilisateur, 25/09/2026). En
-// porte de secours ?backend=gas, l'avertissement se voit : données figées.
+// Repère visible du serveur (demande de l'utilisateur, 25/09/2026).
 window.VERSION_APPLI = window.BACKEND_PHP ? 'Version 2 — serveur Alwaysdata' : '⚠️ Ancien serveur GAS — données figées';
 function MentionVersion(){
   return CE('p',{className:'mention-version',style:{fontSize:11,color:window.BACKEND_PHP?'#94a3b8':'#c53030',textAlign:'center',margin:'14px 0 0',fontWeight:window.BACKEND_PHP?400:700}},window.VERSION_APPLI);
