@@ -71,7 +71,7 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   `GAS_ACTIONS_ECRITURE`), **77 `à trancher`**. Signalé en plus : `trunc`
   (NextStep) et `TableCommunes` (les deux) déclarés deux fois, la seconde
   écrase la première en silence.
-- **Alignement en cours (26/09/2026, session 01GzrtQV) — 80 → 11 écarts.**
+- **Alignement en cours (26/09/2026, session 01GzrtQV) — 80 → 4 écarts (3 `voulu`).**
   L'utilisateur a délégué le choix (« choisis le meilleur des scénarios »),
   en ne posant que les vrais choix visibles. Faits, poussés, tests verts :
   `utils.js`/`logic.js` identiques (fonctions mortes retirées), couche
@@ -100,6 +100,10 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   (design propre à chaque appli). Fait : 1 (`VueSaisie` + `emptyRow`
   identiques, échec partiel de cycle géré). Calendrier (NEWGEN) et Gestion ordi (NextStep)
   identiques.
+- Fait aussi : connexion, accueil, maintenance, AdminLogin, Admin (exports
+  partenaire ICS/PDF), Agenda identiques ; `NOM_APPLI` (utils.js) porte le
+  nom affiché ; NextStep rattache les variables de couleur NEWGEN à sa
+  palette (fin de app.css et admin.css). `App` passé en `voulu`.
 - **Question en attente (26/09/2026)** : `VueHistorique` — NEWGEN a le
   design v2 (panneau de filtres repliable, cartes et compteurs v2, bouton
   PDF), NextStep l'ancien (puces de filtre, boutons XLSX/ICS/Sync). Aligner

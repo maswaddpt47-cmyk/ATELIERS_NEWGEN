@@ -11,114 +11,31 @@
     "nextstep": "c010301b5c/c010301b5c",
     "note": "Espace de noms localStorage propre à chaque appli ('newgen' / 'nextstep') : sans lui, les deux applis servies depuis la même origine se liraient leurs sessions."
   },
-  "AdminLogin": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "admin",
-    "lieux": [
-      "NEWGEN admin_app.js:24",
-      "NextStep admin_app.js:24"
-    ],
-    "newgen": "6e7acd1d8b",
-    "nextstep": "9e5dbe6d77",
-    "note": ""
-  },
-  "AnnonceNouvelleVersion": {
-    "statut": "à trancher",
-    "nature": "absent de NEWGEN",
-    "pages": "index",
-    "lieux": [
-      "NextStep app.js:65"
-    ],
-    "newgen": "-",
-    "nextstep": "1f2421f71e",
-    "note": ""
-  },
   "App": {
     "statut": "voulu",
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN app.js:221",
-      "NextStep app.js:249",
+      "NEWGEN app.js:243",
+      "NextStep app.js:250",
       "NEWGEN admin_app.js:170",
-      "NextStep admin_app.js:176"
+      "NextStep admin_app.js:170"
     ],
     "newgen": "25e5a3cdac/b4a3c22c04",
-    "nextstep": "28323573ec/d6757060c6",
-    "note": "Navigation propre à chaque appli (barre NEWGEN, menu latéral NextStep) — « touche pas », utilisateur, 26/09/2026. Les comportements communs s alignent quand même."
-  },
-  "MaintenanceScreen": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index",
-    "lieux": [
-      "NEWGEN app.js:15",
-      "NextStep app.js:20"
-    ],
-    "newgen": "00a0730e70",
-    "nextstep": "600a235f49",
-    "note": ""
-  },
-  "VueAccueilStatic": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index",
-    "lieux": [
-      "NEWGEN app.js:28",
-      "NextStep app.js:33"
-    ],
-    "newgen": "cf06cd803d",
-    "nextstep": "197566646d",
-    "note": ""
-  },
-  "VueAdminV10": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "admin",
-    "lieux": [
-      "NEWGEN admin_app.js:1082",
-      "NextStep admin_app.js:1129"
-    ],
-    "newgen": "ba07ab5a6b",
-    "nextstep": "ed823b36c5",
-    "note": ""
-  },
-  "VueAgendaSemaine": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:4684",
-      "NextStep shared.js:4356"
-    ],
-    "newgen": "d78d310868/d78d310868",
-    "nextstep": "00bd3ad596/00bd3ad596",
-    "note": ""
+    "nextstep": "579f332c9a/d6757060c6",
+    "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs."
   },
   "VueHistorique": {
     "statut": "à trancher",
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2358",
-      "NextStep shared.js:2173"
+      "NEWGEN shared.js:2362",
+      "NextStep shared.js:2177"
     ],
     "newgen": "133e103433/133e103433",
     "nextstep": "737ce1a7a8/737ce1a7a8",
-    "note": ""
-  },
-  "VueLoginIndex": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index",
-    "lieux": [
-      "NEWGEN app.js:56",
-      "NextStep app.js:84"
-    ],
-    "newgen": "39b04f1a0e",
-    "nextstep": "7de2a82916",
-    "note": ""
+    "note": "Design v2 (NEWGEN) contre ancien (NextStep) — question posée le 26/09/2026. Comportements déjà communs : panneau, mise en évidence."
   },
   "shared.js:IIFE injectCSS": {
     "statut": "voulu",
