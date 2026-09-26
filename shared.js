@@ -1034,6 +1034,10 @@ function ChoixAnnees({value,onChange,className,title}){
 window.__scriptsCharges = window.__scriptsCharges || {};
 window.chargerScriptUneFois = function(src){
   if(window.__scriptsCharges[src]) return window.__scriptsCharges[src];
+  // Déjà dans le <head> de la page, quel que soit son ?v= (NextStep charge
+  // xlsxstyle.js dans admin.html) : rien à recharger.
+  const base=src.split('?')[0];
+  if([...document.scripts].some(sc=>(sc.getAttribute('src')||'').split('?')[0]===base)) return (window.__scriptsCharges[src]=Promise.resolve());
   window.__scriptsCharges[src] = new Promise((resolve,reject)=>{
     const s=document.createElement('script');
     s.src=src;

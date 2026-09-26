@@ -111,7 +111,7 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
 
   return CE('div',{className:'login-wrap'},
     CE('div',{className:'login-card'},
-      CE('h2',null,'🔐 Accès Admin NewGen'),
+      CE('h2',null,'🔐 Accès Admin '+NOM_APPLI),
       isLocked
         ? CE('div',{style:{textAlign:'center',padding:'28px 0'}},
             CE('div',{style:{fontSize:44,marginBottom:10}},'🔒'),

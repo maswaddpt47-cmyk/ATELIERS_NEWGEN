@@ -31,14 +31,15 @@ function VueAccueilStatic({onChoix,conseillers}){
   return CE('div',{className:'accueil-wrap'},
     CE('div',{className:'accueil-card'},
       CE('div',{className:'accueil-logo'},'🖥️'),
-      CE('div',{className:'accueil-title'},'Ateliers Inclusion Numérique — NewGen'),
+      CE('div',{className:'accueil-title'},'Ateliers Inclusion Numérique — '+NOM_APPLI),
       CE('div',{className:'accueil-sub'},'Conseil Départemental du Lot-et-Garonne'),
       CE('label',{className:'accueil-label'},'Qui êtes-vous ?'),
       CE('select',{className:'accueil-select',value:choix,onChange:e=>setChoix(e.target.value)},
         CE('option',{value:''},'— Sélectionner votre nom —'),
         CONUM_STATIC.map(c=>CE('option',{key:c,value:c},c))
       ),
-      CE('button',{className:'accueil-btn',disabled:!choix,onClick:()=>onChoix(choix)},'📋 Accéder à mes ateliers')
+      CE('button',{className:'accueil-btn',disabled:!choix,onClick:()=>onChoix(choix)},'📋 Accéder à mes ateliers'),
+      CE('button',{className:'accueil-skip',onClick:()=>onChoix(null)},'Voir tous les ateliers')
     )
   );
 }
@@ -50,6 +51,26 @@ function defaultPwdIndex(nom){
   var p=(nom||'').split(' ')[0]||nom||'';
   p=p.toLowerCase().replace(/[àâä]/g,'a').replace(/[éèêë]/g,'e').replace(/[îï]/g,'i').replace(/[ôö]/g,'o').replace(/[ùûü]/g,'u').replace(/ç/g,'c');
   return 'cd47'+p;
+}
+
+// ── Annonce de la nouvelle version (bascule vers Alwaysdata) ──────────────
+// Affichée sur l'écran de connexion jusqu'à ce que le conseiller clique
+// « Compris » (mémorisé sur ce poste). Non bloquante : on peut se connecter
+// sans la fermer. À retirer quelques semaines après la bascule.
+function AnnonceNouvelleVersion(){
+  const CLE=lsKey('annonce_alwaysdata_vue');
+  const[vue,setVue]=React.useState(()=>{ try{ return localStorage.getItem(CLE)==='1'; }catch(_){ return false; } });
+  if(vue) return null;
+  const fermer=()=>{ try{ localStorage.setItem(CLE,'1'); }catch(_){} setVue(true); };
+  return CE('div',{role:'status',style:{background:'#eff6ff',border:'1px solid #93c5fd',borderRadius:10,padding:'12px 14px',margin:'0 0 14px',fontSize:13,lineHeight:1.45,color:'#1e3a8a',textAlign:'left'}},
+    CE('div',{style:{fontWeight:800,fontSize:14,marginBottom:6}},'🚀 Nouvelle version de l\u2019application'),
+    CE('div',null,'Les ateliers sont désormais enregistrés sur un nouveau serveur : ',CE('strong',null,'plus rapide et sans échecs d\u2019enregistrement'),'.'),
+    CE('ul',{style:{margin:'6px 0 8px',paddingLeft:18}},
+      CE('li',null,'Même adresse, mêmes écrans, mêmes ateliers.'),
+      CE('li',null,'Connectez-vous comme d\u2019habitude, avec ',CE('strong',null,'votre mot de passe habituel'),'.'),
+      CE('li',null,'Mot de passe oublié ? Un lien « Mot de passe oublié ? » est maintenant disponible sous le bouton de connexion.')),
+    CE('button',{type:'button',onClick:fermer,style:{background:'#1e3a8a',color:'#fff',border:'none',borderRadius:6,padding:'6px 14px',fontWeight:700,fontSize:12,cursor:'pointer'}},'Compris')
+  );
 }
 
 // ── VueLoginIndex — gate mot de passe par conum (identification, avant l'accueil) ─
@@ -155,7 +176,7 @@ function VueLoginIndex({conseillers,onSuccess}){
   return CE('div',{className:'accueil-wrap'},
     CE('div',{className:'accueil-card'},
       CE('div',{className:'accueil-logo'},'🖥️'),
-      CE('div',{className:'accueil-title'},'Ateliers Inclusion Numérique — NewGen'),
+      CE('div',{className:'accueil-title'},'Ateliers Inclusion Numérique — '+NOM_APPLI),
       CE('div',{className:'accueil-sub'},'Conseil Départemental du Lot-et-Garonne'),
       isLocked
         ? CE('div',{style:{textAlign:'center',padding:'28px 0'}},
@@ -195,6 +216,7 @@ function VueLoginIndex({conseillers,onSuccess}){
             CE('button',{className:'accueil-btn',disabled:changingPwd||!newPwd||!newPwd2,onClick:handleChangePwd},changingPwd?'Enregistrement…':'✅ Valider et continuer')
           )
         : CE(React.Fragment,null,
+            CE(AnnonceNouvelleVersion),
             CE('label',{className:'accueil-label'},'Qui êtes-vous ?'),
             CE('select',{className:'accueil-select',value:conseiller,onChange:e=>setConseiller(e.target.value)},
               CE('option',{value:''},'— Choisir votre nom —'),
