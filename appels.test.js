@@ -112,7 +112,7 @@ async function preparer(browser) {
     appels.push(action);
     p.requetes.push({ action, methode: req.method(), url: req.url(), jeton: corps.get('token') });
     let rep = { ok: true };
-    if (action === 'getComptes') rep = { ok: true, comptes: [{ conseiller: 'Alice Martin' }], maintenance: false, maintenance_msg: '' };
+    if (action === 'getComptes') rep = { ok: true, comptes: p.comptes || [{ conseiller: 'Alice Martin' }], maintenance: false, maintenance_msg: '' };
     else if (action === 'checkPassword') rep = { ok: true, role: 'admin', token: JETON };
     else if (action === 'demanderReinit') rep = { ok: true, message: 'Si une adresse mail est enregistrée pour ce compte, un lien vient d\'y être envoyé.' };
     else if (action === 'reinitMotDePasse') rep = { ok: true, conseiller: 'Alice Martin' };
@@ -286,6 +286,22 @@ function verifier(nom, condition, detail) {
     await p.page.evaluate(() => window.fetchAll(new Date().getFullYear(), { force: true, source: 'admin' }).catch(() => {}));
     await p.page.waitForTimeout(800);
     verifier('api — admin : jeton refusé → écran de connexion', await ecranConnexion(p.page));
+    await p.ctx.close();
+  }
+  {
+    // Connecté en admin, getComptes rend TOUS les comptes avec leur
+    // interrupteur (onglet Listes) : la liste de connexion (bouton « Changer »)
+    // ne doit garder que les « accès Admin » (26/09/2026).
+    const p = await preparerApi(browser);
+    p.comptes = [
+      { conseiller: 'Alice Martin', role: 'admin', actif: 'OUI' },
+      { conseiller: 'Bruno Sansadmin', role: 'user', actif: 'NON' },
+    ];
+    await p.page.goto(`http://127.0.0.1:${PORT}/admin.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
+    await p.page.waitForTimeout(1200);
+    const noms = await p.page.locator('select').first().locator('option').allTextContents();
+    verifier('api — liste de connexion Admin sans les comptes « sans Admin »',
+      noms.includes('Alice Martin') && !noms.includes('Bruno Sansadmin'), noms.join(', '));
     await p.ctx.close();
   }
 

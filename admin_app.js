@@ -221,8 +221,12 @@ function App(){
       // Mode API : getComptes public ne rend ni rôle ni état — tous les
       // comptes actifs sont proposés, le rôle est vérifié après
       // checkPassword (AG-011, amendement 4).
+      // Connecté en admin (bouton « Changer »), l'API rend TOUS les comptes
+      // avec leur interrupteur, pour l'onglet Listes : écarter ici les
+      // « sans Admin », sinon la liste de connexion les propose (26/09/2026).
       const eligibles=comptes
-        .filter(c=>window.BACKEND_PHP||((c.role==='admin'||c.role==='superviseur')&&c.actif!=='NON'))
+        .filter(c=>c.actif!=='NON')
+        .filter(c=>window.BACKEND_PHP||c.role==='admin'||c.role==='superviseur')
         .map(c=>c.conseiller)
         .filter(Boolean);
       setLoginConseillers(eligibles.length>0?eligibles:CONSEILLERS_DEFAULT);
