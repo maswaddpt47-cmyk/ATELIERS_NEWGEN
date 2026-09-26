@@ -16,7 +16,7 @@
     "nature": "différent",
     "pages": "admin",
     "lieux": [
-      "NEWGEN admin_app.js:23",
+      "NEWGEN admin_app.js:24",
       "NextStep admin_app.js:24"
     ],
     "newgen": "6e7acd1d8b",
@@ -35,26 +35,26 @@
     "note": ""
   },
   "App": {
-    "statut": "à aligner",
+    "statut": "à trancher",
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
       "NEWGEN app.js:220",
       "NextStep app.js:249",
-      "NEWGEN admin_app.js:168",
+      "NEWGEN admin_app.js:169",
       "NextStep admin_app.js:176"
     ],
-    "newgen": "ea30d50c45/f16275014d",
+    "newgen": "f623353609/f16275014d",
     "nextstep": "7906e81198/a770a3359b",
-    "note": "Index : NEWGEN appelle encore logAccesIndex au démarrage (app.js:454), NextStep l'a retiré (app.js:556). Connu depuis AG-015. Côté admin : non examiné."
+    "note": "logAccesIndex retiré de NEWGEN le 26/09/2026. Reste à comparer."
   },
   "AttenteGAS": {
     "statut": "à trancher",
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:1091",
-      "NextStep shared.js:894"
+      "NEWGEN shared.js:1095",
+      "NextStep shared.js:878"
     ],
     "newgen": "843765cebe/843765cebe",
     "nextstep": "7fa67674a7/7fa67674a7",
@@ -65,7 +65,7 @@
     "nature": "absent de NEWGEN",
     "pages": "index+admin",
     "lieux": [
-      "NextStep shared.js:1408"
+      "NextStep shared.js:1396"
     ],
     "newgen": "-/-",
     "nextstep": "7aa38fe836/7aa38fe836",
@@ -76,7 +76,7 @@
     "nature": "absent de NEWGEN",
     "pages": "index+admin",
     "lieux": [
-      "NextStep shared.js:1354"
+      "NextStep shared.js:1342"
     ],
     "newgen": "-/-",
     "nextstep": "310377e9d6/310377e9d6",
@@ -87,8 +87,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:1577",
-      "NextStep shared.js:1425"
+      "NEWGEN shared.js:1540",
+      "NextStep shared.js:1413"
     ],
     "newgen": "3afa2c6330/3afa2c6330",
     "nextstep": "02b3966c4e/02b3966c4e",
@@ -99,33 +99,10 @@
     "nature": "absent de NEWGEN",
     "pages": "index+admin",
     "lieux": [
-      "NextStep shared.js:1661"
+      "NextStep shared.js:1649"
     ],
     "newgen": "-/-",
     "nextstep": "9e84995c95/9e84995c95",
-    "note": ""
-  },
-  "GAS_ACTIONS_ECRITURE": {
-    "statut": "à aligner",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:766",
-      "NextStep shared.js:566"
-    ],
-    "newgen": "e0fdca0a79/e0fdca0a79",
-    "nextstep": "ad8df060b5/ad8df060b5",
-    "note": "NEWGEN y met logAccesIndex (appel retiré du démarrage de NextStep) et garde GAS_HEDGE_MS ; NextStep a GAS_ACTIONS_LOT. Lié à l'entrée App (index)."
-  },
-  "MATERIELS_CACHES": {
-    "statut": "à trancher",
-    "nature": "absent de NextStep",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1184"
-    ],
-    "newgen": "7eb056922d/7eb056922d",
-    "nextstep": "-/-",
     "note": ""
   },
   "MaintenanceScreen": {
@@ -140,24 +117,12 @@
     "nextstep": "600a235f49",
     "note": ""
   },
-  "MentionVersion": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1250",
-      "NextStep shared.js:1089"
-    ],
-    "newgen": "c939cc9a67/c939cc9a67",
-    "nextstep": "814e749aba/814e749aba",
-    "note": ""
-  },
   "THEMATIQUES_CATALOGUE": {
     "statut": "à trancher",
     "nature": "absent de NextStep",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:1567"
+      "NEWGEN shared.js:1530"
     ],
     "newgen": "ade906863a/ade906863a",
     "nextstep": "-/-",
@@ -168,7 +133,7 @@
     "nature": "absent de NextStep",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:1575"
+      "NEWGEN shared.js:1538"
     ],
     "newgen": "692ac525cc/692ac525cc",
     "nextstep": "-/-",
@@ -179,7 +144,7 @@
     "nature": "différent",
     "pages": "admin",
     "lieux": [
-      "NEWGEN admin_app.js:148",
+      "NEWGEN admin_app.js:149",
       "NextStep admin_app.js:155"
     ],
     "newgen": "09a7b58ec6",
@@ -215,7 +180,7 @@
     "nature": "différent",
     "pages": "admin",
     "lieux": [
-      "NEWGEN admin_app.js:1073",
+      "NEWGEN admin_app.js:1074",
       "NextStep admin_app.js:1129"
     ],
     "newgen": "ba07ab5a6b",
@@ -227,8 +192,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:4625",
-      "NextStep shared.js:4341"
+      "NEWGEN shared.js:4587",
+      "NextStep shared.js:4329"
     ],
     "newgen": "979f5b1005/979f5b1005",
     "nextstep": "00bd3ad596/00bd3ad596",
@@ -239,8 +204,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:3991",
-      "NextStep shared.js:3707"
+      "NEWGEN shared.js:3953",
+      "NextStep shared.js:3695"
     ],
     "newgen": "c7660efc4a/c7660efc4a",
     "nextstep": "d8226f52c9/d8226f52c9",
@@ -251,8 +216,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:4122",
-      "NextStep shared.js:3838"
+      "NEWGEN shared.js:4084",
+      "NextStep shared.js:3826"
     ],
     "newgen": "a1095271d7/a1095271d7",
     "nextstep": "a77ee29103/a77ee29103",
@@ -263,8 +228,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2786",
-      "NextStep shared.js:2513"
+      "NEWGEN shared.js:2749",
+      "NextStep shared.js:2501"
     ],
     "newgen": "7c579b0043/7c579b0043",
     "nextstep": "03d06ac9e7/03d06ac9e7",
@@ -275,8 +240,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:3946",
-      "NextStep shared.js:3660"
+      "NEWGEN shared.js:3908",
+      "NextStep shared.js:3648"
     ],
     "newgen": "d01d97ec79/d01d97ec79",
     "nextstep": "b1f963b12c/b1f963b12c",
@@ -287,8 +252,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:3309",
-      "NextStep shared.js:3021"
+      "NEWGEN shared.js:3272",
+      "NextStep shared.js:3009"
     ],
     "newgen": "1953e38f28/1953e38f28",
     "nextstep": "80d0130560/80d0130560",
@@ -299,8 +264,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2307",
-      "NextStep shared.js:2185"
+      "NEWGEN shared.js:2270",
+      "NextStep shared.js:2173"
     ],
     "newgen": "6550f3a504/6550f3a504",
     "nextstep": "737ce1a7a8/737ce1a7a8",
@@ -311,8 +276,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:1654",
-      "NextStep shared.js:1475"
+      "NEWGEN shared.js:1617",
+      "NextStep shared.js:1463"
     ],
     "newgen": "50ece1572f/50ece1572f",
     "nextstep": "4c231021db/4c231021db",
@@ -335,7 +300,7 @@
     "nature": "différent",
     "pages": "admin",
     "lieux": [
-      "NEWGEN admin_app.js:996",
+      "NEWGEN admin_app.js:997",
       "NextStep admin_app.js:1052"
     ],
     "newgen": "80893ebf19",
@@ -347,8 +312,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:1850",
-      "NextStep shared.js:1705"
+      "NEWGEN shared.js:1813",
+      "NextStep shared.js:1693"
     ],
     "newgen": "78cc547ca4/78cc547ca4",
     "nextstep": "945d167456/945d167456",
@@ -359,22 +324,10 @@
     "nature": "absent de NEWGEN",
     "pages": "index+admin",
     "lieux": [
-      "NextStep shared.js:1410"
+      "NextStep shared.js:1398"
     ],
     "newgen": "-/-",
     "nextstep": "6ddd597794/6ddd597794",
-    "note": ""
-  },
-  "clearSession": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "admin",
-    "lieux": [
-      "NEWGEN admin_app.js:16",
-      "NextStep admin_app.js:16"
-    ],
-    "newgen": "a79d4c49c9",
-    "nextstep": "a5997dd84a",
     "note": ""
   },
   "emptyRow": {
@@ -382,8 +335,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:1848",
-      "NextStep shared.js:1703"
+      "NEWGEN shared.js:1811",
+      "NextStep shared.js:1691"
     ],
     "newgen": "a40296d8f4/a40296d8f4",
     "nextstep": "28f9c7a43f/28f9c7a43f",
@@ -394,21 +347,10 @@
     "nature": "absent de NEWGEN",
     "pages": "index+admin",
     "lieux": [
-      "NextStep shared.js:1470"
+      "NextStep shared.js:1458"
     ],
     "newgen": "-/-",
     "nextstep": "891d01f7d9/891d01f7d9",
-    "note": ""
-  },
-  "gasPlafond": {
-    "statut": "à trancher",
-    "nature": "absent de NEWGEN",
-    "pages": "index+admin",
-    "lieux": [
-      "NextStep shared.js:590"
-    ],
-    "newgen": "-/-",
-    "nextstep": "26059074ec/26059074ec",
     "note": ""
   },
   "shared.js:IIFE injectCSS": {
@@ -421,147 +363,6 @@
     ],
     "newgen": "2da4003618/2da4003618",
     "nextstep": "2d81feba72/2d81feba72",
-    "note": ""
-  },
-  "shared.js:IIFE → window.apiFetch": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1332",
-      "NextStep shared.js:1193"
-    ],
-    "newgen": "911b96af16/911b96af16",
-    "nextstep": "d560230d5d/d560230d5d",
-    "note": ""
-  },
-  "shared.js:IIFE → window.fetchAll": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1425",
-      "NextStep shared.js:1240"
-    ],
-    "newgen": "679087e043/679087e043",
-    "nextstep": "a3c02d6f29/a3c02d6f29",
-    "note": ""
-  },
-  "shared.js:IIFE → window.fetchConfig": {
-    "statut": "à trancher",
-    "nature": "absent de NextStep",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1479"
-    ],
-    "newgen": "e6a060a9b4/e6a060a9b4",
-    "nextstep": "-/-",
-    "note": ""
-  },
-  "shared.js:TryStatement#1": {
-    "statut": "à trancher",
-    "nature": "absent de NextStep",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:706"
-    ],
-    "newgen": "540d6bf799/540d6bf799",
-    "nextstep": "-/-",
-    "note": ""
-  },
-  "window.apiFetch": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1369",
-      "NextStep shared.js:1204"
-    ],
-    "newgen": "1603d3fbf5/1603d3fbf5",
-    "nextstep": "25a8c66008/25a8c66008",
-    "note": ""
-  },
-  "window.authToken": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1351",
-      "NextStep shared.js:1155"
-    ],
-    "newgen": "25be4e750a/25be4e750a",
-    "nextstep": "fcc5512cc3/fcc5512cc3",
-    "note": ""
-  },
-  "window.fetchConfig": {
-    "statut": "à trancher",
-    "nature": "absent de NextStep",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1491"
-    ],
-    "newgen": "676ffd0e7c/676ffd0e7c",
-    "nextstep": "-/-",
-    "note": ""
-  },
-  "window.gasAppel": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:937",
-      "NextStep shared.js:740"
-    ],
-    "newgen": "648cab733a/648cab733a",
-    "nextstep": "35a070d92d/35a070d92d",
-    "note": ""
-  },
-  "window.gasUnAppel": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:805",
-      "NextStep shared.js:630"
-    ],
-    "newgen": "c31326f55b/c31326f55b",
-    "nextstep": "6c1d556fc6/6c1d556fc6",
-    "note": ""
-  },
-  "window.logGas": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:789",
-      "NextStep shared.js:601"
-    ],
-    "newgen": "7bf2633292/7bf2633292",
-    "nextstep": "6bd97fb160/6bd97fb160",
-    "note": ""
-  },
-  "window.onLoginSuccess": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1318",
-      "NextStep shared.js:1172"
-    ],
-    "newgen": "420b32acd3/420b32acd3",
-    "nextstep": "0c96caa5c8/0c96caa5c8",
-    "note": ""
-  },
-  "window.onLogout": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1326",
-      "NextStep shared.js:1188"
-    ],
-    "newgen": "94df72b604/94df72b604",
-    "nextstep": "75a20a15a2/75a20a15a2",
     "note": ""
   }
 }

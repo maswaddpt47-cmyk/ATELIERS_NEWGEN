@@ -120,7 +120,7 @@ const CAS = [
     // dépend. Ils reprennent donc comme une lecture, mais sans doublage.
     nom: 'log en arrière-plan : repris, mais jamais doublé',
     plan: [{ delai: 100, status: 404 }, { delai: 100 }],
-    action: "gasAppel(URL,'logAccesIndex')",
+    action: "gasAppel(URL,'logLogin')",
     verifier: r => r.ok === true && r.appels.total === 2 && r.appels.max === 1,
   },
   {

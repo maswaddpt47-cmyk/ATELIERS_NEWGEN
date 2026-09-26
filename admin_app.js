@@ -15,6 +15,7 @@ function isSessionExpired(){
 }
 function clearSession(){
   localStorage.removeItem(SESSION_KEY);
+  window.onLogout&&window.onLogout();
 }
 
 // ════════════════════════════════════════════════════════════

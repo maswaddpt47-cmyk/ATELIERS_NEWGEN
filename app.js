@@ -440,19 +440,14 @@ function App(){
   },[view]);
 
   // ── Handlers ──────────────────────────────────────────────────
-  // skipLog=true juste après un login frais : logLogin (déclenché par
-  // onLoginSuccess) vient déjà de journaliser cet accès dans la même feuille
-  // Logs_Connexion — logAccesIndex y ferait doublon, un appel GAS de plus à
-  // chaque connexion de toute l'équipe. Les autres appelants (restauration
-  // de session, sélecteur de conseiller) n'ont pas ce doublon et gardent le
-  // log. Porté depuis ateliers-cd47_NextStep (même correctif, 16/09/2026).
-  function handleChoixConseiller(nom, skipLog){
+  // Plus de logAccesIndex (retiré de NextStep le 18/09/2026, d'ici le
+  // 26/09/2026) : checkPassword journalise déjà la connexion côté API. Perdu :
+  // la trace des changements de conseiller en cours de session.
+  function handleChoixConseiller(nom){
     setFiltreConseiller(nom);
     setShowPicker(false);
     setView(visibility.historique?'historique':visibility.calendrier?'calendrier':visibility.saisie?'saisie':'dashboard');
-    if(nom && !skipLog){
-      apiFetch('logAccesIndex',{conseiller:nom,userAgent:navigator.userAgent}).catch(()=>{});
-    }
+    if(nom) sessionStorage.setItem('gs_conseiller', nom);
   }
   function handleEdit(id){setEditingId(id);setPrefillData(null);setView('saisie');}
   // ── Application locale d'une écriture déjà confirmée par GAS ───────────
