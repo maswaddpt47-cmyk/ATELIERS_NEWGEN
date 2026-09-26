@@ -34,7 +34,7 @@
       "NextStep shared.js:2308"
     ],
     "newgen": "84d9189bb3/84d9189bb3",
-    "nextstep": "51cffd11ba/51cffd11ba",
+    "nextstep": "c26e4082ea/c26e4082ea",
     "note": "Design v2 (NEWGEN) contre ancien (NextStep) — question posée le 26/09/2026. Comportements déjà communs : panneau, mise en évidence."
   },
   "shared.js:IIFE injectCSS": {
