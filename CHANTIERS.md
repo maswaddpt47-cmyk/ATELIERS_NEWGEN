@@ -47,6 +47,14 @@ par l'utilisateur le 25/09.
 
 ## Reste ouvert
 
+- **En cours (26/09/2026, demande de l'utilisateur) — tests navigateur de
+  NEWGEN passés à Playwright, comme NextStep.** Mesuré avant : sandbox 1 s,
+  e2e 20 s, réseau 85 s, appels 34 s, soit ~140 s en série (+ ~1 min
+  d'installation de Chromium avec `--with-deps` en CI). Le réseau pèse 60 % :
+  11 scénarios à vrais délais (7 à 25 s) joués l'un après l'autre. Plan :
+  un test Playwright par scénario, en parallèle ; mêmes vérifications, mêmes
+  seuils ; les anciens scripts ne partent qu'une fois le portage vert.
+
 - 📅 **30/09/2026 — relève du journal** (rappel planifié) : journal Admin
   NextStep depuis la bascule. Point de comparaison : labo du 24-25/09, 0/27
   perdus, médiane 0,3 s, p90 0,6 s, un seul utilisateur. Regarder `getAll` et
