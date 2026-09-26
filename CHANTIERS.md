@@ -80,6 +80,8 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   compare au vieux NextStep et échoue (arrivé une fois le 26/09).
   Outils : `node scripts/parite.js ../ateliers-cd47_NextStep` (constat),
   `--maj` (réécrit la liste après alignement).
+  **Ce bloc se met à jour après chaque paquet poussé** (demande de
+  l'utilisateur, 26/09/2026) : compteur d'écarts, faits, reste.
 - **Reste (16)** : `VueSaisie`, `VueHistorique`, `VueCalendrier`,
   `VueGestionOrdi`, `AttenteGAS`, `emptyRow`, CSS `injectCSS`, `App` (index
   et admin), `VueAdminV10`, `AdminLogin`, `VueLoginIndex`, `VueAccueilStatic`,
