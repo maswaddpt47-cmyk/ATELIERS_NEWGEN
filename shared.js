@@ -2747,9 +2747,11 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
       )
     ),
     // Barre conseiller v2
-    initConseiller&&CE('div',{className:'conseiller-bar-v2'},
+    // Bandeau lié au filtre réel, pas au conseiller de départ : sinon « Voir
+    // tous » vidait le filtre mais laissait le bandeau (26/09/2026).
+    filtConseiller!=='Tous'&&CE('div',{className:'conseiller-bar-v2'},
       CE('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('circle',{cx:12,cy:8,r:4}),CE('path',{d:'M4 20c0-4 3.6-7 8-7s8 3 8 7'})),
-      CE('span',null,initConseiller),
+      CE('span',null,filtConseiller),
       CE('button',{onClick:resetFiltres},'Voir tous')
     ),
     // ── Recherche toujours visible ────────────────────────────
