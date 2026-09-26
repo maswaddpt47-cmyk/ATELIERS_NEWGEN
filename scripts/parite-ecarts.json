@@ -35,7 +35,7 @@
     "note": ""
   },
   "App": {
-    "statut": "à trancher",
+    "statut": "voulu",
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
@@ -45,20 +45,8 @@
       "NextStep admin_app.js:176"
     ],
     "newgen": "25e5a3cdac/b4a3c22c04",
-    "nextstep": "a23e4c38dd/d6757060c6",
-    "note": "logAccesIndex retiré de NEWGEN le 26/09/2026. Reste à comparer."
-  },
-  "AttenteGAS": {
-    "statut": "à trancher",
-    "nature": "différent",
-    "pages": "index+admin",
-    "lieux": [
-      "NEWGEN shared.js:1095",
-      "NextStep shared.js:878"
-    ],
-    "newgen": "843765cebe/843765cebe",
-    "nextstep": "7fa67674a7/7fa67674a7",
-    "note": ""
+    "nextstep": "28323573ec/d6757060c6",
+    "note": "Navigation propre à chaque appli (barre NEWGEN, menu latéral NextStep) — « touche pas », utilisateur, 26/09/2026. Les comportements communs s alignent quand même."
   },
   "MaintenanceScreen": {
     "statut": "à trancher",
@@ -102,7 +90,7 @@
     "pages": "index+admin",
     "lieux": [
       "NEWGEN shared.js:4659",
-      "NextStep shared.js:4337"
+      "NextStep shared.js:4336"
     ],
     "newgen": "d78d310868/d78d310868",
     "nextstep": "00bd3ad596/00bd3ad596",
@@ -114,7 +102,7 @@
     "pages": "index+admin",
     "lieux": [
       "NEWGEN shared.js:2821",
-      "NextStep shared.js:2509"
+      "NextStep shared.js:2508"
     ],
     "newgen": "7c579b0043/7c579b0043",
     "nextstep": "03d06ac9e7/03d06ac9e7",
@@ -126,7 +114,7 @@
     "pages": "index+admin",
     "lieux": [
       "NEWGEN shared.js:3980",
-      "NextStep shared.js:3656"
+      "NextStep shared.js:3655"
     ],
     "newgen": "d01d97ec79/d01d97ec79",
     "nextstep": "b1f963b12c/b1f963b12c",
@@ -138,7 +126,7 @@
     "pages": "index+admin",
     "lieux": [
       "NEWGEN shared.js:2342",
-      "NextStep shared.js:2181"
+      "NextStep shared.js:2180"
     ],
     "newgen": "6550f3a504/6550f3a504",
     "nextstep": "737ce1a7a8/737ce1a7a8",
@@ -162,7 +150,7 @@
     "pages": "index+admin",
     "lieux": [
       "NEWGEN shared.js:1885",
-      "NextStep shared.js:1701"
+      "NextStep shared.js:1700"
     ],
     "newgen": "78cc547ca4/78cc547ca4",
     "nextstep": "e80b9dae72/e80b9dae72",
@@ -174,14 +162,14 @@
     "pages": "index+admin",
     "lieux": [
       "NEWGEN shared.js:1883",
-      "NextStep shared.js:1699"
+      "NextStep shared.js:1698"
     ],
     "newgen": "a40296d8f4/a40296d8f4",
     "nextstep": "28f9c7a43f/28f9c7a43f",
     "note": ""
   },
   "shared.js:IIFE injectCSS": {
-    "statut": "à trancher",
+    "statut": "voulu",
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
@@ -189,7 +177,7 @@
       "NextStep shared.js:7"
     ],
     "newgen": "2da4003618/2da4003618",
-    "nextstep": "2d81feba72/2d81feba72",
-    "note": ""
+    "nextstep": "f8e93d5cf9/f8e93d5cf9",
+    "note": "Styles propres à chaque design (v2 NEWGEN, menu latéral NextStep) — navigation « touche pas », 26/09/2026."
   }
 }

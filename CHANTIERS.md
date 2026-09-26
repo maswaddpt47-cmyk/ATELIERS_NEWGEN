@@ -71,7 +71,7 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   `GAS_ACTIONS_ECRITURE`), **77 `à trancher`**. Signalé en plus : `trunc`
   (NextStep) et `TableCommunes` (les deux) déclarés deux fois, la seconde
   écrase la première en silence.
-- **Alignement en cours (26/09/2026, session 01GzrtQV) — 80 → 16 écarts.**
+- **Alignement en cours (26/09/2026, session 01GzrtQV) — 80 → 15 écarts.**
   L'utilisateur a délégué le choix (« choisis le meilleur des scénarios »),
   en ne posant que les vrais choix visibles. Faits, poussés, tests verts :
   `utils.js`/`logic.js` identiques (fonctions mortes retirées), couche
@@ -89,15 +89,15 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   Constats pour `VueSaisie` : NextStep gère l'échec partiel de `saveMany`
   (l'API n'est pas transactionnelle, `api/lib/ecriture.php:44-51`) et valide
   au blur ; NEWGEN applique en local via `onSaved(isNew, entry)`.
-- **Questions à poser à l'utilisateur avant de continuer** (choix visibles) :
-  1. saisie par cycle : inscrits/présents par ligne, 4 pré-rempli (NEWGEN),
-     ou « à compléter après » (NextStep) ?
-  2. mode sombre : NEWGEN l'a partout, NextStep seulement en admin — l'ajouter
-     à l'index NextStep ?
-  3. écran d'attente : bobine détaillée (NEWGEN) ou bobine simple + astuces
-     (NextStep) ?
-  4. navigation : barre NEWGEN (`navBtn`) et menu latéral NextStep
-     (`sideBtn`) — garder chacune (voulu) ou aligner ?
+- **Tranché par l'utilisateur le 26/09/2026** :
+  1. saisie par cycle comme NEWGEN (inscrits/présents par ligne, 4 pré-rempli) ;
+  2. mode sombre ajouté à l'index NextStep ;
+  3. écran d'attente de NEWGEN (bobine détaillée) ;
+  4. navigation : **ne pas toucher** — barre NEWGEN, menu latéral NextStep
+     (`voulu`).
+  Fait : 2 (bouton 🌙 dans le menu NextStep, CSS de admin.css recopié dans
+  app.css) et 3 (AttenteGAS + CSS). `App` et `injectCSS` passés en `voulu`
+  (design propre à chaque appli). En cours : 1 (`VueSaisie`).
 
 ## Reste ouvert
 
