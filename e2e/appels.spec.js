@@ -165,6 +165,30 @@ test('index — modifier un atelier : saveEntry seul, pas de getAll', async ({ b
     await ctx.close();
 });
 
+// 2b. Cocher « Classe mobile » dans le panneau puis enregistrer : l'atelier
+//     rouvert doit l'avoir. L'entrée appliquée localement reprenait l'ancien
+//     matériel (panel.materiel) : le serveur avait la case, l'écran non,
+//     jusqu'au rechargement (constaté le 26/09/2026).
+test('index — panneau : Classe mobile cochée reste cochée après enregistrement', async ({ browser, baseURL }) => {
+    const { ctx, page } = await preparer(browser);
+    await page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
+    await connecter(page);
+    await page.waitForTimeout(800);
+    const nom = 'index — panneau : Classe mobile conservée localement';
+    const carte = page.getByText('Démarches en ligne').first();
+    if (!(await carte.isVisible({ timeout: 4000 }).catch(() => false))) { verifier(nom, false, 'atelier de test introuvable'); await ctx.close(); return; }
+    await carte.click();
+    const caseMobile = page.getByRole('checkbox', { name: 'Classe mobile' }).first();
+    await caseMobile.check();
+    await page.getByPlaceholder('Ex : 4').first().fill('4');
+    await page.getByRole('button', { name: /Enregistrer/ }).first().click();
+    await page.waitForTimeout(1500);
+    await carte.click();
+    await page.waitForTimeout(500);
+    verifier(nom, await page.getByRole('checkbox', { name: 'Classe mobile' }).first().isChecked(), 'case décochée à la réouverture');
+    await ctx.close();
+});
+
 // 3. Deux onglets Admin ouverts en même temps ne doivent pas s'écraser le
 //    journal — c'est l'outil qui sert à mesurer la latence, et on travaille
 //    rarement avec un seul onglet quand on diagnostique.
