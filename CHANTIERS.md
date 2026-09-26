@@ -137,10 +137,9 @@ par l'utilisateur le 25/09.
     (enregistrement vérifié à l'œil par l'utilisateur).
   - **Filtre public de l'Historique à choix multiples** (26/09/2026) :
     état `filtPublic` = tableau, `[]` = tous ; pastilles à cocher
-    (« Tous les publics » vide la sélection). Le Calendrier garde son filtre
-    public à choix unique. ⚠️ **En cours (26/09/2026)** : « Tous les publics »
-    se confond avec la catégorie « Tous publics » (vraie valeur de la liste
-    des publics) — renommer la pastille de remise à zéro.
+    (« Tout afficher » vide la sélection — **pas** « Tous (les) publics »,
+    confondu avec la catégorie « Tous publics » de la liste). Le Calendrier
+    garde son filtre public à choix unique.
   - Panneau latéral : « Période de prêt » affichée sous « Ordinateurs
     prêtés » (valeurs enregistrées, mise à jour après Enregistrer).
   - **« Effacer »** (filtres de l'Historique NEWGEN) vide tout, statut
