@@ -113,6 +113,12 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   NextStep sans question explicite : Calendrier (panneau de filtres
   repliable), Agenda, connexion/accueil/maintenance (code NEWGEN, couleurs
   rattachées à la palette NextStep).
+- **Fait le 26/09/2026 (session 01D5EB)** : volet latéral extrait en
+  composant commun `PanneauAtelier` (Historique, Calendrier **et Agenda**, à
+  la demande de l'utilisateur ; l'Agenda avait un volet en lecture seule).
+  Historique NextStep : **filtres repliables** (en-tête « 🔎 Filtres », nombre
+  d'actifs, état mémorisé `hist_filtres_ouverts`) — demande de l'utilisateur,
+  le reste du design NextStep inchangé.
 - **Question en attente (26/09/2026)** : `VueHistorique` — NEWGEN a le
   design v2 (panneau de filtres repliable, cartes et compteurs v2, bouton
   PDF), NextStep l'ancien (puces de filtre, boutons XLSX/ICS/Sync). Aligner
