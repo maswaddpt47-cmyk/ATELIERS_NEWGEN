@@ -128,13 +128,15 @@ par l'utilisateur le 25/09.
     partout (Historique, Dashboard, détail communes, conseillers, Calendrier,
     Agenda, Admin) — sinon les inscrits des ateliers planifiés ou annulés
     faussent le taux de présence. Audit du 26/09/2026 : 8 calculs corrigés
-    sur NEWGEN, 10 sur NextStep ; tout nouveau calcul doit filtrer
-    `statut === 'Réalisé'`.
+    sur NEWGEN, 10 sur NextStep, puis ramenés à **`kpiHistorique`**
+    (`utils.js`, testé) : tout nouveau total de présents/inscrits passe par
+    elle, pas par un filtre recopié.
   - **Panneau latéral** (Historique et Calendrier) : date, horaire, public,
     ordinateurs prêtés modifiables ; thématique en auto-proposition
-    (`ComboThematique`). ⚠️ Pas de contrôle de conflit de matériel à cet
-    endroit, contrairement au formulaire complet — non testé en automatique
-    (enregistrement vérifié à l'œil par l'utilisateur).
+    (`ComboThematique`). Alerte non bloquante si l'atelier, tel qu'il sera
+    enregistré, dépasse le stock d'ordinateurs ou partage la Classe mobile
+    (`conflitsDeLEntree`, `utils.js`, testé ; vérifiée dans un navigateur
+    le 26/09 sur NEWGEN).
   - **Filtre public de l'Historique à choix multiples** (26/09/2026) :
     état `filtPublic` = tableau, `[]` = tous ; pastilles à cocher
     (« Tout afficher » vide la sélection — **pas** « Tous (les) publics »,
