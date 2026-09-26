@@ -6,10 +6,9 @@ Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand t
 est soldé. Ce n'est pas de la documentation permanente (cf.
 `MD-LIB/hygiene-instructions.md`).
 
-**Ménage du 26/09/2026** : tout ce qui décrivait l'époque GAS (banc, doublage,
-file d'attente, relevés de pertes, AG-001 à AG-008, préparation de la
-bascule) a été retiré. Texte complet : `git log -p CHANTIERS.md`, avant
-`49e4013`. Contradiction d'une proposition par une autre session :
+**Ménages du 26/09/2026** : époque GAS (avant `49e4013`) puis récit du
+chantier parité et des livraisons de la journée retirés — `git log -p
+CHANTIERS.md`. Contradiction d'une proposition par une autre session :
 `AGORA.md` (section 8 du `CLAUDE.md`) — AG-015 tranché le 26/09/2026.
 
 ---
@@ -45,88 +44,28 @@ par l'utilisateur le 25/09.
   registre de sécurité v1.0 (hors dépôt).
 - Plus de PWA (AG-012) : `sw.js` de désinstallation publié sans date de fin.
 
-## 🔧 Chantier parité NEWGEN/NextStep (AG-015, tranché le 26/09/2026)
+## 🔧 Parité NEWGEN/NextStep (AG-015, tranché le 26/09/2026)
 
-Décision de l'utilisateur : amendements de la session B, dans cet ordre.
-- **Lot 0 — fait le 26/09/2026.** NEWGEN charge `logic.js` dans ses pages et
-  les 16 copies de `shared.js` sont supprimées (`normalizeMat`/`matIncludes`
-  déplacées dans `utils.js`, comme NextStep). `logic.js` a repris les 4
-  versions qui tournaient (`findMobileClassConflicts`,
-  `findOrdinateursConflicts`, `getPretsMateriel`, `filterMaterielsVisibles`).
-  Seul écart de comportement : `matIncludes` accepte l'ancien format « a|b »
-  (l'API renvoie des tableaux ; une chaîne donnait « aucun conflit » en
-  silence). Suites Node et navigateur vertes.
-  Constat de départ : Aujourd'hui les pages exécutent ces copies (déjà
-  identiques à NextStep), tandis que `logic.test.js` teste un `logic.js` qui a
-  divergé : les tests ne testent pas ce qui tourne. Garde-fou : un nom
-  déclaré deux fois casse le chargement, `smoke.spec.js` doit rester vert.
-- **Lot 1 — outillé le 26/09/2026.** `scripts/parite.js` + liste
-  `scripts/parite-ecarts.json`, workflow `parite.yml` (push + 05:17 UTC,
-  jamais bloquant). Échoue sur : écart non listé, écart listé qui a bougé
-  (empreinte), écart listé disparu. `--maj` réécrit la liste, tout ce qui a
-  bougé repasse en `à trancher` — **déviation annoncée** : troisième statut,
-  pour ne pas trancher à la place de l'utilisateur.
-  Premier relevé : **80 écarts**, dont 1 `voulu` (`APP_NS`), 2 `à aligner`
-  (`App` d'index — `logAccesIndex` au démarrage, NEWGEN `app.js:454` ;
-  `GAS_ACTIONS_ECRITURE`), **77 `à trancher`**. Signalé en plus : `trunc`
-  (NextStep) et `TableCommunes` (les deux) déclarés deux fois, la seconde
-  écrase la première en silence. **`TableCommunes` corrigé le 26/09/2026** : un seul
-  `TableCommunesDashboard` dans `shared.js` (version Admin, validée), copie
-  d'`admin_app.js` retirée ; `parite.js` ne signale plus d'écrasement.
-- **Alignement en cours (26/09/2026, session 01GzrtQV) — 80 → 4 écarts (3 `voulu`).**
-  L'utilisateur a délégué le choix (« choisis le meilleur des scénarios »),
-  en ne posant que les vrais choix visibles. Faits, poussés, tests verts :
-  `utils.js`/`logic.js` identiques (fonctions mortes retirées), couche
-  d'appel identique, Bingo/Graphiques/Anomalies/Journal/Listes/thématiques.
-  **Ordre de push : NextStep d'abord, puis NEWGEN** — sinon `parite.yml`
-  compare au vieux NextStep et échoue (arrivé une fois le 26/09).
-  Outils : `node scripts/parite.js ../ateliers-cd47_NextStep` (constat),
-  `--maj` (réécrit la liste après alignement).
-  **Ce bloc se met à jour après chaque paquet poussé** (demande de
-  l'utilisateur, 26/09/2026) : compteur d'écarts, faits, reste.
-- **Reste (16)** : `VueSaisie`, `VueHistorique`, `VueCalendrier`,
-  `VueGestionOrdi`, `AttenteGAS`, `emptyRow`, CSS `injectCSS`, `App` (index
-  et admin), `VueAdminV10`, `AdminLogin`, `VueLoginIndex`, `VueAccueilStatic`,
-  `MaintenanceScreen`, `AnnonceNouvelleVersion`, `APP_NS` (voulu).
-  Constats pour `VueSaisie` : NextStep gère l'échec partiel de `saveMany`
-  (l'API n'est pas transactionnelle, `api/lib/ecriture.php:44-51`) et valide
-  au blur ; NEWGEN applique en local via `onSaved(isNew, entry)`.
-- **Tranché par l'utilisateur le 26/09/2026** :
-  1. saisie par cycle comme NEWGEN (inscrits/présents par ligne, 4 pré-rempli) ;
-  2. mode sombre ajouté à l'index NextStep ;
-  3. écran d'attente de NEWGEN (bobine détaillée) ;
-  4. navigation : **ne pas toucher** — barre NEWGEN, menu latéral NextStep
-     (`voulu`).
-  Fait : 2 (bouton 🌙 dans le menu NextStep, CSS de admin.css recopié dans
-  app.css) et 3 (AttenteGAS + CSS). `App` et `injectCSS` passés en `voulu`
-  (design propre à chaque appli). Fait : 1 (`VueSaisie` + `emptyRow`
-  identiques, échec partiel de cycle géré). Calendrier (NEWGEN) et Gestion ordi (NextStep)
-  identiques.
-- Fait aussi : connexion, accueil, maintenance, AdminLogin, Admin (exports
-  partenaire ICS/PDF), Agenda identiques ; `NOM_APPLI` (utils.js) porte le
-  nom affiché ; NextStep rattache les variables de couleur NEWGEN à sa
-  palette (fin de app.css et admin.css). `App` passé en `voulu`.
-- **Garde-fou (demande de l'utilisateur, 26/09/2026) : ne pas uniformiser la
-  charte graphique.** Chaque appli garde son design (couleurs, navigation,
-  Historique) ; seuls le fonctionnement et les choix explicitement validés
-  passent d'une appli à l'autre. À vérifier par l'utilisateur, arrivé sur
-  NextStep sans question explicite : Calendrier (panneau de filtres
-  repliable), Agenda, connexion/accueil/maintenance (code NEWGEN, couleurs
-  rattachées à la palette NextStep).
-- **Fait le 26/09/2026 (session 01D5EB)** : volet latéral extrait en
-  composant commun `PanneauAtelier` (Historique, Calendrier **et Agenda**, à
-  la demande de l'utilisateur ; l'Agenda avait un volet en lecture seule).
-  Historique NextStep : **filtres repliables** (en-tête « 🔎 Filtres », nombre
-  d'actifs, état mémorisé `hist_filtres_ouverts`) — demande de l'utilisateur,
-  le reste du design NextStep inchangé.
-- **Question en attente (26/09/2026)** : `VueHistorique` — NEWGEN a le
-  design v2 (panneau de filtres repliable, cartes et compteurs v2, bouton
-  PDF), NextStep l'ancien (puces de filtre, boutons XLSX/ICS/Sync). Aligner
-  NextStep sur NEWGEN, ou garder chacun (`voulu`) ? Les correctifs de
-  fonctionnement sont déjà communs (panneau, mise en évidence).
+**État au 26/09/2026 : 4 écarts, dont 3 `voulu`** (`APP_NS`, `App`,
+`injectCSS` — navigation et design propres à chaque appli). Le récit des lots
+(80 → 4 écarts) est dans `git log`. Outils : `node scripts/parite.js
+../ateliers-cd47_NextStep` (constat), `--maj` (réécrit
+`scripts/parite-ecarts.json` ; ce qui a bougé repasse en `à trancher`) ;
+workflow `parite.yml`, jamais bloquant. **Ordre de push : NextStep d'abord,
+puis NEWGEN**, sinon `parite.yml` compare au vieux NextStep.
+
+- **Garde-fou (utilisateur, 26/09/2026) : ne pas uniformiser la charte
+  graphique.** Chaque appli garde son design ; seuls le fonctionnement et les
+  choix explicitement validés passent de l'une à l'autre.
+- **Question en attente — `VueHistorique`** : NEWGEN en design v2, NextStep
+  dans l'ancien (filtres rendus repliables le 26/09 à la demande de
+  l'utilisateur). Aligner, ou passer en `voulu` ? Recommandé : `voulu`.
+- **À vérifier par l'utilisateur sur NextStep** (arrivé sans question
+  explicite le 26/09) : Calendrier, Agenda (volet modifiable), connexion,
+  accueil, maintenance, saisie simple et par cycle — **avant le 28/09**,
+  jour où l'équipe s'en sert.
 
 ## Reste ouvert
-
 
 - 📅 **30/09/2026 — relève du journal** (rappel planifié) : journal Admin
   NextStep depuis la bascule. Point de comparaison : labo du 24-25/09, 0/27
@@ -147,22 +86,9 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
   désinstallées (seul l'utilisateur en avait).
 - Déploiement par clé SSH au lieu du mot de passe (secret
   `ALWAYSDATA_SSH_PASSWORD`).
-- **Restes de l'époque GAS dans le dépôt, à trier (proposé le 26/09, rien
-  décidé)** : sections 2 et 5 du `CLAUDE.md` (tests et « Backend GAS »
-  décrivent encore GAS), dossiers `gas/` et `banc/`, noms `GS_URL`/`GAS_*`
-  dans `shared.js`. La couche réseau client (plafonds, écritures jamais
-  doublées, doublage des lectures) sert toujours pour l'API : ne pas la
-  retirer sans décision, cf. « Points à ne pas défaire ».
-  **Fait le 26/09/2026** : textes visibles « Google/classeur/GAS » remplacés
-  (chargement, suppression, erreurs), badge « ⚠️ GAS » et ancien `VueAdmin`
-  de NextStep retirés, puis **toutes les branches de l'ancien serveur**
-  (`BACKEND_PHP`, `GS_URL`) supprimées sur les deux sites — comportement
-  inchangé, toutes les suites vertes (NEWGEN : Node + sandbox/e2e/reseau/
-  appels ; NextStep : Node + 35 Playwright). **Couche réseau gardée**
-  (plafonds, reprises, doublage) : avec l'API elle ne se déclenche que sur une
-  vraie coupure réseau (mobile), où elle sert encore ; la retirer ne ferait
-  que simplifier le code au prix de ce filet. Restent dans le dépôt, sans
-  effet : `gas/` (archive), `banc/`, les noms `GAS_*`/`gasAppel`.
+- Restes sans effet de l'époque GAS : `gas/` (archive), `banc/`, noms
+  `GAS_*`/`gasAppel`/`__gasLog` (désignent la couche d'appel). À retirer si
+  besoin, sans urgence.
 
 ## À ne pas réapprendre — Alwaysdata et déploiement
 
@@ -206,39 +132,26 @@ Décision de l'utilisateur : amendements de la session B, dans cet ordre.
     le total (`kpiHistorique`, testé). Pas de tuile « inscrits prévus ».
   - **Calendrier** : l'orienteur sur sa propre ligne dans la pastille.
   - **Présents et inscrits : toujours sur les seuls ateliers réalisés**,
-    partout (Historique, Dashboard, détail communes, conseillers, Calendrier,
-    Agenda, Admin) — sinon les inscrits des ateliers planifiés ou annulés
-    faussent le taux de présence. Audit du 26/09/2026 : 8 calculs corrigés
-    sur NEWGEN, 10 sur NextStep, puis ramenés à **`kpiHistorique`**
-    (`utils.js`, testé) : tout nouveau total de présents/inscrits passe par
-    elle, pas par un filtre recopié.
-  - **Panneau latéral** (Historique et Calendrier) : date, horaire, public,
-    ordinateurs prêtés modifiables ; thématique en auto-proposition
-    (`ComboThematique`). **Case « Classe mobile »** : le nombre d'ordinateurs
-    n'apparaît et ne compte que si elle est cochée, comme dans le formulaire
-    (`matierePanneau`, `utils.js`, testé). Des ateliers anciens peuvent avoir
-    un nombre sans la case : ignorés du stock, **recensés dans Anomalies →
-    « Ordinateurs sans Classe mobile »** (`ordiSansClasseMobile`, testé).
-    Alerte non bloquante si l'atelier, tel qu'il sera
-    enregistré, dépasse le stock d'ordinateurs ou partage la Classe mobile
-    (`conflitsDeLEntree`, `utils.js`, testé ; vérifiée dans un navigateur
-    le 26/09 sur NEWGEN ; **validée en production par l'utilisateur le
-    26/09**). Dates de prélèvement et de retour dans le panneau, facultatives,
-    prises en compte dans l'alerte.
+    partout, via **`kpiHistorique`** (`utils.js`, testé) — jamais un filtre
+    recopié à la main.
+  - **Volet latéral commun `PanneauAtelier`** (Historique, Calendrier,
+    Agenda) : date, horaire, public, Classe mobile (le nombre d'ordinateurs ne
+    compte que si elle est cochée, `matierePanneau`), dates de prêt,
+    thématique en auto-proposition, alerte de conflit non bloquante
+    (`conflitsDeLEntree`, validée en production le 26/09). Ateliers anciens
+    avec un nombre sans la case : Anomalies → « Ordinateurs sans Classe
+    mobile ».
   - **Filtre public de l'Historique à choix multiples** (26/09/2026) :
     état `filtPublic` = tableau, `[]` = tous ; pastilles à cocher
     (« Tout afficher » vide la sélection — **pas** « Tous (les) publics »,
     confondu avec la catégorie « Tous publics » de la liste). Le Calendrier
     garde son filtre public à choix unique.
-  - Panneau latéral : « Période de prêt » affichée sous « Ordinateurs
-    prêtés » (valeurs enregistrées, mise à jour après Enregistrer).
   - **« Effacer »** (filtres de l'Historique NEWGEN) vide tout, statut
     compris ; « Voir tous » remet le statut par défaut (Planifié).
   - **Liste de connexion Admin** (bouton « Changer », session ouverte) :
     seuls les comptes à « accès Admin » — filtre `actif !== 'NON'` côté
-    page, sur les deux sites (NEWGEN testé par `e2e/appels.spec.js`). Retiré de
-    NextStep puis remis le 26/09 : sans lui, tous les conseillers
-    réapparaissent.
+    page, sur les deux sites (NEWGEN testé par `e2e/appels.spec.js`) ; sans
+    lui, tous les conseillers réapparaissent.
 
 ### 🔒 AG-002 (23/09/2026) — la journée entière reste la règle sur un prêt multi-jours
 
@@ -292,3 +205,13 @@ libre.
   `newgen` / `nextstep`) : les deux applis partagent l'origine
   `maswaddpt47-cmyk.github.io`, et `localStorage` n'est pas cloisonné par
   chemin.
+- **Couche réseau client gardée** (plafonds, reprises, doublage des
+  lectures) : avec l'API elle ne joue que sur une vraie coupure (4G terrain),
+  où elle sert encore.
+- **Un nom de composant ou de fonction n'est déclaré qu'une fois** entre
+  `shared.js`, `app.js` et `admin_app.js` : sinon le dernier chargé remplace
+  l'autre en silence (cas `TableCommunes`, devenu `TableCommunesDashboard`
+  le 26/09). `scripts/parite.js` le signale (« définition écrasée »).
+- **NEWGEN charge `logic.js`** dans ses pages (lot 0 d'AG-015) : plus aucune
+  copie de la logique du matériel dans `shared.js`, ce qui est testé est ce
+  qui tourne.
