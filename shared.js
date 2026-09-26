@@ -689,12 +689,11 @@ function FadeItem({children,delay=0,style={}}){
   return CE('div',{style:{opacity:v?1:0,transition:'opacity .6s ease',...style}},children);
 }
 
-const GS_URL = 'https://script.google.com/macros/s/AKfycbwsNMoPSEIMss4kG0V13PWSr1mKEo34IFMWClxJuXkUvZ7Cgo-OWY0ud1lQtrUBqDbP/exec';
 // ── Interrupteur de serveur (refonte GAS → PHP, AG-009 / AG-011) ──────────
 // Toujours l'API Alwaysdata. La porte de secours « ?backend=gas » a été
 // retirée le 26/09/2026 (demande de l'utilisateur) : le GAS est coupé
 // (« Seulement moi ») et ses données sont figées depuis la bascule du
-// 25/09/2026. Les branches « GAS » restées dans le code ne servent plus.
+// 25/09/2026. Branches « GAS » retirées du code le 26/09/2026.
 // En mode API :
 //   - tout part en POST form-urlencoded (requête « simple » : pas de pré-vol
 //     CORS), jeton et mot de passe dans le corps, jamais dans l'URL ;
@@ -703,15 +702,13 @@ const GS_URL = 'https://script.google.com/macros/s/AKfycbwsNMoPSEIMss4kG0V13PWSr
 //     « ateliers:auth-expiree » : les deux applis reviennent à l'écran de
 //     connexion (amendement 3 d'AG-011).
 const API_PHP_URL = 'https://ateliers-numeriques.alwaysdata.net/api/index.php';
-window.BACKEND_PHP = true;
 // Un onglet resté sur ?backend=gas l'avait mémorisé : on l'efface.
 try{ sessionStorage.removeItem('ateliers_backend'); }catch(_){}
-// Adresse et corps d'un appel : GAS en GET (paramètres dans l'URL), API en
-// POST (action dans l'URL pour lire les journaux, le reste dans le corps).
+// Adresse et corps d'un appel : POST vers l'API (action dans l'URL pour lire
+// les journaux, le reste dans le corps).
 // Lien « mot de passe oublié » : la page s'ouvre en mode API par défaut.
 window.RETOUR_REINIT_SUFFIXE = '';
 window.requeteServeur = function(params){
-  if(!window.BACKEND_PHP) return {url:`${GS_URL}?${params.toString()}`, corps:null};
   const token = window.authToken && window.authToken.get();
   if(token && !params.has('token')) params.set('token', token);
   return {url:`${API_PHP_URL}?action=${encodeURIComponent(params.get('action')||'')}`, corps:params.toString()};
@@ -1500,14 +1497,13 @@ const REINIT_LIEN={background:'none',border:'none',color:'#1e3a8a',cursor:'point
 // Repère visible du serveur (demande de l'utilisateur, 25/09/2026).
 window.VERSION_APPLI = 'Version 2 — serveur Alwaysdata';
 function MentionVersion(){
-  return CE('p',{className:'mention-version',style:{fontSize:11,color:window.BACKEND_PHP?'#94a3b8':'#c53030',textAlign:'center',margin:'14px 0 0',fontWeight:window.BACKEND_PHP?400:700}},window.VERSION_APPLI);
+  return CE('p',{className:'mention-version',style:{fontSize:11,color:'#94a3b8',textAlign:'center',margin:'14px 0 0',fontWeight:400}},window.VERSION_APPLI);
 }
 
 function LienMotDePasseOublie({conseiller}){
   const[ouvert,setOuvert]=React.useState(false);
   const[envoi,setEnvoi]=React.useState(false);
   const[msg,setMsg]=React.useState(null); // {ok,texte}
-  if(!window.BACKEND_PHP) return null;
   async function envoyer(){
     setEnvoi(true);setMsg(null);
     try{
@@ -1573,17 +1569,7 @@ window.onLoginSuccess = function(conseiller, res){
     window.authToken.set(res.token);
     window.authToken.setRole(res.role || 'user');
     sessionStorage.setItem('gs_conseiller', conseiller);
-    // fire-and-forget : log écrit après connexion, sans bloquer l'utilisateur.
-    // Mode API : checkPassword journalise déjà la connexion, logLogin n'y
-    // fait plus rien — inutile de payer l'appel.
-    if(!window.BACKEND_PHP) setTimeout(function(){
-      window.apiFetch && window.apiFetch('logLogin',{
-        conseiller: conseiller,
-        role: res.role || 'user',
-        userAgent: navigator.userAgent,
-        source: window.location.pathname.indexOf('admin.html') > -1 ? 'admin.html' : 'index.html'
-      }).catch(function(){});
-    }, 0);
+    // Pas de logLogin : checkPassword journalise déjà la connexion.
   }
 };
 window.onLogout = function(){
@@ -1620,7 +1606,7 @@ window.onLogout = function(){
       // même si la page se ferme. Sans réponse attendue : oublier le jeton ici
       // ne doit jamais dépendre du réseau.
       const t = sessionStorage.getItem('gs_token');
-      if(t && window.BACKEND_PHP){
+      if(t){
         try{ fetch(`${API_PHP_URL}?action=logout`, {method:'POST', keepalive:true, headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'token='+encodeURIComponent(t)}).catch(()=>{}); }catch(_){}
       }
       sessionStorage.removeItem('gs_token'); sessionStorage.removeItem('gs_role'); sessionStorage.removeItem('gs_conseiller');
@@ -1970,7 +1956,7 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
     const existing=comptes[nom]||{role:'user'};
     try{
       const res=await apiFetch('saveCompte',{conseiller:nom,role:existing.role,actif:newActif?'OUI':'NON'});
-      if(res&&res.ok){setComptes(m=>({...m,[nom]:{...existing,actif:newActif?'OUI':'NON'}}));showToast(window.BACKEND_PHP?(newActif?'✅ '+nom+' : accès Admin autorisé':'🔒 '+nom+' : accès Admin retiré (Index reste ouvert)'):(newActif?'✅ '+nom+' activé':'🔕 '+nom+' désactivé'));}
+      if(res&&res.ok){setComptes(m=>({...m,[nom]:{...existing,actif:newActif?'OUI':'NON'}}));showToast(newActif?'✅ '+nom+' : accès Admin autorisé':'🔒 '+nom+' : accès Admin retiré (Index reste ouvert)');}
       else showToast('❌ Erreur serveur',false);
     }catch(_){showToast('❌ Hors-ligne',false);}
     finally{setComptesSaving(s=>({...s,[nom]:false}));}
@@ -2054,7 +2040,7 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
                 CE('span',{className:'tgl-track',style:comptes[item]?.actif==='NON'?{background:'#e2e8f0'}:{}})
               ),
               // Mode API : l'interrupteur ne ferme que l'Admin (24/09/2026), Index reste ouvert.
-              CE('span',null,window.BACKEND_PHP?(comptes[item]?.actif!=='NON'?'🔑 accès Admin':'🔒 sans Admin'):(comptes[item]?.actif!=='NON'?'🔑 login':'🔑 inactif'))
+              CE('span',null,comptes[item]?.actif!=='NON'?'🔑 accès Admin':'🔒 sans Admin')
             ),
             CE('select',{
               value:comptes[item]?.role||'user',

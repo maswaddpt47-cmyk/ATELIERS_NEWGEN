@@ -41,29 +41,8 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
     setConseiller(c=>base.includes(c)?c:'');
   },[base.join(',')]);
 
-  // Préchargement des ateliers en parallèle de la saisie du mot de passe :
-  // getAll ne dépend pas d'un jeton, rien n'empêche de le lancer avant que
-  // checkPassword ait répondu. Sans ça, Historique attendait le plein
-  // aller-retour de checkPassword avant même de commencer son propre
-  // chargement — même défaut que celui corrigé sur l'Index, ici entre
-  // l'authentification et les données plutôt qu'entre la maintenance et les
-  // données. loadData (après connexion) réutilise ce résultat via fetchAll,
-  // qui dédoublonne : aucun getAll supplémentaire n'est déclenché.
-  // Mode API : getAll et getConfig exigent un jeton (AG-011) — les
-  // précharger ici ne ferait que deux appels refusés par ouverture.
-  React.useEffect(function(){
-    if(window.BACKEND_PHP) return;
-    window.fetchAll && window.fetchAll(new Date().getFullYear(),{source:'admin'}).catch(function(){});
-  },[]);
-
-  // getConfig sert de témoin pour le hint "Préchauffage…" ; le bouton
-  // Connexion n'en dépend pas. Part en parallèle de getAll, pas après (cf.
-  // app.js). fetchConfig plutôt qu'apiFetch('getConfig') : dédoublonne avec
-  // les autres composants qui demandent la même config.
-  React.useEffect(function(){
-    if(window.BACKEND_PHP) return;
-    window.fetchConfig && window.fetchConfig().catch(function(){});
-  },[]);
+  // Rien n'est préchargé avant la connexion : getAll et getConfig exigent un
+  // jeton (AG-011).
 
   // Tick du countdown
   React.useEffect(()=>{
@@ -189,7 +168,7 @@ var VIEW_META = {
 function App(){
   const[auth,setAuth]           = React.useState(false);
   // Lien « mot de passe oublié » reçu par mail (?reinit=…, mode API).
-  const[jetonReinit,setJetonReinit]= React.useState(()=>window.BACKEND_PHP?window.jetonReinitUrl():null);
+  const[jetonReinit,setJetonReinit]= React.useState(()=>window.jetonReinitUrl());
   const[adminConseiller,setAdminConseiller]= React.useState(()=>localStorage.getItem(lsKey('adm_conseiller'))||'');
   const[view,setView]           = React.useState('historique');
   const[entries,setEntries]= React.useState([]);
@@ -226,7 +205,6 @@ function App(){
       // « sans Admin », sinon la liste de connexion les propose (26/09/2026).
       const eligibles=comptes
         .filter(c=>c.actif!=='NON')
-        .filter(c=>window.BACKEND_PHP||c.role==='admin'||c.role==='superviseur')
         .map(c=>c.conseiller)
         .filter(Boolean);
       setLoginConseillers(eligibles.length>0?eligibles:CONSEILLERS_DEFAULT);
@@ -405,7 +383,7 @@ const LOGS_KEY = lsKey('adm_logs');
   // tentative : on lit où passe le temps sans ouvrir les DevTools.
   React.useEffect(()=>{
     window.gasLogHook=e=>addLog(
-      `${window.BACKEND_PHP?'API':'GAS'} ${e.action} #${e.attempt} — ${e.issue} en ${(e.ms/1000).toFixed(1)} s`,
+      `API ${e.action} #${e.attempt} — ${e.issue} en ${(e.ms/1000).toFixed(1)} s`,
       // 'annulé' n'est ni une réussite ni un échec : l'appel a été arrêté
       // parce que son jumeau avait répondu. Le peindre en rouge ferait croire
       // à une panne (constaté le 18/09/2026, avant qu'il cesse d'être
@@ -927,7 +905,7 @@ function VueCorbeille(){
     CE('h2',{style:{marginTop:0}},'🗑️ Corbeille'),
     CE('p',{style:{fontSize:12,color:'var(--text-2,#718096)',marginTop:0}},
       'Les ateliers supprimés sont gardés '+jours+' jours, puis effacés définitivement. « Restaurer » remet l\'atelier tel qu\'il était au moment de sa suppression, avec son numéro. Un conseiller qui a supprimé un atelier par erreur passe par un administrateur.'),
-    err&&CE('p',{style:{color:'#c53030',fontSize:13}},err+(window.BACKEND_PHP?'':' (corbeille disponible avec le serveur Alwaysdata seulement)')),
+    err&&CE('p',{style:{color:'#c53030',fontSize:13}},err),
     liste===null&&!err&&CE('p',{style:{fontSize:13}},'Chargement…'),
     liste&&liste.length===0&&CE('p',{style:{fontSize:13,color:'var(--text-2,#718096)'}},'La corbeille est vide.'),
     liste&&liste.length>0&&CE('div',{style:{overflowX:'auto'}},
@@ -982,7 +960,7 @@ function VueSauvegardes(){
   const td={padding:'4px 10px',fontSize:12,borderBottom:'1px solid var(--border,#f0f0f0)'};
   return CE('div',{className:'card'},
     CE('h2',{style:{marginTop:0}},'💾 Sauvegardes'),
-    err&&CE('p',{style:{color:'#c53030',fontSize:13}},err+(window.BACKEND_PHP?'':' (disponible avec le serveur Alwaysdata seulement)')),
+    err&&CE('p',{style:{color:'#c53030',fontSize:13}},err),
     etat===null&&!err&&CE('p',{style:{fontSize:13}},'Chargement…'),
     etat&&CE(React.Fragment,null,
       CE('div',{style:{display:'flex',gap:12,flexWrap:'wrap',marginBottom:14}},

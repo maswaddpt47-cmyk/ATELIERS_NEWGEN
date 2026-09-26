@@ -243,7 +243,7 @@ function App(){
   // des comptes actifs), getAll n'étant plus lisible avant connexion.
   const[nomsConnexion,setNomsConnexion] = React.useState([]);
   // Lien « mot de passe oublié » reçu par mail (?reinit=…, mode API).
-  const[jetonReinit,setJetonReinit] = React.useState(()=>window.BACKEND_PHP?window.jetonReinitUrl():null);
+  const[jetonReinit,setJetonReinit] = React.useState(()=>window.jetonReinitUrl());
   const[sidebarPinned,setSidebarPinned] = React.useState(()=>localStorage.getItem(lsKey('sidebar_pinned'))==='1');
   const[darkMode,setDarkMode]=React.useState(()=>localStorage.getItem(lsKey('f_dark'))==='1');
   React.useEffect(()=>{document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');localStorage.setItem(lsKey('f_dark'),darkMode?'1':'0');},[darkMode]);
@@ -403,22 +403,18 @@ function App(){
   // Mode API : getAll exige un jeton, il part donc après la connexion
   // (AG-011) ; authed entre alors dans les dépendances.
   React.useEffect(()=>{
-    if(window.BACKEND_PHP&&!authed) return;
+    if(!authed) return;
     if(isFirstLoad.current){isFirstLoad.current=false;loadData();}
     else{setSeenIds(new Set());loadData();}
-  },[annee,window.BACKEND_PHP?authed:null]);
+  },[annee,authed]);
 
   // Mode API : getComptes public rend les noms actifs et la maintenance
   // (seules infos utiles avant connexion) ; les inactifs arrivent avec getAll.
   React.useEffect(()=>{
     apiFetch('getComptes').then(res=>{
       if(!res.ok||!res.comptes)return;
-      if(window.BACKEND_PHP){
-        setNomsConnexion(res.comptes.map(c=>c.conseiller).filter(Boolean));
-        if(res.maintenance) setMaintenance({msg:res.maintenance_msg||''});
-        return;
-      }
-      setInactifsSet(new Set(res.comptes.filter(c=>c.actif==='NON').map(c=>c.conseiller)));
+      setNomsConnexion(res.comptes.map(c=>c.conseiller).filter(Boolean));
+      if(res.maintenance) setMaintenance({msg:res.maintenance_msg||''});
     }).catch(()=>{});
   },[]);
 
@@ -509,7 +505,7 @@ function App(){
 
   if(!authed){
     return CE(VueLoginIndex,{
-      conseillers:window.BACKEND_PHP&&nomsConnexion.length?nomsConnexion:lists.conseillers,
+      conseillers:nomsConnexion.length?nomsConnexion:lists.conseillers,
       onSuccess:(nom,res)=>{ window.onLoginSuccess(nom,res); setAuthed(true); handleChoixConseiller(nom, true); }
     });
   }
