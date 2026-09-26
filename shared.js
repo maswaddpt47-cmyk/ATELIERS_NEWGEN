@@ -1196,7 +1196,6 @@ let CONSEILLER_COLORS = {'Cynthia Pineau':'#7C3AED','Corentin Tual':'#2563EB','M
 function conseillerColor(c){return(c&&CONSEILLER_COLORS[c])||'#6B7280';}
 function applyColors(colors){if(colors&&typeof colors==='object')Object.assign(CONSEILLER_COLORS,colors);}
 // todayLocal() en heure locale (évite le bug UTC après 22h/23h en France)
-function todayLocal(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 const isPasse = e=>e.date<todayLocal()&&e.statut==='Réalisé';
 const isRetard = e=>e.statut==='Planifié'&&e.date<todayLocal();
 const genId = ()=>`atelier_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
@@ -3065,7 +3064,6 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
 // ECharts — composants graphiques (migration depuis Recharts)
 // ═══════════════════════════════════════════════════════════
 function NoData(){return CE('p',{style:{color:'#718096',fontSize:12,textAlign:'center',paddingTop:20}},'Aucune donnée');}
-function trunc(s,n){return s&&s.length>n?s.slice(0,n-1)+'…':s;}
 function barH(n,base){return Math.max(base,base+(Math.max(0,n-6)*8));}
 
 // ── Base wrapper ECharts ────────────────────────────────────

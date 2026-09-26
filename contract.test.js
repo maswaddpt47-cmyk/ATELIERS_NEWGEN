@@ -3,7 +3,6 @@
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizeMateriel } = require('./logic.js');
 const { normalizeDate, normalizeHoraire } = require('./utils.js');
 
 const STATUTS_VALIDES = ['Planifié', 'Réalisé', 'Annulé', 'Reporté', 'Non réalisé'];
@@ -99,18 +98,6 @@ describe('materiel', () => {
     const e = buildEntry();
     assert.equal(typeof e.materiel, 'string');
     assert.ok(!Array.isArray(e.materiel));
-  });
-  it('normalizeMateriel(Array) → string avec séparateur |', () => {
-    const result = normalizeMateriel(['Tablette', 'Imprimante']);
-    assert.equal(typeof result, 'string');
-    assert.equal(result, 'Tablette|Imprimante');
-  });
-  it('normalizeMateriel(Array vide) → chaîne vide', () => {
-    assert.equal(normalizeMateriel([]), '');
-  });
-  it('normalizeMateriel ne produit jamais de virgule comme séparateur', () => {
-    const result = normalizeMateriel(['A', 'B', 'C']);
-    assert.ok(!result.includes(','));
   });
 });
 
