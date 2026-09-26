@@ -86,7 +86,7 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
     setLoading(true);setErr('');setHint('');
     const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
     const t1=setTimeout(()=>setHint('Connexion au serveur…'),2000);
-    const t2=setTimeout(()=>setHint('Démarrage de Google Apps Script…'),6000);
+    const t2=setTimeout(()=>setHint('Le serveur met plus de temps que d’habitude…'),6000);
     const t3=isMobile?setTimeout(()=>setHint('Réseau mobile détecté, patience…'),12000):null;
     try{
       // Pas de Promise.race ici : apiFetch a déjà son propre plafond + une
@@ -529,7 +529,7 @@ const LOGS_KEY = lsKey('adm_logs');
       ),
       CE('div',{className:'app-topbar-v2-right'},
         CE('span',{className:'sidebar-admin-badge'},'ADMIN'),
-        CE('span',{title:window.VERSION_APPLI,style:{fontSize:11,fontWeight:700,color:window.BACKEND_PHP?'var(--text-3)':'#c53030'}},window.BACKEND_PHP?'v2':'⚠️ GAS'),
+        CE('span',{title:window.VERSION_APPLI,style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},'v2'),
         entries.length>0&&CE('span',{style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},entries.length),
         CE(ChoixAnnees,{className:'topbar-year-sel',value:annee,onChange:setAnnee,title:'Années chargées'}),
         CE('button',{

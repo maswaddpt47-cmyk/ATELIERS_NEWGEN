@@ -850,7 +850,7 @@ window.gasUnAppel = async function(url, action, numero, timeoutMs, ctrlFourni, c
   try{ data = JSON.parse(text); }
   catch(_){
     logGas(action, numero, Date.now()-t0, 'réponse non-JSON');
-    throw new Error('Réponse invalide du serveur — déploiement GAS à vérifier.');
+    throw new Error('Réponse invalide du serveur.');
   }
   // Refus explicite du serveur (ok:false) : journalise avec son motif. Sans
   // cela un waitLock epuise sur saveMany apparaissait comme une reussite
@@ -1093,8 +1093,8 @@ async function exporterElementPDF(selector, titre, nomFichier){
 // la couche réseau fait réellement : doublage à 7 s, reprise après 12 s.
 function AttenteGAS({titre}){
   const PALIERS = [
-    {t:0,     txt:'Connexion à Google Sheets…'},
-    {t:6000,  txt:"Plus lent que d'habitude (1 à 3 s en temps normal)…"},
+    {t:0,     txt:'Chargement des ateliers…'},
+    {t:6000,  txt:"Plus lent que d'habitude (moins d'une seconde en temps normal)…"},
     {t:13000, txt:'Réponse perdue en chemin — nouvelle tentative…'},
     {t:26000, txt:'Dernière tentative…'},
   ];
@@ -1498,7 +1498,7 @@ const REINIT_BTN={width:'100%',padding:'11px',background:'#1e3a8a',color:'#fff',
 const REINIT_LIEN={background:'none',border:'none',color:'#1e3a8a',cursor:'pointer',fontSize:12,textDecoration:'underline',padding:0};
 
 // Repère visible du serveur (demande de l'utilisateur, 25/09/2026).
-window.VERSION_APPLI = window.BACKEND_PHP ? 'Version 2 — serveur Alwaysdata' : '⚠️ Ancien serveur GAS — données figées';
+window.VERSION_APPLI = 'Version 2 — serveur Alwaysdata';
 function MentionVersion(){
   return CE('p',{className:'mention-version',style:{fontSize:11,color:window.BACKEND_PHP?'#94a3b8':'#c53030',textAlign:'center',margin:'14px 0 0',fontWeight:window.BACKEND_PHP?400:700}},window.VERSION_APPLI);
 }
@@ -1971,7 +1971,7 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
     try{
       const res=await apiFetch('saveCompte',{conseiller:nom,role:existing.role,actif:newActif?'OUI':'NON'});
       if(res&&res.ok){setComptes(m=>({...m,[nom]:{...existing,actif:newActif?'OUI':'NON'}}));showToast(window.BACKEND_PHP?(newActif?'✅ '+nom+' : accès Admin autorisé':'🔒 '+nom+' : accès Admin retiré (Index reste ouvert)'):(newActif?'✅ '+nom+' activé':'🔕 '+nom+' désactivé'));}
-      else showToast('❌ Erreur GAS',false);
+      else showToast('❌ Erreur serveur',false);
     }catch(_){showToast('❌ Hors-ligne',false);}
     finally{setComptesSaving(s=>({...s,[nom]:false}));}
   }
@@ -1981,7 +1981,7 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
     try{
       const res=await apiFetch('saveCompte',{conseiller:nom,role:newRole,actif:existing.actif});
       if(res&&res.ok){setComptes(m=>({...m,[nom]:{...existing,role:newRole}}));showToast('✅ Rôle mis à jour : '+newRole);}
-      else showToast('❌ Erreur GAS',false);
+      else showToast('❌ Erreur serveur',false);
     }catch(_){showToast('❌ Hors-ligne',false);}
     finally{setComptesSaving(s=>({...s,[nom]:false}));}
   }
@@ -1991,7 +1991,7 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
     try{
       const res=await apiFetch('setConfig',{key:'materiels_caches',value:JSON.stringify(next)});
       if(res&&res.ok){setMaterielsCachesLocal(next);MATERIELS_CACHES=next;showToast(hidden?'🙈 '+item+' masqué du formulaire':'👁️ '+item+' de nouveau visible');}
-      else showToast('❌ Erreur GAS',false);
+      else showToast('❌ Erreur serveur',false);
     }catch(_){showToast('❌ Hors-ligne',false);}
     finally{setMaterielCacheSaving(s=>({...s,[item]:false}));}
   }
@@ -3004,7 +3004,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
           }},suppressionEnCours?CE('span',null,CE('span',{className:'spinner'}),'Suppression en cours…'):'🗑️ Supprimer'),
           CE('button',{className:'btn btn-secondary',disabled:suppressionEnCours,onClick:()=>setConfirmDel(null)},'Annuler')
         ),
-        suppressionEnCours&&CE('p',{style:{fontSize:11,color:'#718096',marginTop:10,marginBottom:0}},'Google peut mettre jusqu\'à 30 s à répondre. Ne fermez pas la page.')
+        suppressionEnCours&&CE('p',{style:{fontSize:11,color:'#718096',marginTop:10,marginBottom:0}},'Suppression en cours — ne fermez pas la page.')
       )
     )
   );
@@ -3252,7 +3252,7 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
           }},suppressionEnCours?CE('span',null,CE('span',{className:'spinner'}),'Suppression en cours…'):'🗑️ Supprimer'),
           CE('button',{className:'btn btn-secondary',disabled:suppressionEnCours,onClick:()=>setConfirmDel(null)},'Annuler')
         ),
-        suppressionEnCours&&CE('p',{style:{fontSize:11,color:'#718096',marginTop:10,marginBottom:0}},'Google peut mettre jusqu\'à 30 s à répondre. Ne fermez pas la page.')
+        suppressionEnCours&&CE('p',{style:{fontSize:11,color:'#718096',marginTop:10,marginBottom:0}},'Suppression en cours — ne fermez pas la page.')
       )
     )
   );
@@ -4795,7 +4795,7 @@ function ConfirmModal({item,onConfirm,onCancel}){
           style:{padding:'8px 18px',border:'none',borderRadius:8,background:'#dc2626',cursor:enCours?'wait':'pointer',fontSize:13,fontWeight:700,color:'#fff',boxShadow:'0 2px 8px rgba(220,38,38,.3)'}
         },enCours?CE('span',null,CE('span',{className:'spinner'}),'Suppression en cours…'):'Supprimer')
       ),
-      enCours&&CE('p',{style:{fontSize:11,color:'#718096',marginTop:10,marginBottom:0}},'Google peut mettre jusqu\'à 30 s à répondre. Ne fermez pas la page.')
+      enCours&&CE('p',{style:{fontSize:11,color:'#718096',marginTop:10,marginBottom:0}},'Suppression en cours — ne fermez pas la page.')
     )
   );
 }
