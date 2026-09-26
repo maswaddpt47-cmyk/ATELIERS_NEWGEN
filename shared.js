@@ -2669,7 +2669,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
     finally{setSaving(false);}
   }
 
-  function resetFiltres(){setSearch('');setDSearch('');setFiltStatut('Planifié');setFiltMois('Tous');setFiltCommune('Toutes');setFiltConseiller('Tous');setFiltPublic('Tous');setDateFrom('');setDateTo('');setNewIdsFilter(null);if(onResetConseiller)onResetConseiller();}
+  function resetFiltres(statut='Planifié'){setSearch('');setDSearch('');setFiltStatut(statut);setFiltMois('Tous');setFiltCommune('Toutes');setFiltConseiller('Tous');setFiltPublic('Tous');setDateFrom('');setDateTo('');setNewIdsFilter(null);if(onResetConseiller)onResetConseiller();}
 
   async function exportXLSX(){
     // Chargement différé — ne bloque plus le démarrage (~800 Ko)
@@ -2738,7 +2738,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
     filtConseiller!=='Tous'&&CE('div',{className:'conseiller-bar-v2'},
       CE('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('circle',{cx:12,cy:8,r:4}),CE('path',{d:'M4 20c0-4 3.6-7 8-7s8 3 8 7'})),
       CE('span',null,filtConseiller),
-      CE('button',{onClick:resetFiltres},'Voir tous')
+      CE('button',{onClick:()=>resetFiltres()},'Voir tous')
     ),
     // ── Recherche toujours visible ────────────────────────────
     CE('label',{className:'search-always'},
@@ -2754,7 +2754,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
           CE('path',{d:'M3 6h18M7 12h10M10 18h4'})),
         CE('span',{className:'filter-head-v2-label'},'Filtres'),
         activeFilterCount>0&&CE('span',{className:'filter-active-count'},activeFilterCount+' actif'+(activeFilterCount>1?'s':'')),
-        CE('button',{className:'filter-btn-reset',onClick:e=>{e.stopPropagation();resetFiltres();}},'Effacer'),
+        CE('button',{className:'filter-btn-reset',onClick:e=>{e.stopPropagation();resetFiltres('Tous');}},'Effacer'),
         CE('span',{className:'filter-expand-ico'},'▾')
       ),
       // Corps pliable — toujours dans le DOM, CSS gère max-height
