@@ -85,6 +85,13 @@ déclencheurs supprimés ; import verrouillé ; rappels 08:00 ; copie de nuit
   xlsx, html2canvas, jsPDF dans `vendor/` des deux projets, plus aucun CDN), déploiement par clé SSH ;
 - consigne de l'audit trimestriel à mettre à jour avant le 01/10/2026 ;
 - `manifest-*.json` à retirer plus tard ;
+- ~~ligne `admin_password` du classeur Google~~ : supprimée par l'utilisateur
+  le 26/09/2026 ;
+- classeur Google (NextStep et ancien NEWGEN), GAS et export xlsx du 25/09 :
+  gardés figés, partagés avec l'utilisateur seul, **jusqu'à fin octobre
+  2026** (point de comparaison si un trou d'import apparaît) ; puis
+  suppression groupée, après avis des Archives départementales si elles le
+  demandent (archives publiques). Proposition du 26/09, à confirmer ;
 - ~~test sur le réseau filaire du bureau~~ : **bon, d'après l'utilisateur le 26/09/2026** ;
 - réécriture de l'historique d'`ateliers-backups` (sinon une copie de plus
   de 90 jours reste lisible dans l'historique git) : décision de
