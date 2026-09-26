@@ -1805,6 +1805,16 @@ function VueListes({lists,onSave,onClose,emails,onSaveEmails}){
 }
 
 
+// ── Après une écriture réussie : appliquer en local, ne rien redemander ────
+// app.js / admin_app.js exposent window.__entreeSauvegardee (et
+// __entreeSupprimee) : l'entrée est mise à jour dans la liste déjà chargée.
+// Le repli sur onRefresh couvre un appelant sans ce mécanisme (rien ne doit
+// pouvoir laisser l'écran désynchronisé).
+function entreeSauvegardee(entry, onRefresh){
+  if(window.__entreeSauvegardee) window.__entreeSauvegardee(entry);
+  else if(onRefresh) onRefresh();
+}
+
 // ═══════════════════════════════════════════════════════════
 // VUE SAISIE — v9.1 : mode unique + mode lot (cycle)
 // ═══════════════════════════════════════════════════════════
@@ -3976,7 +3986,7 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
       ];
       let communeInvalide=false,communeSugg=null;
       if(e.commune&&communes.length>0){
-        const q=stripAccents(normCommune(e.commune).trim().toLowerCase());
+        const q=stripAccents(e.commune.replace(/\s*\(\d+\)\s*/g,'').trim().toLowerCase());
         if(!nomsCommunesOff.has(q)){
           communeInvalide=true;
           function lev(a,b){const m=a.length,n=b.length;const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);return dp[m][n];}
@@ -3997,9 +4007,9 @@ function VueAnomalies({entries,onEdit,communes:communesProp,apiFetch,showToast,a
     if(!valeur||!valeur.trim())return;
     setSaving(entry._id);
     try{
-      const updated={...entry,commune:valeur.trim(),materiel:(entry.materiel||[]).join('|')};
+      const updated={...entry,commune:valeur.trim()};
       const res=await apiFetch('saveEntry',{entry:updated});
-      if(res&&res.ok){setSaved(s=>({...s,[entry._id]:true}));if(showToast)showToast('✅ Commune corrigée');if(addLog)addLog('Commune corrigée : '+entry._id,'ok');}
+      if(res&&res.ok){setSaved(s=>({...s,[entry._id]:true}));entreeSauvegardee(updated);if(showToast)showToast('✅ Commune corrigée');if(addLog)addLog('Commune corrigée : '+entry._id,'ok');}
       else{if(showToast)showToast('⚠️ Erreur sauvegarde');}
     }catch(err){if(showToast)showToast('⚠️ Erreur : '+err.message);}
     setSaving(null);
@@ -4632,9 +4642,8 @@ function VueAgendaSemaine({entries,onEdit,onDelete,onDuplicate,canDelete,initCon
   const planifies=filtered.filter(e=>e.statut==='Planifié').length;
   const realises=filtered.filter(e=>e.statut==='Réalisé').length;
   const retards=filtered.filter(e=>isRetard(e)).length;
-  const realisesW=filtered.filter(e=>e.statut==='Réalisé');
-  const inscritsW=realisesW.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);
-  const presentsW=realisesW.reduce((s,e)=>s+(parseInt(e.presents)||0),0);
+  const inscritsW=kpiHistorique(filtered).inscrits;
+  const presentsW=kpiHistorique(filtered).presents;
 
   // ── Card atelier ────────────────────────────────────────────
   function renderCard(e){
