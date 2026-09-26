@@ -51,7 +51,9 @@ par l'utilisateur le 25/09.
 (80 → 4 écarts) est dans `git log`. Outils : `node scripts/parite.js
 ../ateliers-cd47_NextStep` (constat), `--maj` (réécrit
 `scripts/parite-ecarts.json` ; ce qui a bougé repasse en `à trancher`) ;
-workflow `parite.yml`, jamais bloquant. **Ordre de push : NextStep d'abord,
+workflow `parite.yml`, jamais bloquant. **Avant de pousser** un changement
+dans un écart `voulu` : `--maj`, puis remettre son statut à `voulu` à la main
+(oublié le 26/09 → mail d'échec de `parite.yml`). **Ordre de push : NextStep d'abord,
 puis NEWGEN**, sinon `parite.yml` compare au vieux NextStep.
 
 - **Garde-fou (utilisateur, 26/09/2026) : ne pas uniformiser la charte
@@ -110,7 +112,9 @@ puis NEWGEN**, sinon `parite.yml` compare au vieux NextStep.
   seulement ; Index reste ouvert. Couper complètement un agent = supprimer
   son compte. Noms à accès Admin lisibles sans connexion (sans rôle) : écart
   de confidentialité accepté (24/09).
-- Le rôle **superviseur** garde ses pouvoirs quasi admin (24/09).
+- Le rôle **superviseur** garde ses pouvoirs quasi admin (24/09) et **n'apparaît
+  pas dans la liste de connexion d'Index** (26/09 : il travaille depuis
+  l'Admin) — filtré par l'API (`action_get_comptes`, testé) et par les pages.
 - **Déconnexion automatique d'Index après 30 min** d'inactivité, jamais
   pendant la saisie d'un atelier (aucun brouillon n'est gardé — à revoir si
   on en ajoute un).
