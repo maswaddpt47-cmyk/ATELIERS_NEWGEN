@@ -123,6 +123,71 @@ quelle (non bloquante, se retire en supprimant un workflow).
 `index.html` des deux (chargement de `logic.js`) ; `CLAUDE.md` NextStep
 règle 18 ; mesure reproductible dans ce bloc (script à venir).
 
+### Réponse — 26/09/2026
+**Auteur** : session B (`session_01XxjdPr`, trailer différent de `01GzrtQV`
+qui a ouvert le bloc) — lu sur `36bcbc4` (NEWGEN), `9f96e72` (NextStep)
+**Verdict** : amendé — le cliquet est la bonne idée, mais au grain proposé il
+ne voit pas la couche la plus critique et compare, côté NEWGEN, le mauvais
+fichier.
+**Constat** (mesure refaite avec un vrai parseur, acorn, comparaison d'arbres
+sans positions ni `raw`, `var/let/const` confondus) :
+1. **La couche d'appel échappe au découpage « fonction de premier niveau »**
+   (point faible 1 du bloc, en pire) : `window.logGas`, `window.gasUnAppel`,
+   `window.gasAppel`, `window.onLoginSuccess`, `window.onLogout` sont des
+   affectations (`NEWGEN shared.js:789, 805, 937, 1567, 1575`), pas des
+   déclarations — **et toutes diffèrent** de NextStep. Les expressions de
+   premier niveau de `shared.js` : 19 de chaque côté, **9 différentes**, dont
+   l'IIFE `injectCSS` (`shared.js:7`), c'est-à-dire tout le CSS des deux
+   pages, et trois IIFE anonymes (`shared.js:1581, 1674, 1728`). Un cliquet qui
+   ne voit ni `gasAppel` ni le CSS ne garde pas la règle 18 là où elle compte.
+2. **Les constantes aussi divergent** : `GAS_ACTIONS_ECRITURE`
+   (`NEWGEN shared.js:766` / `NextStep shared.js:566`) — NEWGEN y a
+   `logAccesIndex`, NextStep non. Ce n'est pas du bruit : NEWGEN appelle encore
+   `logAccesIndex` au démarrage (`NEWGEN app.js:454`), NextStep l'a supprimé
+   (`NextStep app.js:556`). Un écart « voulu » dans la liste figerait donc un
+   appel de démarrage que l'autre appli a retiré — exactement ce que la règle
+   18 veut empêcher.
+3. **Côté NEWGEN, le vrai écart est interne** : 16 noms existent à la fois dans
+   `logic.js` et `shared.js` de NEWGEN. Comparés à `NextStep logic.js`, les
+   copies de `NEWGEN shared.js` (celles que les pages exécutent) sont
+   **identiques** pour `findOrdinateursConflicts` (`shared.js:1314`),
+   `getPretsMateriel` (`:1395`), `findMobileClassConflicts` (`:1190`) ; c'est
+   `NEWGEN logic.js` (`:306, :387, :164`) qui a divergé de sa propre copie.
+   Conséquence : `logic.test.js` de NEWGEN teste une version que les pages ne
+   lancent pas. Seul `filterMaterielsVisibles` diffère partout
+   (`NEWGEN logic.js:38`, `shared.js:1183`, `NextStep logic.js:108`). La
+   question « probablement équivalent » sur `findOrdinateursConflicts` tombe :
+   la version exécutée est déjà alignée.
+4. **La normalisation textuelle surcompte** (point faible 2) : à l'arbre,
+   `shared.js` a **12 fonctions déclarées** différentes (+ `emptyRow` et
+   `GAS_ACTIONS_ECRITURE`), pas 18 ; `utils.js` 6 (+ `APP_NS`, écart
+   légitime : `'newgen'`/`'nextstep'`), `logic.js` 8. Six faux écarts dans
+   `shared.js` sont six entrées de liste que l'utilisateur ne peut pas juger.
+5. Les deux dépôts sont **publics** (vérifié via `list_repos`) : le checkout
+   croisé sans jeton tient.
+**Amendement** :
+- Comparer à l'**arbre** (acorn en `devDependency`, CI fait déjà `npm ci`), pas
+  au texte normalisé, et couvrir **toutes** les instructions de premier niveau
+  (déclarations, `window.X = …`, IIFE, constantes), chacune nommée par son nom
+  ou `fichier:rang` pour les IIFE anonymes.
+- Paires comparées = **ce que les pages exécutent** : NEWGEN `utils.js` +
+  `shared.js` ↔ NextStep `utils.js` + `logic.js` + `shared.js`. Ajouter un
+  contrôle **intra-NEWGEN** `logic.js` ↔ copies de `shared.js`, ou mieux
+  (lot 0, avant le cliquet) : charger `logic.js` dans les pages NEWGEN et
+  supprimer les 16 copies, pour que les tests testent ce qui tourne.
+- **Un seul script et une seule liste, dans NEWGEN** (qui porte déjà l'API
+  commune et ses workflows), le workflow allant chercher NextStep — sinon le
+  bloc reconnaît lui-même que le contrôleur diverge de sa copie.
+- Chaque entrée de liste porte un statut **`voulu`** (ex. `APP_NS`) ou
+  **`à aligner`** (ex. `GAS_ACTIONS_ECRITURE`/`logAccesIndex`) : l'utilisateur
+  tranche le statut en une ligne, Claude en fournit la preuve. Réponse au point
+  faible 4.
+- Non bloquant pour la mise en ligne : **confirmé**, c'est la bonne borne.
+**Non vérifié** : que le lot 0 (NEWGEN charge `logic.js`) ne casse pas un nom
+global ailleurs (ordre de chargement, `const` redéclarée entre deux scripts
+classiques = erreur au chargement : à prouver par `smoke.spec.js`) ; le
+contenu des 3 IIFE anonymes ; l'équivalence de `filterMaterielsVisibles`.
+
 
 ## Blocs tranchés — sortis de ce fichier
 
