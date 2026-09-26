@@ -783,6 +783,12 @@ const GAS_PAUSE_LECTURE_MS    = 300;    // inutile d'attendre : ce n'est pas une
 const GAS_PAUSE_ECRITURE_MS   = 1000;   // laisse retomber une écriture encore en vol
 const GAS_BUDGET_TOTAL_MS     = 45000;  // au-delà, on rend la main (bouton Réessayer)
 
+// Plafond d'un appel selon son régime : lecture, écriture, ou lot d'écritures.
+function gasPlafond(action, ecriture){
+  if(!ecriture) return GAS_TIMEOUT_LECTURE_MS;
+  return GAS_ACTIONS_LOT.has(action) ? GAS_TIMEOUT_ECRITURE_LOT_MS : GAS_TIMEOUT_ECRITURE_MS;
+}
+
 // Journal consultable : window.__gasLog, et console pour le suivi en direct.
 window.__gasLog = [];
 
@@ -936,9 +942,7 @@ const GAS_SANS_DOUBLON = new Set(['checkPassword']);
 // oublier.
 window.gasAppel = async function(url, action, corps){
   const ecriture   = GAS_ACTIONS_ECRITURE.has(action);
-  const plafond    = !ecriture
-    ? GAS_TIMEOUT_LECTURE_MS
-    : (GAS_ACTIONS_LOT.has(action) ? GAS_TIMEOUT_ECRITURE_LOT_MS : GAS_TIMEOUT_ECRITURE_MS);
+  const plafond    = gasPlafond(action, ecriture);
   const pause      = ecriture ? GAS_PAUSE_ECRITURE_MS   : GAS_PAUSE_LECTURE_MS;
   const doubler    = !ecriture && !GAS_SANS_DOUBLON.has(action);
   const tentatives = ecriture ? GAS_TENTATIVES_ECRITURE : GAS_TENTATIVES_LECTURE;
@@ -1195,6 +1199,8 @@ const NAV_DEFAULT_COLOR = '#197d89';
 let CONSEILLER_COLORS = {'Cynthia Pineau':'#7C3AED','Corentin Tual':'#2563EB','Michel Aswad':'#059669','Eva Capelle':'#DB2777'};
 function conseillerColor(c){return(c&&CONSEILLER_COLORS[c])||'#6B7280';}
 function applyColors(colors){if(colors&&typeof colors==='object')Object.assign(CONSEILLER_COLORS,colors);}
+
+function fmtPeriode(debut,fin){return debut===fin?fmtDate(debut):fmtDate(debut)+' → '+fmtDate(fin);}
 // todayLocal() en heure locale (évite le bug UTC après 22h/23h en France)
 const isPasse = e=>e.date<todayLocal()&&e.statut==='Réalisé';
 const isRetard = e=>e.statut==='Planifié'&&e.date<todayLocal();
@@ -1325,85 +1331,42 @@ window.onLoginSuccess = function(conseiller, res){
 };
 window.onLogout = function(){
   window.authToken.clear();
-  sessionStorage.removeItem('gs_conseiller');
 };
 
 // ── API — AbortController + token auth (GET uniquement — GAS ne supporte pas CORS preflight POST) ──
-(function(){
-
-  // Actions d'écriture qui exigent un token (admin uniquement)
-  // saveEntry/saveMany/delete accessibles aux conseillers sans token
-  const ADMIN_ONLY_ACTIONS = new Set([
-    'saveLists','saveConfig','setConfig',
-    'saveVisibility','saveColors','saveEmails',
-    'saveCompte','resetPassword','setPassword',
-    'getLogs','getCorbeille','restaurerCorbeille','etatSauvegardes','copieMaintenant'
-  ]);
-  const WRITE_ACTIONS = new Set([
-    'saveEntry','saveMany','delete','selfSetPassword',
-    // Lecture, mais jeton exigé côté GAS (v11.39) : elle vérifie un
-    // enregistrement. Reste hors GAS_ACTIONS_ECRITURE, donc doublée.
-    'verifierIds',
-    ...ADMIN_ONLY_ACTIONS
-  ]);
-
-  // ── Gestion du token en sessionStorage ──────────────────────
-  window.authToken = {
-    get()  { return sessionStorage.getItem('gs_token') || null; },
-    set(t) { sessionStorage.setItem('gs_token', t); },
-    clear(){
-      // Déconnexion côté serveur (25/09/2026) : le jeton est effacé en base avant
-      // d'être oublié ici, sinon il restait valable 6 h. keepalive : l'envoi part
-      // même si la page se ferme. Sans réponse attendue : oublier le jeton ici
-      // ne doit jamais dépendre du réseau.
-      const t = sessionStorage.getItem('gs_token');
-      if(t){
-        try{ fetch(`${API_PHP_URL}?action=logout`, {method:'POST', keepalive:true, headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'token='+encodeURIComponent(t)}).catch(()=>{}); }catch(_){}
-      }
-      sessionStorage.removeItem('gs_token'); sessionStorage.removeItem('gs_role'); sessionStorage.removeItem('gs_conseiller');
-    },
-    getRole()   { return sessionStorage.getItem('gs_role') || 'user'; },
-    setRole(r)  { sessionStorage.setItem('gs_role', r); }
-  };
-
-  window.apiFetch = async function apiFetch(action, body={}, _attempt=1){
-    // « Faut-il joindre un token ? » — question distincte de « est-ce une
-    // écriture ? », que tranche GAS_ACTIONS_ECRITURE dans la couche réseau.
-    // Les deux listes ne se recouvrent pas : getLogs exige un token sans rien
-    // modifier, logLogin écrit une ligne sans exiger de token.
-    const exigeToken = WRITE_ACTIONS.has(action);
-    const isAdmin = window.location.pathname.indexOf('admin.html') > -1;
-
-    const params = new URLSearchParams({action});
-    if(isAdmin) params.set('source', 'admin');
-
-    // Injecter le token sur les écritures admin
-    // Les conseillers (sans token) peuvent saveEntry/saveMany/delete
-    if(exigeToken){
-      const token = window.authToken.get();
-      if(token){
-        params.set('token', token);
-        const conseiller = sessionStorage.getItem('gs_conseiller') || '';
-        if(conseiller) params.set('conseiller', conseiller);
-      } else if(isAdmin && ADMIN_ONLY_ACTIONS.has(action)){
-        // Admin sans token → erreur normale
-      }
-      // Frontend conseiller sans token → GAS accepte saveEntry/saveMany/delete
+// ── Jeton de session, en sessionStorage (propre à l'onglet) ──────────
+window.authToken = {
+  get()  { return sessionStorage.getItem('gs_token') || null; },
+  set(t) { sessionStorage.setItem('gs_token', t); },
+  clear(){
+    // Déconnexion côté serveur (25/09/2026) : le jeton est effacé en base avant
+    // d'être oublié ici, sinon il restait valable 6 h. keepalive : l'envoi part
+    // même si la page se ferme. Sans réponse attendue : oublier le jeton ici
+    // ne doit jamais dépendre du réseau.
+    const t = sessionStorage.getItem('gs_token');
+    if(t){
+      try{ fetch(`${API_PHP_URL}?action=logout`, {method:'POST', keepalive:true, headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'token='+encodeURIComponent(t)}).catch(()=>{}); }catch(_){}
     }
+    sessionStorage.removeItem('gs_token'); sessionStorage.removeItem('gs_role'); sessionStorage.removeItem('gs_conseiller');
+  },
+  getRole()   { return sessionStorage.getItem('gs_role') || 'user'; },
+  setRole(r)  { sessionStorage.setItem('gs_role', r); }
+};
 
+(function(){
+  // Le jeton part avec toutes les actions (requeteServeur l'ajoute) : c'est
+  // l'API qui décide de ce que chaque rôle peut faire. Plafonds et reprises :
+  // gasAppel, qui déduit seul le régime du nom de l'action.
+  window.apiFetch = async function apiFetch(action, body={}){
+    const params = new URLSearchParams({action});
+    // source=admin : l'API laisse l'admin travailler pendant une maintenance.
+    if(window.location.pathname.indexOf('admin.html') > -1) params.set('source', 'admin');
     if(body && Object.keys(body).length){
       Object.entries(body).forEach(([k,v])=>{
         params.set(k, typeof v==='object' ? JSON.stringify(v) : v);
       });
     }
-
     const {url, corps} = window.requeteServeur(params);
-
-    // Plafonds et reprises : gasAppel (voir la note de révision du 18/09/2026
-    // en tête de ce fichier). Le paramètre _attempt est conservé pour ne pas
-    // casser les appelants qui le passent encore, mais il ne sert plus : la
-    // boucle de reprise vit désormais dans gasAppel, qui déduit seul le
-    // régime (lecture doublée / écriture séquentielle) du nom de l'action.
     return window.gasAppel(url, action, corps);
   };
 })();
@@ -3737,7 +3700,6 @@ function VueCarte({entries,active}){
 // ─── VueAnomalies ──────────────────────────────────────────────────────────
 // Formatage commun titre/item des blocs de conflit "stock ordinateurs" —
 // utilisé par VueAnomalies (Admin) et VueGestionOrdi (Index).
-function fmtPeriode(debut,fin){return debut===fin?fmtDate(debut):fmtDate(debut)+' → '+fmtDate(fin);}
 // 'AM' | 'PM' | 'AM+PM' → libellé lisible. Le créneau change la correction à
 // apporter : un dépassement l'après-midi seulement se règle en déplaçant un
 // atelier le matin, pas en renonçant à du matériel.
