@@ -46,8 +46,8 @@ par l'utilisateur le 25/09.
 
 ## 🔧 Parité NEWGEN/NextStep (AG-015, tranché le 26/09/2026)
 
-**État au 26/09/2026 : 4 écarts, dont 3 `voulu`** (`APP_NS`, `App`,
-`injectCSS` — navigation et design propres à chaque appli). Le récit des lots
+**État au 26/09/2026 : 4 écarts, tous `voulu`** (`APP_NS`, `App`,
+`injectCSS`, `VueHistorique` — navigation et design propres à chaque appli). Le récit des lots
 (80 → 4 écarts) est dans `git log`. Outils : `node scripts/parite.js
 ../ateliers-cd47_NextStep` (constat), `--maj` (réécrit
 `scripts/parite-ecarts.json` ; ce qui a bougé repasse en `à trancher`) ;
@@ -59,9 +59,11 @@ puis NEWGEN**, sinon `parite.yml` compare au vieux NextStep.
 - **Garde-fou (utilisateur, 26/09/2026) : ne pas uniformiser la charte
   graphique.** Chaque appli garde son design ; seuls le fonctionnement et les
   choix explicitement validés passent de l'une à l'autre.
-- **Question en attente — `VueHistorique`** : NEWGEN en design v2, NextStep
-  dans l'ancien (filtres rendus repliables le 26/09, en-tête au modèle de
-  NEWGEN avec bouton « Effacer » — **validé par l'utilisateur le 26/09**). Aligner, ou passer en `voulu` ? Recommandé : `voulu`.
+- **`VueHistorique` : chacun garde son design** (décision de l'utilisateur,
+  26/09/2026, passé en `voulu`) — NEWGEN en v2, NextStep avec ses filtres
+  repliables au modèle de NEWGEN. Le fonctionnement reste commun
+  (`PanneauAtelier`, tri, tuiles, filtres) : toute évolution fonctionnelle de
+  l'Historique se fait dans les deux.
 - **Vérification terrain de NextStep faite par l'utilisateur le 26/09/2026**
   (« tout fonctionne ») : Agenda (volet modifiable), connexion, saisie.
 

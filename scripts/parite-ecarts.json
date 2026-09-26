@@ -26,7 +26,7 @@
     "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs."
   },
   "VueHistorique": {
-    "statut": "à trancher",
+    "statut": "voulu",
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
@@ -35,7 +35,7 @@
     ],
     "newgen": "84d9189bb3/84d9189bb3",
     "nextstep": "c26e4082ea/c26e4082ea",
-    "note": "Design v2 (NEWGEN) contre ancien (NextStep) — question posée le 26/09/2026. Comportements déjà communs : panneau, mise en évidence."
+    "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres)."
   },
   "shared.js:IIFE injectCSS": {
     "statut": "voulu",
