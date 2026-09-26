@@ -428,8 +428,18 @@ function kpiHistorique(liste) {
   return k;
 }
 
+
+// ── Matériel (déplacé de shared.js le 26/09/2026, AG-015 lot 0) ─────────────
+// Versions exécutées par NEWGEN, reprises telles quelles. NextStep a les
+// siennes (utils.js) : écart à aligner au lot 1, pas ici.
+function normalizeMat(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'').replace(/s$/,'');}
+// Le format « a|b » (époque GAS) est accepté : l'API renvoie des tableaux
+// (api/lib/api.php:339), mais une chaîne rendait « aucun conflit » en silence
+// — logic.test.js l'exigeait d'une version que les pages n'exécutaient pas.
+function matIncludes(arr,m){if(typeof arr==='string')arr=arr.split('|').filter(Boolean);if(!Array.isArray(arr))return false;const nm=normalizeMat(m);return arr.some(x=>x===m||normalizeMat(x)===nm);}
 if (typeof module !== 'undefined') {
   module.exports={
+    normalizeMat, matIncludes,
     normCommune,normalizeCommune,stripAccents,htmlEsc,
     normalizeDate,normalizeHoraire,fmtDate,fmtCardDate,addJoursIso,
     escapeICS,foldICSLine,parseHoraireICS,parseDateICS,buildICS,
