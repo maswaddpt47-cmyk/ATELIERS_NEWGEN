@@ -72,6 +72,12 @@ par l'utilisateur le 25/09.
   dans `shared.js`. La couche réseau client (plafonds, écritures jamais
   doublées, doublage des lectures) sert toujours pour l'API : ne pas la
   retirer sans décision, cf. « Points à ne pas défaire ».
+  **Fait le 26/09/2026** : textes visibles « Google/classeur/GAS » remplacés
+  sur les deux sites (chargement, suppression, erreurs) ; badge « ⚠️ GAS »
+  (NEWGEN) et ancien `VueAdmin` de `shared.js` (NextStep, masqué par
+  `VueAdminV10`) retirés. **Reste** : `window.BACKEND_PHP` vaut toujours
+  `true` sur les deux sites, donc toutes ses branches GAS (~20 par site) sont
+  mortes — à retirer avec la couche réseau, pas au fil de l'eau.
 
 ## À ne pas réapprendre — Alwaysdata et déploiement
 
