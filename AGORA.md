@@ -218,14 +218,14 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 
 | Bloc | Sujet | Tranché |
 |---|---|---|
-| AG-001 | protocole du banc de mesure | 21/09/2026 |
-| AG-002 | AM/PM sur un prêt multi-jours | 23/09/2026 |
-| AG-003 | porter le doublage, retirer la file d'attente | 22/09/2026 |
-| AG-004 | le verrou d'écriture partagé avec `keepAlive` | 23/09/2026 |
-| AG-005 | ce que le relevé NextStep du 22/09 prouve | 22/09/2026 |
-| AG-006 | le doublage sauve 25 % et non 42 % | 22/09/2026 |
-| AG-007 | sélecteur multi-années | 23/09/2026 |
-| AG-008 | `keepAlive` alourdi le jour où on le sait fragile | 23/09/2026 |
+| AG-001 | protocole du banc de mesure — amendé | 21/09/2026 |
+| AG-002 | AM/PM sur un prêt multi-jours — sans réponse, tranché par l'utilisateur (laisser tel quel) | 23/09/2026 |
+| AG-003 | porter le doublage, retirer la file d'attente — amendé | 22/09/2026 |
+| AG-004 | le verrou d'écriture partagé avec `keepAlive` — amendé | 23/09/2026 |
+| AG-005 | ce que le relevé NextStep du 22/09 prouve — amendé | 22/09/2026 |
+| AG-006 | le doublage sauve 25 % et non 42 % — amendé | 22/09/2026 |
+| AG-007 | sélecteur multi-années — amendé | 23/09/2026 |
+| AG-008 | `keepAlive` alourdi le jour où on le sait fragile — amendé | 23/09/2026 |
 | AG-009 | remplacer GAS + Sheets par PHP + MySQL (Alwaysdata) — amendé | 23/09/2026 |
 | AG-011 | contrat de lecture de l'API (jeton, ordre de démarrage) — amendé | 24/09/2026 |
 | AG-012 | retirer la PWA (sw.js de désinstallation, icônes gardées) — amendé | 24/09/2026 |
@@ -233,7 +233,7 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 | AG-013 | « mot de passe oublié » par mail — sans réponse, réalisé sur feu vert de l'utilisateur (envoi de mail depuis Alwaysdata prouvé par l'essai des rappels du 25/09 ; tests RGPD-06/10/11) | 26/09/2026 |
 | AG-014 | corbeille + page Sauvegardes dans l'Admin — amendé (numéro gardé, transaction, purge à la connexion, copies chiffrées 90 j ; bouton de copie gardé, prouvé en production) | 25/09/2026 |
 
-**Au 27/09/2026 : 12 amendés, 0 confirmé, 0 contredit, 2 clos sans réponse.**
+**Au 27/09/2026, sur 15 blocs (AG-001 à AG-015, dont AG-015 encore au-dessus) : 12 amendés, 0 confirmé, 0 contredit, 3 clos sans réponse** (AG-002, AG-010, AG-013). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
 Douze « amendé » d'affilée ne sont pas un bilan flatteur, c'est un signal — voir
 « Sincérité » plus haut. Tenir ce total à jour à chaque bloc qui sort.
 **Le total est une alerte, pas un objectif** : ne jamais rendre « confirmé »
