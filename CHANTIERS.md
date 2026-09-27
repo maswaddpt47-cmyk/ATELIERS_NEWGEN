@@ -84,12 +84,12 @@ puis NEWGEN**, sinon `parite.yml` compare au vieux NextStep.
   l'historique d'`ateliers-backups` (sinon une copie de plus de 90 jours
   reste lisible dans l'historique git ; bloqué par le garde-fou de session le
   25/09).
-- **AGORA — effet du garde-fou « Sincérité » à observer** (ajouté le
-  27/09/2026, `AGORA.md` section « Sincérité ») : au 27/09, 12 amendés,
-  0 confirmé, 0 contredit. Aux prochains blocs tranchés, tenir le total sous
-  le tableau et regarder si un « confirmé » ou un « contredit » apparaît ;
-  s'il n'en vient aucun, le garde-fou ne suffit pas — le dire à
-  l'utilisateur plutôt que d'ajouter une règle.
+- **AGORA — vérifier chaque « amendé »** (ajouté le 27/09/2026, `AGORA.md`
+  section « Sincérité ») : à chaque bloc tranché en « amendé », noter en une
+  ligne ce que l'amendement a changé (code, décision ou chiffre). S'il n'a
+  rien changé, c'était un « confirmé » : le signaler à l'utilisateur. Le
+  total sous le tableau sert d'alerte, pas d'objectif — ne pas chercher un
+  « confirmé » pour casser la série.
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
 - Déploiement par clé SSH au lieu du mot de passe (secret
