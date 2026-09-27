@@ -236,6 +236,10 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 **Au 27/09/2026 : 12 amendés, 0 confirmé, 0 contredit, 2 clos sans réponse.**
 Douze « amendé » d'affilée ne sont pas un bilan flatteur, c'est un signal — voir
 « Sincérité » plus haut. Tenir ce total à jour à chaque bloc qui sort.
+**Le total est une alerte, pas un objectif** : ne jamais rendre « confirmé »
+pour casser la série — le verdict découle de la contrainte 1 appliquée au
+bloc. Une série se juge en relisant ce que chaque « amendé » a changé (code,
+décision, chiffre) ; celui qui n'a rien changé était un « confirmé ».
 
 **Un bloc sort d'ici dès qu'il n'y a plus rien à décider** — proposition
 tranchée ou réfutée, amendements appliqués. Une **mesure** encore à faire n'est
