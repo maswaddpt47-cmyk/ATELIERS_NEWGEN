@@ -9,7 +9,8 @@ est soldé. Ce n'est pas de la documentation permanente (cf.
 **Ménages du 26/09/2026** : époque GAS (avant `49e4013`) puis récit du
 chantier parité et des livraisons de la journée retirés — `git log -p
 CHANTIERS.md`. Contradiction d'une proposition par une autre session :
-`AGORA.md` (section 8 du `CLAUDE.md`) — AG-015 tranché le 26/09/2026.
+`AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au 27/09/2026**
+(AG-015 sorti le 27/09, `b73e86d`).
 
 ---
 
@@ -89,7 +90,12 @@ puis NEWGEN**, sinon `parite.yml` compare au vieux NextStep.
   ligne ce que l'amendement a changé (code, décision ou chiffre). S'il n'a
   rien changé, c'était un « confirmé » : le signaler à l'utilisateur. Le
   total sous le tableau sert d'alerte, pas d'objectif — ne pas chercher un
-  « confirmé » pour casser la série.
+  « confirmé » pour casser la série. État recompté le 27/09/2026 sur
+  l'historique git : 15 blocs, 12 amendés, 0 confirmé, 0 contredit,
+  3 sans réponse (AG-002, AG-010, AG-013) ; le verdict est désormais porté
+  sur chaque ligne du tableau. Section « Sincérité » présente dans les quatre
+  `AGORA.md` (NEWGEN, GDINV2, SMS-mail, sms-mail-multi) — suivi dans
+  `MD-LIB/CLAUDE.md`.
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
 - Déploiement par clé SSH au lieu du mot de passe (secret
