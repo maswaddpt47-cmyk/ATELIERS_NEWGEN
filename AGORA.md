@@ -41,6 +41,23 @@ fait à la main, session sans cette consigne), demander à l'utilisateur.
 Pas de log contenant des données d'usagers dans un bloc (section 6 du
 `CLAUDE.md`).
 
+### Sincérité — trois contraintes contre la politesse
+
+Douze « amendé » d'affilée (total sous le tableau des blocs tranchés) : un
+contradicteur qui n'emploie jamais les deux autres verdicts a cessé de
+contredire — il rend un service de politesse qui donne une fausse garantie.
+
+1. **« Amendé » n'est valable que s'il nomme ce qui serait faux, manquant ou
+   coûteux si la proposition était appliquée telle quelle.** Un amendement qui
+   ne change ni le code, ni une décision, ni un chiffre n'est pas un
+   amendement : le verdict est **« confirmé »**.
+2. **« Confirmé » est une réponse pleine et utile**, pas un aveu d'inutilité :
+   elle libère l'auteur pour agir, et c'est souvent ce qu'on attend d'elle. Ne
+   jamais chercher un amendement pour justifier sa présence.
+3. **Aucune appréciation de la proposition ni de son auteur** — ni compliment,
+   ni « bien vu », ni « solide ». Une réponse commence par un constat : le
+   compliment est le véhicule de la complaisance.
+
 ## Gabarit
 
 ```markdown
@@ -215,6 +232,10 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 | AG-010 | schéma MySQL et import du classeur — sans réponse, réalisé sur feu vert de l'utilisateur (import du 25/09, verrouillé) | 26/09/2026 |
 | AG-013 | « mot de passe oublié » par mail — sans réponse, réalisé sur feu vert de l'utilisateur (envoi de mail depuis Alwaysdata prouvé par l'essai des rappels du 25/09 ; tests RGPD-06/10/11) | 26/09/2026 |
 | AG-014 | corbeille + page Sauvegardes dans l'Admin — amendé (numéro gardé, transaction, purge à la connexion, copies chiffrées 90 j ; bouton de copie gardé, prouvé en production) | 25/09/2026 |
+
+**Au 27/09/2026 : 12 amendés, 0 confirmé, 0 contredit, 2 clos sans réponse.**
+Douze « amendé » d'affilée ne sont pas un bilan flatteur, c'est un signal — voir
+« Sincérité » plus haut. Tenir ce total à jour à chaque bloc qui sort.
 
 **Un bloc sort d'ici dès qu'il n'y a plus rien à décider** — proposition
 tranchée ou réfutée, amendements appliqués. Une **mesure** encore à faire n'est
