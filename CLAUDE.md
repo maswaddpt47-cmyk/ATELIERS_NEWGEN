@@ -192,6 +192,8 @@ Extrait du guide de collaboration multi-projets, adapté pour ce dépôt.
 
 18. **Toute modification des interfaces se fait sur NEWGEN *et* NextStep** (demande de l'utilisateur, 26/09/2026) : les deux applis partagent la même API et la même base depuis la bascule du 25/09/2026. Un changement fait sur une seule est l'exception, annoncée comme telle au moment du choix. En fin de livraison, dire en une ligne ce qui est en ligne sur chacune (commit, `?v=`) pour que l'utilisateur sache quoi recharger. Les écarts restants sont listés et surveillés par `scripts/parite.js` (workflow `parite.yml`) : un écart voulu s'inscrit dans `scripts/parite-ecarts.json`, pas dans ce fichier.
 
+19. **Pas de compliment, un constat.** Ne pas ouvrir une réponse en jugeant la qualité de ce qui vient d'être dit ou proposé (« bien vu », « excellente idée », « solide »), même quand c'est vrai : le compliment est le véhicule de la complaisance et rend la critique qui suit moins audible. Ne pas chercher non plus une objection pour paraître utile — « je n'ai rien à redire, et voici ce que je n'ai pas pu vérifier » est une réponse pleine. Vaut avec l'utilisateur comme entre deux sessions dans `AGORA.md` (sa section « Sincérité », établie le 27/09/2026 après 12 verdicts « amendé » d'affilée sans un seul « confirmé » ni « contredit »).
+
 **Bonnes pratiques à maintenir**
 
 12. Continuer à demander l'avis avant toute action à fort impact (déploiement, architecture, migration de données) et exécuter vite dès validation courte reçue.
