@@ -516,8 +516,8 @@ const LOGS_KEY = lsKey('adm_logs');
       ),
       CE('div',{className:'app-topbar-v2-right'},
         CE('span',{className:'sidebar-admin-badge'},'ADMIN'),
-        CE('span',{title:window.VERSION_APPLI,style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},'v2'),
-        entries.length>0&&CE('span',{style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},entries.length),
+        CE('span',{className:'topbar-v2-meta',title:window.VERSION_APPLI,style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},'v2'),
+        entries.length>0&&CE('span',{className:'topbar-v2-meta',style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},entries.length),
         CE(ChoixAnnees,{className:'topbar-year-sel',value:annee,onChange:setAnnee,title:'Années chargées'}),
         CE('button',{
           onClick:()=>setDarkMode(d=>!d),

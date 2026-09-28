@@ -31,6 +31,9 @@
   font-weight: 700;
   color: #1a202c;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 .app-topbar-v2-sub {
   font-size: 12px;
@@ -44,6 +47,13 @@
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+}
+/* Téléphone : le titre se tronque au lieu de passer sous les boutons de droite
+   (chevauchement « Sauvegardes » / ADMIN constaté le 28/09/2026). */
+@media (max-width: 640px) {
+  .app-topbar-v2 { padding: 0 8px; gap: 6px; }
+  .app-topbar-v2-right { gap: 4px; }
+  .app-topbar-v2-sub, .topbar-v2-meta { display: none; }
 }
 .app-main-v2 {
   flex: 1;
