@@ -54,8 +54,11 @@ par l'utilisateur le 25/09.
 `scripts/parite-ecarts.json` ; ce qui a bougé repasse en `à trancher`) ;
 workflow `parite.yml`, jamais bloquant. **Avant de pousser** un changement
 dans un écart `voulu` : `--maj`, puis remettre son statut à `voulu` à la main
-(oublié le 26/09 → mail d'échec de `parite.yml`). **Ordre de push : NextStep d'abord,
-puis NEWGEN**, sinon `parite.yml` compare au vieux NextStep.
+(oublié le 26/09 et le 28/09 → mails d'échec de `parite.yml`). **Ordre de
+push : NextStep d'abord, puis NEWGEN.** Depuis le 28/09, `scripts/githooks/pre-push`
+(installé par le hook de session) **refuse** un push de NEWGEN sur `main` si
+la parité n'est pas à jour, si NextStep a des commits non poussés ou s'il est
+en retard ; NextStep absent à côté → simple avertissement.
 
 - **Garde-fou (utilisateur, 26/09/2026) : ne pas uniformiser la charte
   graphique.** Chaque appli garde son design ; seuls le fonctionnement et les

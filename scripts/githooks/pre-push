@@ -1,0 +1,40 @@
+#!/bin/bash
+# Bloque un push de NEWGEN sur main tant que la parité n'est pas à jour
+# (demande de l'utilisateur, 28/09/2026 : deux mails d'échec de parite.yml, le
+# 26/09 et le 28/09, pour un push fait avant `parite.js --maj`).
+# Installé par .claude/hooks/session-start.sh (git config core.hooksPath).
+# Contourner exceptionnellement : git push --no-verify.
+
+vers_main=0
+while read -r _lref _lsha rref _rsha; do
+  [ "$rref" = "refs/heads/main" ] && vers_main=1
+done
+[ "$vers_main" = 1 ] || exit 0
+
+racine=$(git rev-parse --show-toplevel)
+ns="${PARITE_NEXTSTEP:-}"
+for c in "$racine/../ateliers-cd47_NextStep" "$racine/../ateliers-cd47_nextstep"; do
+  [ -z "$ns" ] && [ -d "$c/.git" ] && ns="$c"
+done
+if [ -z "$ns" ]; then
+  echo "⚠️  pre-push : NextStep introuvable à côté de ce dépôt — parité non vérifiée (PARITE_NEXTSTEP=<chemin> pour l'indiquer)."
+  exit 0
+fi
+
+# NextStep doit être poussé d'abord : la CI compare au NextStep publié.
+git -C "$ns" fetch -q origin main 2>/dev/null
+if [ -n "$(git -C "$ns" rev-list origin/main..HEAD 2>/dev/null)" ]; then
+  echo "⛔ pre-push : NextStep a des commits non poussés — pousser NextStep d'abord."
+  exit 1
+fi
+if [ -n "$(git -C "$ns" rev-list HEAD..origin/main 2>/dev/null)" ]; then
+  echo "⛔ pre-push : NextStep local en retard sur origin/main — git -C $ns pull origin main, puis relancer."
+  exit 1
+fi
+
+if ! node "$racine/scripts/parite.js" "$ns" > /tmp/parite-prepush.log 2>&1; then
+  tail -5 /tmp/parite-prepush.log
+  echo "⛔ pre-push : parité pas à jour. node scripts/parite.js $ns --maj, remettre « voulu » sur les écarts voulus, committer, puis pousser."
+  exit 1
+fi
+exit 0

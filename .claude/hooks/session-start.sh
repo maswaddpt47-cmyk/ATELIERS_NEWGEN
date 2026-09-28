@@ -5,6 +5,9 @@
 # Rappel de ménage de CHANTIERS.md — toutes sessions, locale comprise.
 bash "$CLAUDE_PROJECT_DIR/scripts/check-chantiers.sh" "$CLAUDE_PROJECT_DIR/CHANTIERS.md"
 
+# Blocage d'un push sur main tant que la parité NEWGEN/NextStep n'est pas à jour.
+git -C "$CLAUDE_PROJECT_DIR" config core.hooksPath scripts/githooks
+
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
