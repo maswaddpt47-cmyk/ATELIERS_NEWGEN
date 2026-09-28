@@ -253,7 +253,7 @@ function App(){
   const[editingId,setEditingId]    = React.useState(null);
   const[prefillData,setPrefillData] = React.useState(null);
   const[annee,setAnneeState]       = React.useState(()=>localStorage.getItem(lsKey('f_annee'))||String(new Date().getFullYear()));
-  const[visibility,setVisibility]   = React.useState({saisie:true,historique:true,dashboard:true,carte:true,bingo:true,calendrier:false,agenda:false,roadmap:false,gestion_ordi:true});
+  const[visibility,setVisibility]   = React.useState(visibiliteEffective({}));
   const[lists,setLists]            = React.useState({
     statuts:[...STATUTS_DEFAULT],conseillers:[...CONSEILLERS_DEFAULT],
     publics:[...PUBLICS_DEFAULT],materiels:[...MATERIELS_DEFAULT]
@@ -382,7 +382,7 @@ function App(){
         // Mettre à jour le cache
         try{ localStorage.setItem(lsKey(`ateliers_cache_${annee}`), JSON.stringify({entries:incoming,lists:nl})); }catch(_){}
       }
-      if(data.visibility) setVisibility(v=>({...v,...data.visibility}));
+      if(data.visibility)setVisibility(visibiliteEffective(data.visibility));
       if(data.conseiller_colors) applyColors(data.conseiller_colors);
       if(data.stockOrdinateurs) STOCK_ORDINATEURS=parseInt(data.stockOrdinateurs)||STOCK_ORDINATEURS;
       if(Array.isArray(data.materielsCaches)) MATERIELS_CACHES=data.materielsCaches;
