@@ -85,6 +85,7 @@ async function preparer(browser) {
     else if (action === 'checkPassword') rep = { ok: true, role: 'admin', token: JETON };
     else if (action === 'demanderReinit') rep = { ok: true, message: 'Si une adresse mail est enregistrée pour ce compte, un lien vient d\'y être envoyé.' };
     else if (action === 'reinitMotDePasse') rep = { ok: true, conseiller: 'Alice Martin' };
+    if (action === 'usageOnglets') p.usage = Object.fromEntries(corps);
     if (action === 'demanderReinit' || action === 'reinitMotDePasse') p.corpsReinit = Object.fromEntries(corps);
     else if (p.jetonRefuse) rep = { ok: false, error: 'Non autorisé : jeton manquant ou expiré', auth: true };
     else if (action === 'getAll') rep = { ...JSON.parse(MOCK), conseillers_inactifs: [] };
@@ -349,3 +350,20 @@ test('api — mot de passe oublié et lien reçu', async ({ browser, baseURL }) 
     await p.ctx.close();
 });
 
+// Usage des onglets (29/09/2026) : compteurs anonymes, un seul envoi groupé
+// quand la page passe en arrière-plan, jamais pendant l'utilisation.
+test('index — usage des onglets : envoi groupé à la mise en arrière-plan, sans nom', async ({ browser, baseURL }) => {
+    const p = await preparer(browser);
+    await p.page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
+    await connecter(p.page);
+    verifier('usage — aucun envoi pendant l\'utilisation', !p.appels.includes('usageOnglets'), p.appels.join(', '));
+    await p.page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await p.page.waitForTimeout(800);
+    const vues = p.usage ? JSON.parse(p.usage.vues || '{}') : {};
+    verifier('usage — un envoi en arrière-plan : site, page, onglets', p.usage && p.usage.site === 'newgen' && p.usage.page === 'index' && Object.keys(vues).length >= 1 && !('accueil' in vues), JSON.stringify(p.usage));
+    verifier('usage — aucun nom de conseiller transmis', p.usage && !/Alice|Martin|conseiller/i.test(JSON.stringify({ ...p.usage, token: '' })), JSON.stringify(p.usage));
+    await p.ctx.close();
+});

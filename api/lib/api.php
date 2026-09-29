@@ -29,9 +29,9 @@ const API_ROLES_ADMIN = ['admin', 'superviseur'];
 // 24/09/2026. Purge à chaque connexion réussie (pas besoin de tâche planifiée).
 const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
-const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex'];
+const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
-const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'setPassword', 'getLogs'];
+const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'setPassword', 'getLogs', 'getUsageOnglets'];
 
 // Ordre des champs d'un atelier dans la réponse (contract.test.js:12-34).
 const API_CHAMPS_ATELIER = [
@@ -114,6 +114,8 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'verifierIds':     return action_verifier_ids($db, $p);
         case 'selfSetPassword': return action_self_set_password($db, $p, $session);
         case 'logAccesIndex':   return action_log_acces_index($db, $p, $session);
+        case 'usageOnglets':    return action_usage_onglets($db, $p);
+        case 'getUsageOnglets': return action_get_usage_onglets($db);
         case 'saveLists':       return action_save_lists($db, $p);
         case 'saveConfig':
         case 'setConfig':       return action_set_config($db, $p);

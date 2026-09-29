@@ -238,6 +238,18 @@ verifier(str_contains(appel(['action' => 'copieMaintenant'], $A)['error'] ?? '',
 file_put_contents("$dossierSauv/.derniere-copie-chiffree", '2026-09-25 04:15');
 verifier(appel(['action' => 'etatSauvegardes'], $A)['chiffree'] === '2026-09-25 04:15', 'date de la dernière copie chiffrée lue');
 exec('rm -rf ' . escapeshellarg($dossierSauv));
+// Usage des onglets (29/09/2026) : compteurs anonymes.
+verifier(appel(['action' => 'usageOnglets'], ['site' => 'newgen', 'page' => 'index', 'vues' => '{"historique":1}'])['auth'] ?? false, 'usage des onglets sans jeton : refusé');
+$r = appel(['action' => 'usageOnglets'], $T + ['site' => 'newgen', 'page' => 'index', 'vues' => json_encode(['historique' => 3, 'agenda' => 1, 'Nom Suspect' => 2, 'carte' => 0])]);
+verifier(($r['ok'] ?? false) && $r['enregistres'] === 2, 'usage des onglets : noms douteux et zéros ignorés');
+appel(['action' => 'usageOnglets'], $T + ['site' => 'newgen', 'page' => 'index', 'vues' => '{"historique":2}']);
+verifier((int) $db->query("SELECT vues FROM usage_onglets WHERE site = 'newgen' AND page = 'index' AND onglet = 'historique' AND jour = CURDATE()")->fetchColumn() === 5, 'usage des onglets : les envois du jour s\'additionnent');
+verifier((appel(['action' => 'usageOnglets'], $T + ['site' => 'ailleurs', 'page' => 'index', 'vues' => '{"historique":1}'])['ok'] ?? true) === false, 'usage des onglets : site inconnu refusé');
+$cols = $db->query('SHOW COLUMNS FROM usage_onglets')->fetchAll(PDO::FETCH_COLUMN);
+verifier($cols === ['jour', 'site', 'page', 'onglet', 'vues'], '[RGPD-18] usage des onglets : aucune colonne ne désigne une personne');
+verifier(str_contains(appel(['action' => 'getUsageOnglets'], $T)['error'] ?? '', 'administrateurs'), 'usage des onglets : lecture réservée aux administrateurs');
+$u = appel(['action' => 'getUsageOnglets'], $A)['usage'] ?? [];
+verifier(count(array_filter($u, fn($l) => $l['onglet'] === 'historique' && $l['vues'] === 5 && preg_match('/^\d{4}-S\d{2}$/', $l['semaine']))) === 1, 'usage des onglets : totaux par semaine pour l\'Admin');
 verifier(str_contains(appel(['action' => 'setConfig'], $T + ['key' => 'stock_ordinateurs', 'value' => '20'])['error'] ?? '', 'administrateurs'), 'action admin refusée à un conseiller');
 appel(['action' => 'setConfig'], $A + ['key' => 'stock_ordinateurs', 'value' => '20']);
 appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'carte' => false])]);

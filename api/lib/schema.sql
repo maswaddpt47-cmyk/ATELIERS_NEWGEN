@@ -139,3 +139,16 @@ CREATE TABLE IF NOT EXISTS ateliers_corbeille (
   PRIMARY KEY (id),
   KEY idx_supprime_le (supprime_le)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Usage des onglets (29/09/2026) : nombre d'ouvertures par jour, site, page
+-- et onglet. ANONYME par construction : aucune colonne ne désigne une
+-- personne (décision de l'utilisateur : « savoir quels onglets servent »,
+-- pas suivre qui fait quoi). Conservé 24 mois.
+CREATE TABLE IF NOT EXISTS usage_onglets (
+  jour   DATE        NOT NULL,
+  site   VARCHAR(20) NOT NULL,
+  page   VARCHAR(10) NOT NULL,
+  onglet VARCHAR(40) NOT NULL,
+  vues   INT         NOT NULL DEFAULT 0,
+  PRIMARY KEY (jour, site, page, onglet)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

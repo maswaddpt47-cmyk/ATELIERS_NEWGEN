@@ -409,6 +409,59 @@ function api_changer_mdp(PDO $db, string $nom, string $mdp): array
     return ['ok' => true];
 }
 
+// ── Usage des onglets (29/09/2026) ────────────────────────────────────────
+// Compteurs ANONYMES : la session prouve seulement qu'un agent est connecté,
+// son nom n'est jamais écrit. Le client envoie un lot par visite (fermeture
+// ou mise en arrière-plan de l'onglet du navigateur).
+const USAGE_MOIS = 24;
+const USAGE_SITES = ['newgen', 'nextstep'];
+const USAGE_PAGES = ['index', 'admin'];
+
+function usage_schema(PDO $db): void
+{
+    foreach (import_requetes_schema() as $sql) {
+        if (str_contains($sql, 'usage_onglets')) $db->exec($sql);
+    }
+}
+
+function action_usage_onglets(PDO $db, array $p): array
+{
+    $site = (string) ($p['site'] ?? '');
+    $page = (string) ($p['page'] ?? '');
+    $vues = json_decode((string) ($p['vues'] ?? ''), true);
+    if (!in_array($site, USAGE_SITES, true) || !in_array($page, USAGE_PAGES, true) || !is_array($vues)) {
+        return ['ok' => false, 'error' => 'Paramètres invalides'];
+    }
+    // Garde-fous : noms d'onglet courts et sans surprise, 30 onglets et
+    // 500 ouvertures au plus par envoi.
+    $lignes = [];
+    foreach (array_slice($vues, 0, 30, true) as $onglet => $n) {
+        if (!is_string($onglet) || !preg_match('/^[a-z0-9_]{1,40}$/', $onglet)) continue;
+        $n = (int) $n;
+        if ($n >= 1) $lignes[$onglet] = min($n, 500);
+    }
+    if (!$lignes) return ['ok' => true, 'enregistres' => 0];
+    usage_schema($db);
+    $s = $db->prepare('INSERT INTO usage_onglets (jour, site, page, onglet, vues) VALUES (CURDATE(), ?, ?, ?, ?)
+                       ON DUPLICATE KEY UPDATE vues = vues + VALUES(vues)');
+    foreach ($lignes as $onglet => $n) $s->execute([$site, $page, $onglet, $n]);
+    return ['ok' => true, 'enregistres' => count($lignes)];
+}
+
+// 12 dernières semaines, par semaine ISO ; purge au-delà de 24 mois.
+function action_get_usage_onglets(PDO $db): array
+{
+    usage_schema($db);
+    $db->exec('DELETE FROM usage_onglets WHERE jour < CURDATE() - INTERVAL ' . USAGE_MOIS . ' MONTH');
+    $l = $db->query("SELECT DATE_FORMAT(jour, '%x-S%v') AS semaine, site, page, onglet, SUM(vues) AS vues
+                     FROM usage_onglets WHERE jour >= CURDATE() - INTERVAL 12 WEEK
+                     GROUP BY semaine, site, page, onglet ORDER BY semaine, site, page, onglet")->fetchAll(PDO::FETCH_ASSOC);
+    return ['ok' => true, 'usage' => array_map(fn($r) => [
+        'semaine' => $r['semaine'], 'site' => $r['site'], 'page' => $r['page'],
+        'onglet' => $r['onglet'], 'vues' => (int) $r['vues'],
+    ], $l)];
+}
+
 // ── Corbeille (AG-014) ────────────────────────────────────────────────────
 
 function action_get_corbeille(PDO $db): array
