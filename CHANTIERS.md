@@ -124,12 +124,11 @@ en retard ; NextStep absent à côté → simple avertissement.
   (`ateliers-backups` 5508463, v3.0/v1.1 en `archives/`). Reste : relecture
   finale de l'utilisateur ; le §7 Alwaysdata (points « à confirmer ») à
   vérifier sur les conditions contractuelles avant transmission DSI/DPO.
-  À faire (demande du 30/09/2026) : registre de sécurité §6.1, ligne
-  « Politique de mot de passe », citer « conforme à la recommandation CNIL,
-  délibération n° 2022-100 du 21/07/2022 (80 bits d'entropie) ». Vérifier
-  d'abord dans le PDF de la délibération que 12 caractères / 4 catégories y
-  figure bien comme exemple (non vérifié : cité de mémoire). Régénérer en
-  v3.1 sans changer de numéro.
+  Références officielles ajoutées le 30/09/2026 (sécurité §11, RGPD §10 ;
+  `ateliers-backups` 66f5add) : cnil.fr, cyber.gouv.fr et
+  dataprivacyframework.gov bloqués depuis la session, contenus recoupés par
+  sources secondaires. À vérifier sur les textes avant transmission, surtout
+  l'inscription de GitHub sur la liste DPF.
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
 - **Clé SSH de déploiement en service (29/09/2026)** : secret
