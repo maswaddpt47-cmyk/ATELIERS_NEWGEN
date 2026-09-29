@@ -44,8 +44,8 @@ par l'utilisateur le 25/09.
   admin/superviseur ; aucune ressource externe (`vendor/`, test RGPD-17 en
   CI) ; HTTPS forcé ; 2FA GitHub et Alwaysdata ; journal conservé 12 mois ;
   documents **hors dépôt** (diffusion restreinte) : registre de sécurité
-  v2.0, registre RGPD v1.0 (art. 30) et procédure de restauration v2.0,
-  refaits le 29/09/2026 (v1.0 non retrouvées). Leurs écarts RGPD ouverts —
+  v3.0, registre RGPD v1.1 (art. 30) et procédure de restauration v3.0
+  (29/09/2026, fusion des v1.0 du 25/09 et des v2.0, corrigée sur le code). Leurs écarts RGPD ouverts —
   compte personnel sans DPA, durée de conservation des ateliers non fixée,
   mention d'information des agents, procédure de sortie — sont à porter au
   DPO par l'utilisateur.
