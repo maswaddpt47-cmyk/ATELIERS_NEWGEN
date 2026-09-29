@@ -138,7 +138,16 @@ en retard ; NextStep absent à côté → simple avertissement.
      par une IA » : la DSI tient à la continuité de service et la direction a
      une équipe de développement. Présenter PHP/MySQL comme technologie
      standard reprenable par cette équipe, code commenté et testé ; proposer
-     une relecture par elle. Formulation à valider par l'utilisateur.
+     une relecture par elle. **Validé (29/09)** avec la formulation au §9 :
+     « Une relecture du code par l'équipe de développement de la direction
+     peut être proposée » (option, pas engagement). §2.2 et §3 : textes
+     proposés en session le 29/09, retenus.
+  6. **Neutraliser toute mention de Claude / de l'IA** (utilisateur, 29/09),
+     dans les trois documents : sécurité l.101-102 (§3), l.281 (§9) ;
+     RGPD l.18 (« Rédaction ») ; procédure l.70 (« demande à Claude »).
+     Formulations : « rédaction assistée par un outil », « les identifiants
+     ne transitent jamais par les outils de développement », « faire modifier
+     l'adresse de l'API dans les deux sites ».
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
 - **Clé SSH de déploiement en service (29/09/2026)** : secret
