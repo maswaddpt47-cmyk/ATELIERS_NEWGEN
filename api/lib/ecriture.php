@@ -270,7 +270,7 @@ function action_get_logs(PDO $db, array $p): array
     return ['ok' => true, 'logs' => array_map(fn($r) => [
         // Même format que le GAS : ISO 8601 en UTC.
         'timestamp' => (new DateTimeImmutable($r['horodatage'], $paris))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s.v\Z'),
-        'conseiller' => $r['conseiller'], 'role' => $r['role'] !== '' ? $r['role'] : 'user',
+        'conseiller' => $r['conseiller'], 'role' => $r['role'],   // vide = inconnu (tâche, nom inexistant) : plus de « user » par défaut
         'success' => (int) $r['succes'] === 1, 'tentatives' => (int) $r['tentatives'],
         'user_agent' => $r['user_agent'], 'source' => $r['source'], 'action' => $r['action'], 'ref' => $r['ref'],
     ], $l)];

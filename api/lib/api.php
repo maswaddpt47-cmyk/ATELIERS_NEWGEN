@@ -230,6 +230,14 @@ function api_session(PDO $db, string $jeton): ?array
 
 function api_journal(PDO $db, string $action, string $conseiller, string $ref, string $role, int $succes, int $tentatives, string $ua, string $source): void
 {
+    // Rôle non fourni par l'appelant (écritures d'ateliers, échecs de
+    // connexion, mot de passe oublié) : celui du compte (demande de
+    // l'utilisateur, 30/09/2026). Tâche planifiée : pas de rôle.
+    if ($role === '' && $conseiller !== '' && $source !== 'tache') {
+        $s = $db->prepare('SELECT role FROM comptes WHERE conseiller = ?');
+        $s->execute([$conseiller]);
+        $role = (string) ($s->fetchColumn() ?: '');
+    }
     $db->prepare('INSERT INTO journal (horodatage, action, conseiller, ref, role, succes, tentatives, user_agent, source) VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?)')
        ->execute([$action, mb_substr($conseiller, 0, 100), mb_substr($ref, 0, 100), mb_substr($role, 0, 20), $succes, $tentatives, mb_substr($ua, 0, 500), mb_substr($source, 0, 50)]);
 }
