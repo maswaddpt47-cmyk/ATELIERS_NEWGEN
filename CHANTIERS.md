@@ -125,6 +125,20 @@ en retard ; NextStep absent à côté → simple avertissement.
      médiane 0,3 s ; 26/09 réseau filaire du bureau bon. Plus une ligne qui
      explique le test de McNemar (seuil 3,84 = 95 % de certitude). Sources :
      `git show ce7c1e9^:CHANTIERS.md` (§1, étape 0, relevés du 22/09).
+  3. **Page 2/12 vide** (signalé le 29/09) : la couverture déborde de
+     quelques mm, le saut de page envoie la suite en page 3. Resserrer la
+     couverture ; contrôle après rendu = texte de chaque page non vide
+     (pymupdf), pas seulement la planche d'aperçu, qui l'a laissé passer.
+  4. **§2.2 « Sécurité » à réécrire** (utilisateur, 29/09) : la liste des
+     failles de l'ancienne appli se retourne contre le responsable (elle a
+     tourné des mois ainsi). Tourner en « limites de la plateforme Google et
+     durcissements successifs → ce que la nouvelle architecture apporte » ;
+     formulation à faire valider par l'utilisateur avant rendu.
+  5. **§3 Freins, ligne « Aucune compétence PHP »** et §9 risque « code écrit
+     par une IA » : la DSI tient à la continuité de service et la direction a
+     une équipe de développement. Présenter PHP/MySQL comme technologie
+     standard reprenable par cette équipe, code commenté et testé ; proposer
+     une relecture par elle. Formulation à valider par l'utilisateur.
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
 - **Clé SSH de déploiement en service (29/09/2026)** : secret
