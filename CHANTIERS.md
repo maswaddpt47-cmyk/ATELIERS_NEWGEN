@@ -142,12 +142,22 @@ en retard ; NextStep absent à côté → simple avertissement.
      « Une relecture du code par l'équipe de développement de la direction
      peut être proposée » (option, pas engagement). §2.2 et §3 : textes
      proposés en session le 29/09, retenus.
-  6. **Neutraliser toute mention de Claude / de l'IA** (utilisateur, 29/09),
-     dans les trois documents : sécurité l.101-102 (§3), l.281 (§9) ;
-     RGPD l.18 (« Rédaction ») ; procédure l.70 (« demande à Claude »).
-     Formulations : « rédaction assistée par un outil », « les identifiants
-     ne transitent jamais par les outils de développement », « faire modifier
-     l'adresse de l'API dans les deux sites ».
+  6. **Mentions de Claude : reformuler, NE PAS effacer** (utilisateur,
+     29/09 — remplace la consigne « neutraliser » donnée plus tôt ; la DSI
+     sait que Claude construit le code sous la supervision de l'utilisateur).
+     Dire explicitement : code conçu et écrit par Claude (assistant IA
+     d'Anthropic) **sous la supervision du responsable, qui valide chaque
+     évolution et arbitre toutes les décisions**. Retirer seulement les
+     tournures défavorables : « Aucune compétence PHP dans l'équipe » (§3),
+     « sans relecture humaine » (§9). Procédure l.70 : « demande à Claude »
+     peut rester. RGPD l.18 : « rédaction assistée par Claude » peut rester.
+  7. **AGORA dans la prise de décision** : quelques lignes au §4 et un
+     4e niveau au §8 — « revue contradictoire écrite de chaque décision
+     structurante par une seconde session de Claude, indépendante de celle
+     qui propose ; **la décision finale revient au responsable, qui
+     arbitre** ». Exemples : AG-009 (mesure exigée avant de coder → preuve
+     statistique), AG-011, AG-012, AG-014. Pas le bilan chiffré des
+     verdicts.
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
 - **Clé SSH de déploiement en service (29/09/2026)** : secret
