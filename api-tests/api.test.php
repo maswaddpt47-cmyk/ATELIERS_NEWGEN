@@ -250,6 +250,11 @@ verifier($cols === ['jour', 'site', 'page', 'onglet', 'vues'], '[RGPD-18] usage 
 verifier(str_contains(appel(['action' => 'getUsageOnglets'], $T)['error'] ?? '', 'administrateurs'), 'usage des onglets : lecture réservée aux administrateurs');
 $u = appel(['action' => 'getUsageOnglets'], $A)['usage'] ?? [];
 verifier(count(array_filter($u, fn($l) => $l['onglet'] === 'historique' && $l['vues'] === 5 && preg_match('/^\d{4}-S\d{2}$/', $l['semaine']))) === 1, 'usage des onglets : totaux par semaine pour l\'Admin');
+appel(['action' => 'logAccesIndex'], $T + ['site' => 'nextstep']);
+appel(['action' => 'logAccesIndex'], $T + ['site' => 'pirate']);
+$sites = $db->query("SELECT site FROM journal WHERE action = 'accesIndex' ORDER BY id DESC LIMIT 2")->fetchAll(PDO::FETCH_COLUMN);
+verifier($sites === ['', 'nextstep'], 'journal : site d\'origine noté, valeur inconnue ignorée (' . implode(',', $sites) . ')');
+verifier(array_key_exists('site', appel(['action' => 'getLogs'], $A)['logs'][0] ?? []), 'getLogs : champ site rendu');
 $roles = $db->query("SELECT DISTINCT role FROM journal WHERE action IN ('saveEntry', 'delete') AND conseiller = 'Conseiller Test'")->fetchAll(PDO::FETCH_COLUMN);
 verifier($roles === ['admin'], 'journal : écritures d\'ateliers avec le rôle du compte (' . implode(',', $roles) . ')');
 verifier(str_contains(appel(['action' => 'setConfig'], $T + ['key' => 'stock_ordinateurs', 'value' => '20'])['error'] ?? '', 'administrateurs'), 'action admin refusée à un conseiller');

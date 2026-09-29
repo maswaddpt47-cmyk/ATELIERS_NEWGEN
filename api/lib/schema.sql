@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS journal (
   tentatives  INT          NOT NULL DEFAULT 0,
   user_agent  VARCHAR(500) NOT NULL DEFAULT '',
   source      VARCHAR(50)  NOT NULL DEFAULT '',
+  site        VARCHAR(20)  NOT NULL DEFAULT '',          -- newgen / nextstep (30/09/2026)
   PRIMARY KEY (id),
   KEY idx_horodatage (horodatage)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -49,6 +49,8 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
 {
     // Paramètres ordinaires : corps POST prioritaire, URL acceptée.
     $p = $post + $get;
+    // Site d'où vient l'appel (NEWGEN ou NextStep, même API) : noté au journal.
+    api_site_courant(in_array($p['site'] ?? '', ['newgen', 'nextstep'], true) ? (string) $p['site'] : '');
     // Secrets : corps POST uniquement.
     $jeton = (string) ($post['token'] ?? '');
     unset($p['token'], $p['password'], $p['jeton'], $p['currentPwd']);
@@ -228,6 +230,35 @@ function api_session(PDO $db, string $jeton): ?array
     return $s->fetch(PDO::FETCH_ASSOC) ?: null;
 }
 
+// Site de l'appel en cours (paramètre « site », validé dans api_traiter).
+function api_site_courant(?string $nouveau = null): string
+{
+    static $site = '';
+    if ($nouveau !== null) $site = $nouveau;
+    return $site;
+}
+
+// Colonne « site » ajoutée le 30/09/2026 : la base de production, créée
+// avant, la reçoit ici une fois (CREATE TABLE IF NOT EXISTS n'ajoute pas de
+// colonne à une table existante).
+// Renvoie false si la colonne manque et n'a pas pu être ajoutée : le journal
+// continue alors sans elle (jamais une connexion refusée pour ça).
+function journal_colonne_site(PDO $db): bool
+{
+    static $ok = null;
+    if ($ok !== null) return $ok;
+    try {
+        if (!$db->query("SHOW COLUMNS FROM journal LIKE 'site'")->fetch()) {
+            $db->exec("ALTER TABLE journal ADD COLUMN site VARCHAR(20) NOT NULL DEFAULT '' AFTER source");
+        }
+        $ok = true;
+    } catch (Throwable $e) {
+        error_log('journal : colonne site impossible à ajouter : ' . $e->getMessage());
+        $ok = false;
+    }
+    return $ok;
+}
+
 function api_journal(PDO $db, string $action, string $conseiller, string $ref, string $role, int $succes, int $tentatives, string $ua, string $source): void
 {
     // Rôle non fourni par l'appelant (écritures d'ateliers, échecs de
@@ -238,8 +269,14 @@ function api_journal(PDO $db, string $action, string $conseiller, string $ref, s
         $s->execute([$conseiller]);
         $role = (string) ($s->fetchColumn() ?: '');
     }
-    $db->prepare('INSERT INTO journal (horodatage, action, conseiller, ref, role, succes, tentatives, user_agent, source) VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?)')
-       ->execute([$action, mb_substr($conseiller, 0, 100), mb_substr($ref, 0, 100), mb_substr($role, 0, 20), $succes, $tentatives, mb_substr($ua, 0, 500), mb_substr($source, 0, 50)]);
+    $valeurs = [$action, mb_substr($conseiller, 0, 100), mb_substr($ref, 0, 100), mb_substr($role, 0, 20), $succes, $tentatives, mb_substr($ua, 0, 500), mb_substr($source, 0, 50)];
+    if (journal_colonne_site($db)) {
+        $db->prepare('INSERT INTO journal (horodatage, action, conseiller, ref, role, succes, tentatives, user_agent, source, site) VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+           ->execute(array_merge($valeurs, [api_site_courant()]));
+    } else {
+        $db->prepare('INSERT INTO journal (horodatage, action, conseiller, ref, role, succes, tentatives, user_agent, source) VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?)')
+           ->execute($valeurs);
+    }
 }
 
 // ── Lectures ──────────────────────────────────────────────────────────────

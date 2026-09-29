@@ -265,14 +265,15 @@ function action_log_acces_index(PDO $db, array $p, array $session): array
 function action_get_logs(PDO $db, array $p): array
 {
     $n = max(1, min(1000, (int) ($p['n'] ?? 100) ?: 100));
-    $l = $db->query("SELECT horodatage, action, conseiller, ref, role, succes, tentatives, user_agent, source FROM journal ORDER BY id DESC LIMIT $n")->fetchAll(PDO::FETCH_ASSOC);
+    $site = journal_colonne_site($db) ? 'site' : "'' AS site";
+    $l = $db->query("SELECT horodatage, action, conseiller, ref, role, succes, tentatives, user_agent, source, $site FROM journal ORDER BY id DESC LIMIT $n")->fetchAll(PDO::FETCH_ASSOC);
     $paris = new DateTimeZone('Europe/Paris');
     return ['ok' => true, 'logs' => array_map(fn($r) => [
         // Même format que le GAS : ISO 8601 en UTC.
         'timestamp' => (new DateTimeImmutable($r['horodatage'], $paris))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s.v\Z'),
         'conseiller' => $r['conseiller'], 'role' => $r['role'],   // vide = inconnu (tâche, nom inexistant) : plus de « user » par défaut
         'success' => (int) $r['succes'] === 1, 'tentatives' => (int) $r['tentatives'],
-        'user_agent' => $r['user_agent'], 'source' => $r['source'], 'action' => $r['action'], 'ref' => $r['ref'],
+        'user_agent' => $r['user_agent'], 'source' => $r['source'], 'site' => $r['site'], 'action' => $r['action'], 'ref' => $r['ref'],
     ], $l)];
 }
 
