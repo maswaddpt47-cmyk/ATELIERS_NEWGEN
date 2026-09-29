@@ -169,6 +169,15 @@ en retard ; NextStep absent à côté → simple avertissement.
      partout où le mot désigne Michel Aswad, dans les trois documents.
      **Exception** : « responsable de traitement » (RGPD) = le Département,
      ne pas toucher.
+  9. **Corbeille : formulation** (utilisateur, 29/09) : « 30 jours, purge à
+     chaque connexion » se lit comme deux règles. Écrire partout « Conservée
+     30 jours ; les ateliers plus anciens sont effacés automatiquement à la
+     connexion suivante » (code : `api/lib/api.php:176` à la connexion,
+     `ecriture.php:417` à l'ouverture de l'onglet Corbeille).
+  **Lecture de l'utilisateur à reprendre le 30/09** : attendre la fin de sa
+  lecture avant d'appliquer ; ensuite régénérer, vérifier le texte de chaque
+  page, remplacer les PDF dans `ateliers-backups/documents/` (v3.1 / v1.2 /
+  v3.1).
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
 - **Clé SSH de déploiement en service (29/09/2026)** : secret
