@@ -105,6 +105,14 @@ en retard ; NextStep absent à côté → simple avertissement.
   sur chaque ligne du tableau. Section « Sincérité » présente dans les quatre
   `AGORA.md` (NEWGEN, GDINV2, SMS-mail, sms-mail-multi) — suivi dans
   `MD-LIB/CLAUDE.md`.
+- **Registres — corrections en attente (lecture de l'utilisateur en cours,
+  tout appliquer en une fois)** : sources dans
+  `ateliers-backups/documents/sources/`, régénérer par `rendre.js`.
+  1. Registre de sécurité v3.0, §1, ligne « Copies de la base », colonne
+     données personnelles : remplacer par « Oui — en clair sur Alwaysdata
+     (accès réservé au compte, protégé par double authentification) ;
+     chiffrées sur GitHub, lisibles uniquement avec la clé privée du
+     responsable » (29/09/2026).
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
 - **Clé SSH de déploiement en service (29/09/2026)** : secret
