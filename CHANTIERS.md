@@ -159,11 +159,16 @@ en retard ; NextStep absent à côté → simple avertissement.
      statistique), AG-011, AG-012, AG-014. Pas le bilan chiffré des
      verdicts, ni le détail de ce qui l'a rendue nécessaire (utilisateur :
      rester bref). Paragraphe validé pour le §4 : « La revue contradictoire
-     (AGORA) a été instaurée le 21/09/2026 à l'initiative du responsable.
+     (AGORA) a été instaurée le 21/09/2026 à l'initiative du responsable
+     applicatif.
      Toute décision structurante proposée par Claude est déposée dans le
      dépôt et soumise à une seconde session indépendante, qui lit le code et
      ne peut contester ou amender qu'avec une preuve. Le responsable
-     arbitre. »
+     applicatif arbitre. »
+  8. **« responsable » → « responsable applicatif »** (utilisateur, 29/09)
+     partout où le mot désigne Michel Aswad, dans les trois documents.
+     **Exception** : « responsable de traitement » (RGPD) = le Département,
+     ne pas toucher.
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
 - **Clé SSH de déploiement en service (29/09/2026)** : secret
