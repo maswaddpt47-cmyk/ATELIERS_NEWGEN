@@ -157,7 +157,13 @@ en retard ; NextStep absent à côté → simple avertissement.
      qui propose ; **la décision finale revient au responsable, qui
      arbitre** ». Exemples : AG-009 (mesure exigée avant de coder → preuve
      statistique), AG-011, AG-012, AG-014. Pas le bilan chiffré des
-     verdicts.
+     verdicts, ni le détail de ce qui l'a rendue nécessaire (utilisateur :
+     rester bref). Paragraphe validé pour le §4 : « La revue contradictoire
+     (AGORA) a été instaurée le 21/09/2026 à l'initiative du responsable.
+     Toute décision structurante proposée par Claude est déposée dans le
+     dépôt et soumise à une seconde session indépendante, qui lit le code et
+     ne peut contester ou amender qu'avec une preuve. Le responsable
+     arbitre. »
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
 - **Clé SSH de déploiement en service (29/09/2026)** : secret
