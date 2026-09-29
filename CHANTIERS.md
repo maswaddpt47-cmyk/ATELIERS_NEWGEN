@@ -102,13 +102,12 @@ en retard ; NextStep absent à côté → simple avertissement.
   `MD-LIB/CLAUDE.md`.
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
-- **En cours (29/09/2026) — clé SSH de déploiement** : les workflows
-  (`deploy-api.yml`, `diagnostic-api.yml`, `ateliers-backups/copie.yml`)
-  prennent la clé du secret `ALWAYSDATA_SSH_KEY` si elle existe, sinon le mot
-  de passe (repli vérifié : déploiement `69c3bbb` vert par mot de passe).
-  Reste à l'utilisateur : créer la clé, déposer la publique chez Alwaysdata,
-  la privée dans les deux dépôts, relancer un déploiement (« Accès SSH par
-  clé » dans le journal). Ensuite seulement : retirer le mot de passe.
+- **Clé SSH de déploiement en service (29/09/2026)** : secret
+  `ALWAYSDATA_SSH_KEY` dans NEWGEN et `ateliers-backups`, clé créée sur le
+  serveur puis effacée. Vérifié : déploiement API et copie chiffrée passés
+  « par clé » le 29/09. Reste : retirer `ALWAYSDATA_SSH_PASSWORD` des deux
+  dépôts quand l'utilisateur le décide (le mot de passe SSH sert encore au
+  terminal web).
 - Restes sans effet de l'époque GAS : `gas/` (archive), `banc/`, noms
   `GAS_*`/`gasAppel`/`__gasLog` (désignent la couche d'appel). À retirer si
   besoin, sans urgence.
