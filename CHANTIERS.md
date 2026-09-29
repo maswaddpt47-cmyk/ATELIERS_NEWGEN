@@ -81,6 +81,13 @@ en retard ; NextStep absent à côté → simple avertissement.
 
 ## Reste ouvert
 
+- **Usage des onglets en service (29/09/2026)** : compteurs anonymes, un
+  envoi groupé (`sendBeacon`) à la mise en arrière-plan, tableau des 12
+  dernières semaines dans Admin → Connexions, sur les deux sites (NEWGEN
+  `9357d04`, NextStep `5ed856b`). Premières données visibles dès que l'équipe
+  aura utilisé l'outil ; à regarder dans quelques semaines pour décider des
+  onglets à simplifier.
+
 - 📅 **30/09/2026 — relève du journal** (rappel planifié) : journal Admin
   NextStep depuis la bascule. Point de comparaison : labo du 24-25/09, 0/27
   perdus, médiane 0,3 s, p90 0,6 s, un seul utilisateur. Regarder `getAll` et
@@ -174,6 +181,11 @@ en retard ; NextStep absent à côté → simple avertissement.
      30 jours ; les ateliers plus anciens sont effacés automatiquement à la
      connexion suivante » (code : `api/lib/api.php:176` à la connexion,
      `ecriture.php:417` à l'ouverture de l'onglet Corbeille).
+  10. **Registre RGPD et registre de sécurité : ajouter l'usage des onglets**
+     (29/09) — compteurs ANONYMES (jour, site, page, onglet, nombre), aucune
+     colonne de personne (test RGPD-18), 24 mois, lecture réservée aux admins
+     (Admin → Connexions). Pas un traitement de données personnelles : le
+     mentionner comme tel, et ajouter RGPD-18 au tableau des tests.
   **Lecture de l'utilisateur à reprendre le 30/09** : attendre la fin de sa
   lecture avant d'appliquer ; ensuite régénérer, vérifier le texte de chaque
   page, remplacer les PDF dans `ateliers-backups/documents/` (v3.1 / v1.2 /
@@ -203,6 +215,11 @@ en retard ; NextStep absent à côté → simple avertissement.
   environnement : le workflow manuel **« Diagnostic API Alwaysdata »** est son
   œil sur le serveur (version PHP, extensions, config, codes HTTP).
 - `api/lib/` est fermé par `.htaccess` (HTTP 403 vérifié).
+- **Dates « du jour » : toujours `date('Y-m-d')` côté PHP (heure de Paris,
+  `base.php`), jamais `CURDATE()`** : le serveur MySQL peut être en UTC ; entre
+  minuit et 2 h à Paris les deux diffèrent (déploiement du 30/09 à 00:09 bloqué
+  par `rappels.test.php`, corrigé `08e4f8b`). `NOW()` restant ailleurs
+  (corbeille, journal, sessions) : même piège possible, non traité.
 - **Poste pro de l'utilisateur : pas d'invite de commandes** (29/09). Toute
   opération serveur passe par le **terminal web** d'Alwaysdata (Accès distant
   → SSH → « par le Web », identifiant `ateliers-numeriques`, mot de passe
