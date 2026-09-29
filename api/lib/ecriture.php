@@ -442,9 +442,10 @@ function action_usage_onglets(PDO $db, array $p): array
     }
     if (!$lignes) return ['ok' => true, 'enregistres' => 0];
     usage_schema($db);
-    $s = $db->prepare('INSERT INTO usage_onglets (jour, site, page, onglet, vues) VALUES (CURDATE(), ?, ?, ?, ?)
+    $s = $db->prepare('INSERT INTO usage_onglets (jour, site, page, onglet, vues) VALUES (?, ?, ?, ?, ?)
                        ON DUPLICATE KEY UPDATE vues = vues + VALUES(vues)');
-    foreach ($lignes as $onglet => $n) $s->execute([$site, $page, $onglet, $n]);
+    $jour = date('Y-m-d');   // heure de Paris, pas CURDATE() (serveur MySQL possiblement en UTC)
+    foreach ($lignes as $onglet => $n) $s->execute([$jour, $site, $page, $onglet, $n]);
     return ['ok' => true, 'enregistres' => count($lignes)];
 }
 

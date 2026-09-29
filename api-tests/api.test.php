@@ -243,7 +243,7 @@ verifier(appel(['action' => 'usageOnglets'], ['site' => 'newgen', 'page' => 'ind
 $r = appel(['action' => 'usageOnglets'], $T + ['site' => 'newgen', 'page' => 'index', 'vues' => json_encode(['historique' => 3, 'agenda' => 1, 'Nom Suspect' => 2, 'carte' => 0])]);
 verifier(($r['ok'] ?? false) && $r['enregistres'] === 2, 'usage des onglets : noms douteux et zéros ignorés');
 appel(['action' => 'usageOnglets'], $T + ['site' => 'newgen', 'page' => 'index', 'vues' => '{"historique":2}']);
-verifier((int) $db->query("SELECT vues FROM usage_onglets WHERE site = 'newgen' AND page = 'index' AND onglet = 'historique' AND jour = CURDATE()")->fetchColumn() === 5, 'usage des onglets : les envois du jour s\'additionnent');
+verifier((int) $db->query("SELECT vues FROM usage_onglets WHERE site = 'newgen' AND page = 'index' AND onglet = 'historique' AND jour = '" . date('Y-m-d') . "'")->fetchColumn() === 5, 'usage des onglets : les envois du jour s\'additionnent');
 verifier((appel(['action' => 'usageOnglets'], $T + ['site' => 'ailleurs', 'page' => 'index', 'vues' => '{"historique":1}'])['ok'] ?? true) === false, 'usage des onglets : site inconnu refusé');
 $cols = $db->query('SHOW COLUMNS FROM usage_onglets')->fetchAll(PDO::FETCH_COLUMN);
 verifier($cols === ['jour', 'site', 'page', 'onglet', 'vues'], '[RGPD-18] usage des onglets : aucune colonne ne désigne une personne');

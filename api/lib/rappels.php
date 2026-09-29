@@ -47,8 +47,12 @@ $emails = api_json($cfg['emails'] ?? '', []);
 if (!is_array($emails)) $emails = [];
 $actifs = is_array($actifs) ? $actifs : [];
 
-$st = $db->query("SELECT date, horaire, thematique, conseiller, commune FROM ateliers
-                  WHERE statut = 'Planifié' AND date < CURDATE() ORDER BY conseiller, date, horaire");
+// Date du jour à l'heure de Paris (base.php), pas CURDATE() : le serveur MySQL
+// peut être en UTC, et entre minuit et 2 h à Paris les deux dates diffèrent
+// (déploiement du 30/09/2026 à 00:09 refusé par ce test).
+$st = $db->prepare("SELECT date, horaire, thematique, conseiller, commune FROM ateliers
+                    WHERE statut = 'Planifié' AND date < ? ORDER BY conseiller, date, horaire");
+$st->execute([date('Y-m-d')]);
 $parConseiller = [];
 foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) $parConseiller[$r['conseiller']][] = $r;
 
