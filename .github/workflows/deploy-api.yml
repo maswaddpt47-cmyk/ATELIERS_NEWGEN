@@ -3,7 +3,8 @@
 #
 # Secrets du dépôt, saisis par l'utilisateur, jamais vus par Claude :
 #   ALWAYSDATA_COMPTE          nom du compte (ex. ateliers-numeriques)
-#   ALWAYSDATA_SSH_PASSWORD    mot de passe de l'utilisateur SSH du compte
+#   ALWAYSDATA_SSH_KEY         clé privée SSH de déploiement (prioritaire)
+#   ALWAYSDATA_SSH_PASSWORD    mot de passe SSH du compte (repli si pas de clé)
 #   ALWAYSDATA_DB_NOM          nom de la base MySQL      ┐ écrits dans
 #   ALWAYSDATA_DB_UTILISATEUR  utilisateur MySQL         │ ~/config-api.php,
 #   ALWAYSDATA_DB_MOT_DE_PASSE son mot de passe          │ hors du dossier
@@ -45,25 +46,47 @@ jobs:
           php api-tests/sauvegarde.test.php
           php api-tests/rappels.test.php
 
+      # Accès SSH : clé (secret ALWAYSDATA_SSH_KEY) si elle existe, sinon mot de
+      # passe (ALWAYSDATA_SSH_PASSWORD) — bascule sans coupure (29/09/2026).
+      # Les étapes suivantes lancent « $VIA ssh … » / « $VIA rsync … ».
+      - name: Préparer l'accès SSH
+        env:
+          CLE: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          if [ -n "$CLE" ]; then
+            printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            echo "VIA=" >> "$GITHUB_ENV"
+            echo "::notice::Accès SSH par clé"
+          elif [ -n "$SSHPASS" ]; then
+            sudo apt-get install -y -qq sshpass >/dev/null
+            echo "VIA=sshpass -e" >> "$GITHUB_ENV"
+            echo "::notice::Accès SSH par mot de passe (clé absente)"
+          else
+            echo "::error::Ni ALWAYSDATA_SSH_KEY ni ALWAYSDATA_SSH_PASSWORD"
+            exit 1
+          fi
+
       - name: Copier api/ vers ~/www/api/
         env:
           COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
           SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
         run: |
-          if [ -z "$COMPTE" ] || [ -z "$SSHPASS" ]; then
-            echo "::error::Secrets ALWAYSDATA_COMPTE / ALWAYSDATA_SSH_PASSWORD absents"
+          if [ -z "$COMPTE" ]; then
+            echo "::error::Secret ALWAYSDATA_COMPTE absent"
             exit 1
           fi
-          sudo apt-get install -y -qq sshpass >/dev/null
           # Pas de --delete : ne jamais effacer côté serveur un fichier absent
           # du dépôt (la configuration de la base y vivra, hors dépôt).
-          sshpass -e rsync -az \
+          $VIA rsync -az \
             -e "ssh -o StrictHostKeyChecking=accept-new" \
             api/ "$COMPTE@ssh-$COMPTE.alwaysdata.net:www/api/"
           # Fichiers retirés du dépôt : rsync ne les efface pas (pas de
           # --delete), on les nomme ici. ping.php : mesure de l'étape 0, close
           # (audit de sécurité du 24/09/2026).
-          sshpass -e ssh -o StrictHostKeyChecking=accept-new \
+          $VIA ssh -o StrictHostKeyChecking=accept-new \
             "$COMPTE@ssh-$COMPTE.alwaysdata.net" 'rm -f www/api/ping.php'
 
       # Réécrit à chaque déploiement : changer un secret suffit, sans toucher
@@ -91,7 +114,7 @@ jobs:
             "cle_import" => getenv("CLE_IMPORT"),
           ], true) . ";\n";' > config-api.php
           php -l config-api.php >/dev/null
-          sshpass -e rsync -zp --chmod=F600 \
+          $VIA rsync -zp --chmod=F600 \
             -e "ssh -o StrictHostKeyChecking=accept-new" \
             config-api.php "$COMPTE@ssh-$COMPTE.alwaysdata.net:config-api.php"
           rm -f config-api.php
@@ -104,7 +127,7 @@ jobs:
           COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
           SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
         run: |
-          sshpass -e ssh -o StrictHostKeyChecking=accept-new \
+          $VIA ssh -o StrictHostKeyChecking=accept-new \
             "$COMPTE@ssh-$COMPTE.alwaysdata.net" 'php www/api/lib/sauvegarde.php'
 
       - name: Vérifier la réponse en ligne
