@@ -21,7 +21,8 @@ Alwaysdata**, compte `ateliers-numeriques`, **même base MySQL**. Refonte
 décidée le 23/09 (AG-009), bascule faite le 25/09 au matin, chantier clos
 par l'utilisateur le 25/09.
 
-- GAS NextStep et NEWGEN coupés (accès « Seulement moi »), déclencheurs
+- **Base Google supprimée** (classeurs, confirmé par l'utilisateur le
+  29/09/2026). GAS NextStep et NEWGEN coupés (accès « Seulement moi »), déclencheurs
   supprimés. **Import verrouillé** : le lever = requête SQL délibérée
   (phpMyAdmin), sinon un second import écraserait les saisies.
 - Vitesse mesurée avant bascule (`banc/cibles.html`, 23-24/09) : GAS perdait
@@ -84,11 +85,6 @@ en retard ; NextStep absent à côté → simple avertissement.
   les heures de pointe.
 - **Avant le 01/10/2026** : mettre à jour la consigne de l'audit trimestriel
   — `MD-LIB/rgpd-securite.md` et la routine planifiée.
-- **Fin octobre 2026** : classeurs Google (NextStep et ancien NEWGEN) et GAS,
-  gardés figés et partagés avec l'utilisateur seul comme point de
-  comparaison, puis suppression groupée — après avis des Archives
-  départementales si elles le demandent (archives publiques). **Proposition
-  du 26/09, à confirmer.**
 - **Avant fin décembre 2026 — décision de l'utilisateur** : réécrire
   l'historique d'`ateliers-backups` (sinon une copie de plus de 90 jours
   reste lisible dans l'historique git ; bloqué par le garde-fou de session le
@@ -106,8 +102,10 @@ en retard ; NextStep absent à côté → simple avertissement.
   `MD-LIB/CLAUDE.md`.
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
-- Déploiement par clé SSH au lieu du mot de passe (secret
-  `ALWAYSDATA_SSH_PASSWORD`).
+- **À faire** : déploiement par clé SSH au lieu du mot de passe (secret
+  `ALWAYSDATA_SSH_PASSWORD`, `deploy-api.yml` et `ateliers-backups/copie.yml`
+  passent encore par `sshpass`). Le registre de sécurité v1.0 le donnait à
+  tort comme fait.
 - Restes sans effet de l'époque GAS : `gas/` (archive), `banc/`, noms
   `GAS_*`/`gasAppel`/`__gasLog` (désignent la couche d'appel). À retirer si
   besoin, sans urgence.
