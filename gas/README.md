@@ -92,3 +92,11 @@ cours de test.
 À la date du dernier commit touchant ce fichier, l'état exact du
 déploiement réel (confirmé par l'utilisateur ou en attente de test) est
 précisé dans le message de commit.
+
+## Version en ligne chez Google au moment de la suppression (29/09/2026)
+
+Code relevé dans l'éditeur Apps Script par l'utilisateur le 29/09/2026, juste
+avant la suppression de la base Google : **v11.40 (en-tête « PAS ENCORE DÉPLOYÉE »)**, identique au commit `3da2257`
+(en-tête et lignes caractéristiques comparés ; retrouver le texte exact avec
+`git show 3da2257:gas/GAS_NEWGEN.js`). Le fichier courant de ce dossier est plus récent
+(v11.41, jamais déployé).
