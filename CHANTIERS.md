@@ -92,10 +92,9 @@ en retard ; NextStep absent à côté → simple avertissement.
   plus de « user » par défaut, `b6d1bd7`) ; **colonne Site** (NextStep /
   NEWGEN), le site part avec chaque appel (`46470bf`, NextStep `dda37bc`).
   Colonne ajoutée à la base de production au premier appel (`ALTER TABLE`,
-  repli sans elle si refusé). **À vérifier par l'utilisateur** : les
-  nouvelles lignes affichent un site ; « — » sur une ligne récente = ALTER
-  refusé → workflow « Diagnostic API » (journal d'erreurs PHP). Lignes
-  antérieures au 30/09 : sans provenance, c'est normal.
+  repli sans elle si refusé). **Vérifié en production par l'utilisateur le
+  30/09** (le site s'affiche). Lignes antérieures au 30/09 : sans
+  provenance, c'est normal.
 
 - 📅 **30/09/2026 — relève du journal** (rappel planifié) : journal Admin
   NextStep depuis la bascule. Point de comparaison : labo du 24-25/09, 0/27
