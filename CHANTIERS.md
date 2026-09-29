@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **27/09/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **29/09/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
@@ -23,7 +23,8 @@ par l'utilisateur le 25/09.
 
 - **Base Google supprimée** (classeurs, confirmé par l'utilisateur le
   29/09/2026). GAS NextStep et NEWGEN coupés (accès « Seulement moi »), déclencheurs
-  supprimés. **Import verrouillé** : le lever = requête SQL délibérée
+  supprimés ; code des scripts en ligne archivé (`gas/README.md` des deux
+  dépôts : NEWGEN `3da2257`, NextStep `b8b96c7`). **Import verrouillé** : le lever = requête SQL délibérée
   (phpMyAdmin), sinon un second import écraserait les saisies.
 - Vitesse mesurée avant bascule (`banc/cibles.html`, 23-24/09) : GAS perdait
   9,5 % (nuit) à 26,5 % (jour) des appels, Alwaysdata **0**, médiane 0,3 s.
@@ -38,7 +39,7 @@ par l'utilisateur le 25/09.
   l'utilisateur ; rattrapages 11:47 et 17:47 car GitHub ne tient pas l'heure).
   Corbeille et onglet Sauvegardes dans l'Admin (AG-014) ; **pas** de bouton de
   restauration complète (une session volée effacerait tout). Procédure de
-  restauration : PDF hors dépôt.
+  restauration v3.0 : `ateliers-backups/documents/`.
 - Sécurité : jeton exigé en lecture, dans le corps POST (AG-011) ; jeton
   annulé à la déconnexion (`logout`) ; adresses mail rendues aux seuls
   admin/superviseur ; aucune ressource externe (`vendor/`, test RGPD-17 en
@@ -85,7 +86,10 @@ en retard ; NextStep absent à côté → simple avertissement.
   perdus, médiane 0,3 s, p90 0,6 s, un seul utilisateur. Regarder `getAll` et
   les heures de pointe.
 - **Avant le 01/10/2026** : mettre à jour la consigne de l'audit trimestriel
-  — `MD-LIB/rgpd-securite.md` et la routine planifiée.
+  — `MD-LIB/rgpd-securite.md` et la routine planifiée. L'audit du 01/10 doit
+  aussi reprendre le §9 du registre de sécurité v3.0 : faille ACME publiée
+  chez Alwaysdata (effet sur un sous-domaine `alwaysdata.net` ?), DPA et
+  certification d'Alwaysdata à vérifier sur pièce.
 - **Avant fin décembre 2026 — décision de l'utilisateur** : réécrire
   l'historique d'`ateliers-backups` (sinon une copie de plus de 90 jours
   reste lisible dans l'historique git ; bloqué par le garde-fou de session le
@@ -126,6 +130,12 @@ en retard ; NextStep absent à côté → simple avertissement.
   environnement : le workflow manuel **« Diagnostic API Alwaysdata »** est son
   œil sur le serveur (version PHP, extensions, config, codes HTTP).
 - `api/lib/` est fermé par `.htaccess` (HTTP 403 vérifié).
+- **Poste pro de l'utilisateur : pas d'invite de commandes** (29/09). Toute
+  opération serveur passe par le **terminal web** d'Alwaysdata (Accès distant
+  → SSH → « par le Web », identifiant `ateliers-numeriques`, mot de passe
+  SSH). Donner une commande courte à la fois, **sans `~`** (tapé `-` au
+  clavier) et avec les majuscules exactes (`-N` devenu `-n` le 29/09).
+  Déchiffrer une copie hors site exige un PC personnel.
 
 ## Décisions de l'utilisateur à ne pas « corriger »
 
