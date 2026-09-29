@@ -42,7 +42,12 @@ par l'utilisateur le 25/09.
   annulé à la déconnexion (`logout`) ; adresses mail rendues aux seuls
   admin/superviseur ; aucune ressource externe (`vendor/`, test RGPD-17 en
   CI) ; HTTPS forcé ; 2FA GitHub et Alwaysdata ; journal conservé 12 mois ;
-  registre de sécurité v1.0 (hors dépôt).
+  documents **hors dépôt** (diffusion restreinte) : registre de sécurité
+  v2.0, registre RGPD v1.0 (art. 30) et procédure de restauration v2.0,
+  refaits le 29/09/2026 (v1.0 non retrouvées). Leurs écarts RGPD ouverts —
+  compte personnel sans DPA, durée de conservation des ateliers non fixée,
+  mention d'information des agents, procédure de sortie — sont à porter au
+  DPO par l'utilisateur.
 - Plus de PWA (AG-012) : `sw.js` de désinstallation publié sans date de fin.
 
 ## 🔧 Parité NEWGEN/NextStep (AG-015, tranché le 26/09/2026)
