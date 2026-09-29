@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **29/09/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **30/09/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
@@ -195,6 +195,8 @@ en retard ; NextStep absent à côté → simple avertissement.
      colonne de personne (test RGPD-18), 24 mois, lecture réservée aux admins
      (Admin → Connexions). Pas un traitement de données personnelles : le
      mentionner comme tel, et ajouter RGPD-18 au tableau des tests.
+     Journal (30/09) : ajouter le champ « site » (NextStep / NEWGEN) aux
+     données du journal (registre de sécurité §5, registre RGPD fiche T3).
   **Lecture de l'utilisateur à reprendre le 30/09** : attendre la fin de sa
   lecture avant d'appliquer ; ensuite régénérer, vérifier le texte de chaque
   page, remplacer les PDF dans `ateliers-backups/documents/` (v3.1 / v1.2 /
