@@ -113,6 +113,18 @@ en retard ; NextStep absent à côté → simple avertissement.
      (accès réservé au compte, protégé par double authentification) ;
      chiffrées sur GitHub, lisibles uniquement avec la clé privée du
      responsable » (29/09/2026).
+  2. Registre de sécurité, nouvelle section « 2.4 Les bancs d'essai »
+     (29/09/2026), tableau : 21/09 protocole corrigé (AG-001) ; 22/09 banc
+     des stratégies, domicile, 249 salves, pertes GAS 30-38 %, échecs file
+     18,4 % contre doublage 4,0 % (McNemar 10,32) ; 22/09 relevé réel
+     NextStep, 44 appels, 45 % perdus, 221 s d'attente morte ; 22/09 soir
+     compteur de sauvetages, 75 % perdus, doublage 25 % sauvés ; nuit 23-24/09
+     GAS/Alwaysdata par paires, domicile, 158 paires, 9,5 % contre 0 (13,07) ;
+     24/09 jour, PC pro + VPN CD47, 68 paires, 26,5 % perdus + 9 > 12 s = 40 %
+     contre 0 (16,06) ; 24-25/09 labo NextStep sur Alwaysdata, 0/27 perdus,
+     médiane 0,3 s ; 26/09 réseau filaire du bureau bon. Plus une ligne qui
+     explique le test de McNemar (seuil 3,84 = 95 % de certitude). Sources :
+     `git show ce7c1e9^:CHANTIERS.md` (§1, étape 0, relevés du 22/09).
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
 - **Clé SSH de déploiement en service (29/09/2026)** : secret
