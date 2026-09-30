@@ -79,62 +79,59 @@ en retard ; NextStep absent à côté → simple avertissement.
 - **Vérification terrain de NextStep faite par l'utilisateur le 26/09/2026**
   (« tout fonctionne ») : Agenda (volet modifiable), connexion, saisie.
 
-## Reste ouvert
+## Reste ouvert (état du 30/09/2026, par priorité)
 
-- **Usage des onglets en service (29/09/2026)** : compteurs anonymes, un
-  envoi groupé (`sendBeacon`) à la mise en arrière-plan, tableau des 12
-  dernières semaines dans Admin → Connexions, sur les deux sites (NEWGEN
-  `9357d04`, NextStep `5ed856b`). Premières données visibles dès que l'équipe
-  aura utilisé l'outil ; à regarder dans quelques semaines pour décider des
-  onglets à simplifier.
-- **Journal des connexions enrichi (30/09/2026)** : rôle enregistré pour
-  toutes les actions et affiché en clair (Admin / Superviseur / Conseiller ;
-  plus de « user » par défaut, `b6d1bd7`) ; **colonne Site** (NextStep /
-  NEWGEN), le site part avec chaque appel (`46470bf`, NextStep `dda37bc`).
-  Colonne ajoutée à la base de production au premier appel (`ALTER TABLE`,
-  repli sans elle si refusé). **Vérifié en production par l'utilisateur le
-  30/09** (le site s'affiche). Lignes antérieures au 30/09 : sans
-  provenance, c'est normal.
+**Actions de l'utilisateur**
 
-- **Relève du journal NextStep faite le 30/09/2026** (Admin, 28/09 07:10 →
-  30/09 20:38) : 45 appels, **0 perdu**, médiane 0,1 s, p90 0,5 s, 0 s
-  d'attente morte (labo du 24-25/09 : médiane 0,3 s, p90 0,6 s). Limite :
-  un seul poste (actions admin), heures 00/07/20/23 seulement — **aucune
-  mesure en journée de bureau sur PC pro + VPN**, là où GAS perdait 40 %.
-  Reste, sans urgence : un relevé depuis le PC pro entre 9 h et 17 h.
-- **Audit trimestriel du 01/10/2026 (10:03 Paris)** : consigne mise à jour
-  le 30/09 (API PHP, 6 dépôts dont les workflows d'`ateliers-backups`,
-  tests RGPD-01 à 18, confrontation au registre v3.1, points ouverts du §9 ;
-  MD-LIB `a825124`). À la réception du rapport : vérifier en tête la liste
-  des dépôts non audités (la routine n'a aucun dépôt attaché), puis traiter
-  les trouvailles.
-- **Registres v3.1 / v1.2 / procédure v3.1 livrés le 30/09/2026**
-  (`ateliers-backups` 5508463, v3.0/v1.1 en `archives/`). Reste : relecture
-  finale de l'utilisateur ; le §7 Alwaysdata (points « à confirmer ») à
-  vérifier sur les conditions contractuelles avant transmission DSI/DPO.
-  Références officielles ajoutées le 30/09/2026 (sécurité §11, RGPD §10 ;
-  `ateliers-backups` 66f5add) : cnil.fr, cyber.gouv.fr et
-  dataprivacyframework.gov bloqués depuis la session, contenus recoupés par
-  sources secondaires. À vérifier sur les textes avant transmission, surtout
-  l'inscription de GitHub sur la liste DPF.
-- **Accès SSH des automatismes par clé seule depuis le 30/09/2026** : secret
-  `ALWAYSDATA_SSH_PASSWORD` supprimé des deux dépôts par l'utilisateur (le
-  mot de passe SSH reste pour le terminal web). Le repli par mot de passe des
-  workflows (`deploy-api.yml`, `diagnostic-api.yml`, `copie.yml`) ne peut
-  plus servir : à retirer au prochain passage dans ces fichiers, sans
-  urgence. Registre de sécurité à aligner à la prochaine version (§6.4
-  « repli sur mot de passe », ligne du §9 à solder).
-- Restes de l'époque GAS : `gas/`, `banc/` et `manifest-*.json` retirés
-  des deux dépôts le 30/09/2026 (historique git). Restent les noms
-  `GAS_*`/`gasAppel`/`__gasLog` (~120 occurrences, verrouillées par les
-  tests réseau) : ils désignent la couche d'appel, renommage sans gain pour
-  l'usager, pas fait.
-- **Historique d'`ateliers-backups` — option A retenue par l'utilisateur
-  (30/09/2026), avant fin décembre** : copies sur une branche `copies` sans historique, remplacée
-  à chaque passage ; puis nettoyage unique de `copies/` dans l'historique de
-  `main`. **Bloqué** : le garde-fou de session refuse d'écrire le workflow
-  (push forcé). En attente de la permission de l'utilisateur. Ensuite :
-  procédure de restauration (étape 1 : branche `copies`) et registres.
+1. **Historique d'`ateliers-backups`, avant fin décembre — option A retenue
+   le 30/09** : copies sur une branche `copies` sans historique, remplacée à
+   chaque passage (le workflow ne pousse plus les copies sur `main`), puis
+   nettoyage unique de `copies/` dans l'historique de `main`. **Bloqué** : le
+   garde-fou de session refuse d'écrire le workflow (push forcé). Attente :
+   autorisation explicite de l'utilisateur, ou session en mode « demander la
+   permission ». Déroulé prévu : workflow, test par copie manuelle (crée
+   `copies` sans toucher `main`), puis feu vert, puis nettoyage de `main` ;
+   ensuite procédure de restauration (étape 1 : branche `copies`) et
+   registres. Les ateliers de toutes les années restent dans la base : on ne
+   retire que d'anciennes copies.
+2. **Relecture finale des registres** (sécurité v3.1, RGPD v1.2, procédure
+   v3.1 ; `ateliers-backups/documents/`, `66f5add`) puis, avant transmission
+   DSI/DPO, vérifier sur pièce : §7 Alwaysdata (« à confirmer »), références
+   CNIL/ANSSI (sites bloqués depuis la session, recoupées par sources
+   secondaires), GitHub sur la liste DPF.
+3. **Écarts RGPD à porter au DPO** : compte Alwaysdata personnel sans DPA,
+   durée de conservation des ateliers non fixée, mention d'information des
+   agents, procédure de sortie.
+
+**01/10/2026**
+
+4. **Rapport de l'audit trimestriel** (vers 10:03 Paris ; consigne mise à
+   jour le 30/09, MD-LIB `a825124`) : lire d'abord la liste des dépôts non
+   audités (la routine n'a aucun dépôt attaché), puis traiter les
+   trouvailles.
+
+**Sans urgence**
+
+5. **Usage des onglets** (en service depuis le 29/09, NEWGEN `9357d04`,
+   NextStep `5ed856b`) : regarder Admin → Connexions dans quelques semaines
+   pour décider des onglets à simplifier.
+6. **Relevé du journal NextStep depuis le PC pro, 9 h-17 h** : seul cas non
+   mesuré. Relève du 30/09 (28/09 → 30/09, un poste, heures 00/07/20/23) :
+   45 appels, 0 perdu, médiane 0,1 s, p90 0,5 s.
+
+**Pour Claude, au prochain passage dans ces fichiers**
+
+7. Retirer le repli par mot de passe SSH de `deploy-api.yml`,
+   `diagnostic-api.yml` et `copie.yml` : secret `ALWAYSDATA_SSH_PASSWORD`
+   supprimé par l'utilisateur le 30/09, accès par clé vérifié le jour même
+   (diagnostic et copie manuelle réussis).
+8. Registre de sécurité, prochaine version : §6.4 (« repli sur mot de
+   passe ») à corriger ; au §9, solder l'ancien secret, puis l'historique
+   d'`ateliers-backups` une fois l'option A faite.
+
+Hors liste, choix assumé : les noms `GAS_*`/`gasAppel`/`__gasLog` (~120
+occurrences, verrouillées par les tests réseau) restent, ils désignent la
+couche d'appel. `gas/`, `banc/` et `manifest-*.json` retirés le 30/09.
 
 ## À ne pas réapprendre — Alwaysdata et déploiement
 
