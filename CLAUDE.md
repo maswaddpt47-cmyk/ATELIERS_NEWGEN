@@ -102,8 +102,9 @@ enregistrement de service worker dans les pages.
   appareils où l'ancien est installé. Ne pas le supprimer.
 - **Jamais de désinscription depuis la page** : l'origine est partagée avec
   NextStep et GDINV2 (commentaire en tête de `sw.js`).
-- `icons/` reste : favicon des deux pages. `manifest-*.json` : à retirer
-  plus tard, une fois les dernières installations désinstallées.
+- `icons/` reste : favicon des deux pages. `manifest-*.json` retirés le
+  30/09/2026 : plus cités par aucune page, une installation restante n'en
+  dépend pas.
 - Si une PWA revenait un jour : `MD-LIB/pwa-service-worker.md` (jamais de
   cache, jamais de `respondWith()`).
 
