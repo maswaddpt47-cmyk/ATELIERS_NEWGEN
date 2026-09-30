@@ -39,15 +39,15 @@ par l'utilisateur le 25/09.
   l'utilisateur ; rattrapages 11:47 et 17:47 car GitHub ne tient pas l'heure).
   Corbeille et onglet Sauvegardes dans l'Admin (AG-014) ; **pas** de bouton de
   restauration complète (une session volée effacerait tout). Procédure de
-  restauration v3.0 : `ateliers-backups/documents/`.
+  restauration v3.1 : `ateliers-backups/documents/`.
 - Sécurité : jeton exigé en lecture, dans le corps POST (AG-011) ; jeton
   annulé à la déconnexion (`logout`) ; adresses mail rendues aux seuls
   admin/superviseur ; aucune ressource externe (`vendor/`, test RGPD-17 en
   CI) ; HTTPS forcé ; 2FA GitHub et Alwaysdata ; journal conservé 12 mois ;
   documents à diffusion restreinte, **rangés dans le dépôt privé
   `ateliers-backups/documents/`** (sources et v1.0 archivées) : registre de sécurité
-  v3.0, registre RGPD v1.1 (art. 30) et procédure de restauration v3.0
-  (29/09/2026, fusion des v1.0 du 25/09 et des v2.0, corrigée sur le code). Leurs écarts RGPD ouverts —
+  v3.1, registre RGPD v1.2 (art. 30) et procédure de restauration v3.1
+  (30/09/2026). Leurs écarts RGPD ouverts —
   compte personnel sans DPA, durée de conservation des ateliers non fixée,
   mention d'information des agents, procédure de sortie — sont à porter au
   DPO par l'utilisateur.
@@ -102,7 +102,7 @@ en retard ; NextStep absent à côté → simple avertissement.
   les heures de pointe.
 - **Avant le 01/10/2026** : mettre à jour la consigne de l'audit trimestriel
   — `MD-LIB/rgpd-securite.md` et la routine planifiée. L'audit du 01/10 doit
-  aussi reprendre le §9 du registre de sécurité v3.0 : faille ACME publiée
+  aussi reprendre le §9 du registre de sécurité v3.1 : faille ACME publiée
   chez Alwaysdata (effet sur un sous-domaine `alwaysdata.net` ?), DPA et
   certification d'Alwaysdata à vérifier sur pièce.
 - **Avant fin décembre 2026 — décision de l'utilisateur** : réécrire
