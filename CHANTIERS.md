@@ -100,11 +100,12 @@ en retard ; NextStep absent à côté → simple avertissement.
   NextStep depuis la bascule. Point de comparaison : labo du 24-25/09, 0/27
   perdus, médiane 0,3 s, p90 0,6 s, un seul utilisateur. Regarder `getAll` et
   les heures de pointe.
-- **Avant le 01/10/2026** : mettre à jour la consigne de l'audit trimestriel
-  — `MD-LIB/rgpd-securite.md` et la routine planifiée. L'audit du 01/10 doit
-  aussi reprendre le §9 du registre de sécurité v3.1 : faille ACME publiée
-  chez Alwaysdata (effet sur un sous-domaine `alwaysdata.net` ?), DPA et
-  certification d'Alwaysdata à vérifier sur pièce.
+- **Audit trimestriel du 01/10/2026 (10:03 Paris)** : consigne mise à jour
+  le 30/09 (API PHP, 6 dépôts dont les workflows d'`ateliers-backups`,
+  tests RGPD-01 à 18, confrontation au registre v3.1, points ouverts du §9 ;
+  MD-LIB `a825124`). À la réception du rapport : vérifier en tête la liste
+  des dépôts non audités (la routine n'a aucun dépôt attaché), puis traiter
+  les trouvailles.
 - **Avant fin décembre 2026 — décision de l'utilisateur** : réécrire
   l'historique d'`ateliers-backups` (sinon une copie de plus de 90 jours
   reste lisible dans l'historique git ; bloqué par le garde-fou de session le
