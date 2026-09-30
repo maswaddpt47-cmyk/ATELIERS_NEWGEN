@@ -96,10 +96,12 @@ en retard ; NextStep absent à côté → simple avertissement.
   30/09** (le site s'affiche). Lignes antérieures au 30/09 : sans
   provenance, c'est normal.
 
-- 📅 **30/09/2026 — relève du journal** (rappel planifié) : journal Admin
-  NextStep depuis la bascule. Point de comparaison : labo du 24-25/09, 0/27
-  perdus, médiane 0,3 s, p90 0,6 s, un seul utilisateur. Regarder `getAll` et
-  les heures de pointe.
+- **Relève du journal NextStep faite le 30/09/2026** (Admin, 28/09 07:10 →
+  30/09 20:38) : 45 appels, **0 perdu**, médiane 0,1 s, p90 0,5 s, 0 s
+  d'attente morte (labo du 24-25/09 : médiane 0,3 s, p90 0,6 s). Limite :
+  un seul poste (actions admin), heures 00/07/20/23 seulement — **aucune
+  mesure en journée de bureau sur PC pro + VPN**, là où GAS perdait 40 %.
+  Reste, sans urgence : un relevé depuis le PC pro entre 9 h et 17 h.
 - **Audit trimestriel du 01/10/2026 (10:03 Paris)** : consigne mise à jour
   le 30/09 (API PHP, 6 dépôts dont les workflows d'`ateliers-backups`,
   tests RGPD-01 à 18, confrontation au registre v3.1, points ouverts du §9 ;
