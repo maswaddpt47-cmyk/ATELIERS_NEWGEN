@@ -94,17 +94,17 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 
 | Bloc | Sujet | Tranché |
 |---|---|---|
-| AG-001 | protocole du banc de mesure — amendé | 21/09/2026 |
+| AG-001 | protocole du banc de mesure — amendé : plan apparié reconnu, test de McNemar retenu (il a tranché AG-003), troisième bras gardé à l'enregistrement | 21/09/2026 |
 | AG-002 | AM/PM sur un prêt multi-jours — sans réponse, tranché par l'utilisateur (laisser tel quel) | 23/09/2026 |
-| AG-003 | porter le doublage, retirer la file d'attente — amendé | 22/09/2026 |
-| AG-004 | le verrou d'écriture partagé avec `keepAlive` — amendé | 23/09/2026 |
-| AG-005 | ce que le relevé NextStep du 22/09 prouve — amendé | 22/09/2026 |
-| AG-006 | le doublage sauve 25 % et non 42 % — amendé | 22/09/2026 |
-| AG-007 | sélecteur multi-années — amendé | 23/09/2026 |
-| AG-008 | `keepAlive` alourdi le jour où on le sait fragile — amendé | 23/09/2026 |
-| AG-009 | remplacer GAS + Sheets par PHP + MySQL (Alwaysdata) — amendé | 23/09/2026 |
-| AG-011 | contrat de lecture de l'API (jeton, ordre de démarrage) — amendé | 24/09/2026 |
-| AG-012 | retirer la PWA (sw.js de désinstallation, icônes gardées) — amendé | 24/09/2026 |
+| AG-003 | porter le doublage, retirer la file d'attente — amendé : verrou d'écriture côté serveur (`LockService`) en condition du retrait de la file | 22/09/2026 |
+| AG-004 | le verrou d'écriture partagé avec `keepAlive` — amendé : `keepAlive` sans verrou (drapeau de cache), refus serveur journalisés (v10.18.0 / v11.37) | 23/09/2026 |
+| AG-005 | ce que le relevé NextStep du 22/09 prouve — amendé : conclusions réécrites dans `CHANTIERS.md` (« 13 pertes exposées », chercher une re-saisie et non un doublon d'`_id`) | 22/09/2026 |
+| AG-006 | le doublage sauve 25 % et non 42 % — amendé : chiffres non comparables, libellé « doublons non annulés » au journal, la promesse « 26 s → 12 s » ramenée au régime du banc | 22/09/2026 |
+| AG-007 | sélecteur multi-années — amendé : avertissement « serveur pas à jour », année de référence = année en cours si cochée, `keepAlive` réchauffe N+1 | 23/09/2026 |
+| AG-008 | `keepAlive` alourdi le jour où on le sait fragile — amendé : volume de lectures inchangé pour NextStep (mécanisme contredit), N+1 préparée à la demande | 23/09/2026 |
+| AG-009 | remplacer GAS + Sheets par PHP + MySQL (Alwaysdata) — amendé : mesure préalable exigée avant de coder (158 paires, 9,5 % contre 0), POST, bcrypt dès l'import, ancien GAS en maintenance à la bascule | 23/09/2026 |
+| AG-011 | contrat de lecture de l'API (jeton, ordre de démarrage) — amendé : journal au nom du jeton, inactifs dans `getAll` (un appel de moins), toute réponse `auth:true` déconnecte (testé) | 24/09/2026 |
+| AG-012 | retirer la PWA (sw.js de désinstallation, icônes gardées) — amendé : interdiction écrite de désinscrire depuis la page (origine partagée avec GDINV2) ; bandeau « mode installé » proposé, non fait (seul l'utilisateur avait installé) | 24/09/2026 |
 | AG-010 | schéma MySQL et import du classeur — sans réponse, réalisé sur feu vert de l'utilisateur (import du 25/09, verrouillé) | 26/09/2026 |
 | AG-013 | « mot de passe oublié » par mail — sans réponse, réalisé sur feu vert de l'utilisateur (envoi de mail depuis Alwaysdata prouvé par l'essai des rappels du 25/09 ; tests RGPD-06/10/11) | 26/09/2026 |
 | AG-014 | corbeille + page Sauvegardes dans l'Admin — amendé (numéro gardé, transaction, purge à la connexion, copies chiffrées 90 j ; bouton de copie gardé, prouvé en production) | 25/09/2026 |
@@ -113,6 +113,9 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 **Au 27/09/2026, sur 15 blocs (AG-001 à AG-015) : 12 amendés, 0 confirmé, 0 contredit, 3 clos sans réponse** (AG-002, AG-010, AG-013). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
 Douze « amendé » d'affilée ne sont pas un bilan flatteur, c'est un signal — voir
 « Sincérité » plus haut. Tenir ce total à jour à chaque bloc qui sort.
+**Vérifié le 30/09/2026** sur l'historique git : les 12 « amendé » ont chacun
+changé une décision, du code ou un chiffre (détail sur chaque ligne) — aucun
+« confirmé » déguisé.
 **Le total est une alerte, pas un objectif** : ne jamais rendre « confirmé »
 pour casser la série — le verdict découle de la contrainte 1 appliquée au
 bloc. Une série se juge en relisant ce que chaque « amendé » a changé (code,

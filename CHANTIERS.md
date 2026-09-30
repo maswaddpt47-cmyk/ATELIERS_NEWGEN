@@ -108,21 +108,6 @@ en retard ; NextStep absent à côté → simple avertissement.
   MD-LIB `a825124`). À la réception du rapport : vérifier en tête la liste
   des dépôts non audités (la routine n'a aucun dépôt attaché), puis traiter
   les trouvailles.
-- **Avant fin décembre 2026 — décision de l'utilisateur** : réécrire
-  l'historique d'`ateliers-backups` (sinon une copie de plus de 90 jours
-  reste lisible dans l'historique git ; bloqué par le garde-fou de session le
-  25/09).
-- **AGORA — vérifier chaque « amendé »** (ajouté le 27/09/2026, `AGORA.md`
-  section « Sincérité ») : à chaque bloc tranché en « amendé », noter en une
-  ligne ce que l'amendement a changé (code, décision ou chiffre). S'il n'a
-  rien changé, c'était un « confirmé » : le signaler à l'utilisateur. Le
-  total sous le tableau sert d'alerte, pas d'objectif — ne pas chercher un
-  « confirmé » pour casser la série. État recompté le 27/09/2026 sur
-  l'historique git : 15 blocs, 12 amendés, 0 confirmé, 0 contredit,
-  3 sans réponse (AG-002, AG-010, AG-013) ; le verdict est désormais porté
-  sur chaque ligne du tableau. Section « Sincérité » présente dans les quatre
-  `AGORA.md` (NEWGEN, GDINV2, SMS-mail, sms-mail-multi) — suivi dans
-  `MD-LIB/CLAUDE.md`.
 - **Registres v3.1 / v1.2 / procédure v3.1 livrés le 30/09/2026**
   (`ateliers-backups` 5508463, v3.0/v1.1 en `archives/`). Reste : relecture
   finale de l'utilisateur ; le §7 Alwaysdata (points « à confirmer ») à
@@ -132,8 +117,6 @@ en retard ; NextStep absent à côté → simple avertissement.
   dataprivacyframework.gov bloqués depuis la session, contenus recoupés par
   sources secondaires. À vérifier sur les textes avant transmission, surtout
   l'inscription de GitHub sur la liste DPF.
-- `manifest-*.json` à retirer, une fois les dernières installations PWA
-  désinstallées (seul l'utilisateur en avait).
 - **Accès SSH des automatismes par clé seule depuis le 30/09/2026** : secret
   `ALWAYSDATA_SSH_PASSWORD` supprimé des deux dépôts par l'utilisateur (le
   mot de passe SSH reste pour le terminal web). Le repli par mot de passe des
@@ -141,9 +124,17 @@ en retard ; NextStep absent à côté → simple avertissement.
   plus servir : à retirer au prochain passage dans ces fichiers, sans
   urgence. Registre de sécurité à aligner à la prochaine version (§6.4
   « repli sur mot de passe », ligne du §9 à solder).
-- Restes sans effet de l'époque GAS : `gas/` (archive), `banc/`, noms
-  `GAS_*`/`gasAppel`/`__gasLog` (désignent la couche d'appel). À retirer si
-  besoin, sans urgence.
+- Restes de l'époque GAS : `gas/`, `banc/` et `manifest-*.json` retirés
+  des deux dépôts le 30/09/2026 (historique git). Restent les noms
+  `GAS_*`/`gasAppel`/`__gasLog` (~120 occurrences, verrouillées par les
+  tests réseau) : ils désignent la couche d'appel, renommage sans gain pour
+  l'usager, pas fait.
+- **Historique d'`ateliers-backups` — option A retenue par l'utilisateur
+  (30/09/2026), avant fin décembre** : copies sur une branche `copies` sans historique, remplacée
+  à chaque passage ; puis nettoyage unique de `copies/` dans l'historique de
+  `main`. **Bloqué** : le garde-fou de session refuse d'écrire le workflow
+  (push forcé). En attente de la permission de l'utilisateur. Ensuite :
+  procédure de restauration (étape 1 : branche `copies`) et registres.
 
 ## À ne pas réapprendre — Alwaysdata et déploiement
 
