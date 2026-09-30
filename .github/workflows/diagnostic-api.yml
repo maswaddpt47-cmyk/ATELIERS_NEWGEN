@@ -12,33 +12,26 @@ jobs:
   diagnostic:
     runs-on: ubuntu-latest
     steps:
-      # Accès SSH : clé (secret ALWAYSDATA_SSH_KEY) si elle existe, sinon mot de
-      # passe (ALWAYSDATA_SSH_PASSWORD) — bascule sans coupure (29/09/2026).
-      # Les étapes suivantes lancent « $VIA ssh … » / « $VIA rsync … ».
+      # Accès SSH par clé seule (secret ALWAYSDATA_SSH_KEY) depuis le
+      # 30/09/2026 : le secret mot de passe a été supprimé. $VIA reste vide,
+      # gardé pour ne pas réécrire chaque commande.
       - name: Préparer l'accès SSH
         env:
           CLE: ${{ secrets.ALWAYSDATA_SSH_KEY }}
-          SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          if [ -n "$CLE" ]; then
-            printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
-            chmod 600 ~/.ssh/id_ed25519
-            echo "VIA=" >> "$GITHUB_ENV"
-            echo "::notice::Accès SSH par clé"
-          elif [ -n "$SSHPASS" ]; then
-            sudo apt-get install -y -qq sshpass >/dev/null
-            echo "VIA=sshpass -e" >> "$GITHUB_ENV"
-            echo "::notice::Accès SSH par mot de passe (clé absente)"
-          else
-            echo "::error::Ni ALWAYSDATA_SSH_KEY ni ALWAYSDATA_SSH_PASSWORD"
+          if [ -z "$CLE" ]; then
+            echo "::error::Secret ALWAYSDATA_SSH_KEY absent"
             exit 1
           fi
+          printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "VIA=" >> "$GITHUB_ENV"
+          echo "::notice::Accès SSH par clé"
 
       - name: Interroger le serveur
         env:
           COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
-          SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
         run: |
           $VIA ssh -o StrictHostKeyChecking=accept-new "$COMPTE@ssh-$COMPTE.alwaysdata.net" '
             echo "== php (ligne de commande)"; php -v | head -1

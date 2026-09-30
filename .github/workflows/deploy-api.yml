@@ -3,8 +3,7 @@
 #
 # Secrets du dépôt, saisis par l'utilisateur, jamais vus par Claude :
 #   ALWAYSDATA_COMPTE          nom du compte (ex. ateliers-numeriques)
-#   ALWAYSDATA_SSH_KEY         clé privée SSH de déploiement (prioritaire)
-#   ALWAYSDATA_SSH_PASSWORD    mot de passe SSH du compte (repli si pas de clé)
+#   ALWAYSDATA_SSH_KEY         clé privée SSH de déploiement (seul accès)
 #   ALWAYSDATA_DB_NOM          nom de la base MySQL      ┐ écrits dans
 #   ALWAYSDATA_DB_UTILISATEUR  utilisateur MySQL         │ ~/config-api.php,
 #   ALWAYSDATA_DB_MOT_DE_PASSE son mot de passe          │ hors du dossier
@@ -46,33 +45,26 @@ jobs:
           php api-tests/sauvegarde.test.php
           php api-tests/rappels.test.php
 
-      # Accès SSH : clé (secret ALWAYSDATA_SSH_KEY) si elle existe, sinon mot de
-      # passe (ALWAYSDATA_SSH_PASSWORD) — bascule sans coupure (29/09/2026).
-      # Les étapes suivantes lancent « $VIA ssh … » / « $VIA rsync … ».
+      # Accès SSH par clé seule (secret ALWAYSDATA_SSH_KEY) depuis le
+      # 30/09/2026 : le secret mot de passe a été supprimé. $VIA reste vide,
+      # gardé pour ne pas réécrire chaque commande.
       - name: Préparer l'accès SSH
         env:
           CLE: ${{ secrets.ALWAYSDATA_SSH_KEY }}
-          SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          if [ -n "$CLE" ]; then
-            printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
-            chmod 600 ~/.ssh/id_ed25519
-            echo "VIA=" >> "$GITHUB_ENV"
-            echo "::notice::Accès SSH par clé"
-          elif [ -n "$SSHPASS" ]; then
-            sudo apt-get install -y -qq sshpass >/dev/null
-            echo "VIA=sshpass -e" >> "$GITHUB_ENV"
-            echo "::notice::Accès SSH par mot de passe (clé absente)"
-          else
-            echo "::error::Ni ALWAYSDATA_SSH_KEY ni ALWAYSDATA_SSH_PASSWORD"
+          if [ -z "$CLE" ]; then
+            echo "::error::Secret ALWAYSDATA_SSH_KEY absent"
             exit 1
           fi
+          printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "VIA=" >> "$GITHUB_ENV"
+          echo "::notice::Accès SSH par clé"
 
       - name: Copier api/ vers ~/www/api/
         env:
           COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
-          SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
         run: |
           if [ -z "$COMPTE" ]; then
             echo "::error::Secret ALWAYSDATA_COMPTE absent"
@@ -95,7 +87,6 @@ jobs:
       - name: Écrire ~/config-api.php (identifiants de la base)
         env:
           COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
-          SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
           DB_NOM: ${{ secrets.ALWAYSDATA_DB_NOM }}
           DB_UTILISATEUR: ${{ secrets.ALWAYSDATA_DB_UTILISATEUR }}
           DB_MOT_DE_PASSE: ${{ secrets.ALWAYSDATA_DB_MOT_DE_PASSE }}
@@ -125,7 +116,6 @@ jobs:
       - name: Copie de la base (api/lib/sauvegarde.php)
         env:
           COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
-          SSHPASS: ${{ secrets.ALWAYSDATA_SSH_PASSWORD }}
         run: |
           $VIA ssh -o StrictHostKeyChecking=accept-new \
             "$COMPTE@ssh-$COMPTE.alwaysdata.net" 'php www/api/lib/sauvegarde.php'
