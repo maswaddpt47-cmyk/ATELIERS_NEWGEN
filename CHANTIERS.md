@@ -35,18 +35,19 @@ par l'utilisateur le 25/09.
 - Sauvegardes, trois niveaux : natives Alwaysdata (**3 jours**, offre Free) ;
   copie de nuit 03:00 dans `~/sauvegardes/` (30 j, restauration prouvée par
   `api-tests/sauvegarde.test.php`) ; copie **chiffrée** hors site 04:15 dans
-  le dépôt privé `ateliers-backups` (`age`, 90 j, déchiffrement testé par
+  le dépôt privé `ateliers-backups`, **branche `copies` sans historique**
+  depuis le 30/09 (`age`, 90 j réels, déchiffrement testé par
   l'utilisateur ; rattrapages 11:47 et 17:47 car GitHub ne tient pas l'heure).
   Corbeille et onglet Sauvegardes dans l'Admin (AG-014) ; **pas** de bouton de
   restauration complète (une session volée effacerait tout). Procédure de
-  restauration v3.1 : `ateliers-backups/documents/`.
+  restauration v3.2 : `ateliers-backups/documents/`.
 - Sécurité : jeton exigé en lecture, dans le corps POST (AG-011) ; jeton
   annulé à la déconnexion (`logout`) ; adresses mail rendues aux seuls
   admin/superviseur ; aucune ressource externe (`vendor/`, test RGPD-17 en
   CI) ; HTTPS forcé ; 2FA GitHub et Alwaysdata ; journal conservé 12 mois ;
   documents à diffusion restreinte, **rangés dans le dépôt privé
   `ateliers-backups/documents/`** (sources et v1.0 archivées) : registre de sécurité
-  v3.1, registre RGPD v1.2 (art. 30) et procédure de restauration v3.1
+  v3.2, registre RGPD v1.3 (art. 30) et procédure de restauration v3.2
   (30/09/2026). Leurs écarts RGPD ouverts —
   compte personnel sans DPA, durée de conservation des ateliers non fixée,
   mention d'information des agents, procédure de sortie — sont à porter au
@@ -83,51 +84,37 @@ en retard ; NextStep absent à côté → simple avertissement.
 
 **Actions de l'utilisateur**
 
-1. **Historique d'`ateliers-backups`, avant fin décembre — option A retenue
-   le 30/09** : copies sur une branche `copies` sans historique, remplacée à
-   chaque passage (le workflow ne pousse plus les copies sur `main`), puis
-   nettoyage unique de `copies/` dans l'historique de `main`. **Bloqué** : le
-   garde-fou de session refuse d'écrire le workflow (push forcé). Attente :
-   autorisation explicite de l'utilisateur, ou session en mode « demander la
-   permission ». Déroulé prévu : workflow, test par copie manuelle (crée
-   `copies` sans toucher `main`), puis feu vert, puis nettoyage de `main` ;
-   ensuite procédure de restauration (étape 1 : branche `copies`) et
-   registres. Les ateliers de toutes les années restent dans la base : on ne
-   retire que d'anciennes copies.
-2. **Relecture finale des registres** (sécurité v3.1, RGPD v1.2, procédure
-   v3.1 ; `ateliers-backups/documents/`, `66f5add`) puis, avant transmission
+1. **Relecture finale des registres** (sécurité v3.2, RGPD v1.3, procédure
+   v3.2 ; `ateliers-backups/documents/`, `c3553d2`) puis, avant transmission
    DSI/DPO, vérifier sur pièce : §7 Alwaysdata (« à confirmer »), références
    CNIL/ANSSI (sites bloqués depuis la session, recoupées par sources
    secondaires), GitHub sur la liste DPF.
-3. **Écarts RGPD à porter au DPO** : compte Alwaysdata personnel sans DPA,
+2. **Écarts RGPD à porter au DPO** : compte Alwaysdata personnel sans DPA,
    durée de conservation des ateliers non fixée, mention d'information des
    agents, procédure de sortie.
 
 **01/10/2026**
 
-4. **Rapport de l'audit trimestriel** (vers 10:03 Paris ; consigne mise à
+3. **Rapport de l'audit trimestriel** (vers 10:03 Paris ; consigne mise à
    jour le 30/09, MD-LIB `a825124`) : lire d'abord la liste des dépôts non
    audités (la routine n'a aucun dépôt attaché), puis traiter les
    trouvailles.
 
 **Sans urgence**
 
-5. **Usage des onglets** (en service depuis le 29/09, NEWGEN `9357d04`,
+4. **Usage des onglets** (en service depuis le 29/09, NEWGEN `9357d04`,
    NextStep `5ed856b`) : regarder Admin → Connexions dans quelques semaines
    pour décider des onglets à simplifier.
-6. **Relevé du journal NextStep depuis le PC pro, 9 h-17 h** : seul cas non
+5. **Relevé du journal NextStep depuis le PC pro, 9 h-17 h** : seul cas non
    mesuré. Relève du 30/09 (28/09 → 30/09, un poste, heures 00/07/20/23) :
    45 appels, 0 perdu, médiane 0,1 s, p90 0,5 s.
 
-**Pour Claude, au prochain passage dans ces fichiers**
-
-7. Retirer le repli par mot de passe SSH de `deploy-api.yml`,
-   `diagnostic-api.yml` et `copie.yml` : secret `ALWAYSDATA_SSH_PASSWORD`
-   supprimé par l'utilisateur le 30/09, accès par clé vérifié le jour même
-   (diagnostic et copie manuelle réussis).
-8. Registre de sécurité, prochaine version : §6.4 (« repli sur mot de
-   passe ») à corriger ; au §9, solder l'ancien secret, puis l'historique
-   d'`ateliers-backups` une fois l'option A faite.
+**Fait le 30/09/2026 au soir** (récit dans `git log`) : copies chiffrées
+sur la branche `copies` sans historique et historique de `main` réécrit
+(`ateliers-backups`, autorisé par l'utilisateur, aucune copie perdue) ;
+accès SSH par clé seule dans les trois workflows (NEWGEN `5a978a4`,
+`ateliers-backups` `7f1e42c`, déploiement, diagnostic et copie verts) ;
+documents alignés en v3.2 / v1.3 / v3.2.
 
 Hors liste, choix assumé : les noms `GAS_*`/`gasAppel`/`__gasLog` (~120
 occurrences, verrouillées par les tests réseau) restent, ils désignent la
