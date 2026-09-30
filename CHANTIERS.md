@@ -134,12 +134,13 @@ en retard ; NextStep absent à côté → simple avertissement.
   l'inscription de GitHub sur la liste DPF.
 - `manifest-*.json` à retirer, une fois les dernières installations PWA
   désinstallées (seul l'utilisateur en avait).
-- **Clé SSH de déploiement en service (29/09/2026)** : secret
-  `ALWAYSDATA_SSH_KEY` dans NEWGEN et `ateliers-backups`, clé créée sur le
-  serveur puis effacée. Vérifié : déploiement API et copie chiffrée passés
-  « par clé » le 29/09. Reste : retirer `ALWAYSDATA_SSH_PASSWORD` des deux
-  dépôts quand l'utilisateur le décide (le mot de passe SSH sert encore au
-  terminal web).
+- **Accès SSH des automatismes par clé seule depuis le 30/09/2026** : secret
+  `ALWAYSDATA_SSH_PASSWORD` supprimé des deux dépôts par l'utilisateur (le
+  mot de passe SSH reste pour le terminal web). Le repli par mot de passe des
+  workflows (`deploy-api.yml`, `diagnostic-api.yml`, `copie.yml`) ne peut
+  plus servir : à retirer au prochain passage dans ces fichiers, sans
+  urgence. Registre de sécurité à aligner à la prochaine version (§6.4
+  « repli sur mot de passe », ligne du §9 à solder).
 - Restes sans effet de l'époque GAS : `gas/` (archive), `banc/`, noms
   `GAS_*`/`gasAppel`/`__gasLog` (désignent la couche d'appel). À retirer si
   besoin, sans urgence.
