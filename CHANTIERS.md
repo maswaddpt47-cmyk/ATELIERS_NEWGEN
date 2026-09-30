@@ -96,7 +96,8 @@ en retard ; NextStep absent à côté → simple avertissement.
 **01/10/2026**
 
 3. **Rapport de l'audit trimestriel** (vers 10:03 Paris ; consigne mise à
-   jour le 30/09, MD-LIB `a825124`) : lire d'abord la liste des dépôts non
+   jour le 30/09, MD-LIB `a825124`, réalignée le soir même sur les
+   points soldés) : lire d'abord la liste des dépôts non
    audités (la routine n'a aucun dépôt attaché), puis traiter les
    trouvailles.
 
