@@ -116,9 +116,12 @@ enregistrement de service worker dans les pages.
 - Tests en local : `ATELIERS_TEST_MYSQL=root@127.0.0.1 ATELIERS_TEST_MYSQL_MDP=…
   php api-tests/api.test.php` (MariaDB s'installe dans l'environnement de
   session).
-- Google Apps Script est **coupé** (accès « Seulement moi »). `gas/` n'est
-  qu'une archive ; les mesures de l'époque (pertes de livraison, doublage)
-  sont dans l'historique git de `CHANTIERS.md`.
+- Google Apps Script est **coupé** et son code retiré du dépôt (30/09/2026) :
+  version qui tournait en ligne, `git show 3da2257:gas/GAS_NEWGEN.js` ; banc
+  de mesure GAS/Alwaysdata, `git log --diff-filter=D -- banc/` puis
+  `git show <commit>^:banc/`. Les mesures de l'époque
+  (pertes de livraison, doublage) sont dans l'historique git de
+  `CHANTIERS.md`.
 
 Règles héritées, toujours valables :
 

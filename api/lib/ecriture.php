@@ -1,7 +1,7 @@
 <?php
 // Actions d'écriture de l'API (remplaçant du GAS NEWGEN).
 //
-// Même contrat que gas/GAS_NEWGEN.js (noms d'action, paramètres, réponses),
+// Même contrat que l'ancien gas/GAS_NEWGEN.js (retiré, commit 3da2257) (noms d'action, paramètres, réponses),
 // avec ces écarts voulus :
 //   - saveEntry valide chaque champ avant d'écrire (date, heure, nombres) :
 //     la feuille acceptait tout, la base refuse ce qu'elle ne sait pas typer ;

@@ -2,8 +2,8 @@
 // Actions de l'API (remplaçant du GAS NEWGEN) : routage, connexion, lectures.
 // Les écritures sont dans ecriture.php.
 //
-// Contrat : mêmes noms d'action et mêmes formes de réponse que
-// gas/GAS_NEWGEN.js, pour que le client change le moins possible. Écarts
+// Contrat : mêmes noms d'action et mêmes formes de réponse que l'ancien
+// gas/GAS_NEWGEN.js (retiré, `git show 3da2257:gas/GAS_NEWGEN.js`), pour que le client change le moins possible. Écarts
 // voulus, tous de sécurité (AG-009, AG-011) :
 //   - jeton exigé pour getAll, getConfig, getVisibility ;
 //   - jeton et mot de passe lus dans le corps POST, jamais dans l'URL (une
