@@ -80,89 +80,61 @@ en retard ; NextStep absent à côté → simple avertissement.
 - **Vérification terrain de NextStep faite par l'utilisateur le 26/09/2026**
   (« tout fonctionne ») : Agenda (volet modifiable), connexion, saisie.
 
-## Reste ouvert (état du 30/09/2026, par priorité)
+## Reste ouvert (état du 01/10/2026, par priorité)
 
-**Audit trimestriel du 01/10/2026 (fait en session, la routine n'a rien
-produit de visible)** — à traiter, sur les deux sites :
-- **Corrigés le 01/10/2026** (NextStep `70a531c`/`19a2534`, NEWGEN
-  ci-dessous) : XSS des info-bulles et de la popup de carte (`htmlEsc`) ;
-  cache des ateliers retiré de NEWGEN, copies restantes effacées au
-  chargement des deux sites (`purgerCacheAteliers`, testée).
-- **Tranché le 01/10/2026 par l'utilisateur** : un conseiller peut
-  intervenir sur les ateliers des autres (travail d'équipe) — pas de contrôle
-  du propriétaire dans l'API, voulu. Filets : corbeille 30 j, journal au nom
-  de la personne connectée. À porter au §9 du registre de sécurité (risque
-  accepté) à sa prochaine version, et ne pas le « corriger ».
-- Mineur : `permissions:` absent de `deploy-api.yml`/`diagnostic-api.yml`
-  (jeton déjà en lecture par réglage du dépôt) ; `schema.sql` lisible ne
-  donne qu'un avertissement au déploiement ; `api/mailtest.php` inutile
-  depuis la production ; SheetJS 0.18.5 (CVE-2023-30533, CVE-2024-22363 à la
-  lecture, l'appli n'écrit que) ; blocage après 5 échecs utilisable pour
-  bloquer un compte 15 min (noms visibles à l'écran de connexion).
-- Conforme : SQL préparé ou valeurs internes, jeton exigé et rôle revérifié
-  côté serveur, constantes du registre §6 retrouvées dans le code, RGPD-01 à
-  18 présents et bloquants, `ateliers-backups` (branche `copies` 1 commit,
-  0 copie > 90 j, aucun `copies/` dans `main`, aucun mot de passe SSH).
-
-**Audit trimestriel (routine) du 01/10/2026 — aucun critique.** *Traités le 01/10 : (1) `admin_v14.html` retiré de NextStep (`dafddcc`), RGPD-17 étendu à toutes les pages HTML des deux sites ; (2) GDINV2 échappé (`dc3040c`). Restent les mineurs.* Importants/mineurs à traiter : (1) NextStep `admin_v14.html` (reliquat publié) charge React/Leaflet/ECharts depuis cdnjs sans SRI et échappe à RGPD-17 (qui ne teste que `index.html`/`admin.html`) → supprimer le fichier (voir CHANTIERS NextStep) ; (2) GDINV2 `index.html:1497` `makeBarList` insère `name` non échappé (origine partagée avec le jeton GitHub de SMS-mail) ; (3) mineur : `StrictHostKeyChecking=accept-new` dans `deploy-api.yml`, `diagnostic-api.yml`, `copie.yml` (clé d'hôte non épinglée ; `config-api.php` et les copies transitent par ce lien) ; `api/import.php` et `api/mailtest.php` toujours en ligne alors que l'import est verrouillé (clé seule, `sleep(2)` pour tout frein) ; `permissions:` toujours absent de `deploy-api.yml`/`diagnostic-api.yml`. Non vérifiable depuis la session : faille ACME Alwaysdata (security.alwaysdata.com bloqué), DPA Alwaysdata, GitHub sur dataprivacyframework.gov (seulement sources secondaires).
+Faits le 01/10/2026 (détail dans `git log`) : lot 1 UX ; XSS des
+info-bulles/popups corrigée et cache des ateliers retiré de NEWGEN ;
+`admin_v14.html` retiré de NextStep, RGPD-17 étendu à toutes les pages ;
+GDINV2 et SMS-mail suivis dans leurs propres CHANTIERS.
 
 **Actions de l'utilisateur**
 
 1. **Relecture finale des registres** (sécurité v3.2, RGPD v1.3, procédure
-   v3.2 ; `ateliers-backups/documents/`, `c3553d2`) puis, avant transmission
-   DSI/DPO, vérifier sur pièce : §7 Alwaysdata (« à confirmer »), références
-   CNIL/ANSSI (sites bloqués depuis la session, recoupées par sources
-   secondaires), GitHub sur la liste DPF.
+   v3.2 ; `ateliers-backups/documents/`) puis, avant transmission DSI/DPO,
+   vérifier sur pièce : §7 Alwaysdata (« à confirmer »), références
+   CNIL/ANSSI (recoupées par sources secondaires), GitHub sur la liste DPF.
 2. **Écarts RGPD à porter au DPO** : compte Alwaysdata personnel sans DPA,
    durée de conservation des ateliers non fixée, mention d'information des
    agents, procédure de sortie.
+3. **Lot 2 UX, à valider avec un ou deux conseillers** : accueil (bandeau
+   « à mettre à jour » cliquable avant les chiffres, tuiles compactes sur
+   téléphone, « Planifiés 100 % » qui compte les ateliers en retard),
+   boutons techniques des filtres (XLSX, ICS, Sync), ordre des champs
+   (thématique en bas), icônes ↩ 🚪 de l'en-tête téléphone. Lot 1 (en ligne
+   le 01/10) : à regarder sur téléphone.
 
-**01/10/2026**
+**Pour Claude**
 
-3. **Audit trimestriel** : celui du 01/10/2026 a été refait en session (la
-   routine n'avait aucun dépôt attaché). **Nouvelle routine**
-   `trig_01J6ZMsLHKbgXAQsRYgQL16q`, créée par l'utilisateur le 01/10 avec les
-   6 dépôts, sans connecteur, prochaine exécution le 01/01/2027 ; l'ancienne
-   (sans dépôt) a été supprimée le 01/10. Notification push
-   seulement : l'interface ne permet de modifier que les instructions
-   d'une routine existante (constaté le 01/10/2026). Réglages du compte
-   (Paramètres → Général → Notifications) : « Tâches planifiées » et
-   « E-mails des sessions cloud » activés — e-mail à la fin de l'audit
-   probable, non vérifié (à constater au prochain lancement).
+4. **Registre de sécurité, prochaine version** : porter au §9 la décision
+   du 01/10 (un conseiller peut intervenir sur les ateliers des autres —
+   risque accepté, filets corbeille 30 j et journal ; **ne pas le
+   « corriger »**) ; noter les corrections du 01/10 (XSS, cache, RGPD-17).
+5. **Mineurs de l'audit du 01/10** : `permissions:` absent de
+   `deploy-api.yml`/`diagnostic-api.yml` (jeton déjà en lecture) ;
+   `StrictHostKeyChecking=accept-new` (clé d'hôte Alwaysdata non épinglée) ;
+   `schema.sql` lisible ne donne qu'un avertissement au déploiement ;
+   `api/import.php` et `api/mailtest.php` encore en ligne malgré l'import
+   verrouillé ; blocage après 5 échecs utilisable pour bloquer un compte
+   15 min ; SheetJS 0.18.5 (l'appli n'écrit que : risque faible).
 
 **Sans urgence**
 
-4. **Usage des onglets** (en service depuis le 29/09, NEWGEN `9357d04`,
-   NextStep `5ed856b`) : regarder Admin → Connexions dans quelques semaines
-   pour décider des onglets à simplifier.
-5. **Relevé du journal NextStep depuis le PC pro, 9 h-17 h** : seul cas non
-   mesuré. Relève du 30/09 (28/09 → 30/09, un poste, heures 00/07/20/23) :
-   45 appels, 0 perdu, médiane 0,1 s, p90 0,5 s.
+6. **Usage des onglets** (depuis le 29/09) : regarder Admin → Connexions
+   dans quelques semaines pour décider des onglets à simplifier (lot 2).
+7. **Relevé du journal NextStep depuis le PC pro, 9 h-17 h** : seul cas non
+   mesuré (relève du 30/09 : 45 appels, 0 perdu, médiane 0,1 s).
 
-6. **UX de l'interface des conseillers — lot 1 en ligne le 01/10/2026**
-   (NextStep `d43d6f4`, NEWGEN `a4b4ad2`) : formulaire sur téléphone (plus de
-   débordement à 390 px, un champ par ligne), conseiller connecté et statut
-   proposés, badge de mode seulement en modification/duplication, barre du
-   bas sur deux lignes, « Bilan mensuel » / « Bilan d'activité ». **À
-   regarder par l'utilisateur sur téléphone.** Lot 2 proposé, à valider
-   avec un ou deux conseillers : accueil (bandeau « à mettre à jour »
-   cliquable avant les chiffres, tuiles compactes sur téléphone, « Planifiés
-   100 % » qui compte les ateliers en retard), boutons techniques des filtres
-   (XLSX, ICS, Sync), ordre des champs (thématique en bas), icônes ↩ 🚪 de
-   l'en-tête téléphone. Regroupement des onglets : avec les compteurs
-   d'usage (point 4). Captures : banc temporaire non commité, données
-   fictives ; graphiques et carte non rendus hors ligne.
-
-**Fait le 30/09/2026 au soir** (récit dans `git log`) : copies chiffrées
-sur la branche `copies` sans historique et historique de `main` réécrit
-(`ateliers-backups`, autorisé par l'utilisateur, aucune copie perdue) ;
-accès SSH par clé seule dans les trois workflows (NEWGEN `5a978a4`,
-`ateliers-backups` `7f1e42c`, déploiement, diagnostic et copie verts) ;
-documents alignés en v3.2 / v1.3 / v3.2.
+**Audit trimestriel** : routine `trig_01J6ZMsLHKbgXAQsRYgQL16q` (6 dépôts,
+sans connecteur, prochaine exécution le 01/01/2027). Créée dans
+l'interface : **Claude ne peut pas la modifier**, seul le champ
+« Instructions » est modifiable, par l'utilisateur. Notification push ;
+e-mail probable via les réglages du compte, non vérifié. Ses commits vont
+sur des branches `claude/…` : la consigne demande de les fusionner dans
+`main`, à vérifier au 01/01.
 
 Hors liste, choix assumé : les noms `GAS_*`/`gasAppel`/`__gasLog` (~120
 occurrences, verrouillées par les tests réseau) restent, ils désignent la
-couche d'appel. `gas/`, `banc/` et `manifest-*.json` retirés le 30/09.
+couche d'appel.
 
 ## À ne pas réapprendre — Alwaysdata et déploiement
 
