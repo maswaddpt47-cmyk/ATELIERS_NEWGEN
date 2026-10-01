@@ -88,9 +88,11 @@ produit de visible)** — à traiter, sur les deux sites :
   ci-dessous) : XSS des info-bulles et de la popup de carte (`htmlEsc`) ;
   cache des ateliers retiré de NEWGEN, copies restantes effacées au
   chargement des deux sites (`purgerCacheAteliers`, testée).
-- **À trancher** : tout conseiller connecté peut modifier ou supprimer
-  n'importe quel atelier (`api/lib/api.php:113-115`, pas de contrôle du
-  propriétaire). Atténué par la corbeille et le journal.
+- **Tranché le 01/10/2026 par l'utilisateur** : un conseiller peut
+  intervenir sur les ateliers des autres (travail d'équipe) — pas de contrôle
+  du propriétaire dans l'API, voulu. Filets : corbeille 30 j, journal au nom
+  de la personne connectée. À porter au §9 du registre de sécurité (risque
+  accepté) à sa prochaine version, et ne pas le « corriger ».
 - Mineur : `permissions:` absent de `deploy-api.yml`/`diagnostic-api.yml`
   (jeton déjà en lecture par réglage du dépôt) ; `schema.sql` lisible ne
   donne qu'un avertissement au déploiement ; `api/mailtest.php` inutile
