@@ -88,6 +88,10 @@ Faits le 01/10/2026 (détail dans `git log`) : lot 1 UX ; XSS des
 info-bulles/popups corrigée et cache des ateliers retiré de NEWGEN ;
 `admin_v14.html` retiré de NextStep, RGPD-17 étendu à toutes les pages ;
 GDINV2 et SMS-mail suivis dans leurs propres CHANTIERS.
+Aussi le 01/10 : bouton ⧉ dupliquer une séance en saisie par cycle ;
+rubrique **Nouveautés** (pastille, `NOUVEAUTES` dans `shared.js`) qui
+remplace les mails d'annonce — à alimenter à chaque changement visible
+(règle 18 de `CLAUDE.md`). Retour de l'équipe à recueillir.
 
 **Actions de l'utilisateur**
 
