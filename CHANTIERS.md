@@ -121,9 +121,9 @@ produit de visible)** — à traiter, sur les deux sites :
    routine n'avait aucun dépôt attaché). **Nouvelle routine**
    `trig_01J6ZMsLHKbgXAQsRYgQL16q`, créée par l'utilisateur le 01/10 avec les
    6 dépôts, sans connecteur, prochaine exécution le 01/01/2027 ; l'ancienne
-   est désactivée (gardée pour son rapport du 01/10). Reste : activer la
-   notification e-mail (seul le push est coché), et éventuellement un
-   « Exécuter maintenant » pour tester.
+   est désactivée (gardée pour son rapport du 01/10). Notification push
+   seulement : l'interface ne permet de modifier que les instructions
+   d'une routine existante (constaté le 01/10/2026).
 
 **Sans urgence**
 
