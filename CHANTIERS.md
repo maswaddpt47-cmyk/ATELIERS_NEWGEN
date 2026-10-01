@@ -110,6 +110,20 @@ en retard ; NextStep absent à côté → simple avertissement.
    mesuré. Relève du 30/09 (28/09 → 30/09, un poste, heures 00/07/20/23) :
    45 appels, 0 perdu, médiane 0,1 s, p90 0,5 s.
 
+6. **UX de l'interface des conseillers — lot 1 en ligne le 01/10/2026**
+   (NextStep `d43d6f4`, NEWGEN `a4b4ad2`) : formulaire sur téléphone (plus de
+   débordement à 390 px, un champ par ligne), conseiller connecté et statut
+   proposés, badge de mode seulement en modification/duplication, barre du
+   bas sur deux lignes, « Bilan mensuel » / « Bilan d'activité ». **À
+   regarder par l'utilisateur sur téléphone.** Lot 2 proposé, à valider
+   avec un ou deux conseillers : accueil (bandeau « à mettre à jour »
+   cliquable avant les chiffres, tuiles compactes sur téléphone, « Planifiés
+   100 % » qui compte les ateliers en retard), boutons techniques des filtres
+   (XLSX, ICS, Sync), ordre des champs (thématique en bas), icônes ↩ 🚪 de
+   l'en-tête téléphone. Regroupement des onglets : avec les compteurs
+   d'usage (point 4). Captures : banc temporaire non commité, données
+   fictives ; graphiques et carte non rendus hors ligne.
+
 **Fait le 30/09/2026 au soir** (récit dans `git log`) : copies chiffrées
 sur la branche `copies` sans historique et historique de `main` réécrit
 (`ateliers-backups`, autorisé par l'utilisateur, aucune copie perdue) ;
