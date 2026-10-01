@@ -343,23 +343,15 @@ function App(){
   const errorRef=React.useRef(null);
   errorRef.current=error;
 
-  // ── Chargement v11.0 — fetchAll single-flight + cache localStorage ─
+  // ── Chargement v11.0 — fetchAll single-flight ─
   async function loadData(attempt=1, silent=false){
     if(!silent) setLoading(true);
     setError(null);
 
-    // ── Cache localStorage : afficher les données précédentes immédiatement ──
-    if(!silent && attempt === 1){
-      const cacheKey = lsKey(`ateliers_cache_${annee}`);
-      try{
-        const cached = localStorage.getItem(cacheKey);
-        if(cached){
-          const {entries:cachedEntries, lists:cachedLists} = JSON.parse(cached);
-          if(cachedEntries) setEntries(cachedEntries);
-          if(cachedLists){ setLists(cachedLists);STATUTS=[...cachedLists.statuts];CONSEILLERS=[...cachedLists.conseillers];PUBLICS=[...cachedLists.publics];MATERIELS=[...cachedLists.materiels]; }
-        }
-      }catch(_){}
-    }
+    // Plus de cache des ateliers dans localStorage (audit du 01/10/2026) : la
+    // copie restait sur le poste après déconnexion. Il masquait les pertes de
+    // réponse de Google, disparues avec Alwaysdata ; NextStep n'en a jamais eu.
+    // Les copies restantes sont effacées par purgerCacheAteliers (utils.js).
 
     try{
       // fetchAll porte seul les tentatives (3 essais échelonnés, budget borné).
@@ -380,8 +372,6 @@ function App(){
           materiels:(Array.isArray(l.materiels)&&l.materiels.length)?l.materiels:[...MATERIELS_DEFAULT]
         };
         setLists(nl);STATUTS=[...nl.statuts];CONSEILLERS=[...nl.conseillers];PUBLICS=[...nl.publics];MATERIELS=[...nl.materiels];
-        // Mettre à jour le cache
-        try{ localStorage.setItem(lsKey(`ateliers_cache_${annee}`), JSON.stringify({entries:incoming,lists:nl})); }catch(_){}
       }
       if(data.visibility)setVisibility(visibiliteEffective(data.visibility));
       if(data.conseiller_colors) applyColors(data.conseiller_colors);
