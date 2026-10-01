@@ -104,6 +104,8 @@ produit de visible)** — à traiter, sur les deux sites :
   18 présents et bloquants, `ateliers-backups` (branche `copies` 1 commit,
   0 copie > 90 j, aucun `copies/` dans `main`, aucun mot de passe SSH).
 
+**Audit trimestriel (routine) du 01/10/2026 — aucun critique.** Importants/mineurs à traiter : (1) NextStep `admin_v14.html` (reliquat publié) charge React/Leaflet/ECharts depuis cdnjs sans SRI et échappe à RGPD-17 (qui ne teste que `index.html`/`admin.html`) → supprimer le fichier (voir CHANTIERS NextStep) ; (2) GDINV2 `index.html:1497` `makeBarList` insère `name` non échappé (origine partagée avec le jeton GitHub de SMS-mail) ; (3) mineur : `StrictHostKeyChecking=accept-new` dans `deploy-api.yml`, `diagnostic-api.yml`, `copie.yml` (clé d'hôte non épinglée ; `config-api.php` et les copies transitent par ce lien) ; `api/import.php` et `api/mailtest.php` toujours en ligne alors que l'import est verrouillé (clé seule, `sleep(2)` pour tout frein) ; `permissions:` toujours absent de `deploy-api.yml`/`diagnostic-api.yml`. Non vérifiable depuis la session : faille ACME Alwaysdata (security.alwaysdata.com bloqué), DPA Alwaysdata, GitHub sur dataprivacyframework.gov (seulement sources secondaires).
+
 **Actions de l'utilisateur**
 
 1. **Relecture finale des registres** (sécurité v3.2, RGPD v1.3, procédure
