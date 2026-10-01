@@ -125,8 +125,11 @@ GDINV2 et SMS-mail suivis dans leurs propres CHANTIERS.
 
 6. **Usage des onglets** (depuis le 29/09) : regarder Admin → Connexions
    dans quelques semaines pour décider des onglets à simplifier (lot 2).
-7. **Relevé du journal NextStep depuis le PC pro, 9 h-17 h** : seul cas non
-   mesuré (relève du 30/09 : 45 appels, 0 perdu, médiane 0,1 s).
+7. **Relevé du journal NextStep (PC pro), soldé le 01/10/2026** : 119
+   appels du 23/09 au 01/10 ; les 18 pertes datent toutes de l'époque
+   Google (23/09) ou de la matinée de bascule (25/09, 09:13-09:51). Depuis,
+   0 perte, heures de bureau comprises (10 h, 12 h, 14-16 h). Réserve : pas
+   confirmé que ces heures étaient sur le VPN du Département.
 
 **Audit trimestriel** : routine `trig_01J6ZMsLHKbgXAQsRYgQL16q` (6 dépôts,
 sans connecteur, prochaine exécution le 01/01/2027). Créée dans
