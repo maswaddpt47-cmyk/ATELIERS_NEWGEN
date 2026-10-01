@@ -711,7 +711,14 @@ function App(){
           'Stats', visibility.dashboard),
         navBtn('bingo',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('circle',{cx:12,cy:12,r:10}),CE('circle',{cx:12,cy:12,r:6}),CE('circle',{cx:12,cy:12,r:2})),
-          'Bingo', visibility.bingo)
+          'Bingo', visibility.bingo),
+        // Nouveautés (01/10/2026) : aussi dans la barre du bas, où l'équipe
+        // cherche ses rubriques sur téléphone ; pastille comme en haut.
+        CE('div',{key:'nouveautes',style:{position:'relative',display:'flex'}},
+          navBtn('nouveautes',
+            CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M12 2l2.9 6.9L22 9.3l-5.5 4.8L18.2 21 12 17.3 5.8 21l1.7-6.9L2 9.3l7.1-.4z'})),
+            'Nouveautés'),
+          CE(PastilleNouveautes,{nb:nbNouveautes}))
       )
     ),
 

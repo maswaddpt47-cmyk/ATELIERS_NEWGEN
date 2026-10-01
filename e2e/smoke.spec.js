@@ -192,7 +192,7 @@ window.L = {
     // Chercher le bouton par aria-label ou par texte
     let btn = null;
     try {
-      btn = page.getByRole('button', { name: v.ariaLabel, exact: true });
+      btn = page.getByRole('button', { name: v.ariaLabel, exact: true }).first();
       if (!(await btn.isVisible({ timeout: 1500 }))) btn = null;
     } catch (_) { btn = null; }
 
