@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **30/09/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **01/10/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
@@ -123,7 +123,10 @@ produit de visible)** — à traiter, sur les deux sites :
    6 dépôts, sans connecteur, prochaine exécution le 01/01/2027 ; l'ancienne
    est désactivée (gardée pour son rapport du 01/10). Notification push
    seulement : l'interface ne permet de modifier que les instructions
-   d'une routine existante (constaté le 01/10/2026).
+   d'une routine existante (constaté le 01/10/2026). Réglages du compte
+   (Paramètres → Général → Notifications) : « Tâches planifiées » et
+   « E-mails des sessions cloud » activés — e-mail à la fin de l'audit
+   probable, non vérifié (à constater au prochain lancement).
 
 **Sans urgence**
 
