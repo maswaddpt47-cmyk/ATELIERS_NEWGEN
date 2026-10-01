@@ -117,11 +117,13 @@ produit de visible)** — à traiter, sur les deux sites :
 
 **01/10/2026**
 
-3. **Rapport de l'audit trimestriel** (vers 10:03 Paris ; consigne mise à
-   jour le 30/09, MD-LIB `a825124`, réalignée le soir même sur les
-   points soldés) : lire d'abord la liste des dépôts non
-   audités (la routine n'a aucun dépôt attaché), puis traiter les
-   trouvailles.
+3. **Audit trimestriel** : celui du 01/10/2026 a été refait en session (la
+   routine n'avait aucun dépôt attaché). **Nouvelle routine**
+   `trig_01J6ZMsLHKbgXAQsRYgQL16q`, créée par l'utilisateur le 01/10 avec les
+   6 dépôts, sans connecteur, prochaine exécution le 01/01/2027 ; l'ancienne
+   est désactivée (gardée pour son rapport du 01/10). Reste : activer la
+   notification e-mail (seul le push est coché), et éventuellement un
+   « Exécuter maintenant » pour tester.
 
 **Sans urgence**
 
