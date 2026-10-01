@@ -9,6 +9,7 @@ var VIEW_META_F = {
   roadmap:    {ico:'🛣️', label:'Roadmap',      group:'Voir'},
   gestion_ordi:{ico:'🖥️', label:'Gestion ordi', group:'Voir'},
   bingo:      {ico:'🎯',  label:'Bingo',        group:'Stats'},
+  nouveautes: {ico:'🆕',  label:'Nouveautés',   group:'Info'},
 };
 
 function MaintenanceScreen({msg}){
@@ -242,6 +243,7 @@ function VueLoginIndex({conseillers,onSuccess}){
 function App(){
   const[authed,setAuthed]          = React.useState(()=>!!window.authToken.get());
   const[view,setView]              = React.useState('accueil');
+  const[nbNouveautes,marquerNouveautes]=useNouveautes();
   // Usage des onglets : compteur anonyme, envoyé en un lot (shared.js).
   React.useEffect(()=>{ if(authed&&window.compterOnglet) window.compterOnglet('index',view); },[view,authed]);
   const[entries,setEntries]        = React.useState([]);
@@ -624,6 +626,7 @@ function App(){
         ),
         CE('button',{onClick:()=>setDarkMode(d=>!d),style:{background:'none',border:'none',cursor:'pointer',fontSize:18,padding:'2px 4px',lineHeight:1},'aria-label':'Mode sombre'},darkMode?'☀️':'🌙'),
         CE(ChoixAnnees,{className:'topbar-year-sel',value:annee,onChange:setAnnee,title:'Années chargées'}),
+        CE('button',{onClick:()=>setView('nouveautes'),title:'Nouveautés','aria-label':'Nouveautés',style:{position:'relative',background:'none',border:'none',cursor:'pointer',fontSize:18,padding:'2px 10px 2px 4px',lineHeight:1}},'🆕',CE(PastilleNouveautes,{nb:nbNouveautes})),
         newEntries.length>0&&CE('button',{
           className:'topbar-notif-btn',
           onClick:()=>{setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);}
@@ -674,7 +677,8 @@ function App(){
         view==='carte'&&visibility.carte&&CE(VueCarte,{entries,active:view==='carte'}),
         view==='roadmap'&&visibility.roadmap&&CE(VueRoadmap,{entries,annee:anneeReference(annee),conseillers:lists.conseillers}),
         view==='gestion_ordi'&&visibility.gestion_ordi&&CE(VueGestionOrdi,{entries,onEdit:handleEdit}),
-        view==='bingo'&&visibility.bingo&&CE(VueBingo,{entries})
+        view==='bingo'&&visibility.bingo&&CE(VueBingo,{entries}),
+        view==='nouveautes'&&CE(VueNouveautes,{onVu:marquerNouveautes})
       )
     ),
 

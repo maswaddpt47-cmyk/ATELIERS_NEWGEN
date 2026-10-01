@@ -42,6 +42,7 @@ const INDEX_VIEWS = [
   { label: 'Roadmap',    ariaLabel: 'Roadmap'    },
   { label: 'Gestion ordi', ariaLabel: 'Gestion ordi' },
   { label: 'Bingo',      ariaLabel: 'Bingo'      },
+  { label: 'Nouveautés', ariaLabel: 'Nouveautés' },
 ];
 
 const ADMIN_VIEWS = [
@@ -58,6 +59,7 @@ const ADMIN_VIEWS = [
   { label: 'Admin',      ariaLabel: 'Admin'      },
   { label: 'Corbeille',  ariaLabel: 'Corbeille'  },
   { label: 'Sauvegardes', ariaLabel: 'Sauvegardes' },
+  { label: 'Nouveautés', ariaLabel: 'Nouveautés' },
 ];
 
 async function testPage(browser, url, views, skipAccueil) {

@@ -156,6 +156,7 @@ var VIEW_META = {
   dashboard:  { ico: '🚀',  label: 'Dashboard',      group: 'Analyser' },
   bingo:      { ico: '🎯',  label: 'Bingo',          group: 'Analyser' },
   anomalies:  { ico: '⚠️',  label: 'Anomalies',      group: 'Analyser' },
+  nouveautes: { ico: '🆕',  label: 'Nouveautés',     group: 'Info' },
   gestion_ordi: { ico: '🖥️', label: 'Gestion ordi',  group: 'Analyser' },
   admin:      { ico: '⚙️', label: 'Admin',          group: 'Config' },
   logs:            { ico: '📜',  label: 'Logs',        group: 'Config' },
@@ -171,6 +172,7 @@ function App(){
   const[jetonReinit,setJetonReinit]= React.useState(()=>window.jetonReinitUrl());
   const[adminConseiller,setAdminConseiller]= React.useState(()=>localStorage.getItem(lsKey('adm_conseiller'))||'');
   const[view,setView]           = React.useState('historique');
+  const[nbNouveautes,marquerNouveautes]=useNouveautes();
   // Usage des onglets : compteur anonyme, envoyé en un lot (shared.js).
   React.useEffect(()=>{ if(auth&&window.compterOnglet) window.compterOnglet('admin',view); },[view,auth]);
   const[entries,setEntries]= React.useState([]);
@@ -505,6 +507,7 @@ const LOGS_KEY = lsKey('adm_logs');
         CE('span',{className:'topbar-v2-meta',title:window.VERSION_APPLI,style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},'v2'),
         entries.length>0&&CE('span',{className:'topbar-v2-meta',style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},entries.length),
         CE(ChoixAnnees,{className:'topbar-year-sel',value:annee,onChange:setAnnee,title:'Années chargées'}),
+        CE('button',{onClick:()=>setView('nouveautes'),title:'Nouveautés','aria-label':'Nouveautés',style:{position:'relative',background:'none',border:'none',cursor:'pointer',fontSize:16,padding:'2px 10px 2px 4px',lineHeight:1}},'🆕',CE(PastilleNouveautes,{nb:nbNouveautes})),
         CE('button',{
           onClick:()=>setDarkMode(d=>!d),
           style:{background:'none',border:'none',cursor:'pointer',fontSize:16,padding:0}
@@ -539,6 +542,7 @@ const LOGS_KEY = lsKey('adm_logs');
         view==='carte'&&CE(VueCarte,{entries,active:view==='carte'}),
         view==='roadmap'&&CE(VueRoadmap,{entries,annee:anneeReference(annee),conseillers:lists.conseillers}),
         view==='bingo'&&CE(VueBingo,{entries}),
+        view==='nouveautes'&&CE(VueNouveautes,{onVu:marquerNouveautes}),
         view==='anomalies'&&CE(VueAnomalies,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');},communes:window.COMMUNES_47_CACHE||[],apiFetch,showToast,addLog}),
         view==='gestion_ordi'&&CE(VueGestionOrdi,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');}}),
         view==='admin'&&role==='admin'&&CE(VueAdmin,{entries,onRefresh:()=>loadData(),addLog,conseillersList:lists.conseillers,onSaveColors:(c)=>{applyColors(c);},annee:anneeReference(annee),adminConseiller,initialVisibility:cachedVisibility}),
