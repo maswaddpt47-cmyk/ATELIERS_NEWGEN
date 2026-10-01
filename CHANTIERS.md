@@ -82,6 +82,34 @@ en retard ; NextStep absent à côté → simple avertissement.
 
 ## Reste ouvert (état du 30/09/2026, par priorité)
 
+**Audit trimestriel du 01/10/2026 (fait en session, la routine n'a rien
+produit de visible)** — à traiter, sur les deux sites :
+- **Important — XSS stockée** : info-bulles des graphiques du Dashboard
+  (`shared.js`, `formatter` ECharts) et popup de la Carte insèrent
+  thématique/orienteur/commune sans `htmlEsc`. Un compte connecté peut y
+  glisser du code exécuté chez qui ouvre le Dashboard (admin compris), et
+  l'origine `maswaddpt47-cmyk.github.io` est partagée avec SMS-mail
+  (historique des usagers et jeton GitHub en `localStorage`). Correctif :
+  `htmlEsc` sur chaque valeur interpolée.
+- **Important — RGPD** : NEWGEN garde tous les ateliers de l'année en
+  `localStorage` (`ateliers_cache_<année>`, `app.js:353`, `admin_app.js:344`),
+  jamais effacés, même à la déconnexion ; NextStep ne le fait pas. Contredit
+  la fiche T3 du registre RGPD. Correctif : retirer le cache (ou
+  `sessionStorage`) et purger les clés existantes au chargement.
+- **À trancher** : tout conseiller connecté peut modifier ou supprimer
+  n'importe quel atelier (`api/lib/api.php:113-115`, pas de contrôle du
+  propriétaire). Atténué par la corbeille et le journal.
+- Mineur : `permissions:` absent de `deploy-api.yml`/`diagnostic-api.yml`
+  (jeton déjà en lecture par réglage du dépôt) ; `schema.sql` lisible ne
+  donne qu'un avertissement au déploiement ; `api/mailtest.php` inutile
+  depuis la production ; SheetJS 0.18.5 (CVE-2023-30533, CVE-2024-22363 à la
+  lecture, l'appli n'écrit que) ; blocage après 5 échecs utilisable pour
+  bloquer un compte 15 min (noms visibles à l'écran de connexion).
+- Conforme : SQL préparé ou valeurs internes, jeton exigé et rôle revérifié
+  côté serveur, constantes du registre §6 retrouvées dans le code, RGPD-01 à
+  18 présents et bloquants, `ateliers-backups` (branche `copies` 1 commit,
+  0 copie > 90 j, aucun `copies/` dans `main`, aucun mot de passe SSH).
+
 **Actions de l'utilisateur**
 
 1. **Relecture finale des registres** (sécurité v3.2, RGPD v1.3, procédure
