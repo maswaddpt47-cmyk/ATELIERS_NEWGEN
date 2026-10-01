@@ -8,7 +8,6 @@ var VIEW_META_F = {
   carte:      {ico:'🗺️', label:'Carte',        group:'Voir'},
   roadmap:    {ico:'🛣️', label:'Roadmap',      group:'Voir'},
   gestion_ordi:{ico:'🖥️', label:'Gestion ordi', group:'Voir'},
-  graphiques: {ico:'📊',  label:'Statistiques', group:'Stats'},
   bingo:      {ico:'🎯',  label:'Bingo',        group:'Stats'},
 };
 
@@ -677,7 +676,7 @@ function App(){
         [1,2,3].map(i=>CE('div',{key:i,className:'skeleton skeleton-card'}))
       ),
       !loading&&!error&&CE('div',{className:'view-anim',key:view+'_'+(filtreConseiller||'all')},
-        view==='saisie'&&visibility.saisie&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{if(anneeIncluse(annee,e.date))setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
+        view==='saisie'&&visibility.saisie&&CE(VueSaisie,{conseillerDefaut:(()=>{try{return sessionStorage.getItem('gs_conseiller')||'';}catch(_){return '';}})(),entries,onSaved:handleSaved,onNewEntry:e=>{if(anneeIncluse(annee,e.date))setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
         view==='historique'&&visibility.historique&&CE(VueHistorique,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
         view==='agenda'&&visibility.agenda&&CE(VueAgendaSemaine,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:filtreConseiller,accentColor}),
         view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),

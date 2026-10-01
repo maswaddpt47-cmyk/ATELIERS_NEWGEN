@@ -14,7 +14,7 @@ const {
   lsKey, migrerLocalStorage,
   presentsSuperieursInscrits,
   comparerHistorique,
-  ampmDepuisHoraire,
+  ampmDepuisHoraire, statutSelonDate,
   kpiHistorique,
 } = require('./utils.js');
 
@@ -652,5 +652,18 @@ describe('visibiliteEffective', () => {
     assert.equal(visibiliteEffective({ gestion_ordi: false }).gestion_ordi, false);
     assert.equal(visibiliteEffective({ gestion_ordi: 'false' }).gestion_ordi, false);
     assert.equal(visibiliteEffective(null).historique, true);
+  });
+});
+
+// ── statutSelonDate (lot 1 UX, 01/10/2026) ──────────────────
+describe('statutSelonDate', () => {
+  it('date passée → Réalisé, aujourd\'hui ou futur → Planifié', () => {
+    assert.equal(statutSelonDate('2026-09-30', '2026-10-01'), 'Réalisé');
+    assert.equal(statutSelonDate('2026-10-01', '2026-10-01'), 'Planifié');
+    assert.equal(statutSelonDate('2026-12-31', '2026-10-01'), 'Planifié');
+  });
+  it('date vide ou illisible → rien', () => {
+    assert.equal(statutSelonDate('', '2026-10-01'), '');
+    assert.equal(statutSelonDate('01/10/2026', '2026-10-01'), '');
   });
 });
