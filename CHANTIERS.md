@@ -84,18 +84,10 @@ en retard ; NextStep absent à côté → simple avertissement.
 
 **Audit trimestriel du 01/10/2026 (fait en session, la routine n'a rien
 produit de visible)** — à traiter, sur les deux sites :
-- **Important — XSS stockée** : info-bulles des graphiques du Dashboard
-  (`shared.js`, `formatter` ECharts) et popup de la Carte insèrent
-  thématique/orienteur/commune sans `htmlEsc`. Un compte connecté peut y
-  glisser du code exécuté chez qui ouvre le Dashboard (admin compris), et
-  l'origine `maswaddpt47-cmyk.github.io` est partagée avec SMS-mail
-  (historique des usagers et jeton GitHub en `localStorage`). Correctif :
-  `htmlEsc` sur chaque valeur interpolée.
-- **Important — RGPD** : NEWGEN garde tous les ateliers de l'année en
-  `localStorage` (`ateliers_cache_<année>`, `app.js:353`, `admin_app.js:344`),
-  jamais effacés, même à la déconnexion ; NextStep ne le fait pas. Contredit
-  la fiche T3 du registre RGPD. Correctif : retirer le cache (ou
-  `sessionStorage`) et purger les clés existantes au chargement.
+- **Corrigés le 01/10/2026** (NextStep `70a531c`/`19a2534`, NEWGEN
+  ci-dessous) : XSS des info-bulles et de la popup de carte (`htmlEsc`) ;
+  cache des ateliers retiré de NEWGEN, copies restantes effacées au
+  chargement des deux sites (`purgerCacheAteliers`, testée).
 - **À trancher** : tout conseiller connecté peut modifier ou supprimer
   n'importe quel atelier (`api/lib/api.php:113-115`, pas de contrôle du
   propriétaire). Atténué par la corbeille et le journal.
