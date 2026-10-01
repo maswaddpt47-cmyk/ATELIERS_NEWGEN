@@ -22,9 +22,11 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin, chantier clos
 par l'utilisateur le 25/09.
 
 - **Base Google supprimée** (classeurs, confirmé par l'utilisateur le
-  29/09/2026). GAS NextStep et NEWGEN coupés (accès « Seulement moi »), déclencheurs
-  supprimés ; code des scripts en ligne archivé (`gas/README.md` des deux
-  dépôts : NEWGEN `3da2257`, NextStep `b8b96c7`). **Import verrouillé** : le lever = requête SQL délibérée
+  29/09/2026). **Projets Apps Script NEWGEN et NextStep supprimés par
+  l'utilisateur le 01/10/2026** : le `keepAlive` de NEWGEN tournait encore
+  (mail d'échec du 30/09), le « déclencheurs supprimés » noté le 26/09
+  était faux. Code des scripts en ligne archivé dans l'historique git
+  (NEWGEN `3da2257:gas/`, NextStep `b8b96c7:gas/`). **Import verrouillé** : le lever = requête SQL délibérée
   (phpMyAdmin), sinon un second import écraserait les saisies.
 - Vitesse mesurée avant bascule (`banc/cibles.html`, 23-24/09) : GAS perdait
   9,5 % (nuit) à 26,5 % (jour) des appels, Alwaysdata **0**, médiane 0,3 s.
@@ -105,7 +107,9 @@ GDINV2 et SMS-mail suivis dans leurs propres CHANTIERS.
 
 **Pour Claude**
 
-4. **Registre de sécurité, prochaine version** : porter au §9 la décision
+4. **Registre de sécurité, prochaine version** : §4.3 « Arrêt de Google »
+   → projets Apps Script supprimés le 01/10/2026 (les déclencheurs ne
+   l'étaient pas) ; porter au §9 la décision
    du 01/10 (un conseiller peut intervenir sur les ateliers des autres —
    risque accepté, filets corbeille 30 j et journal ; **ne pas le
    « corriger »**) ; noter les corrections du 01/10 (XSS, cache, RGPD-17).
