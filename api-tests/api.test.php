@@ -338,10 +338,14 @@ appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_essai_3', 'type' => 'Amél
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_essai_3', 'doublon_de' => 'tk_essai_1']);
 verifier(($r['ok'] ?? false) && $r['ticket']['statut'] === 'Non retenu' && $r['ticket']['clos_le'] !== null && $r['ticket']['doublon_de'] === 'tk_essai_1', 'doublon : clos, rattaché à l\'original');
 verifier(isset(appel(['action' => 'getAll'], $A)['tickets']['nouveaux']), 'getAll : résumé des tickets pour les pastilles');
-$db->exec("UPDATE tickets SET clos_le = '2000-01-01 00:00:00' WHERE id = 'tk_essai_3'");
-$db->exec("UPDATE tickets SET cree_le = '2000-01-01 00:00:00' WHERE id = 'tk_essai_1'");
+$db->exec("UPDATE tickets SET statut = 'Résolu', reponse = 'Fait.', repondu_par = 'Conseiller Test', clos_le = '" . date('Y-m-d H:i:s', strtotime('-13 months')) . "' WHERE id = 'tk_essai_1'");
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
-verifier((int) $db->query("SELECT COUNT(*) FROM tickets")->fetchColumn() === 0, '[RGPD-19] tickets purgés à la connexion : clos depuis 12 mois, ou jamais clos depuis 24 mois');
+$t1 = $db->query("SELECT auteur, repondu_par, description FROM tickets WHERE id = 'tk_essai_1'")->fetch(PDO::FETCH_ASSOC);
+verifier($t1 && $t1['auteur'] === '—' && $t1['repondu_par'] === '' && $t1['description'] !== '', '[RGPD-19] ticket clos depuis 12 mois : anonymisé (auteur, répondant), gardé en archive');
+$db->exec("UPDATE tickets SET clos_le = '" . date('Y-m-d H:i:s', strtotime('-37 months')) . "' WHERE id = 'tk_essai_3'");
+$db->exec("UPDATE tickets SET clos_le = NULL, cree_le = '" . date('Y-m-d H:i:s', strtotime('-25 months')) . "' WHERE id = 'tk_essai_1'");
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+verifier((int) $db->query("SELECT COUNT(*) FROM tickets")->fetchColumn() === 0, '[RGPD-19] tickets supprimés : clos depuis 36 mois, ou jamais clos depuis 24 mois');
 array_map('unlink', glob("$dossierMails/*.txt"));
 
 echo "API — mot de passe oublié\n";

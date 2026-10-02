@@ -20,7 +20,12 @@ const TICKET_TYPES = ['Bug', 'Amélioration', 'Question', 'Autre'];
 const TICKET_GENES = ['bloquant', 'gênant', 'mineur'];
 const TICKET_STATUTS = ['Nouveau', 'Vu', 'En cours', 'Résolu', 'Non retenu'];
 const TICKET_STATUTS_CLOS = ['Résolu', 'Non retenu'];
-const TICKET_CLOS_MOIS = 12;
+// Conservation (décision de l'utilisateur, 02/10/2026 : garder des archives
+// au-delà de 12 mois si le RGPD le permet) : 12 mois après la clôture, le
+// ticket est ANONYMISÉ (auteur et répondant effacés) et reste consultable en
+// archive ; supprimé 36 mois après la clôture. Jamais clos : supprimé à 24 mois.
+const TICKET_ANONYME_MOIS = 12;
+const TICKET_CLOS_MOIS = 36;
 const TICKET_OUVERT_MOIS = 24;
 const TICKET_URL_ADMIN = [
     'newgen'   => 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/admin.html',
@@ -34,10 +39,14 @@ function tickets_schema(PDO $db): void
     }
 }
 
-// Purge RGPD, appelée à chaque connexion (comme le journal et la corbeille).
+// Anonymisation et purge RGPD, appelées à chaque connexion (comme le journal
+// et la corbeille).
 function tickets_purger(PDO $db): void
 {
     tickets_schema($db);
+    $anonyme = date('Y-m-d H:i:s', strtotime('-' . TICKET_ANONYME_MOIS . ' months'));
+    $db->prepare("UPDATE tickets SET auteur = '—', repondu_par = '' WHERE clos_le IS NOT NULL AND clos_le < ? AND auteur <> '—'")
+       ->execute([$anonyme]);
     $clos = date('Y-m-d H:i:s', strtotime('-' . TICKET_CLOS_MOIS . ' months'));
     $ouvert = date('Y-m-d H:i:s', strtotime('-' . TICKET_OUVERT_MOIS . ' months'));
     $db->prepare('DELETE FROM tickets WHERE (clos_le IS NOT NULL AND clos_le < ?) OR (clos_le IS NULL AND cree_le < ?)')
