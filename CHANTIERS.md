@@ -86,8 +86,8 @@ entrée par changement visible, **seulement après test de l'utilisateur**).
 Import Outlook **validé par l'utilisateur le 02/10** sur un vrai export
 Outlook 16 du PC pro (séries hebdo, `TZID`, `SUMMARY;LANGUAGE=fr`) ; thématique
 toujours « TBD », orienteur saisi à la main (son choix) ; Nouveautés `id` 7.
-Périodicité (ex-entrée 5) **pas encore testée** : la republier en `id` **8**
-après son test (5-6 déjà vus sur certains appareils) ; titres de groupe vides masqués dans la
+Périodicité republiée en Nouveautés `id` 8 le 02/10 à la demande de
+l'utilisateur ; titres de groupe vides masqués dans la
 barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
 
 **Actions de l'utilisateur**
@@ -106,10 +106,9 @@ barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
    (thématique en bas), icônes ↩ 🚪 de l'en-tête téléphone. Lot 1 (en ligne
    le 01/10) : à regarder sur téléphone.
 
-4. **Périodicité à tester** (encart « Générer les dates par périodicité ») :
-   à valider avant de republier son entrée Nouveautés (`id` 8). Point non
-   vérifié : une série Outlook passe par `genererDatesCycle`, qui saute les
-   jours fériés — une séance Outlook un jour férié serait omise.
+4. **Jours fériés dans une série Outlook importée** (non vérifié) : la
+   série passe par `genererDatesCycle`, qui saute les fériés — une séance
+   Outlook posée un jour férié serait omise. À regarder si ça arrive.
 5. **Mail d'échec Apps Script** (01/10) : échec du 30/09, d'avant la
    suppression. Échec daté ≥ 01/10 → `script.google.com/home/triggers` + corbeille Drive.
 
