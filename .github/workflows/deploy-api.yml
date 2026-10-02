@@ -14,6 +14,9 @@
 # Hypothèse non vérifiée : hôte MySQL mysql-<compte>.alwaysdata.net.
 name: Déploiement API Alwaysdata
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -77,9 +80,10 @@ jobs:
             api/ "$COMPTE@ssh-$COMPTE.alwaysdata.net:www/api/"
           # Fichiers retirés du dépôt : rsync ne les efface pas (pas de
           # --delete), on les nomme ici. ping.php : mesure de l'étape 0, close
-          # (audit de sécurité du 24/09/2026).
+          # (audit de sécurité du 24/09/2026). import.php et mailtest.php :
+          # retirés le 02/10/2026 (import verrouillé, mail validé).
           $VIA ssh -o StrictHostKeyChecking=accept-new \
-            "$COMPTE@ssh-$COMPTE.alwaysdata.net" 'rm -f www/api/ping.php'
+            "$COMPTE@ssh-$COMPTE.alwaysdata.net" 'rm -f www/api/ping.php www/api/import.php www/api/mailtest.php'
 
       # Réécrit à chaque déploiement : changer un secret suffit, sans toucher
       # au serveur. var_export produit du PHP valide quel que soit le mot de
@@ -130,9 +134,13 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' "https://$COMPTE.alwaysdata.net/api/ping.php")
           echo "api/ping.php → HTTP $code"
           if [ "$code" = "200" ]; then echo "::error::api/ping.php toujours en ligne"; exit 1; fi
-          # La page d'import doit répondre, et le dossier lib/ rester fermé.
-          curl -fsS -o /dev/null "https://$COMPTE.alwaysdata.net/api/import.php"
-          curl -fsS -o /dev/null "https://$COMPTE.alwaysdata.net/api/mailtest.php"
+          # Les pages d'import et de test de mail doivent avoir disparu, et le
+          # dossier lib/ rester fermé.
+          for page in import mailtest; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://$COMPTE.alwaysdata.net/api/$page.php")
+            echo "api/$page.php → HTTP $code"
+            if [ "$code" = "200" ]; then echo "::error::api/$page.php toujours en ligne"; exit 1; fi
+          done
           code=$(curl -s -o /dev/null -w '%{http_code}' "https://$COMPTE.alwaysdata.net/api/lib/schema.sql")
           echo "api/lib/schema.sql → HTTP $code"
-          if [ "$code" = "200" ]; then echo "::warning::api/lib/ est lisible depuis internet (.htaccess ignoré ?)"; fi
+          if [ "$code" = "200" ]; then echo "::error::api/lib/ est lisible depuis internet (.htaccess ignoré ?)"; exit 1; fi

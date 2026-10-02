@@ -5,6 +5,9 @@
 # les erreurs PHP : pas de journal d'accès (adresses IP des usagers).
 name: Diagnostic API Alwaysdata
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
 

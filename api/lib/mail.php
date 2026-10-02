@@ -4,10 +4,10 @@
 // Sert au « mot de passe oublié » (AG-013) et, plus tard, aux rappels
 // d'ateliers en retard (remplaçant de MailApp côté GAS).
 //
-// ⚠️ Hypothèse non vérifiée (24/09/2026) : mail() fonctionne chez Alwaysdata
-// sans réglage, et un expéditeur en @<compte>.alwaysdata.net passe les filtres
-// anti-spam (Gmail, passerelle du Département). La page api/mailtest.php sert
-// à le vérifier avant toute fonction qui en dépend.
+// mail() fonctionne chez Alwaysdata sans réglage et un expéditeur en
+// @<compte>.alwaysdata.net passe les filtres anti-spam : vérifié le 24/09/2026
+// (réception sur @lotetgaronne.fr et Gmail, CHANTIERS). La page de test
+// api/mailtest.php a été supprimée le 02/10/2026 (`git log`).
 
 require_once __DIR__ . '/base.php';
 
