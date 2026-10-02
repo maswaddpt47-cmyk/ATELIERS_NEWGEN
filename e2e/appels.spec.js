@@ -88,6 +88,8 @@ async function preparer(browser) {
     if (action === 'usageOnglets') p.usage = Object.fromEntries(corps);
     if (action === 'demanderReinit' || action === 'reinitMotDePasse') p.corpsReinit = Object.fromEntries(corps);
     else if (p.jetonRefuse) rep = { ok: false, error: 'Non autorisé : jeton manquant ou expiré', auth: true };
+    else if (action === 'creerTicket') { p.tickets = (p.tickets || 0) + 1; p.corpsTicket = Object.fromEntries(corps); rep = { ok: true, nouveau: true, ticket: { id: corps.get('_id'), cree_le: '2026-10-02 10:00:00', auteur: 'Alice Martin', type: corps.get('type'), titre: corps.get('titre'), description: corps.get('description'), statut: 'Nouveau', reponse: '' } }; }
+    else if (action === 'getTickets') rep = { ok: true, tickets: [], moi: 'Alice Martin' };
     else if (action === 'getAll') rep = { ...JSON.parse(MOCK), conseillers_inactifs: [], ...(p.entries ? { entries: p.entries } : {}) };
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rep) });
   });
@@ -426,5 +428,27 @@ test('historique — sélection multiple : un appel delete par atelier coché', 
   await expect.poll(deletes).toBe(2);
   await p.page.waitForTimeout(500);
   expect(deletes()).toBe(2);
+  await p.ctx.close();
+});
+
+// Signaler (AG-016) : un ticket = un seul creerTicket, jamais doublé, avec
+// l'onglet d'où l'on vient et les informations jointes automatiquement.
+test('signaler — un envoi : un seul creerTicket, onglet d\'origine pré-rempli', async ({ browser, baseURL }) => {
+  const p = await preparer(browser);
+  await p.page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
+  await connecter(p.page);
+  await p.page.locator('nav.bottom-nav-v2').getByText('Agenda', { exact:true }).click();
+  await p.page.locator('nav.bottom-nav-v2').getByText('Signaler', { exact:true }).click();
+  await p.page.getByRole('button', { name:'＋ Nouveau signalement' }).click();
+  await p.page.getByPlaceholder(/le Calendrier ne s'affiche pas/).fill('Agenda vide le lundi');
+  await p.page.locator('textarea').first().fill('Rien ne s\'affiche.');
+  await p.page.getByRole('button', { name:'📨 Envoyer' }).click();
+  await expect.poll(() => p.tickets || 0).toBe(1);
+  await p.page.waitForTimeout(500);
+  expect(p.tickets).toBe(1);
+  expect(p.corpsTicket.onglet).toBe('Agenda');
+  expect(p.corpsTicket.type).toBe('Bug');
+  expect(p.corpsTicket._id).toMatch(/^ticket_/);
+  await expect(p.page.getByText('Agenda vide le lundi')).toBeVisible();
   await p.ctx.close();
 });

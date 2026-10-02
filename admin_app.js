@@ -163,6 +163,7 @@ var VIEW_META = {
   logs_connexion:  { ico: '🔐',  label: 'Connexions',  group: 'Config' },
   corbeille:       { ico: '🗑️',  label: 'Corbeille',   group: 'Config' },
   sauvegardes:     { ico: '💾',  label: 'Sauvegardes', group: 'Config' },
+  tickets:         { ico: '🎫',  label: 'Tickets',     group: 'Config' },
 };
 
 // ── App Admin ──────────────────────────────────────────────
@@ -173,6 +174,7 @@ function App(){
   const[adminConseiller,setAdminConseiller]= React.useState(()=>localStorage.getItem(lsKey('adm_conseiller'))||'');
   const[view,setView]           = React.useState('historique');
   const[nbNouveautes,marquerNouveautes]=useNouveautes();
+  const[nbTickets]=useTicketsPastille(true);   // tickets « Nouveau » (AG-016)
   // Usage des onglets : compteur anonyme, envoyé en un lot (shared.js).
   React.useEffect(()=>{ if(auth&&window.compterOnglet) window.compterOnglet('admin',view); },[view,auth]);
   const[entries,setEntries]= React.useState([]);
@@ -549,6 +551,7 @@ const LOGS_KEY = lsKey('adm_logs');
         view==='logs_connexion'&&(role==='admin'||role==='superviseur')&&CE(React.Fragment,null,CE(VueUsageOnglets,null),CE(VueLogs,null)),
           view==='corbeille'&&(role==='admin'||role==='superviseur')&&CE(VueCorbeille,null),
           view==='sauvegardes'&&(role==='admin'||role==='superviseur')&&CE(VueSauvegardes,null),
+          view==='tickets'&&(role==='admin'||role==='superviseur')&&CE(VueTickets,{admin:true,onglets:Object.values(VIEW_META).map(m=>m.label)}),
           view==='logs'&&CE('div',{className:'card'},
             CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:8}},
               CE('h2',{style:{margin:0}},'📜 Journal des opérations'),
@@ -676,7 +679,8 @@ const LOGS_KEY = lsKey('adm_logs');
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:3,y:11,width:18,height:11,rx:2}),CE('path',{d:'M7 11V7a5 5 0 0 1 10 0v4'})),
           'Connexions'),
         (role==='admin'||role==='superviseur')&&navBtn('corbeille',CE('span',{style:{fontSize:18,lineHeight:1}},'🗑️'),'Corbeille'),
-        (role==='admin'||role==='superviseur')&&navBtn('sauvegardes',CE('span',{style:{fontSize:18,lineHeight:1}},'💾'),'Sauvegardes')
+        (role==='admin'||role==='superviseur')&&navBtn('sauvegardes',CE('span',{style:{fontSize:18,lineHeight:1}},'💾'),'Sauvegardes'),
+        (role==='admin'||role==='superviseur')&&CE('div',{key:'tickets',style:{position:'relative',display:'flex'}},navBtn('tickets',CE('span',{style:{fontSize:18,lineHeight:1}},'🎫'),'Tickets'),CE(PastilleNouveautes,{nb:nbTickets,libelle:'nouveau(x) ticket(s)'}))
       )
     ),
 

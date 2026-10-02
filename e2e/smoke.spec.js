@@ -43,6 +43,7 @@ const INDEX_VIEWS = [
   { label: 'Gestion ordi', ariaLabel: 'Gestion ordi' },
   { label: 'Bingo',      ariaLabel: 'Bingo'      },
   { label: 'Nouveautés', ariaLabel: 'Nouveautés' },
+  { label: 'Signaler',   ariaLabel: 'Signaler'   },
 ];
 
 const ADMIN_VIEWS = [
@@ -60,6 +61,7 @@ const ADMIN_VIEWS = [
   { label: 'Corbeille',  ariaLabel: 'Corbeille'  },
   { label: 'Sauvegardes', ariaLabel: 'Sauvegardes' },
   { label: 'Nouveautés', ariaLabel: 'Nouveautés' },
+  { label: 'Tickets',    ariaLabel: 'Tickets'    },
 ];
 
 async function testPage(browser, url, views, skipAccueil) {

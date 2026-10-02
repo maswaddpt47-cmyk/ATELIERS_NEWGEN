@@ -10,6 +10,7 @@ var VIEW_META_F = {
   gestion_ordi:{ico:'🖥️', label:'Gestion ordi', group:'Voir'},
   bingo:      {ico:'🎯',  label:'Bingo',        group:'Stats'},
   nouveautes: {ico:'🆕',  label:'Nouveautés',   group:'Info'},
+  signaler:   {ico:'💬',  label:'Signaler',     group:'Info'},
 };
 
 function MaintenanceScreen({msg}){
@@ -244,6 +245,11 @@ function App(){
   const[authed,setAuthed]          = React.useState(()=>!!window.authToken.get());
   const[view,setView]              = React.useState('accueil');
   const[nbNouveautes,marquerNouveautes]=useNouveautes();
+  // Signaler (AG-016) : pastille si un de ses tickets a reçu une réponse ;
+  // l'onglet d'où l'on vient pré-remplit « onglet concerné ».
+  const[nbTickets,marquerTickets]=useTicketsPastille(false);
+  const ongletAvantSignaler=React.useRef('');
+  React.useEffect(()=>{if(view!=='signaler'&&VIEW_META_F[view])ongletAvantSignaler.current=VIEW_META_F[view].label;},[view]);
   // Usage des onglets : compteur anonyme, envoyé en un lot (shared.js).
   React.useEffect(()=>{ if(authed&&window.compterOnglet) window.compterOnglet('index',view); },[view,authed]);
   const[entries,setEntries]        = React.useState([]);
@@ -679,7 +685,8 @@ function App(){
         view==='gestion_ordi'&&visibility.gestion_ordi&&CE(VueGestionOrdi,{entries,onEdit:handleEdit}),
         view==='bingo'&&visibility.bingo&&CE(VueBingo,{entries}),
         view==='corbeille'&&visibility.corbeille&&CE(VueCorbeille,null),
-        view==='nouveautes'&&CE(VueNouveautes,{onVu:marquerNouveautes})
+        view==='nouveautes'&&CE(VueNouveautes,{onVu:marquerNouveautes}),
+        view==='signaler'&&CE(VueTickets,{admin:false,onVu:marquerTickets,ongletCourant:ongletAvantSignaler.current,onglets:Object.keys(VIEW_META_F).filter(k=>k!=='signaler'&&k!=='nouveautes'&&(visibility[k]||k==='saisie')).map(k=>VIEW_META_F[k].label)})
       )
     ),
 
@@ -722,7 +729,12 @@ function App(){
           navBtn('nouveautes',
             CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M12 2l2.9 6.9L22 9.3l-5.5 4.8L18.2 21 12 17.3 5.8 21l1.7-6.9L2 9.3l7.1-.4z'})),
             'Nouveautés'),
-          CE(PastilleNouveautes,{nb:nbNouveautes}))
+          CE(PastilleNouveautes,{nb:nbNouveautes})),
+        CE('div',{key:'signaler',style:{position:'relative',display:'flex'}},
+          navBtn('signaler',
+            CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'})),
+            'Signaler'),
+          CE(PastilleNouveautes,{nb:nbTickets,libelle:'réponse(s) à vos signalements'}))
       )
     ),
 
