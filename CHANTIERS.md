@@ -88,12 +88,15 @@ Outlook 16 du PC pro (séries hebdo, `TZID`, `SUMMARY;LANGUAGE=fr`) ; thématiqu
 toujours « TBD », orienteur saisi à la main (son choix) ; Nouveautés `id` 7.
 Périodicité **testée et validée par l'utilisateur le 02/10**, Nouveautés
 `id` 8 ; titres de groupe vides masqués dans la
-barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
+barre latérale NextStep. Aussi le 02/10 : suppression multiple dans
+l'Historique (`id` 15, validée), détails des ateliers dans la Corbeille
+(validé), **numéro d'un nouvel atelier calculé Corbeille comprise** (PR #28 :
+avant, il reprenait celui d'un atelier restaurable). GDINV2 et SMS-mail : leurs propres CHANTIERS.
 
 **Actions de l'utilisateur**
 
-1. **Relecture finale des registres** (sécurité v3.2, RGPD v1.3, procédure
-   v3.2 ; `ateliers-backups/documents/`) puis, avant transmission DSI/DPO,
+1. **Relecture finale des registres** (sécurité, RGPD et procédure en v1.0 ;
+   `ateliers-backups/documents/`) puis, avant transmission DSI/DPO,
    vérifier sur pièce : §7 Alwaysdata (« à confirmer »), références
    CNIL/ANSSI (recoupées par sources secondaires), GitHub sur la liste DPF.
 2. **Écarts RGPD à porter au DPO** : compte Alwaysdata personnel sans DPA,
@@ -105,7 +108,12 @@ barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
    boutons techniques des filtres (XLSX, ICS, Sync), ordre des champs
    (thématique en bas), icônes ↩ 🚪 de l'en-tête téléphone. Lot 1 (en ligne
    le 01/10) : à regarder sur téléphone.
-
+4. **À tester : Corbeille partageable sur Index** (02/10, NextStep #19,
+   NEWGEN #29). Admin → Visibilité → « Corbeille », fermée par défaut ;
+   ouverte, tout conseiller voit **tous** les ateliers supprimés et peut les
+   restaurer (choix de l'utilisateur), l'API n'ouvre que `getCorbeille` et
+   `restaurerCorbeille`. Après validation : entrée Nouveautés `id` 16
+   (règle 18), puis retirer ce point.
 5. **Mail d'échec Apps Script** (01/10) : échec du 30/09, d'avant la
    suppression. Échec daté ≥ 01/10 → `script.google.com/home/triggers` + corbeille Drive.
 
@@ -226,6 +234,10 @@ libre.
 
 ## ⚠️ Pièges connus
 
+- **Doublons #252 à #255 dans la Corbeille** (02/10/2026, ateliers de test
+  « convergence test » et « TEST ») : nés avant le correctif de la PR #28.
+  Restaurer les deux séries donnerait deux ateliers au même numéro — n'en
+  restaurer qu'une, ou aucune. Disparaissent seuls à la purge (30 jours).
 - **Page HTML en cache sur téléphone** (26/09/2026) : `index.html` n'est pas
   versionné ; tant que l'ancien reste en cache, il charge l'ancien `utils.js`
   même si le nouveau est en ligne (Historique encore trié à l'ancienne sur le
