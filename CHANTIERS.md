@@ -111,10 +111,11 @@ barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
 
 **Pour Claude**
 
-6. **Registres de sécurité et RGPD v1.0 remis le 02/10/2026** (versions
-   finales, une section par page, `ateliers-backups/documents/`). Procédure
-   de restauration encore en v3.2 interne : à passer en v1.0 de la même façon
-   si l'utilisateur le demande. Les deux registres la citent sans numéro.
+6. **Documents remis en v1.0 le 02/10/2026** (`ateliers-backups/documents/`) :
+   registre de sécurité et registre RGPD (une section par page), procédure
+   de restauration (4 pages compactes, fiche d'urgence). Versions internes
+   archivées dans `documents/archives/`. Prochaine révision : audit du
+   01/01/2027 (ACME Alwaysdata à vérifier auprès de l'hébergeur).
 
 **Sans urgence**
 
