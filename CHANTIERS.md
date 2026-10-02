@@ -86,8 +86,8 @@ entrée par changement visible, **seulement après test de l'utilisateur**).
 Import Outlook **validé par l'utilisateur le 02/10** sur un vrai export
 Outlook 16 du PC pro (séries hebdo, `TZID`, `SUMMARY;LANGUAGE=fr`) ; thématique
 toujours « TBD », orienteur saisi à la main (son choix) ; Nouveautés `id` 7.
-Périodicité republiée en Nouveautés `id` 8 le 02/10 à la demande de
-l'utilisateur ; titres de groupe vides masqués dans la
+Périodicité **testée et validée par l'utilisateur le 02/10**, Nouveautés
+`id` 8 ; titres de groupe vides masqués dans la
 barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
 
 **Actions de l'utilisateur**
