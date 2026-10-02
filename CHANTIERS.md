@@ -106,9 +106,6 @@ barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
    (thématique en bas), icônes ↩ 🚪 de l'en-tête téléphone. Lot 1 (en ligne
    le 01/10) : à regarder sur téléphone.
 
-4. **Jours fériés dans une série Outlook importée** (non vérifié) : la
-   série passe par `genererDatesCycle`, qui saute les fériés — une séance
-   Outlook posée un jour férié serait omise. À regarder si ça arrive.
 5. **Mail d'échec Apps Script** (01/10) : échec du 30/09, d'avant la
    suppression. Échec daté ≥ 01/10 → `script.google.com/home/triggers` + corbeille Drive.
 
