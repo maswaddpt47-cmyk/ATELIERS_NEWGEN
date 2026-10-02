@@ -115,6 +115,14 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
 
 **Pour Claude**
 
+0. **Rubrique « Signaler » (tickets de l'équipe)** — proposée le 02/10,
+   choix de l'utilisateur : tickets vus par admin **et** superviseur, **mail à
+   chaque ticket**, chaque conseiller voit **tous** les tickets, **pas de
+   capture**. Aucune action de l'utilisateur pour la base : table créée par
+   l'API au déploiement. AGORA AG-016 ouvert. Développement à lancer sur
+   feu vert ; registre RGPD à compléter (nouvelle finalité) avant mise en
+   service ; annonce Nouveautés seulement après test de l'utilisateur.
+
 3. **Documents remis en v1.0 le 02/10/2026** (`ateliers-backups/documents/`) :
    registre de sécurité et registre RGPD (une section par page), procédure
    de restauration (4 pages compactes, fiche d'urgence). Versions internes
