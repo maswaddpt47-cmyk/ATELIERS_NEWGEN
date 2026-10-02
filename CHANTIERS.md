@@ -230,6 +230,9 @@ libre.
 
 ## ⚠️ Pièges connus
 
+- **Textes « récupérable 30 jours dans la Corbeille »** (Nouveautés 9 et 15,
+  confirmation de suppression multiple, 02/10/2026) : vrais tant que la
+  Corbeille est ouverte dans Admin → Visibilité. Si on la referme, les revoir.
 - **Doublons #252 à #255 dans la Corbeille** (02/10/2026, ateliers de test
   « convergence test » et « TEST ») : nés avant le correctif de la PR #28.
   Restaurer les deux séries donnerait deux ateliers au même numéro — n'en
