@@ -85,7 +85,33 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-_(aucun)_
+## AG-016 — Rubrique « Signaler » : tickets de l'équipe — ouvert le 02/10/2026
+**Auteur** : session A (refonte) — lu sur `d67ca47`
+**Proposition** : table `tickets` (id, cree_le, auteur = conseiller du jeton,
+site, version, appareil, type Bug/Amélioration/Question/Autre, onglet, gene,
+titre, description, statut Nouveau/Vu/En cours/Résolu/Non retenu, reponse,
+repondu_le, doublon_de, clos_le), créée par l'API comme `ateliers_corbeille`
+(`CREATE TABLE IF NOT EXISTS` au premier appel). Actions : `creerTicket` et
+`getTickets` (tout conseiller connecté voit **tous** les tickets — choix de
+l'utilisateur, évite les doublons), `repondreTicket` (admin et superviseur).
+Mail à **chaque** ticket aux comptes admin/superviseur ayant une adresse
+(`mail_envoyer`, déjà prouvé par les rappels). Purge 12 mois après `clos_le`
+(à la connexion, comme le journal). Pas de capture d'écran.
+**Critère déclencheur** : 1 (nouvelle table, quatre actions = contrat entre
+`shared.js` et l'API).
+**Ce que ça engage** : un texte libre lisible par toute l'équipe — risque
+qu'un conseiller y écrive des données d'usager ; un mail par ticket (volume
+non borné : faut-il un plafond par conseiller et par heure ?).
+**Non vérifié par l'auteur** : que le texte libre visible de tous reste
+compatible avec le registre RGPD v1.0 validé le 02/10 (finalité à ajouter) ;
+qu'un plafond anti-abus soit utile pour une équipe de 5 ; comment marquer
+un doublon sans perdre le suivi de l'auteur du second ticket.
+**Si personne ne répond, je fais quoi ?** J'implémente tel quel après le feu
+vert de l'utilisateur, avec un avertissement « pas de données d'usagers »
+sous la description et un plafond de 10 tickets par conseiller et par jour.
+**Où regarder** : `api/lib/ecriture.php` (`corbeille_schema`,
+`action_get_corbeille`), `api/lib/api.php` (`API_ACTIONS_ADMIN`, purge à la
+connexion), `api/lib/mail.php`, `shared.js` (`VueNouveautes`).
 
 ## Blocs tranchés — sortis de ce fichier
 
