@@ -117,20 +117,12 @@ barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
    archivées dans `documents/archives/`. Prochaine révision : audit du
    01/01/2027 (ACME Alwaysdata à vérifier auprès de l'hébergeur).
 
-**À trancher avec l'utilisateur (piste du 02/10/2026)**
-
-- **Agir sur tout un cycle d'un coup** (annuler, supprimer, modifier un
-  champ commun). Constat : les ateliers d'un cycle ne sont pas reliés en
-  base (`saveMany` écrit N ateliers indépendants, aucun identifiant de
-  cycle). Pistes : (1) sélection multiple dans l'Historique (cases à cocher
-  sur une liste filtrée par orienteur, thématique, dates) + actions
-  groupées — aucun changement de base, marche aussi sur les cycles déjà
-  saisis ; (2) identifiant de cycle enregistré avec chaque atelier —
-  change le schéma (critère AGORA 1), ne couvre que les futurs cycles ;
-  (3) cycles importés d'Outlook : non — un rendez-vous déjà importé
-  apparaît grisé et n'est pas réimporté, donc ni mise à jour ni
-  suppression par ce biais. Recommandation : (1). Action exacte voulue à
-  préciser par l'utilisateur.
+**Supprimer tout un cycle (02/10/2026, option 1 retenue par l'utilisateur)** :
+Historique → « ☑ Sélectionner plusieurs ateliers », cases sur la liste
+filtrée, « Tout sélectionner », « 🗑 Supprimer la sélection » (un `delete`
+par atelier, corbeille 30 j). `BarreSelection` dans `shared.js` des deux
+applis ; test `e2e/appels.test.js` (NextStep). **En attente du test de
+l'utilisateur**, puis entrée Nouveautés (`id` 14).
 
 **Sans urgence**
 
