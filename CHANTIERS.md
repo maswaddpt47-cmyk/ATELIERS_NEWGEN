@@ -115,15 +115,11 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
 
 **Pour Claude**
 
-0. **Rubrique « Signaler » livrée le 02/10/2026** (AG-016 amendé, NextStep
-   `6279774`, NEWGEN `dac3c0c`/`41bd6dc`) : Index « 💬 Signaler », Admin
-   « 🎫 Tickets », filtres Ouverts / Mes signalements / **Archives** (tickets
-   clos), mail à chaque ticket. **À tester par l'utilisateur** ; annonce
-   Nouveautés (id 20) seulement après. Registres RGPD et sécurité passés en
-   **v1.1** le 02/10 (traitement T5, test `[RGPD-19]`), v1.0 archivées.
-   Conservation tranchée le 02/10 (« au-delà de 12 mois si le RGPD le
-   permet ») : anonymisé 12 mois après clôture, supprimé à 36 mois, jamais
-   clos supprimé à 24 mois (`1434e65`, registres régénérés `1b44ad3`).
+0. **Rubrique « Contribuer » (ex-« Signaler ») validée par l'utilisateur le
+   02/10/2026** et annoncée (Nouveautés **20** ; prochain id **21**). Admin :
+   « 🎫 Tickets ». Tickets anonymisés 12 mois après clôture, supprimés à 36
+   mois (`1434e65`). Reste non vérifié : la réception réelle du mail à chaque
+   ticket.
 
 3. **Documents remis en v1.0 le 02/10/2026** (`ateliers-backups/documents/`) :
    registre de sécurité et registre RGPD (une section par page), procédure
