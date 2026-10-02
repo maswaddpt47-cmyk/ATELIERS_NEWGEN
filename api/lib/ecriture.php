@@ -135,8 +135,15 @@ function api_ecrire_atelier(PDO $db, array $d, ?string &$err, string $acteur = '
         if ($n === false && $nImpose !== null) {
             $n = $nImpose;   // n n'est pas unique (schema.sql) : aucun conflit
         } elseif ($n === false) {
-            // Nouveau : numéro suivant, comme le numéro de ligne du GAS.
-            $n = (int) $db->query('SELECT COALESCE(MAX(n), 0) + 1 FROM ateliers FOR UPDATE')->fetchColumn();
+            // Nouveau : numéro suivant, comme le numéro de ligne du GAS. La
+            // corbeille compte aussi : sans elle, un atelier créé après une
+            // suppression reprenait le numéro d'un atelier restaurable
+            // (#252 à #255 en double le 02/10/2026).
+            $n = max(
+                (int) $db->query('SELECT COALESCE(MAX(n), 0) FROM ateliers FOR UPDATE')->fetchColumn(),
+                (int) $db->query("SELECT COALESCE(MAX(CAST(JSON_UNQUOTE(JSON_EXTRACT(donnees, '$._n')) AS UNSIGNED)), 0)
+                                  FROM ateliers_corbeille WHERE JSON_VALID(donnees) FOR UPDATE")->fetchColumn()
+            ) + 1;
         }
         $l['n'] = $n;
         $cols = array_keys($l);

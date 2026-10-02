@@ -231,6 +231,13 @@ verifier(($r['ok'] ?? true) === false && str_contains($r['error'], 'existe déj�
 $db->exec("UPDATE ateliers_corbeille SET supprime_le = NOW() - INTERVAL 31 DAY");
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
 verifier((int) $db->query('SELECT COUNT(*) FROM ateliers_corbeille')->fetchColumn() === 0, 'corbeille purgée au-delà de 30 jours, dès une connexion');
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'num_a', 'date' => '2026-12-02'])]);
+$nA = $lire('num_a')['_n'];
+appel(['action' => 'delete'], $T + ['_id' => 'num_a']);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'num_b', 'date' => '2026-12-03'])]);
+verifier($lire('num_b')['_n'] === $nA + 1, 'nouvel atelier : ne reprend pas le numéro d\'un atelier de la corbeille');
+appel(['action' => 'delete'], $T + ['_id' => 'num_b']);
+$db->exec("DELETE FROM ateliers_corbeille WHERE id IN ('num_a', 'num_b')");
 // Sauvegardes (AG-014) : état en lecture, copie à la demande limitée.
 verifier(str_contains(appel(['action' => 'copieMaintenant'], $T)['error'] ?? '', 'administrateurs'), 'copie à la demande réservée aux administrateurs');
 $r = appel(['action' => 'copieMaintenant'], $A);
