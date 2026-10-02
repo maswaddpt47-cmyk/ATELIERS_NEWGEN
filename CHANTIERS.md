@@ -43,9 +43,10 @@ par l'utilisateur le 25/09.
   admin/superviseur ; aucune ressource externe (`vendor/`, test RGPD-17 en
   CI) ; HTTPS forcé ; 2FA GitHub et Alwaysdata ; journal conservé 12 mois ;
   documents à diffusion restreinte, **rangés dans le dépôt privé
-  `ateliers-backups/documents/`** (sources et v1.0 archivées) : registre de sécurité
-  v3.2, registre RGPD v1.3 (art. 30) et procédure de restauration v3.2
-  (30/09/2026). Leurs écarts RGPD ouverts —
+  `ateliers-backups/documents/`** : registre de sécurité, registre RGPD
+  (art. 30) et procédure de restauration, **v1.0 du 02/10/2026, finis et
+  validés par l'utilisateur** (versions internes dans `documents/archives/`).
+  Leurs écarts RGPD ouverts —
   compte personnel sans DPA, durée de conservation des ateliers non fixée,
   mention d'information des agents, procédure de sortie — sont à porter au
   DPO par l'utilisateur.
@@ -97,25 +98,23 @@ Index (Admin → Visibilité, fermée par défaut ; NextStep #19, NEWGEN #29),
 
 **Actions de l'utilisateur**
 
-1. **Relecture finale des registres** (sécurité, RGPD et procédure en v1.0 ;
-   `ateliers-backups/documents/`) puis, avant transmission DSI/DPO,
-   vérifier sur pièce : §7 Alwaysdata (« à confirmer »), références
-   CNIL/ANSSI (recoupées par sources secondaires), GitHub sur la liste DPF.
-2. **Écarts RGPD à porter au DPO** : compte Alwaysdata personnel sans DPA,
+1. **Écarts RGPD à porter au DPO** : compte Alwaysdata personnel sans DPA,
    durée de conservation des ateliers non fixée, mention d'information des
    agents, procédure de sortie.
-3. **Lot 2 UX, à valider avec un ou deux conseillers** : accueil (bandeau
-   « à mettre à jour » cliquable avant les chiffres, tuiles compactes sur
-   téléphone, « Planifiés 100 % » qui compte les ateliers en retard),
-   boutons techniques des filtres (XLSX, ICS, Sync), ordre des champs
-   (thématique en bas), icônes ↩ 🚪 de l'en-tête téléphone. Lot 1 (en ligne
-   le 01/10) : à regarder sur téléphone.
-5. **Mail d'échec Apps Script** (01/10) : échec du 30/09, d'avant la
+2. **Mail d'échec Apps Script** (01/10) : échec du 30/09, d'avant la
    suppression. Échec daté ≥ 01/10 → `script.google.com/home/triggers` + corbeille Drive.
+
+Faits le 02/10/2026 (utilisateur) : registres finis et validés ; lot 2 UX
+testé et validé ; **relevé du journal NextStep en journée** (25/09 09:49 →
+02/10 15:55, 117 appels) : 6 perdus, **tous des `getAll` du 25/09 entre
+09:49 et 09:51**, pendant la bascule (GAS déjà coupé, NextStep pas encore
+fusionné sur l'API à 10:12) ; ils font aussi les 128 s d'attente morte et les
+3 doublons sans sauvetage. **Depuis la bascule : 0 perdu sur 111**, heures
+de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
 
 **Pour Claude**
 
-6. **Documents remis en v1.0 le 02/10/2026** (`ateliers-backups/documents/`) :
+3. **Documents remis en v1.0 le 02/10/2026** (`ateliers-backups/documents/`) :
    registre de sécurité et registre RGPD (une section par page), procédure
    de restauration (4 pages compactes, fiche d'urgence). Versions internes
    archivées dans `documents/archives/`. Prochaine révision : audit du
@@ -123,14 +122,14 @@ Index (Admin → Visibilité, fermée par défaut ; NextStep #19, NEWGEN #29),
 
 **Sans urgence**
 
-7. **Usage des onglets** (depuis le 29/09) : regarder Admin → Connexions
+4. **Usage des onglets** (depuis le 29/09) : regarder Admin → Connexions
    dans quelques semaines pour décider des onglets à simplifier (lot 2).
-8. **Pistes Outlook discutées, non lancées** (02/10) : durée des ateliers
+5. **Pistes Outlook discutées, non lancées** (02/10) : durée des ateliers
    exportés en `.ics` fixée à 1 h (`exportICS`, `shared.js`) — 2 h ou
    réglable à trancher ; import des disponibilités (« Disponibilité
    uniquement ») pour griser les créneaux occupés dans l'Agenda, lu dans le
    navigateur seulement — à proposer si l'import des ateliers ne suffit pas.
-9. **Thématique « TBD »** : visible telle quelle dans les statistiques
+6. **Thématique « TBD »** : visible telle quelle dans les statistiques
    tant qu'elle n'est pas remplacée — à surveiller.
 
 **Audit trimestriel** : routine `trig_01J6ZMsLHKbgXAQsRYgQL16q` (6 dépôts,
