@@ -94,7 +94,7 @@ l'Historique (`id` 15, validée), détails des ateliers dans la Corbeille
 (validé), **numéro d'un nouvel atelier calculé Corbeille comprise** (PR #28 :
 avant, il reprenait celui d'un atelier restaurable). Corbeille partageable sur
 Index (Admin → Visibilité, fermée par défaut ; NextStep #19, NEWGEN #29),
-**validée le 02/10** ; pas de dépêche (annonce déjà faite le 25/09, `id` 9, reformulée). `id` 16 publié puis retiré, jamais réutilisé ; 17 (conflit d'ordinateurs, 26/09) et 18 (rubrique Nouveautés, 01/10) ajoutés le 02/10  ; 19 publié puis retiré (annonces repliables, pas d'annonce voulue) : prochain `id` 20, jamais 19. GDINV2 et SMS-mail : leurs propres CHANTIERS.
+**validée le 02/10** ; pas de dépêche (annonce déjà faite le 25/09, `id` 9, reformulée). `id` 16 publié puis retiré, jamais réutilisé ; 17 (conflit d'ordinateurs, 26/09) et 18 (rubrique Nouveautés, 01/10) ajoutés le 02/10  ; 19 publié puis retiré (annonces repliables, pas d'annonce voulue) ; 20 (rubrique Contribuer, ex-Signaler, validée et mail reçu le 02/10) : prochain `id` 21, jamais 16 ni 19. GDINV2 et SMS-mail : leurs propres CHANTIERS.
 
 **Actions de l'utilisateur**
 
@@ -114,12 +114,6 @@ fusionné sur l'API à 10:12) ; ils font aussi les 128 s d'attente morte et les
 de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
 
 **Pour Claude**
-
-0. **Rubrique « Contribuer » (ex-« Signaler ») validée par l'utilisateur le
-   02/10/2026** et annoncée (Nouveautés **20** ; prochain id **21**). Admin :
-   « 🎫 Tickets ». Tickets anonymisés 12 mois après clôture, supprimés à 36
-   mois (`1434e65`). Reste non vérifié : la réception réelle du mail à chaque
-   ticket.
 
 3. **Documents remis en v1.0 le 02/10/2026** (`ateliers-backups/documents/`) :
    registre de sécurité et registre RGPD (une section par page), procédure
