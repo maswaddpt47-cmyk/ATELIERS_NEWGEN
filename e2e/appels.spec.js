@@ -88,7 +88,7 @@ async function preparer(browser) {
     if (action === 'usageOnglets') p.usage = Object.fromEntries(corps);
     if (action === 'demanderReinit' || action === 'reinitMotDePasse') p.corpsReinit = Object.fromEntries(corps);
     else if (p.jetonRefuse) rep = { ok: false, error: 'Non autorisé : jeton manquant ou expiré', auth: true };
-    else if (action === 'getAll') rep = { ...JSON.parse(MOCK), conseillers_inactifs: [] };
+    else if (action === 'getAll') rep = { ...JSON.parse(MOCK), conseillers_inactifs: [], ...(p.entries ? { entries: p.entries } : {}) };
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rep) });
   });
 
@@ -366,4 +366,65 @@ test('index — usage des onglets : envoi groupé à la mise en arrière-plan, s
     verifier('usage — un envoi en arrière-plan : site, page, onglets', p.usage && p.usage.site === 'newgen' && p.usage.page === 'index' && Object.keys(vues).length >= 1 && !('accueil' in vues), JSON.stringify(p.usage));
     verifier('usage — aucun nom de conseiller transmis', p.usage && !/Alice|Martin|conseiller/i.test(JSON.stringify({ ...p.usage, token: '' })), JSON.stringify(p.usage));
     await p.ctx.close();
+});
+
+// Portés de NextStep (e2e/appels.test.js) le 02/10/2026 : même fonction de
+// saisie par cycle et d'Historique dans les deux applis (règle 18).
+async function ouvrirCycle(page) {
+  await page.locator('nav.bottom-nav-v2').getByText('Nouveau', { exact:true }).click();
+  await page.mouse.move(1000, 400);
+  await page.getByText('🔄 Saisie par cycle').click();
+}
+
+test('cycle — la périodicité remplit le tableau des dates', async ({ browser, baseURL }) => {
+  const { ctx, page } = await preparer(browser);
+  await page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
+  await connecter(page);
+  await ouvrirCycle(page);
+  await page.getByText('🔁 Générer les dates par périodicité').click();
+  // Mercredi 04/11/2026, 4 séances : le 11/11 (férié) est sauté.
+  await page.getByText('Première séance *').locator('..').locator('input[type="date"]').fill('2026-11-04');
+  await page.locator('input[type="number"][max="52"]').fill('4');
+  await page.getByRole('button', { name: 'Générer 4 ligne(s)' }).click();
+  const dates = await page.locator('input[type="date"]').evaluateAll(els => els.map(e => e.value).filter(Boolean));
+  expect(dates).toEqual(['2026-11-04', '2026-11-18', '2026-11-25', '2026-12-02']);
+  await ctx.close();
+});
+
+test('cycle — import Outlook : seuls les rendez-vous au mot-clé remplissent le tableau', async ({ browser, baseURL }) => {
+  const { ctx, page } = await preparer(browser);
+  await page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
+  await connecter(page);
+  await ouvrirCycle(page);
+  await page.getByText('📥 Importer depuis Outlook (.ics)').click();
+  const ics = ['BEGIN:VCALENDAR',
+    'BEGIN:VEVENT', 'UID:A1', 'DTSTART;TZID=Romance Standard Time:20991007T140000', 'SUMMARY:ATELIER Smartphone', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:A2', 'DTSTART;TZID=Romance Standard Time:20991008T090000', 'SUMMARY:Réunion', 'END:VEVENT',
+    'END:VCALENDAR'].join('\r\n');
+  await page.locator('input[type="file"]').setInputFiles({ name:'agenda.ics', mimeType:'text/calendar', buffer:Buffer.from(ics) });
+  await page.getByRole('button', { name:'Remplir le tableau (1)' }).click();
+  const dates = await page.locator('input[type="date"]').evaluateAll(els => els.map(e => e.value).filter(Boolean));
+  expect(dates).toEqual(['2099-10-07']);
+  await expect(page.locator('input[type="time"]').first()).toHaveValue('14:00');
+  await ctx.close();
+});
+
+// Supprimer un cycle = un « delete » par atelier coché, jamais plus, jamais doublé.
+test('historique — sélection multiple : un appel delete par atelier coché', async ({ browser, baseURL }) => {
+  const p = await preparer(browser);
+  p.entries = [ENTREE, { ...ENTREE, _id: 'entry_test_2', _n: 2, horaire: '14:00', ampm: 'PM' }];
+  p.page.on('dialog', d => d.accept());
+  await p.page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
+  await connecter(p.page);
+  await p.page.locator('nav.bottom-nav-v2').getByText('Historique', { exact:true }).click();
+  const voirTous = p.page.getByText('Voir tous');
+  if (await voirTous.first().isVisible().catch(() => false)) await voirTous.first().click();
+  await p.page.getByRole('button', { name:'☑ Sélectionner plusieurs ateliers' }).click();
+  await p.page.getByRole('button', { name:'Tout sélectionner (2)' }).click();
+  await p.page.getByRole('button', { name:'🗑 Supprimer la sélection (2)' }).click();
+  const deletes = () => p.appels.filter(a => a === 'delete').length;
+  await expect.poll(deletes).toBe(2);
+  await p.page.waitForTimeout(500);
+  expect(deletes()).toBe(2);
+  await p.ctx.close();
 });
