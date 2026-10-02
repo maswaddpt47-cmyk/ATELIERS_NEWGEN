@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **01/10/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **02/10/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
@@ -82,19 +82,16 @@ en retard ; NextStep absent à côté → simple avertissement.
 - **Vérification terrain de NextStep faite par l'utilisateur le 26/09/2026**
   (« tout fonctionne ») : Agenda (volet modifiable), connexion, saisie.
 
-## Reste ouvert (état du 01/10/2026, par priorité)
+## Reste ouvert (état du 02/10/2026, par priorité)
 
-Faits le 01/10/2026 (détail dans `git log`) : lot 1 UX ; XSS des
-info-bulles/popups corrigée et cache des ateliers retiré de NEWGEN ;
-`admin_v14.html` retiré de NextStep, RGPD-17 étendu à toutes les pages ;
-GDINV2 et SMS-mail suivis dans leurs propres CHANTIERS.
-Aussi le 01/10 : saisie par cycle — bouton ⧉ dupliquer une séance et
-encart « Périodicité » (hebdo, mensuel, fériés sautés) ;
-import Outlook (.ics, mot-clé dans le titre, 02/10) — **à valider sur un
-vrai export du PC pro** : testé seulement sur un format Outlook reconstitué ;
-rubrique **Nouveautés** (pastille, `NOUVEAUTES` dans `shared.js`) qui
-remplace les mails d'annonce — à alimenter à chaque changement visible
-(règle 18 de `CLAUDE.md`). Retour de l'équipe à recueillir.
+Faits les 01-02/10/2026 (détail dans `git log`) : lot 1 UX ; XSS des
+info-bulles/popups et cache des ateliers corrigés ; RGPD-17 étendu ;
+saisie par cycle : ⧉ dupliquer une séance, encart « Périodicité » (hebdo,
+mensuel « 2e mardi », fériés sautés, thématique « TBD » par défaut), import
+Outlook (.ics) ; rubrique **Nouveautés** (règle 18 de `CLAUDE.md` : une
+entrée par changement visible, `id` suivant — dernier utilisé : 6, le 3 retiré
+à la demande de l'utilisateur) ; titres de groupe vides masqués dans la
+barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
 
 **Actions de l'utilisateur**
 
@@ -112,15 +109,25 @@ remplace les mails d'annonce — à alimenter à chaque changement visible
    (thématique en bas), icônes ↩ 🚪 de l'en-tête téléphone. Lot 1 (en ligne
    le 01/10) : à regarder sur téléphone.
 
+4. **Import Outlook à valider sur un vrai export du PC pro** : 2-3 faux
+   rendez-vous « ATELIER test », *Fichier → Enregistrer le calendrier*,
+   « Tous les détails ». Testé seulement sur un format Outlook reconstitué
+   (`utils.test.js`, `e2e/appels.test.js` de NextStep) : heure décalée, lieu
+   vide ou rien trouvé → demander le `.ics` réduit aux faux rendez-vous.
+   Le connecteur Microsoft 365 est inutilisable (poste verrouillé par la
+   DSI) : ne pas chercher à le contourner.
+5. **Mail d'échec Apps Script** (01/10) : échec du 30/09, d'avant la
+   suppression. Échec daté ≥ 01/10 → `script.google.com/home/triggers` + corbeille Drive.
+
 **Pour Claude**
 
-4. **Registre de sécurité, prochaine version** : §4.3 « Arrêt de Google »
+6. **Registre de sécurité, prochaine version** : §4.3 « Arrêt de Google »
    → projets Apps Script supprimés le 01/10/2026 (les déclencheurs ne
    l'étaient pas) ; porter au §9 la décision
    du 01/10 (un conseiller peut intervenir sur les ateliers des autres —
    risque accepté, filets corbeille 30 j et journal ; **ne pas le
    « corriger »**) ; noter les corrections du 01/10 (XSS, cache, RGPD-17).
-5. **Mineurs de l'audit du 01/10** : `permissions:` absent de
+7. **Mineurs de l'audit du 01/10** : `permissions:` absent de
    `deploy-api.yml`/`diagnostic-api.yml` (jeton déjà en lecture) ;
    `StrictHostKeyChecking=accept-new` (clé d'hôte Alwaysdata non épinglée) ;
    `schema.sql` lisible ne donne qu'un avertissement au déploiement ;
@@ -130,13 +137,15 @@ remplace les mails d'annonce — à alimenter à chaque changement visible
 
 **Sans urgence**
 
-6. **Usage des onglets** (depuis le 29/09) : regarder Admin → Connexions
+8. **Usage des onglets** (depuis le 29/09) : regarder Admin → Connexions
    dans quelques semaines pour décider des onglets à simplifier (lot 2).
-7. **Relevé du journal NextStep (PC pro), soldé le 01/10/2026** : 119
-   appels du 23/09 au 01/10 ; les 18 pertes datent toutes de l'époque
-   Google (23/09) ou de la matinée de bascule (25/09, 09:13-09:51). Depuis,
-   0 perte, heures de bureau comprises (10 h, 12 h, 14-16 h), sur le VPN du
-   Département (confirmé par l'utilisateur le 01/10/2026).
+9. **Pistes Outlook discutées, non lancées** (02/10) : durée des ateliers
+   exportés en `.ics` fixée à 1 h (`exportICS`, `shared.js`) — 2 h ou
+   réglable à trancher ; import des disponibilités (« Disponibilité
+   uniquement ») pour griser les créneaux occupés dans l'Agenda, lu dans le
+   navigateur seulement — à proposer si l'import des ateliers ne suffit pas.
+10. **Thématique « TBD »** : visible telle quelle dans les statistiques
+   tant qu'elle n'est pas remplacée — à surveiller.
 
 **Audit trimestriel** : routine `trig_01J6ZMsLHKbgXAQsRYgQL16q` (6 dépôts,
 sans connecteur, prochaine exécution le 01/01/2027). Créée dans
