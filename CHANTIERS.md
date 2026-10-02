@@ -111,22 +111,11 @@ barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
 
 **Pour Claude**
 
-6. **Registre de sécurité, après v3.3** (v3.3 et RGPD v1.4 faits le 02/10,
-   `ateliers-backups/documents/`) — **attendre le go de l'utilisateur** :
-   §8.5 ne cite que l'audit du 24/09 et la routine trimestrielle ; y porter
-   les audits faits en session à la demande de Claude. Relevés dans `git log`
-   au 02/10 : 24/09 (avant production, `ca04a64`) ; 01/10 en session
-   (`d680fb4` : XSS, cache navigateur, accès aux ateliers des autres) ;
-   01/10 routine (`68bb701` : `admin_v14.html`, GDINV2, mineurs ; ACME
-   Alwaysdata non vérifiable, site bloqué depuis la session). Revérifier
-   la liste avant d'écrire.
-   **Au go final (consigne du 02/10)** : aucun registre n'a encore été
-   remis, la version finalisée sera la **v1.0** — retirer le paragraphe
-   « Soldés depuis la v2.0 » (§9) et l'historique des versions internes
-   (v1.0 à v3.3 en page de garde et au §10), renuméroter ; **chaque
-   section (`h2`) commence sur une nouvelle page** (lisibilité) — vérifier
-   le nombre de pages (livret multiple de 4, `rendre.js`) et l'absence de
-   page blanche (`pdftotext` page par page).
+6. **Registre de sécurité v1.0 remis le 02/10/2026** (version finale,
+   une section par page, `ateliers-backups/documents/`). Registre RGPD (v1.4
+   interne) et procédure de restauration (v3.2 interne) : **à passer en v1.0
+   de la même façon si l'utilisateur le demande** (question posée le 02/10,
+   sans réponse) — le registre de sécurité les cite sans numéro de version.
 
 **Sans urgence**
 
