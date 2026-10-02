@@ -117,13 +117,6 @@ barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
    archivées dans `documents/archives/`. Prochaine révision : audit du
    01/01/2027 (ACME Alwaysdata à vérifier auprès de l'hébergeur).
 
-**Supprimer tout un cycle (02/10/2026, option 1 retenue par l'utilisateur)** :
-Historique → « ☑ Sélectionner plusieurs ateliers », cases sur la liste
-filtrée, « Tout sélectionner », « 🗑 Supprimer la sélection » (un `delete`
-par atelier, corbeille 30 j). `BarreSelection` dans `shared.js` des deux
-applis ; test `e2e/appels.test.js` (NextStep). **En attente du test de
-l'utilisateur**, puis entrée Nouveautés (`id` 15 ; 14 = rappels sur mail pro).
-
 **Sans urgence**
 
 7. **Usage des onglets** (depuis le 29/09) : regarder Admin → Connexions
