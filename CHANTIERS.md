@@ -120,7 +120,7 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    « 🎫 Tickets », filtres Ouverts / Mes signalements / **Archives** (tickets
    clos), mail à chaque ticket. **À tester par l'utilisateur** ; annonce
    Nouveautés (id 20) seulement après. Registre RGPD : nouveau traitement à
-   ajouter (test `[RGPD-18]`, purge). « Archives » demandé par l'utilisateur
+   ajouter (test `[RGPD-19]`, purge). « Archives » demandé par l'utilisateur
    pendant le développement : compris comme la liste des tickets clos — si
    c'était la conservation (pas de purge à 12 mois), à trancher.
 

@@ -341,7 +341,7 @@ verifier(isset(appel(['action' => 'getAll'], $A)['tickets']['nouveaux']), 'getAl
 $db->exec("UPDATE tickets SET clos_le = '2000-01-01 00:00:00' WHERE id = 'tk_essai_3'");
 $db->exec("UPDATE tickets SET cree_le = '2000-01-01 00:00:00' WHERE id = 'tk_essai_1'");
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
-verifier((int) $db->query("SELECT COUNT(*) FROM tickets")->fetchColumn() === 0, '[RGPD-18] tickets purgés à la connexion : clos depuis 12 mois, ou jamais clos depuis 24 mois');
+verifier((int) $db->query("SELECT COUNT(*) FROM tickets")->fetchColumn() === 0, '[RGPD-19] tickets purgés à la connexion : clos depuis 12 mois, ou jamais clos depuis 24 mois');
 array_map('unlink', glob("$dossierMails/*.txt"));
 
 echo "API — mot de passe oublié\n";
