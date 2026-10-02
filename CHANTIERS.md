@@ -6,8 +6,8 @@ Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand t
 est soldé. Ce n'est pas de la documentation permanente (cf.
 `MD-LIB/hygiene-instructions.md`).
 
-**Ménages du 26/09/2026** : époque GAS (avant `49e4013`) puis récit du
-chantier parité et des livraisons de la journée retirés — `git log -p
+**Ménages du 26/09 et du 02/10/2026** : époque GAS, récit de la parité,
+livraisons et décisions déjà verrouillées par les tests retirés — `git log -p
 CHANTIERS.md`. Contradiction d'une proposition par une autre session :
 `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au 27/09/2026**
 (AG-015 sorti le 27/09, `b73e86d`).
@@ -21,15 +21,10 @@ Alwaysdata**, compte `ateliers-numeriques`, **même base MySQL**. Refonte
 décidée le 23/09 (AG-009), bascule faite le 25/09 au matin, chantier clos
 par l'utilisateur le 25/09.
 
-- **Base Google supprimée** (classeurs, confirmé par l'utilisateur le
-  29/09/2026). **Projets Apps Script NEWGEN et NextStep supprimés par
-  l'utilisateur le 01/10/2026** : le `keepAlive` de NEWGEN tournait encore
-  (mail d'échec du 30/09), le « déclencheurs supprimés » noté le 26/09
-  était faux. Code des scripts en ligne archivé dans l'historique git
-  (NEWGEN `3da2257:gas/`, NextStep `b8b96c7:gas/`). **Import verrouillé** : le lever = requête SQL délibérée
+- **Google entièrement supprimé** : classeurs (29/09), projets Apps Script
+  (01/10, par l'utilisateur). Code archivé : NEWGEN `3da2257:gas/`, NextStep
+  `b8b96c7:gas/`. **Import verrouillé** : le lever = requête SQL délibérée
   (phpMyAdmin), sinon un second import écraserait les saisies.
-- Vitesse mesurée avant bascule (`banc/cibles.html`, 23-24/09) : GAS perdait
-  9,5 % (nuit) à 26,5 % (jour) des appels, Alwaysdata **0**, médiane 0,3 s.
 - Rappels d'ateliers en retard : tâche planifiée **08:00** chaque jour
   (`api/lib/rappels.php`), interrupteur individuel `rappels_actifs` respecté.
 - « Mot de passe oublié » par mail (`api/lib/reinit.php`, AG-013), reçu en
@@ -79,8 +74,6 @@ en retard ; NextStep absent à côté → simple avertissement.
   repliables au modèle de NEWGEN. Le fonctionnement reste commun
   (`PanneauAtelier`, tri, tuiles, filtres) : toute évolution fonctionnelle de
   l'Historique se fait dans les deux.
-- **Vérification terrain de NextStep faite par l'utilisateur le 26/09/2026**
-  (« tout fonctionne ») : Agenda (volet modifiable), connexion, saisie.
 
 ## Reste ouvert (état du 02/10/2026, par priorité)
 
@@ -203,40 +196,19 @@ couche d'appel.
   travaille sur NEWGEN (24/09) ; toute modification d'interface se fait sur
   les deux (`CLAUDE.md` règle 18). NEWGEN n'est plus un labo.
 
-- **Interfaces, décidé le 26/09/2026** (appliqué NEWGEN + NextStep) :
-  - **Historique trié** par date, puis **horaire** (chronologique), puis
-    orienteur seulement à heure égale (`comparerHistorique`, `utils.js`,
-    testé). Le bouton ↑/↓ Date n'inverse que les dates. Première version
-    (orienteur avant horaire) rejetée par l'utilisateur.
-  - **AM/PM pré-rempli** d'après l'horaire (avant 12:00 = AM), **toujours
-    modifiable** à la main ; recalculé si l'horaire change
-    (`ampmDepuisHoraire`, testé).
-  - **Tuiles de l'Historique** sur la liste filtrée **sans** le filtre de
-    statut : Total, Planifiés, Réalisés, Annulés, Autres (= Reportés + Non
-    réalisés, regroupés), Présents/inscrits **des seuls réalisés** ; % sur
-    le total (`kpiHistorique`, testé). Pas de tuile « inscrits prévus ».
-  - **Calendrier** : l'orienteur sur sa propre ligne dans la pastille.
-  - **Présents et inscrits : toujours sur les seuls ateliers réalisés**,
-    partout, via **`kpiHistorique`** (`utils.js`, testé) — jamais un filtre
-    recopié à la main.
-  - **Volet latéral commun `PanneauAtelier`** (Historique, Calendrier,
-    Agenda) : date, horaire, public, Classe mobile (le nombre d'ordinateurs ne
-    compte que si elle est cochée, `matierePanneau`), dates de prêt,
-    thématique en auto-proposition, alerte de conflit non bloquante
-    (`conflitsDeLEntree`, validée en production le 26/09). Ateliers anciens
-    avec un nombre sans la case : Anomalies → « Ordinateurs sans Classe
-    mobile ».
-  - **Filtre public de l'Historique à choix multiples** (26/09/2026) :
-    état `filtPublic` = tableau, `[]` = tous ; pastilles à cocher
-    (« Tout afficher » vide la sélection — **pas** « Tous (les) publics »,
-    confondu avec la catégorie « Tous publics » de la liste). Le Calendrier
-    garde son filtre public à choix unique.
-  - **« Effacer »** (filtres de l'Historique NEWGEN) vide tout, statut
-    compris ; « Voir tous » remet le statut par défaut (Planifié).
-  - **Liste de connexion Admin** (bouton « Changer », session ouverte) :
-    seuls les comptes à « accès Admin » — filtre `actif !== 'NON'` côté
-    page, sur les deux sites (NEWGEN testé par `e2e/appels.spec.js`) ; sans
-    lui, tous les conseillers réapparaissent.
+- **Interfaces, décidé le 26/09/2026** (NEWGEN + NextStep). Testés, donc
+  pas détaillés ici : tri de l'Historique (`comparerHistorique`), AM/PM
+  pré-rempli mais modifiable (`ampmDepuisHoraire`), tuiles et présents/inscrits
+  **des seuls réalisés** (`kpiHistorique`), Classe mobile du volet
+  (`matierePanneau`). Non testés, à ne pas défaire :
+  - volet latéral commun `PanneauAtelier` (Historique, Calendrier, Agenda),
+    alerte de conflit non bloquante ;
+  - filtre public de l'Historique à choix multiples, « Tout afficher » (pas
+    « Tous publics », confondu avec la catégorie) ; le Calendrier garde un
+    choix unique ;
+  - « Effacer » vide tout, statut compris ; « Voir tous » remet Planifié ;
+  - liste de connexion Admin (« Changer ») : comptes à accès Admin seulement
+    (`actif !== 'NON'`), sur les deux sites.
 
 ### 🔒 AG-002 (23/09/2026) — la journée entière reste la règle sur un prêt multi-jours
 
@@ -268,19 +240,9 @@ libre.
 
 ## Points à ne pas défaire
 
-- **`_id` fourni par le client et gardé tant que l'envoi n'a pas réussi** :
-  rejouer une écriture remplace, ne duplique pas (clé primaire). Le doublon de
-  cycle du 23/09 (chaque clic tirait de nouveaux `_id`) ne peut plus se
-  reproduire.
-- **Les écritures ne sont jamais doublées** par la couche réseau
-  (`GAS_ACTIONS_ECRITURE`, décidé par la couche, pas par l'appelant).
-- **Plafonds : 12 s lecture, 12 s écriture, 25 s `saveMany`** — verrouillés
-  par `e2e/reseau.spec.js`. Les rallonger n'a jamais récupéré une réponse.
-- **Aucun appel superflu au démarrage ni après une écriture** : les écritures
-  s'appliquent localement (`appliquerEntree`/`retirerEntree`), pas de
-  rechargement pour relire. Verrouillé par `e2e/appels.spec.js`.
-- **`sw.js` reste publié** et ne fait que se désinscrire ; jamais de
-  désinscription depuis la page (origine partagée avec NextStep et GDINV2).
+- Déjà dans `CLAUDE.md` §4-5 et verrouillés par les tests, non répétés ici :
+  `_id` client gardé jusqu'au succès, écritures jamais doublées, plafonds,
+  aucun appel superflu, `sw.js` de désinscription.
 - **`periodePretMateriel` retombe sur la date de l'atelier** quand les dates
   de prélèvement/retour ne sont pas saisies (confirmé par l'utilisateur le
   22/09 : matériel pris et rendu le jour même).
@@ -290,9 +252,8 @@ libre.
   `newgen` / `nextstep`) : les deux applis partagent l'origine
   `maswaddpt47-cmyk.github.io`, et `localStorage` n'est pas cloisonné par
   chemin.
-- **Couche réseau client gardée** (plafonds, reprises, doublage des
-  lectures) : avec l'API elle ne joue que sur une vraie coupure (4G terrain),
-  où elle sert encore.
+- **Couche réseau client gardée** : avec l'API elle ne sert que sur une
+  vraie coupure (4G terrain).
 - **Un nom de composant ou de fonction n'est déclaré qu'une fois** entre
   `shared.js`, `app.js` et `admin_app.js` : sinon le dernier chargé remplace
   l'autre en silence (cas `TableCommunes`, devenu `TableCommunesDashboard`
