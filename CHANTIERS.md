@@ -121,23 +121,20 @@ barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
    l'étaient pas) ; porter au §9 la décision
    du 01/10 (un conseiller peut intervenir sur les ateliers des autres —
    risque accepté, filets corbeille 30 j et journal ; **ne pas le
-   « corriger »**) ; noter les corrections du 01/10 (XSS, cache, RGPD-17).
-7. **Mineurs de l'audit du 01/10** : reste SheetJS 0.18.5 (l'appli n'écrit
-   que : risque faible), à mettre à jour avec un retest de l'export XLSX.
-   Faits le 02/10 : `permissions: contents: read` sur les deux workflows API,
-   `schema.sql` lisible fait échouer le déploiement, `import.php` et
-   `mailtest.php` supprimés (récupérables dans `git log`).
+   « corriger »**) ; noter les corrections du 01/10 (XSS, cache, RGPD-17) et
+   celles du 02/10 (workflows, `import.php`/`mailtest.php` retirés) ; porter
+   les risques acceptés du 02/10 (section « Décisions… » ci-dessous).
 
 **Sans urgence**
 
-8. **Usage des onglets** (depuis le 29/09) : regarder Admin → Connexions
+7. **Usage des onglets** (depuis le 29/09) : regarder Admin → Connexions
    dans quelques semaines pour décider des onglets à simplifier (lot 2).
-9. **Pistes Outlook discutées, non lancées** (02/10) : durée des ateliers
+8. **Pistes Outlook discutées, non lancées** (02/10) : durée des ateliers
    exportés en `.ics` fixée à 1 h (`exportICS`, `shared.js`) — 2 h ou
    réglable à trancher ; import des disponibilités (« Disponibilité
    uniquement ») pour griser les créneaux occupés dans l'Agenda, lu dans le
    navigateur seulement — à proposer si l'import des ateliers ne suffit pas.
-10. **Thématique « TBD »** : visible telle quelle dans les statistiques
+9. **Thématique « TBD »** : visible telle quelle dans les statistiques
    tant qu'elle n'est pas remplacée — à surveiller.
 
 **Audit trimestriel** : routine `trig_01J6ZMsLHKbgXAQsRYgQL16q` (6 dépôts,
@@ -185,6 +182,11 @@ couche d'appel.
   déploiement) ; blocage de 15 min après 5 échecs par compte, sans compter
   l'IP (un tiers peut bloquer un compte 15 min, équipe petite, journal
   conservé).
+  SheetJS 0.18.5 gardé (`vendor/xlsx-0.18.5/` et `xlsxstyle.js`, fondé
+  sur la même version) : ses failles connues ne jouent qu'à la lecture d'un
+  fichier, et l'appli ne fait qu'écrire (aucun `XLSX.read` ni
+  `sheet_to_json` dans les deux dépôts, vérifié le 02/10). **Rouvrir** si un
+  import `.xlsx` apparaît côté navigateur.
 
 - **Interrupteur « login »** de Listes → Conseillers = accès à l'**Admin**
   seulement ; Index reste ouvert. Couper complètement un agent = supprimer
