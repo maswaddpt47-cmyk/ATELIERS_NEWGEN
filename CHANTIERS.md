@@ -91,7 +91,9 @@ Périodicité **testée et validée par l'utilisateur le 02/10**, Nouveautés
 barre latérale NextStep. Aussi le 02/10 : suppression multiple dans
 l'Historique (`id` 15, validée), détails des ateliers dans la Corbeille
 (validé), **numéro d'un nouvel atelier calculé Corbeille comprise** (PR #28 :
-avant, il reprenait celui d'un atelier restaurable). GDINV2 et SMS-mail : leurs propres CHANTIERS.
+avant, il reprenait celui d'un atelier restaurable). Corbeille partageable sur
+Index (Admin → Visibilité, fermée par défaut ; NextStep #19, NEWGEN #29),
+**validée le 02/10**, Nouveautés `id` 16. GDINV2 et SMS-mail : leurs propres CHANTIERS.
 
 **Actions de l'utilisateur**
 
@@ -108,12 +110,6 @@ avant, il reprenait celui d'un atelier restaurable). GDINV2 et SMS-mail : leurs 
    boutons techniques des filtres (XLSX, ICS, Sync), ordre des champs
    (thématique en bas), icônes ↩ 🚪 de l'en-tête téléphone. Lot 1 (en ligne
    le 01/10) : à regarder sur téléphone.
-4. **À tester : Corbeille partageable sur Index** (02/10, NextStep #19,
-   NEWGEN #29). Admin → Visibilité → « Corbeille », fermée par défaut ;
-   ouverte, tout conseiller voit **tous** les ateliers supprimés et peut les
-   restaurer (choix de l'utilisateur), l'API n'ouvre que `getCorbeille` et
-   `restaurerCorbeille`. Après validation : entrée Nouveautés `id` 16
-   (règle 18), puis retirer ce point.
 5. **Mail d'échec Apps Script** (01/10) : échec du 30/09, d'avant la
    suppression. Échec daté ≥ 01/10 → `script.google.com/home/triggers` + corbeille Drive.
 
