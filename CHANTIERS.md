@@ -122,7 +122,7 @@ Historique → « ☑ Sélectionner plusieurs ateliers », cases sur la liste
 filtrée, « Tout sélectionner », « 🗑 Supprimer la sélection » (un `delete`
 par atelier, corbeille 30 j). `BarreSelection` dans `shared.js` des deux
 applis ; test `e2e/appels.test.js` (NextStep). **En attente du test de
-l'utilisateur**, puis entrée Nouveautés (`id` 14).
+l'utilisateur**, puis entrée Nouveautés (`id` 15 ; 14 = rappels sur mail pro).
 
 **Sans urgence**
 
