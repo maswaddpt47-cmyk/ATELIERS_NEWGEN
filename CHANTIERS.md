@@ -94,7 +94,7 @@ l'Historique (`id` 15, validée), détails des ateliers dans la Corbeille
 (validé), **numéro d'un nouvel atelier calculé Corbeille comprise** (PR #28 :
 avant, il reprenait celui d'un atelier restaurable). Corbeille partageable sur
 Index (Admin → Visibilité, fermée par défaut ; NextStep #19, NEWGEN #29),
-**validée le 02/10** ; pas de dépêche (annonce déjà faite le 25/09, `id` 9, reformulée). `id` 16 publié puis retiré : prochain `id` 17, jamais 16. GDINV2 et SMS-mail : leurs propres CHANTIERS.
+**validée le 02/10** ; pas de dépêche (annonce déjà faite le 25/09, `id` 9, reformulée). `id` 16 publié puis retiré, jamais réutilisé ; 17 (conflit d'ordinateurs, 26/09) et 18 (rubrique Nouveautés, 01/10) ajoutés le 02/10 : prochain `id` 19. GDINV2 et SMS-mail : leurs propres CHANTIERS.
 
 **Actions de l'utilisateur**
 
