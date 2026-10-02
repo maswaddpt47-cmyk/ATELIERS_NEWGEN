@@ -123,7 +123,10 @@ barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
    **Au go final (consigne du 02/10)** : aucun registre n'a encore été
    remis, la version finalisée sera la **v1.0** — retirer le paragraphe
    « Soldés depuis la v2.0 » (§9) et l'historique des versions internes
-   (v1.0 à v3.3 en page de garde et au §10), renuméroter.
+   (v1.0 à v3.3 en page de garde et au §10), renuméroter ; **chaque
+   section (`h2`) commence sur une nouvelle page** (lisibilité) — vérifier
+   le nombre de pages (livret multiple de 4, `rendre.js`) et l'absence de
+   page blanche (`pdftotext` page par page).
 
 **Sans urgence**
 
