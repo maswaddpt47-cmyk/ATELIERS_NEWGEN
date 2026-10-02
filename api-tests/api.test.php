@@ -337,6 +337,13 @@ verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'repondre
 appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_essai_3', 'type' => 'Amélioration', 'titre' => 'Même chose', 'description' => 'd']);
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_essai_3', 'doublon_de' => 'tk_essai_1']);
 verifier(($r['ok'] ?? false) && $r['ticket']['statut'] === 'Non retenu' && $r['ticket']['clos_le'] !== null && $r['ticket']['doublon_de'] === 'tk_essai_1', 'doublon : clos, rattaché à l\'original');
+appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_essai_4', 'type' => 'Bug', 'titre' => 'Test', 'description' => 'd']);
+appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_essai_3', 'doublon_de' => 'tk_essai_4']);
+verifier(str_contains(appel(['action' => 'supprimerTicket'], $T + ['_id' => 'tk_essai_4'])['error'] ?? '', 'administrateurs'), 'supprimer un ticket : réservé aux administrateurs');
+$r = appel(['action' => 'supprimerTicket'], $A + ['_id' => 'tk_essai_4']);
+verifier(($r['ok'] ?? false) && (int) $db->query("SELECT COUNT(*) FROM tickets WHERE id = 'tk_essai_4'")->fetchColumn() === 0
+    && $db->query("SELECT doublon_de FROM tickets WHERE id = 'tk_essai_3'")->fetchColumn() === ''
+    && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'supprimerTicket' AND ref = 'tk_essai_4'")->fetchColumn() === 1, 'suppression : ticket effacé, renvoi « doublon » vidé, journalisée');
 verifier(isset(appel(['action' => 'getAll'], $A)['tickets']['nouveaux']), 'getAll : résumé des tickets pour les pastilles');
 $db->exec("UPDATE tickets SET statut = 'Résolu', reponse = 'Fait.', repondu_par = 'Conseiller Test', clos_le = '" . date('Y-m-d H:i:s', strtotime('-13 months')) . "' WHERE id = 'tk_essai_1'");
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);

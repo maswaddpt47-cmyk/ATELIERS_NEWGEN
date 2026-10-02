@@ -162,6 +162,20 @@ function action_repondre_ticket(PDO $db, array $p, array $session): array
     return ['ok' => true, 'ticket' => ticket_lire($db, $id)];
 }
 
+// Suppression définitive (test, envoi par erreur), réservée à l'admin et à la
+// superviseure (02/10/2026). Journalisée avec le numéro pour cible, jamais le
+// texte. Les tickets marqués « doublon » de celui-ci perdent ce renvoi.
+// Rejouée sur un ticket déjà supprimé : ok, rien à faire.
+function action_supprimer_ticket(PDO $db, array $p): array
+{
+    tickets_schema($db);
+    $id = (string) ($p['_id'] ?? '');
+    if ($id === '') return ['ok' => false, 'error' => 'Ticket introuvable'];
+    $db->prepare("UPDATE tickets SET doublon_de = '' WHERE doublon_de = ?")->execute([$id]);
+    $db->prepare('DELETE FROM tickets WHERE id = ?')->execute([$id]);
+    return ['ok' => true];
+}
+
 // Pour les pastilles, livré avec getAll (aucun appel de plus au démarrage) :
 // tickets « Nouveau » (Admin) et dernière réponse sur les tickets de la
 // personne connectée (Index). Table absente : rien, sans erreur.

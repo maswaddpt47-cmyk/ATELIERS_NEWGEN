@@ -32,7 +32,7 @@ const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
 const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'getTickets'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
-const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket'];
+const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket'];
 
 // Ordre des champs d'un atelier dans la réponse (contract.test.js:12-34).
 const API_CHAMPS_ATELIER = [
@@ -125,6 +125,7 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'creerTicket':     return action_creer_ticket($db, $p, $session);
         case 'getTickets':      return action_get_tickets($db, $session);
         case 'repondreTicket':  return action_repondre_ticket($db, $p, $session);
+        case 'supprimerTicket': return action_supprimer_ticket($db, $p);
         case 'saveLists':       return action_save_lists($db, $p);
         case 'saveConfig':
         case 'setConfig':       return action_set_config($db, $p);
