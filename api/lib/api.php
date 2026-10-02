@@ -89,7 +89,10 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
     }
     $session = api_session($db, $jeton);
     if ($session === null) return ['ok' => false, 'error' => 'Non autorisé : jeton manquant ou expiré', 'auth' => true];
-    if (in_array($action, API_ACTIONS_ADMIN, true) && !api_acces_admin($db, $session)) {
+    // Corbeille (02/10/2026) : ouverte aux conseillers quand l'Admin l'a rendue
+    // visible sur Index (Admin → Visibilité) ; fermée sinon, comme avant.
+    $corbeilleOuverte = in_array($action, ['getCorbeille', 'restaurerCorbeille'], true) && api_corbeille_ouverte($db);
+    if (in_array($action, API_ACTIONS_ADMIN, true) && !$corbeilleOuverte && !api_acces_admin($db, $session)) {
         return ['ok' => false, 'error' => 'Non autorisé : réservé aux administrateurs'];
     }
 
@@ -408,6 +411,15 @@ function api_config_pour(PDO $db, array $session): array
 function api_config_base(PDO $db): array
 {
     return $db->query('SELECT cle, valeur FROM config')->fetchAll(PDO::FETCH_KEY_PAIR);
+}
+
+// Interrupteur « corbeille » de la visibilité d'Index : même lecture que
+// visibiliteEffective (utils.js) — absent, false, 0, '' ou 'false' = fermé.
+function api_corbeille_ouverte(PDO $db): bool
+{
+    $v = (array) api_json((string) (api_config_base($db)['visibility'] ?? ''), []);
+    $x = $v['corbeille'] ?? null;
+    return !($x === null || $x === false || $x === 0 || $x === '' || strtolower((string) $x) === 'false');
 }
 
 // Même test que le GAS : 'true' ou 'TRUE' (GAS_NEWGEN.js:654).

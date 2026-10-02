@@ -678,6 +678,7 @@ function App(){
         view==='roadmap'&&visibility.roadmap&&CE(VueRoadmap,{entries,annee:anneeReference(annee),conseillers:lists.conseillers}),
         view==='gestion_ordi'&&visibility.gestion_ordi&&CE(VueGestionOrdi,{entries,onEdit:handleEdit}),
         view==='bingo'&&visibility.bingo&&CE(VueBingo,{entries}),
+        view==='corbeille'&&visibility.corbeille&&CE(VueCorbeille,null),
         view==='nouveautes'&&CE(VueNouveautes,{onVu:marquerNouveautes})
       )
     ),
@@ -712,6 +713,9 @@ function App(){
         navBtn('bingo',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('circle',{cx:12,cy:12,r:10}),CE('circle',{cx:12,cy:12,r:6}),CE('circle',{cx:12,cy:12,r:2})),
           'Bingo', visibility.bingo),
+        navBtn('corbeille',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6'})),
+          'Corbeille', visibility.corbeille),
         // Nouveautés (01/10/2026) : aussi dans la barre du bas, où l'équipe
         // cherche ses rubriques sur téléphone ; pastille comme en haut.
         CE('div',{key:'nouveautes',style:{position:'relative',display:'flex'}},
