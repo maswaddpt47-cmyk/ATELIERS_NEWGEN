@@ -120,9 +120,10 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    « 🎫 Tickets », filtres Ouverts / Mes signalements / **Archives** (tickets
    clos), mail à chaque ticket. **À tester par l'utilisateur** ; annonce
    Nouveautés (id 20) seulement après. Registres RGPD et sécurité passés en
-   **v1.1** le 02/10 (traitement T5, test `[RGPD-19]`), v1.0 archivées. « Archives » demandé par l'utilisateur
-   pendant le développement : compris comme la liste des tickets clos — si
-   c'était la conservation (pas de purge à 12 mois), à trancher.
+   **v1.1** le 02/10 (traitement T5, test `[RGPD-19]`), v1.0 archivées.
+   Conservation tranchée le 02/10 (« au-delà de 12 mois si le RGPD le
+   permet ») : anonymisé 12 mois après clôture, supprimé à 36 mois, jamais
+   clos supprimé à 24 mois (`1434e65`, registres régénérés `1b44ad3`).
 
 3. **Documents remis en v1.0 le 02/10/2026** (`ateliers-backups/documents/`) :
    registre de sécurité et registre RGPD (une section par page), procédure
