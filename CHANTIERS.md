@@ -43,9 +43,9 @@ par l'utilisateur le 25/09.
   admin/superviseur ; aucune ressource externe (`vendor/`, test RGPD-17 en
   CI) ; HTTPS forcé ; 2FA GitHub et Alwaysdata ; journal conservé 12 mois ;
   documents à diffusion restreinte, **rangés dans le dépôt privé
-  `ateliers-backups/documents/`** : registre de sécurité, registre RGPD
-  (art. 30) et procédure de restauration, **v1.0 du 02/10/2026, finis et
-  validés par l'utilisateur** (versions internes dans `documents/archives/`).
+  `ateliers-backups/documents/`** : registre de sécurité et registre RGPD
+  (art. 30) **v1.1** (T5 tickets ajouté le 02/10, sur la v1.0 validée par
+  l'utilisateur le même jour) et procédure de restauration **v1.0** (versions internes dans `documents/archives/`).
   Leurs écarts RGPD ouverts —
   compte personnel sans DPA, durée de conservation des ateliers non fixée,
   mention d'information des agents, procédure de sortie — sont à porter au
@@ -119,8 +119,8 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    `6279774`, NEWGEN `dac3c0c`/`41bd6dc`) : Index « 💬 Signaler », Admin
    « 🎫 Tickets », filtres Ouverts / Mes signalements / **Archives** (tickets
    clos), mail à chaque ticket. **À tester par l'utilisateur** ; annonce
-   Nouveautés (id 20) seulement après. Registre RGPD : nouveau traitement à
-   ajouter (test `[RGPD-19]`, purge). « Archives » demandé par l'utilisateur
+   Nouveautés (id 20) seulement après. Registres RGPD et sécurité passés en
+   **v1.1** le 02/10 (traitement T5, test `[RGPD-19]`), v1.0 archivées. « Archives » demandé par l'utilisateur
    pendant le développement : compris comme la liste des tickets clos — si
    c'était la conservation (pas de purge à 12 mois), à trancher.
 
