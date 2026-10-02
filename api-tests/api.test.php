@@ -119,7 +119,7 @@ $r = appel(['action' => 'getAll', 'year' => '2026', 'token' => $admin['token']])
 verifier(($r['ok'] ?? null) === false, 'jeton dans l\'URL : refusé');
 $r = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']]);
 verifier($r['ok'] === true, 'jeton dans le corps : accepté');
-verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'stockOrdinateurs', 'materielsCaches', 'conseillers_inactifs'], 'clés de la réponse conseiller = GAS NEWGEN sans emails : ' . implode(',', array_keys($r)));
+verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'stockOrdinateurs', 'materielsCaches', 'conseillers_inactifs', 'tickets'], 'clés de la réponse conseiller = GAS NEWGEN sans emails : ' . implode(',', array_keys($r)));
 // RGPD (25/09/2026) : les adresses mail ne vont qu'à l'Admin.
 verifier(!str_contains(json_encode($r), 'nouveau.venu@example.org'), '[RGPD-15] getAll conseiller : aucune adresse mail');
 $ra = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $admin['token']]);
@@ -312,6 +312,37 @@ appel(['action' => 'logAccesIndex'], $T + ['conseiller' => 'Conseiller Test', 'u
 $l = $db->query("SELECT conseiller, ref FROM journal WHERE action = 'accesIndex' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
 verifier($l === ['conseiller' => 'Nouveau Venu', 'ref' => 'Conseiller Test'], 'logAccesIndex : personne du jeton, nom choisi en ref (AG-011)');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'login'")->fetchColumn() >= 4, 'connexions réussies journalisées par checkPassword');
+
+echo "API — tickets (AG-016)\n";
+$nbMails = fn() => count(glob("$dossierMails/*.txt") ?: []);
+$db->exec("UPDATE comptes SET actif = 1 WHERE conseiller = 'Conseiller Test'");
+$db->exec("REPLACE INTO config (cle, valeur) VALUES ('emails', '" . json_encode(['Nouveau Venu' => 'nouveau.venu@example.org', 'Conseiller Test' => ['email' => 'admin@example.org']]) . "')");
+$avant = $nbMails();
+$tk = ['_id' => 'tk_essai_1', 'type' => 'Bug', 'gene' => 'bloquant', 'titre' => 'Le <b>calendrier</b> plante', 'description' => str_repeat('x', 2500), 'onglet' => 'Calendrier', 'appareil' => 'PC', 'site' => 'nextstep', 'auteur' => 'Usurpateur'];
+verifier(appel(['action' => 'creerTicket'], $tk)['auth'] ?? false, 'ticket sans jeton : refusé');
+$r = appel(['action' => 'creerTicket'], $T + $tk);
+verifier(($r['ok'] ?? false) && $r['nouveau'] === true && $r['ticket']['auteur'] === 'Nouveau Venu' && $r['ticket']['site'] === 'nextstep' && mb_strlen($r['ticket']['description']) === 2000, 'ticket créé : auteur = personne connectée, site validé, description bornée');
+verifier($nbMails() === $avant + 1 && $r['mails'] === 1, 'un mail, au seul admin actif qui a une adresse (format objet {email} lu)');
+$r2 = appel(['action' => 'creerTicket'], $T + $tk);
+verifier(($r2['ok'] ?? false) && $r2['nouveau'] === false && (int) $db->query("SELECT COUNT(*) FROM tickets")->fetchColumn() === 1 && $nbMails() === $avant + 1, 'envoi rejoué (réponse perdue) : ni second ticket ni second mail');
+$m = file_get_contents(max(glob("$dossierMails/*.txt")));
+verifier(str_contains($m, 'A: admin@example.org') && str_contains($m, 'Le <b>calendrier</b> plante'), 'mail : bon destinataire, titre repris tel quel en texte brut');
+verifier((appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_essai_2', 'type' => 'Inconnu', 'titre' => 't', 'description' => 'd'])['ok'] ?? true) === false, 'type de ticket inconnu : refusé');
+$l = appel(['action' => 'getTickets'], $T);
+verifier(($l['ok'] ?? false) && count($l['tickets']) === 1 && $l['moi'] === 'Nouveau Venu', 'getTickets : tous les tickets, et le nom de la personne connectée');
+verifier(str_contains(appel(['action' => 'repondreTicket'], $T + ['_id' => 'tk_essai_1', 'statut' => 'Résolu'])['error'] ?? '', 'administrateurs'), 'répondre : réservé aux administrateurs');
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_essai_1', 'statut' => 'En cours', 'reponse' => 'Je regarde.']);
+verifier(($r['ok'] ?? false) && $r['ticket']['statut'] === 'En cours' && $r['ticket']['repondu_par'] === 'Conseiller Test' && $r['ticket']['clos_le'] === null, 'réponse : statut, auteur de la réponse, ticket encore ouvert');
+verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'repondreTicket' AND ref = 'tk_essai_1'")->fetchColumn() === 1, 'réponse journalisée avec le numéro du ticket pour cible, jamais le texte');
+appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_essai_3', 'type' => 'Amélioration', 'titre' => 'Même chose', 'description' => 'd']);
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_essai_3', 'doublon_de' => 'tk_essai_1']);
+verifier(($r['ok'] ?? false) && $r['ticket']['statut'] === 'Non retenu' && $r['ticket']['clos_le'] !== null && $r['ticket']['doublon_de'] === 'tk_essai_1', 'doublon : clos, rattaché à l\'original');
+verifier(isset(appel(['action' => 'getAll'], $A)['tickets']['nouveaux']), 'getAll : résumé des tickets pour les pastilles');
+$db->exec("UPDATE tickets SET clos_le = '2000-01-01 00:00:00' WHERE id = 'tk_essai_3'");
+$db->exec("UPDATE tickets SET cree_le = '2000-01-01 00:00:00' WHERE id = 'tk_essai_1'");
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+verifier((int) $db->query("SELECT COUNT(*) FROM tickets")->fetchColumn() === 0, '[RGPD-18] tickets purgés à la connexion : clos depuis 12 mois, ou jamais clos depuis 24 mois');
+array_map('unlink', glob("$dossierMails/*.txt"));
 
 echo "API — mot de passe oublié\n";
 $mails = function () use ($dossierMails) { $f = glob("$dossierMails/*.txt"); sort($f); return array_map('file_get_contents', $f); };

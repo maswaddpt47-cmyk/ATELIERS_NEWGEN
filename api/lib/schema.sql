@@ -153,3 +153,31 @@ CREATE TABLE IF NOT EXISTS usage_onglets (
   vues   INT         NOT NULL DEFAULT 0,
   PRIMARY KEY (jour, site, page, onglet)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tickets de l'équipe (02/10/2026, AG-016) : bugs, améliorations, questions.
+-- id fourni par le client (comme les ateliers) : un envoi rejoué ne crée pas
+-- de second ticket ni de second mail. Visible de toute l'équipe ; réponse et
+-- statut par admin/superviseur. Purge : 12 mois après clôture, 24 mois
+-- après création pour un ticket jamais clos.
+CREATE TABLE IF NOT EXISTS tickets (
+  id          VARCHAR(64)   NOT NULL,
+  cree_le     DATETIME      NOT NULL,
+  auteur      VARCHAR(100)  NOT NULL,
+  site        VARCHAR(20)   NOT NULL DEFAULT '',
+  version     VARCHAR(30)   NOT NULL DEFAULT '',
+  appareil    VARCHAR(20)   NOT NULL DEFAULT '',
+  type        VARCHAR(20)   NOT NULL,
+  onglet      VARCHAR(40)   NOT NULL DEFAULT '',
+  gene        VARCHAR(20)   NOT NULL DEFAULT '',
+  titre       VARCHAR(120)  NOT NULL,
+  description TEXT          NOT NULL,
+  statut      VARCHAR(20)   NOT NULL DEFAULT 'Nouveau',
+  reponse     TEXT          NOT NULL,
+  repondu_le  DATETIME      NULL,
+  repondu_par VARCHAR(100)  NOT NULL DEFAULT '',
+  doublon_de  VARCHAR(64)   NOT NULL DEFAULT '',
+  clos_le     DATETIME      NULL,
+  PRIMARY KEY (id),
+  KEY idx_cree_le (cree_le),
+  KEY idx_clos_le (clos_le)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
