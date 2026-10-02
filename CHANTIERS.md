@@ -111,14 +111,15 @@ barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
 
 **Pour Claude**
 
-6. **Registre de sécurité, prochaine version** : §4.3 « Arrêt de Google »
-   → projets Apps Script supprimés le 01/10/2026 (les déclencheurs ne
-   l'étaient pas) ; porter au §9 la décision
-   du 01/10 (un conseiller peut intervenir sur les ateliers des autres —
-   risque accepté, filets corbeille 30 j et journal ; **ne pas le
-   « corriger »**) ; noter les corrections du 01/10 (XSS, cache, RGPD-17) et
-   celles du 02/10 (workflows, `import.php`/`mailtest.php` retirés) ; porter
-   les risques acceptés du 02/10 (section « Décisions… » ci-dessous).
+6. **Registre de sécurité, après v3.3** (v3.3 et RGPD v1.4 faits le 02/10,
+   `ateliers-backups/documents/`) — **attendre le go de l'utilisateur** :
+   §8.5 ne cite que l'audit du 24/09 et la routine trimestrielle ; y porter
+   les audits faits en session à la demande de Claude. Relevés dans `git log`
+   au 02/10 : 24/09 (avant production, `ca04a64`) ; 01/10 en session
+   (`d680fb4` : XSS, cache navigateur, accès aux ateliers des autres) ;
+   01/10 routine (`68bb701` : `admin_v14.html`, GDINV2, mineurs ; ACME
+   Alwaysdata non vérifiable, site bloqué depuis la session). Revérifier
+   la liste avant d'écrire.
 
 **Sans urgence**
 
