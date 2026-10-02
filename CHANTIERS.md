@@ -122,13 +122,11 @@ barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
    du 01/10 (un conseiller peut intervenir sur les ateliers des autres —
    risque accepté, filets corbeille 30 j et journal ; **ne pas le
    « corriger »**) ; noter les corrections du 01/10 (XSS, cache, RGPD-17).
-7. **Mineurs de l'audit du 01/10** : `permissions:` absent de
-   `deploy-api.yml`/`diagnostic-api.yml` (jeton déjà en lecture) ;
-   `StrictHostKeyChecking=accept-new` (clé d'hôte Alwaysdata non épinglée) ;
-   `schema.sql` lisible ne donne qu'un avertissement au déploiement ;
-   `api/import.php` et `api/mailtest.php` encore en ligne malgré l'import
-   verrouillé ; blocage après 5 échecs utilisable pour bloquer un compte
-   15 min ; SheetJS 0.18.5 (l'appli n'écrit que : risque faible).
+7. **Mineurs de l'audit du 01/10** : reste SheetJS 0.18.5 (l'appli n'écrit
+   que : risque faible), à mettre à jour avec un retest de l'export XLSX.
+   Faits le 02/10 : `permissions: contents: read` sur les deux workflows API,
+   `schema.sql` lisible fait échouer le déploiement, `import.php` et
+   `mailtest.php` supprimés (récupérables dans `git log`).
 
 **Sans urgence**
 
@@ -180,6 +178,13 @@ couche d'appel.
   Déchiffrer une copie hors site exige un PC personnel.
 
 ## Décisions de l'utilisateur à ne pas « corriger »
+
+- **Risques acceptés, audit du 01/10 (décidé le 02/10/2026)** :
+  `StrictHostKeyChecking=accept-new` dans les workflows (clé d'hôte
+  Alwaysdata non épinglée : il faudrait détourner la connexion pendant un
+  déploiement) ; blocage de 15 min après 5 échecs par compte, sans compter
+  l'IP (un tiers peut bloquer un compte 15 min, équipe petite, journal
+  conservé).
 
 - **Interrupteur « login »** de Listes → Conseillers = accès à l'**Admin**
   seulement ; Index reste ouvert. Couper complètement un agent = supprimer
