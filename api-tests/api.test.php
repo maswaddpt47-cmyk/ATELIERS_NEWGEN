@@ -215,6 +215,8 @@ verifier(str_contains(appel(['action' => 'getCorbeille'], $T)['error'] ?? '', 'a
 $cb = appel(['action' => 'getCorbeille'], $A);
 verifier(($cb['ok'] ?? false) && in_array('lot_1', array_column($cb['ateliers'], '_id'), true) && $cb['ateliers'][0]['supprime_par'] === 'Nouveau Venu', 'atelier supprimé : dans la corbeille, avec son auteur');
 $nAvant = json_decode($db->query("SELECT donnees FROM ateliers_corbeille WHERE id = 'lot_1'")->fetchColumn(), true)['_n'];
+$lot1 = array_values(array_filter($cb['ateliers'], fn($a) => $a['_id'] === 'lot_1'))[0];
+verifier((int) $lot1['_n'] === (int) $nAvant && array_key_exists('lieu', $lot1) && array_key_exists('orienteur', $lot1), 'corbeille : numéro, lieu et orienteur fournis pour repérer l\'atelier');
 $db->exec("INSERT INTO ateliers (id, n, statut, date, horaire, thematique, conseiller, commune, orienteur, lieu, co_animateur, residence, remarques)
            VALUES ('bouche_trou', 999, 'Planifié', '2026-01-01', '', '', '', '', '', '', '', '', '')");   // MAX(n)+1 ≠ numéro d'origine
 $r = appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'lot_1']);

@@ -475,7 +475,10 @@ function action_get_corbeille(PDO $db): array
         $e = json_decode($r['donnees'], true) ?: [];
         return ['_id' => $r['id'], 'supprime_le' => $r['supprime_le'], 'supprime_par' => $r['supprime_par'],
                 'date' => $e['date'] ?? '', 'horaire' => $e['horaire'] ?? '', 'thematique' => $e['thematique'] ?? '',
-                'commune' => $e['commune'] ?? '', 'conseiller' => $e['conseiller'] ?? ''];
+                'commune' => $e['commune'] ?? '', 'conseiller' => $e['conseiller'] ?? '',
+                // Pour repérer l'atelier dans la liste (02/10/2026).
+                '_n' => $e['_n'] ?? '', 'statut' => $e['statut'] ?? '', 'lieu' => $e['lieu'] ?? '',
+                'orienteur' => $e['orienteur'] ?? '', 'public' => $e['public'] ?? ''];
     }, $l)];
 }
 
