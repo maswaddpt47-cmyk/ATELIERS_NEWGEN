@@ -98,7 +98,8 @@ Index (Admin → Visibilité, fermée par défaut ; NextStep #19, NEWGEN #29),
 
 **Actions de l'utilisateur**
 
-1. **Écarts RGPD à porter au DPO** : compte Alwaysdata personnel sans DPA,
+1. **Écarts RGPD à porter au DPO — en attente, décision de l'utilisateur
+   le 02/10/2026 (mail au DPO pas encore envoyé)** : compte Alwaysdata personnel sans DPA,
    durée de conservation des ateliers non fixée, mention d'information des
    agents, procédure de sortie.
 2. **Mail d'échec Apps Script** (01/10) : échec du 30/09, d'avant la
