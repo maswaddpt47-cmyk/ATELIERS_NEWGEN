@@ -89,8 +89,10 @@ info-bulles/popups et cache des ateliers corrigés ; RGPD-17 étendu ;
 saisie par cycle : ⧉ dupliquer une séance, encart « Périodicité » (hebdo,
 mensuel « 2e mardi », fériés sautés, thématique « TBD » par défaut), import
 Outlook (.ics) ; rubrique **Nouveautés** (règle 18 de `CLAUDE.md` : une
-entrée par changement visible, `id` suivant — dernier utilisé : 6, le 3 retiré
-à la demande de l'utilisateur) ; titres de groupe vides masqués dans la
+entrée par changement visible, **seulement après test de l'utilisateur**).
+Entrées 5 (périodicité) et 6 (import Outlook) retirées le 02/10 en
+attendant ses tests : les republier avec les `id` **7 et 8** (5-6 déjà vus
+sur certains appareils, la pastille ne s'y rallumerait pas) ; titres de groupe vides masqués dans la
 barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
 
 **Actions de l'utilisateur**
