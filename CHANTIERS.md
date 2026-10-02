@@ -115,13 +115,14 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
 
 **Pour Claude**
 
-0. **Rubrique « Signaler » (tickets de l'équipe)** — proposée le 02/10,
-   choix de l'utilisateur : tickets vus par admin **et** superviseur, **mail à
-   chaque ticket**, chaque conseiller voit **tous** les tickets, **pas de
-   capture**. Aucune action de l'utilisateur pour la base : table créée par
-   l'API au déploiement. AGORA AG-016 ouvert. Développement à lancer sur
-   feu vert ; registre RGPD à compléter (nouvelle finalité) avant mise en
-   service ; annonce Nouveautés seulement après test de l'utilisateur.
+0. **Rubrique « Signaler » livrée le 02/10/2026** (AG-016 amendé, NextStep
+   `6279774`, NEWGEN `dac3c0c`/`41bd6dc`) : Index « 💬 Signaler », Admin
+   « 🎫 Tickets », filtres Ouverts / Mes signalements / **Archives** (tickets
+   clos), mail à chaque ticket. **À tester par l'utilisateur** ; annonce
+   Nouveautés (id 20) seulement après. Registre RGPD : nouveau traitement à
+   ajouter (test `[RGPD-18]`, purge). « Archives » demandé par l'utilisateur
+   pendant le développement : compris comme la liste des tickets clos — si
+   c'était la conservation (pas de purge à 12 mois), à trancher.
 
 3. **Documents remis en v1.0 le 02/10/2026** (`ateliers-backups/documents/`) :
    registre de sécurité et registre RGPD (une section par page), procédure
