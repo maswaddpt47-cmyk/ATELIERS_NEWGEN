@@ -10,7 +10,7 @@ var VIEW_META_F = {
   gestion_ordi:{ico:'🖥️', label:'Gestion ordi', group:'Voir'},
   bingo:      {ico:'🎯',  label:'Bingo',        group:'Stats'},
   nouveautes: {ico:'🆕',  label:'Nouveautés',   group:'Info'},
-  signaler:   {ico:'💬',  label:'Signaler',     group:'Info'},
+  signaler:   {ico:'💬',  label:'Contribuer',     group:'Info'},
 };
 
 function MaintenanceScreen({msg}){
@@ -733,8 +733,8 @@ function App(){
         CE('div',{key:'signaler',style:{position:'relative',display:'flex'}},
           navBtn('signaler',
             CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'})),
-            'Signaler'),
-          CE(PastilleNouveautes,{nb:nbTickets,libelle:'réponse(s) à vos signalements'}))
+            'Contribuer'),
+          CE(PastilleNouveautes,{nb:nbTickets,libelle:'réponse(s) à vos contributions'}))
       )
     ),
 

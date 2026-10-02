@@ -43,7 +43,7 @@ const INDEX_VIEWS = [
   { label: 'Gestion ordi', ariaLabel: 'Gestion ordi' },
   { label: 'Bingo',      ariaLabel: 'Bingo'      },
   { label: 'Nouveautés', ariaLabel: 'Nouveautés' },
-  { label: 'Signaler',   ariaLabel: 'Signaler'   },
+  { label: 'Contribuer', ariaLabel: 'Contribuer' },
 ];
 
 const ADMIN_VIEWS = [

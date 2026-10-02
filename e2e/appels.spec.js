@@ -438,8 +438,8 @@ test('signaler — un envoi : un seul creerTicket, onglet d\'origine pré-rempli
   await p.page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
   await connecter(p.page);
   await p.page.locator('nav.bottom-nav-v2').getByText('Agenda', { exact:true }).click();
-  await p.page.locator('nav.bottom-nav-v2').getByText('Signaler', { exact:true }).click();
-  await p.page.getByRole('button', { name:'＋ Nouveau signalement' }).click();
+  await p.page.locator('nav.bottom-nav-v2').getByText('Contribuer', { exact:true }).click();
+  await p.page.getByRole('button', { name:'＋ Nouvelle contribution' }).click();
   await p.page.getByPlaceholder(/le Calendrier ne s'affiche pas/).fill('Agenda vide le lundi');
   await p.page.locator('textarea').first().fill('Rien ne s\'affiche.');
   await p.page.getByRole('button', { name:'📨 Envoyer' }).click();
