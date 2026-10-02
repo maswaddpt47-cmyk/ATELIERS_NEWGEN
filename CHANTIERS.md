@@ -90,6 +90,8 @@ info-bulles/popups corrigée et cache des ateliers retiré de NEWGEN ;
 GDINV2 et SMS-mail suivis dans leurs propres CHANTIERS.
 Aussi le 01/10 : saisie par cycle — bouton ⧉ dupliquer une séance et
 encart « Périodicité » (hebdo, mensuel, fériés sautés) ;
+import Outlook (.ics, mot-clé dans le titre, 02/10) — **à valider sur un
+vrai export du PC pro** : testé seulement sur un format Outlook reconstitué ;
 rubrique **Nouveautés** (pastille, `NOUVEAUTES` dans `shared.js`) qui
 remplace les mails d'annonce — à alimenter à chaque changement visible
 (règle 18 de `CLAUDE.md`). Retour de l'équipe à recueillir.
