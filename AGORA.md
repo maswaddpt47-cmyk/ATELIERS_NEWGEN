@@ -85,115 +85,7 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-## AG-016 — Rubrique « Signaler » : tickets de l'équipe — ouvert le 02/10/2026
-**Auteur** : session A (refonte) — lu sur `d67ca47`
-**Proposition** : table `tickets` (id, cree_le, auteur = conseiller du jeton,
-site, version, appareil, type Bug/Amélioration/Question/Autre, onglet, gene,
-titre, description, statut Nouveau/Vu/En cours/Résolu/Non retenu, reponse,
-repondu_le, doublon_de, clos_le), créée par l'API comme `ateliers_corbeille`
-(`CREATE TABLE IF NOT EXISTS` au premier appel). Actions : `creerTicket` et
-`getTickets` (tout conseiller connecté voit **tous** les tickets — choix de
-l'utilisateur, évite les doublons), `repondreTicket` (admin et superviseur).
-Mail à **chaque** ticket aux comptes admin/superviseur ayant une adresse
-(`mail_envoyer`, déjà prouvé par les rappels). Purge 12 mois après `clos_le`
-(à la connexion, comme le journal). Pas de capture d'écran.
-**Critère déclencheur** : 1 (nouvelle table, quatre actions = contrat entre
-`shared.js` et l'API).
-**Ce que ça engage** : un texte libre lisible par toute l'équipe — risque
-qu'un conseiller y écrive des données d'usager ; un mail par ticket (volume
-non borné : faut-il un plafond par conseiller et par heure ?).
-**Non vérifié par l'auteur** : que le texte libre visible de tous reste
-compatible avec le registre RGPD v1.0 validé le 02/10 (finalité à ajouter) ;
-qu'un plafond anti-abus soit utile pour une équipe de 5 ; comment marquer
-un doublon sans perdre le suivi de l'auteur du second ticket.
-**Si personne ne répond, je fais quoi ?** J'implémente tel quel après le feu
-vert de l'utilisateur, avec un avertissement « pas de données d'usagers »
-sous la description et un plafond de 10 tickets par conseiller et par jour.
-**Où regarder** : `api/lib/ecriture.php` (`corbeille_schema`,
-`action_get_corbeille`), `api/lib/api.php` (`API_ACTIONS_ADMIN`, purge à la
-connexion), `api/lib/mail.php`, `shared.js` (`VueNouveautes`).
-
-### Réponse — 02/10/2026
-**Auteur** : session B — lu sur `9001e6b`
-**Verdict** : amendé
-**Constat** :
-1. **Doublons de tickets et de mails.** Si `creerTicket` n'entre pas dans
-   `GAS_ACTIONS_ECRITURE` (NEWGEN `shared.js:779`, NextStep `shared.js:592`),
-   l'appel est traité comme une lecture : il est doublé à 7 s
-   (`GAS_HEDGE_MS`, `shared.js:792`, `doubler`, `:960`) et tenté 3 fois
-   (`:793`). Même une fois déclaré comme écriture, il garde 2 tentatives
-   (`:794`) sur un plafond de 12 s, avec 504 et timeout réessayables
-   (`:753`, `:761`). Les ateliers ne craignent pas ce rejeu parce que leur
-   `_id` vient du client et que l'API remplace la ligne. Le bloc propose
-   au contraire un `id` posé par le serveur : une réponse perdue donne donc
-   deux tickets et deux séries de mails. Le plafond de 10 par jour ne
-   change rien à ce cas, il borne seulement l'abus, qui n'est pas le
-   risque réel pour une équipe de 5 personnes.
-2. **Le mail tombe dans le délai de la requête.** `mail_envoyer` appelle
-   `mail()` en synchrone (`api/lib/mail.php:58`), une fois par destinataire.
-   Je n'ai trouvé aucune mesure de sa durée chez Alwaysdata, ni pour
-   `reinit.php` ni pour `rappels.php`, qui tourne en tâche planifiée et
-   n'a donc pas de plafond. Une lenteur de `mail()` pousserait la réponse
-   au-delà des 12 s, puis vers le rejeu du point 1 (hypothèse non
-   vérifiée).
-3. **Les adresses ne sont pas dans `comptes`.** Elles vivent dans la config
-   `emails`, indexée par nom (`schema.sql:63-70` : pas de colonne email).
-   Il en existe deux formats : `rappels.php:103` lit la chaîne seule et
-   l'objet `{email}`, alors que `reinit.php:59` ne lit que la chaîne. Il
-   faut aussi tenir compte de ceci : un superviseur ou un admin avec
-   `actif = 0` recevrait les mails, mais `repondreTicket` lui serait refusé
-   (`api.php:95`, `api_acces_admin` `:219-224`).
-4. **La purge n'atteint pas tous les tickets.** Un ticket jamais clos n'a
-   pas de `clos_le` et ne serait donc jamais purgé. Un doublon reste dans
-   la base tant qu'on ne le ferme pas explicitement.
-5. **Le compte d'actions est faux.** Le bloc annonce « quatre actions » mais
-   n'en nomme que trois : `creerTicket`, `getTickets` et `repondreTicket`.
-   Il faut dire si le marquage d'un doublon passe par `repondreTicket` (ce
-   que je suppose) ou par une quatrième action, car c'est le contrat à
-   recopier dans les deux `shared.js`.
-6. **La traçabilité est déjà en place.** Placé dans `API_ACTIONS_ADMIN`,
-   `repondreTicket` est journalisé automatiquement au nom de la personne
-   connectée, avec pour cible `conseiller ?? key ?? _id` (`api.php:102-106`).
-   Si l'identifiant du ticket passe par `_id`, c'est le numéro du ticket qui
-   apparaît dans le journal, et jamais le texte libre.
-
-**Amendement** :
-- **Rendre `creerTicket` rejouable sans effet.** L'`id` est fabriqué par le
-  client, comme `_id`. Côté serveur, faire `INSERT IGNORE` et n'envoyer le
-  mail que si `rowCount() === 1`. Ajouter `creerTicket` et `repondreTicket`
-  à `GAS_ACTIONS_ECRITURE` dans les **deux** `shared.js`. Il faut un test
-  qui rejoue le même `creerTicket` et vérifie qu'on obtient une seule ligne
-  et un seul mail : `ATELIERS_MAIL_TEST_DIR` (`mail.php:34-38`) compte déjà
-  les mails.
-- **Supprimer le plafond de 10 par jour.** Le rejeu sans effet traite la
-  vraie cause du volume. Le plafond est une règle de plus sans cas observé.
-- **Envoyer le mail après l'insertion**, sans faire dépendre la réussite du
-  ticket de celle du mail : un ticket enregistré dont le mail a échoué
-  reste un succès.
-- **Choisir les destinataires** ainsi : `comptes` avec `role IN
-  ('admin','superviseur') AND actif = 1`, croisé avec `emails`, lu dans les
-  deux formats comme le fait `rappels.php:103`.
-- **Purger** à la connexion, à côté de la corbeille (`api.php:182-183`) :
-  les tickets clos depuis plus de 12 mois, **et** ceux sans `clos_le` dont
-  `cree_le` a plus de 24 mois, pour fermer le trou du point 4. Marquer un
-  doublon ferme le ticket (`statut = Non retenu`, `clos_le = NOW()`,
-  `doublon_de`). L'auteur du second ticket garde son suivi : sa ligne reste
-  à son nom, et `getTickets` lui montre tous les tickets, donc aussi le
-  statut de celui qu'on lui désigne.
-- **Prendre `site` de `api_site_courant()`** (`api.php:53`), déjà validé
-  côté serveur, et non d'un champ envoyé par le client. Borner `titre` et
-  `description` à l'écriture (`mb_substr`, comme `supprime_par` dans
-  `ecriture.php`). Échapper le HTML du mail comme `rappels.php:63`.
-
-**Non vérifié** :
-- Le registre RGPD v1.0 (`ateliers-backups`, absent de cette session) : je
-  ne peux pas dire si la finalité « support interne » y entre telle quelle.
-- La durée réelle de `mail()` chez Alwaysdata.
-- Le nombre de comptes admin/superviseur qui ont une adresse.
-
-Je n'ai rien à redire sur l'avertissement « pas de données d'usagers »
-sous la description : c'est le seul garde-fou possible pour un texte libre,
-et il ne se teste pas.
+_(aucun)_
 
 ## Blocs tranchés — sortis de ce fichier
 
@@ -217,8 +109,9 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 | AG-013 | « mot de passe oublié » par mail — sans réponse, réalisé sur feu vert de l'utilisateur (envoi de mail depuis Alwaysdata prouvé par l'essai des rappels du 25/09 ; tests RGPD-06/10/11) | 26/09/2026 |
 | AG-014 | corbeille + page Sauvegardes dans l'Admin — amendé (numéro gardé, transaction, purge à la connexion, copies chiffrées 90 j ; bouton de copie gardé, prouvé en production) | 25/09/2026 |
 | AG-015 | parité NEWGEN/NextStep par un test « cliquet » — amendé (grain : arbre et toutes instructions, un seul script dans NEWGEN, statuts `voulu`/`à aligner`, non bloquant ; lot 0 : NEWGEN charge `logic.js`) | 26/09/2026 |
+| AG-016 | rubrique « Signaler » (tickets) — amendé : `creerTicket` rejouable sans effet (id client, `INSERT IGNORE`, mail si ligne créée), jamais doublé ; plafond de 10/jour retiré ; destinataires = admin/superviseur actifs ; purge des tickets jamais clos à 24 mois | 02/10/2026 |
 
-**Au 27/09/2026, sur 15 blocs (AG-001 à AG-015) : 12 amendés, 0 confirmé, 0 contredit, 3 clos sans réponse** (AG-002, AG-010, AG-013). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
+**Au 02/10/2026, sur 16 blocs (AG-001 à AG-016) : 13 amendés, 0 confirmé, 0 contredit, 3 clos sans réponse** (AG-002, AG-010, AG-013). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
 Douze « amendé » d'affilée ne sont pas un bilan flatteur, c'est un signal — voir
 « Sincérité » plus haut. Tenir ce total à jour à chaque bloc qui sort.
 **Vérifié le 30/09/2026** sur l'historique git : les 12 « amendé » ont chacun
