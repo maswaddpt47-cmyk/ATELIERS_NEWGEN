@@ -120,6 +120,10 @@ barre latérale NextStep. GDINV2 et SMS-mail : leurs propres CHANTIERS.
    01/10 routine (`68bb701` : `admin_v14.html`, GDINV2, mineurs ; ACME
    Alwaysdata non vérifiable, site bloqué depuis la session). Revérifier
    la liste avant d'écrire.
+   **Au go final (consigne du 02/10)** : aucun registre n'a encore été
+   remis, la version finalisée sera la **v1.0** — retirer le paragraphe
+   « Soldés depuis la v2.0 » (§9) et l'historique des versions internes
+   (v1.0 à v3.3 en page de garde et au §10), renuméroter.
 
 **Sans urgence**
 
