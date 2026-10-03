@@ -295,3 +295,17 @@ libre.
 - **NEWGEN charge `logic.js`** dans ses pages (lot 0 d'AG-015) : plus aucune
   copie de la logique du matériel dans `shared.js`, ce qui est testé est ce
   qui tourne.
+
+## Pistes d'amélioration
+
+Règle 22 de MD-LIB `collaboration.md` : au plus 3 pistes, à la fin d'une
+fonctionnalité validée ou sur demande de revue. Une piste écartée ne se
+repropose pas sans fait nouveau.
+
+**Proposées, en attente**
+- Conflits de matériel tenant compte de la durée : un atelier 11:00–12:30 et un autre à 12:00 sur les mêmes ordinateurs (relevé par la session B, AG-018, 03/10/2026 ; `logic.js` ne regarde que la demi-journée de début).
+
+**Écartées** (date — piste — raison)
+- 03/10/2026 — lien d'abonnement agenda pour les partenaires — « pour l'instant » (utilisateur).
+- 03/10/2026 — tri des onglets d'après les compteurs d'usage — « pour l'instant ».
+- 03/10/2026 — aide « Premiers pas » pour un nouvel arrivant — « pour l'instant ».
