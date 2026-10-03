@@ -118,15 +118,14 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
 0. **Demande du 03/10/2026, dans l'ordre** : (1) durée d'un atelier — livrée
    (NextStep `c57fb7a`, NEWGEN `6be6a0c`, AG-017 ouvert), **à tester** : liste
    « Durée » dans Nouveau et la saisie par cycle, 1 h 30 par défaut, reprise
-   de l'import Outlook, fin du .ics = début + durée ; pas dans le volet
-   latéral (non demandé) ; Nouveautés 21 publiée, datée du 05/10 à la demande
+   de l'import Outlook, fin du .ics = début + durée, et dans le volet
+   latéral (NextStep `08c9c28`, NEWGEN `1812e80`) ; Nouveautés 21 publiée, datée du 05/10 à la demande
    de l'utilisateur. **AM/PM retiré de la saisie** (AG-018, NextStep `2ca6f2d`,
    NEWGEN `4bc388a`) : l'API l'écrit d'après l'heure de début ; requête de
-   contrôle des AM/PM contradictoires donnée à l'utilisateur, résultat non
-   reçu. (2) mention d'information RGPD des agents — texte proposé le 03/10,
+   contrôle non lancée (choix de l'utilisateur : corrigé à la prochaine écriture). (2) mention d'information RGPD des agents — texte proposé le 03/10,
    **mise en pause par l'utilisateur** (« oublie le RGPD pour l'instant »).
    (3) bilan mensuel par mail — destinataires et contenu à faire choisir.
-   AG-017 confirmé, AG-018 amendé par la session B (03/10) ; amendement
+   AG-017 confirmé, AG-018 amendé par la session B, **tranchés le 03/10** ; amendement
    appliqué (volet latéral, NextStep `d0a8a80`, NEWGEN `cb238b9`). **Piste
    notée par B** : les conflits de matériel ne regardent que la demi-journée
    de début (`logic.js:122-127`) ; avec la durée, un atelier 11:00–12:30 et un
