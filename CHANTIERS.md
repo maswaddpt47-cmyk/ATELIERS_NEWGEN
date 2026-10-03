@@ -119,9 +119,13 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    (NextStep `c57fb7a`, NEWGEN `6be6a0c`, AG-017 ouvert), **à tester** : liste
    « Durée » dans Nouveau et la saisie par cycle, 1 h 30 par défaut, reprise
    de l'import Outlook, fin du .ics = début + durée ; pas dans le volet
-   latéral (non demandé). (2) mention d'information RGPD des agents (écart du
-   registre §9) — emplacement et contact DPO à faire choisir. (3) bilan
-   mensuel par mail — destinataires et contenu à faire choisir. Écartés pour
+   latéral (non demandé) ; Nouveautés 21 publiée, datée du 05/10 à la demande
+   de l'utilisateur. **AM/PM retiré de la saisie** (AG-018, NextStep `2ca6f2d`,
+   NEWGEN `4bc388a`) : l'API l'écrit d'après l'heure de début ; requête de
+   contrôle des AM/PM contradictoires donnée à l'utilisateur, résultat non
+   reçu. (2) mention d'information RGPD des agents — texte proposé le 03/10,
+   **mise en pause par l'utilisateur** (« oublie le RGPD pour l'instant »).
+   (3) bilan mensuel par mail — destinataires et contenu à faire choisir. Écartés pour
    l'instant : abonnement agenda partenaires, tri des onglets, aide nouvel
    arrivant.
 
