@@ -150,6 +150,7 @@ var VIEW_META = {
   saisie:     { ico: '✏️',  label: 'Nouveau',        group: 'Action' },
   historique: { ico: '📋',  label: 'Historique',     group: 'Consulter' },
   agenda:     { ico: '🗓️', label: 'Agenda',          group: 'Consulter' },
+  planning:   { ico: '📊', label: 'Planning',        group: 'Consulter' },
   calendrier: { ico: '📅',  label: 'Calendrier',     group: 'Consulter' },
   carte:      { ico: '🗺️', label: 'Carte',          group: 'Consulter' },
   roadmap:    { ico: '🛣️', label: 'Roadmap',         group: 'Consulter' },
@@ -539,6 +540,7 @@ const LOGS_KEY = lsKey('adm_logs');
         view==='saisie'&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{if(anneeIncluse(annee,e.date))setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(adminConseiller)}),
         view==='historique'&&CE(VueHistorique,{key:'hist_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem(lsKey('adm_conseiller'),nom);setAdminConseiller(nom);}}),
         view==='agenda'&&CE(VueAgendaSemaine,{key:'agenda_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,accentColor}),
+        view==='planning'&&CE(VuePlanning,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,accentColor,conseillers:lists.conseillers}),
         view==='calendrier'&&CE(VueCalendrier,{key:'cal_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem(lsKey('adm_conseiller'),nom);setAdminConseiller(nom);}}),
         view==='dashboard'&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
         view==='carte'&&CE(VueCarte,{entries,active:view==='carte'}),
@@ -635,6 +637,9 @@ const LOGS_KEY = lsKey('adm_logs');
         navBtn('agenda',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:3,y:4,width:18,height:18,rx:2}),CE('path',{d:'M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01'})),
           'Agenda'),
+        navBtn('planning',
+          CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M3 4v16M7 7h8M7 12h12M7 17h6'})),
+          'Planning'),
         navBtn('calendrier',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:3,y:4,width:18,height:18,rx:2}),CE('path',{d:'M16 2v4M8 2v4M3 10h18'})),
           'Calendrier'),
@@ -981,7 +986,7 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
   function addTlLog(msg,type='info'){setTlLogs(l=>[...l,{msg,type,t:new Date().toLocaleTimeString('fr-FR')}]);}
   function changeMoisDeb(v){localStorage.setItem(lsKey('cal_moisDeb'),v);setMoisDeb(v);setLastExport(null);}
   function changeMoisFin(v){localStorage.setItem(lsKey('cal_moisFin'),v);setMoisFin(v);setLastExport(null);}
-  const VIS_ITEMS=[{key:'saisie',label:'✏️ Saisie',sub:'Formulaire de saisie'},{key:'historique',label:'📋 Historique',sub:'Liste des ateliers'},{key:'agenda',label:'🗓️ Agenda',sub:'Planning hebdo AM/PM'},{key:'calendrier',label:'📅 Calendrier',sub:'Vue calendrier mensuelle'},{key:'dashboard',label:'📊 Dashboard',sub:'Synthèse · Graphiques · Territoire'},{key:'carte',label:'🗺️ Carte',sub:'Carte des communes'},{key:'bingo',label:'🎯 Bingo',sub:'Vue par commune'},{key:'roadmap',label:'🛣️ Roadmap',sub:'Timeline & densité'},{key:'gestion_ordi',label:'🖥️ Gestion ordi',sub:'Conflits Classe mobile & stock ordinateurs'},{key:'anomalies',label:'⚠️ Anomalies',sub:'Champs manquants & communes invalides'},{key:'corbeille',label:'🗑️ Corbeille',sub:'Ateliers supprimés depuis moins de 30 jours : consulter et restaurer'}];
+  const VIS_ITEMS=[{key:'saisie',label:'✏️ Saisie',sub:'Formulaire de saisie'},{key:'historique',label:'📋 Historique',sub:'Liste des ateliers'},{key:'planning',label:'📊 Planning',sub:'Frise de la semaine par conseiller'},{key:'agenda',label:'🗓️ Agenda',sub:'Planning hebdo AM/PM'},{key:'calendrier',label:'📅 Calendrier',sub:'Vue calendrier mensuelle'},{key:'dashboard',label:'📊 Dashboard',sub:'Synthèse · Graphiques · Territoire'},{key:'carte',label:'🗺️ Carte',sub:'Carte des communes'},{key:'bingo',label:'🎯 Bingo',sub:'Vue par commune'},{key:'roadmap',label:'🛣️ Roadmap',sub:'Timeline & densité'},{key:'gestion_ordi',label:'🖥️ Gestion ordi',sub:'Conflits Classe mobile & stock ordinateurs'},{key:'anomalies',label:'⚠️ Anomalies',sub:'Champs manquants & communes invalides'},{key:'corbeille',label:'🗑️ Corbeille',sub:'Ateliers supprimés depuis moins de 30 jours : consulter et restaurer'}];
 
   React.useEffect(()=>{if(initialVisibility)return;apiFetch('getVisibility').then(res=>{if(res.ok)setVisibility(visibiliteEffective(res.visibility));}).catch(()=>{});},[]);
   React.useEffect(()=>{setColorDraft(d=>{const draft={...CONSEILLER_COLORS,...d};(conseillersList||[]).forEach(c=>{if(!draft[c])draft[c]='#6B7280';});return draft;});},[conseillersList]);
