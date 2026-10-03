@@ -96,6 +96,8 @@ avant, il reprenait celui d'un atelier restaurable). Corbeille partageable sur
 Index (Admin → Visibilité, fermée par défaut ; NextStep #19, NEWGEN #29),
 **validée le 02/10** ; pas de dépêche (annonce déjà faite le 25/09, `id` 9, reformulée). `id` 16 publié puis retiré, jamais réutilisé ; 17 (conflit d'ordinateurs, 26/09) et 18 (rubrique Nouveautés, 01/10) ajoutés le 02/10  ; 19 publié puis retiré (annonces repliables, pas d'annonce voulue) ; 20 (rubrique Contribuer, ex-Signaler, validée et mail reçu le 02/10) : prochain `id` 21, jamais 16 ni 19. GDINV2 et SMS-mail : leurs propres CHANTIERS.
 
+**Audit trimestriel (routine) du 01/10/2026 — aucun critique.** Importants/mineurs à traiter : (1) NextStep `admin_v14.html` (reliquat publié) charge React/Leaflet/ECharts depuis cdnjs sans SRI et échappe à RGPD-17 (qui ne teste que `index.html`/`admin.html`) → supprimer le fichier (voir CHANTIERS NextStep) ; (2) GDINV2 `index.html:1497` `makeBarList` insère `name` non échappé (origine partagée avec le jeton GitHub de SMS-mail) ; (3) mineur : `StrictHostKeyChecking=accept-new` dans `deploy-api.yml`, `diagnostic-api.yml`, `copie.yml` (clé d'hôte non épinglée ; `config-api.php` et les copies transitent par ce lien) ; `api/import.php` et `api/mailtest.php` toujours en ligne alors que l'import est verrouillé (clé seule, `sleep(2)` pour tout frein) ; `permissions:` toujours absent de `deploy-api.yml`/`diagnostic-api.yml`. Non vérifiable depuis la session : faille ACME Alwaysdata (security.alwaysdata.com bloqué), DPA Alwaysdata, GitHub sur dataprivacyframework.gov (seulement sources secondaires).
+
 **Actions de l'utilisateur**
 
 1. **Écarts RGPD à porter au DPO — en attente, décision de l'utilisateur
