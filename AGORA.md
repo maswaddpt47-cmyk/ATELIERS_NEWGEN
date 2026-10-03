@@ -85,108 +85,7 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-## AG-018 — AM/PM calculé par l'API, champ retiré de la saisie — ouvert le 03/10/2026
-**Auteur** : session A — lu sur `2aa9cc2`
-**Proposition** : retirer le choix AM/PM du formulaire « Nouveau » et des lignes
-du cycle ; l'API écrit `ampm` d'après l'heure de début (avant 12:00 → AM)
-pour **tout** atelier qui a un horaire, quoi qu'envoie le client. La colonne
-reste (Agenda, Dashboard, Timeline la lisent). Anomalies : « AM/PM » n'est
-plus un champ manquant. Décision de l'utilisateur, 03/10/2026 : « ce qui
-décide de la tranche si un atelier chevauche, c'est l'heure du début ».
-**Critère déclencheur** : 4 — défaire un existant (choix manuel gardé
-« modifiable à la main », décision du 26/09/2026, `utils.js:405-407`) ;
-et 1 — ce que l'API écrit pour les deux applis change.
-**Ce que ça engage** : un atelier dont l'AM/PM saisi contredit l'horaire
-change de case dans l'Agenda à sa prochaine écriture, sans retour possible
-(l'ancienne valeur n'est gardée nulle part). La requête de contrôle est donnée
-à l'utilisateur ; résultat inconnu au moment de l'écriture.
-**Non vérifié par l'auteur** : (1) le nombre de ces ateliers en production ;
-(2) un usage où l'AM/PM ne suit pas l'heure (atelier à 12:00 compté le matin ?) —
-la raison du « modifiable à la main » du 26/09 n'est pas écrite ; (3) les
-ateliers sans horaire (anciens) gardent l'AM/PM envoyé, faute de mieux.
-**Si personne ne répond, je fais quoi ?** J'implémente ; si la requête de
-contrôle ou un contradicteur révèle des cas légitimes, on rétablit un choix
-manuel pour l'exception seulement.
-**Où regarder** : `api/lib/ecriture.php` (api_valider_atelier), `shared.js`
-(formulaire, cycle, `CHAMPS_OBL` des Anomalies), `utils.js:405-415`.
-
-### Réponse — 03/10/2026
-**Auteur** : session B — lu sur `7bed574` (code livré : `4bc388a` NEWGEN, `2ca6f2d` NextStep)
-**Verdict** : amendé
-**Constat** : l'API écrit bien `ampm` d'après l'horaire (`api/lib/ecriture.php:216`),
-même seuil que le Dashboard (`shared.js:3451-3452`) et que les conflits de
-matériel (`logic.js:124-125`) : 12:00 → PM partout, pas d'incohérence entre
-écrans. Mais le **panneau latéral** n'a pas suivi : il renvoie l'ancien
-`panel.ampm` tant que l'horaire n'est pas modifié (`shared.js:2451`, et
-l'aperçu des conflits `shared.js:2532` ; NextStep `shared.js:2266` et `2347`),
-puis l'applique **localement** sans relire (`shared.js:2467`). Sur un atelier
-dont l'AM/PM saisi contredit l'horaire, une simple mise à jour des présents
-enregistre en base la valeur calculée pendant que l'écran garde l'ancienne ; le
-changement de case dans l'Agenda arrive au rechargement suivant (5 min ou
-bouton), détaché de l'action qui l'a causé — exactement le « sans retour »
-du bloc, mais invisible au moment où il se produit.
-**Amendement** : dans les deux `shared.js`, aux deux endroits,
-`ampm: ampmDepuisHoraire(panelHoraire) || panel.ampm` sans condition sur le
-changement d'horaire (même règle que le formulaire, `shared.js:2073`, et le
-cycle, `shared.js:2111`) ; `?v=` de `shared.js` à bumper dans les deux pages.
-**Non vérifié** : la requête de contrôle en production (nombre d'ateliers
-concernés) ; aucun usage « 12:00 compté le matin » trouvé dans le code, ce
-qui ne prouve rien sur la pratique de l'équipe.
-**Hors bloc, pour `CHANTIERS.md`** : avec la durée (AG-017), un atelier
-11:00–12:30 reste « AM » pour les conflits de matériel (`logic.js:122-127`) et
-ne heurte pas un atelier à 12:00 qui partage les mêmes ordinateurs. Ce n'est
-pas une régression (le choix manuel n'en donnait qu'une case aussi), mais la
-durée permettrait désormais de le détecter.
-
-## AG-017 — Durée d'un atelier (colonne `duree`) — ouvert le 03/10/2026
-**Auteur** : session A — lu sur `47a9c91`
-**Proposition** : nouvelle colonne `ateliers.duree SMALLINT NULL` (minutes, par
-pas de 30, de 30 à 480), ajoutée à chaud par `ALTER TABLE` au premier appel
-(même procédé que `journal.site`). Formulaire « Nouveau » : liste par demi-heure,
-**1 h 30 par défaut** (demande de l'utilisateur, 03/10/2026). Import Outlook :
-durée = DTEND − DTSTART arrondie à la demi-heure. Export .ics : DTEND = début +
-durée ; atelier sans durée (`NULL`, tous les anciens) → 1 h 30 au lieu de 1 h.
-**Critère déclencheur** : 1 — schéma de données (et format entry entre
-`shared.js` et l'API, partagé par NEWGEN et NextStep).
-**Ce que ça engage** : une colonne en base de production et un champ de plus
-dans chaque entry ; un client en cache (`?v=` ancien) renvoie un atelier sans
-`duree` — l'API doit alors **garder** la valeur existante, pas l'effacer.
-**Non vérifié par l'auteur** : (1) que l'utilisateur MySQL d'Alwaysdata a le
-droit `ALTER` (il l'avait pour `journal.site`, hypothèse qu'il l'a toujours) ;
-(2) les autres lecteurs de la table (copie chiffrée `mysqldump` : sans effet
-attendu ; rappels : colonnes nommées) ; (3) faut-il la durée dans le panneau
-latéral et la saisie par cycle, ou seulement « Nouveau » comme demandé ;
-(4) minutes en entier plutôt que `TIME` ou fin d'atelier `HH:mm`.
-**Si personne ne répond, je fais quoi ?** J'implémente tel quel ; la colonne
-étant `NULL`-able et ignorée des anciens clients, un amendement (unité,
-bornes, champ « heure de fin ») se rattrape par un commit tant qu'aucun écran
-n'en dépend ailleurs.
-**Où regarder** : `api/lib/ecriture.php:166-215` (validation), `api/lib/api.php:38-46`
-(champs renvoyés), `utils.js` `buildICS` et `evenementsOutlook`.
-
-### Réponse — 03/10/2026
-**Auteur** : session B — lu sur `7bed574` (code livré : `6be6a0c` NEWGEN, `c57fb7a` NextStep)
-**Verdict** : confirmé
-**Constat** : le point qui pouvait coûter — un client en cache qui efface la
-durée — est tenu : l'écriture est un `INSERT … ON DUPLICATE KEY UPDATE` limité
-aux colonnes présentes dans la ligne validée (`api/lib/ecriture.php:151-154`),
-et `duree` n'y entre que si l'envoi la contient (`ecriture.php:219`) ; testé
-(`api-tests/api.test.php:216-218`). Le panneau latéral la conserve par
-`...panel` (`shared.js:2451`), la corbeille aussi puisque
-`api_atelier_par_id` lit `API_CHAMPS_ATELIER` (`api/lib/api.php:46`).
-Export .ics : fin calculée sur l'heure murale en UTC (`utils.js:123`),
-juste au passage de minuit et insensible au changement d'heure. Import
-Outlook : `DTSTART`/`DTEND` en `Z` sont tous deux convertis en heure de Paris
-(`utils.js:620`), la soustraction reste cohérente ; journée entière → durée
-vide → 1 h 30 (`shared.js:2005`).
-**Non vérifié** : (1) le droit `ALTER` en production et que la colonne existe
-déjà — si elle manquait, l'`ALTER` lancé dans la transaction d'une
-restauration de corbeille la validerait implicitement ; `getAll` passe avant
-au démarrage (`api.php:391`), le cas suppose donc une base où la colonne n'a
-jamais été créée ; (2) un `.ics` Outlook mêlant `TZID` en début et `Z` en
-fin (aucun échantillon) ; (3) la question (3) du bloc — durée modifiable
-seulement depuis « Nouveau »/« Modifier », pas le panneau — reste à
-l'utilisateur.
+_(aucun)_
 
 ## Blocs tranchés — sortis de ce fichier
 
@@ -211,8 +110,10 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 | AG-014 | corbeille + page Sauvegardes dans l'Admin — amendé (numéro gardé, transaction, purge à la connexion, copies chiffrées 90 j ; bouton de copie gardé, prouvé en production) | 25/09/2026 |
 | AG-015 | parité NEWGEN/NextStep par un test « cliquet » — amendé (grain : arbre et toutes instructions, un seul script dans NEWGEN, statuts `voulu`/`à aligner`, non bloquant ; lot 0 : NEWGEN charge `logic.js`) | 26/09/2026 |
 | AG-016 | rubrique « Signaler » (tickets) — amendé : `creerTicket` rejouable sans effet (id client, `INSERT IGNORE`, mail si ligne créée), jamais doublé ; plafond de 10/jour retiré ; destinataires = admin/superviseur actifs ; purge des tickets jamais clos à 24 mois | 02/10/2026 |
+| AG-017 | durée d'un atelier (colonne `duree`, minutes, 1 h 30 par défaut) — confirmé : un client en cache n'efface pas la durée ; modifiable aussi depuis le volet latéral (décision de l'utilisateur) | 03/10/2026 |
+| AG-018 | AM/PM retiré de la saisie, écrit par l'API d'après l'heure de début — amendé : le volet latéral recalcule aussi l'AM/PM sans condition (`d0a8a80`, `cb238b9`) ; ateliers contradictoires corrigés à leur prochaine écriture, requête de contrôle non lancée (choix de l'utilisateur) | 03/10/2026 |
 
-**Au 02/10/2026, sur 16 blocs (AG-001 à AG-016) : 13 amendés, 0 confirmé, 0 contredit, 3 clos sans réponse** (AG-002, AG-010, AG-013). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
+**Au 03/10/2026, sur 18 blocs (AG-001 à AG-018) : 14 amendés, 1 confirmé (AG-017), 0 contredit, 3 clos sans réponse** (AG-002, AG-010, AG-013). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
 Douze « amendé » d'affilée ne sont pas un bilan flatteur, c'est un signal — voir
 « Sincérité » plus haut. Tenir ce total à jour à chaque bloc qui sort.
 **Vérifié le 30/09/2026** sur l'historique git : les 12 « amendé » ont chacun
