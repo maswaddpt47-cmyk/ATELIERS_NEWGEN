@@ -210,6 +210,10 @@ function api_valider_atelier(array $d, ?string &$err): ?array
                 break;
         }
     }
+    // AM/PM d'après l'heure de début (AG-018, 03/10/2026) : avant 12:00 → AM.
+    // Le champ n'est plus saisi ; un client d'avant qui l'envoie est corrigé.
+    // Sans horaire (anciens ateliers) : la valeur envoyée est gardée.
+    if (($l['horaire'] ?? null) !== null) $l['ampm'] = (int) substr($l['horaire'], 0, 2) < 12 ? 'AM' : 'PM';
     // Durée en minutes (AG-017). Absente de l'envoi (client d'avant, en
     // cache) : la colonne n'est pas touchée, la durée déjà saisie reste.
     if (array_key_exists('duree', $d)) {

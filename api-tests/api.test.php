@@ -206,6 +206,12 @@ verifier(appel(['action' => 'delete'], $T + ['_id' => 'lot_1']) === ['ok' => tru
 verifier(appel(['action' => 'delete'], $T + ['_id' => 'lot_1'])['error'] === 'Entrée introuvable', 'suppression rejouée : introuvable');
 verifier((int) $db->query("SELECT COUNT(*) FROM ateliers_materiel WHERE atelier_id = 'lot_1'")->fetchColumn() === 0, 'matériel supprimé avec l\'atelier');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'saveEntry' AND ref = 'entry_1'")->fetchColumn() === 2, 'écritures journalisées');
+// AM/PM (AG-018) : écrit d'après l'heure de début, quoi qu'envoie le client.
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['horaire' => '12:00', 'ampm' => 'AM'] + $maj)]);
+$a = $lire('entry_1')['ampm'];
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['horaire' => '11:59', 'ampm' => 'PM'] + $maj)]);
+verifier($a === 'PM' && $lire('entry_1')['ampm'] === 'AM', 'AM/PM calculé par l\'API d\'après l\'heure de début (12:00 → PM, 11:59 → AM)');
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj)]);
 // Durée (AG-017) : enregistrée, gardée quand un ancien client ne l'envoie pas, bornée.
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['duree' => 120])]);
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj)]);
