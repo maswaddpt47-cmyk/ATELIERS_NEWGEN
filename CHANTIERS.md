@@ -138,6 +138,13 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    03/10 : vivre 2–3 semaines à côté de l'Agenda, puis relire les compteurs
    d'onglets (Admin → Connexions) avant de retirer l'Agenda ; mensuel
    (Calendrier gardé ou carte de charge) à trancher ensuite.
+   (5) **Réimport Outlook** (option 1 choisie le 03/10 ; NextStep `370cf14`,
+   NEWGEN `e194eb9`) : un rendez-vous déplacé → « Mettre à jour » (date,
+   horaire, durée), supprimé → « Annulé » proposé décoché ; réalisé jamais
+   touché. Identifiant stable (`cleStable`) pour les imports à venir ; un
+   rendez-vous simple importé **avant** et déplacé depuis n'est pas reconnu
+   (apparaît nouveau + supprimé). **À tester.** Options 2 (calendrier publié)
+   et 3 (Microsoft 365) écartées pour l'instant : DPO / DSI.
    AG-017 confirmé, AG-018 amendé par la session B, **tranchés le 03/10** ; amendement
    appliqué (volet latéral, NextStep `d0a8a80`, NEWGEN `cb238b9`). **Piste
    notée par B** : les conflits de matériel ne regardent que la demi-journée
