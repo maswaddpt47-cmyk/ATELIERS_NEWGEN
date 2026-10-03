@@ -206,6 +206,12 @@ verifier(appel(['action' => 'delete'], $T + ['_id' => 'lot_1']) === ['ok' => tru
 verifier(appel(['action' => 'delete'], $T + ['_id' => 'lot_1'])['error'] === 'Entrée introuvable', 'suppression rejouée : introuvable');
 verifier((int) $db->query("SELECT COUNT(*) FROM ateliers_materiel WHERE atelier_id = 'lot_1'")->fetchColumn() === 0, 'matériel supprimé avec l\'atelier');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'saveEntry' AND ref = 'entry_1'")->fetchColumn() === 2, 'écritures journalisées');
+// Durée (AG-017) : enregistrée, gardée quand un ancien client ne l'envoie pas, bornée.
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['duree' => 120])]);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj)]);
+verifier($lire('entry_1')['duree'] === 120, 'durée enregistrée, gardée par un envoi sans durée (client en cache)');
+$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['duree' => 45])]);
+verifier($r['ok'] === false && str_contains($r['error'], 'duree') && $lire('entry_1')['duree'] === 120, 'durée hors demi-heure : refusée');
 verifier($db->query("SELECT conseiller FROM journal WHERE action = 'delete' ORDER BY id DESC LIMIT 1")->fetchColumn() === 'Nouveau Venu', 'suppression journalisée au nom de la personne connectée');
 
 echo "API — administration\n";

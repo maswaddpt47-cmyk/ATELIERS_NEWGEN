@@ -31,6 +31,7 @@ function buildEntry(overrides = {}) {
     nb_ordinateurs:            '',
     date_prelevement_materiel: '',
     date_retour_materiel:      '',
+    duree:                     90,
     ...overrides,
   };
 }
@@ -214,5 +215,13 @@ describe('rappels_actifs — format config GAS', () => {
   it('JSON.parse(false) retourne false (cas global désactivé)', () => {
     assert.strictEqual(JSON.parse('false'), false);
     assert.strictEqual(typeof JSON.parse('false'), 'boolean');
+  });
+});
+
+// ── Durée (AG-017) ─────────────────────────────────────────────
+describe('duree', () => {
+  it('en minutes, par demi-heure, de 30 à 480 (contrôlé par l\'API)', () => {
+    const d = buildEntry().duree;
+    assert.ok(Number.isInteger(d) && d % 30 === 0 && d >= 30 && d <= 480);
   });
 });

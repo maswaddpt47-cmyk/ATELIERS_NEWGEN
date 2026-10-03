@@ -43,6 +43,7 @@ const API_CHAMPS_ATELIER = [
     'residence' => 'residence', 'remarques' => 'remarques', 'nb_ordinateurs' => 'nb_ordinateurs',
     'date_prelevement_materiel' => 'date_prelevement_materiel',
     'date_retour_materiel' => 'date_retour_materiel',
+    'duree' => 'duree',
 ];
 
 // Point d'entrée : choisit l'action et applique la règle d'accès.
@@ -252,6 +253,18 @@ function api_site_courant(?string $nouveau = null): string
 // colonne à une table existante).
 // Renvoie false si la colonne manque et n'a pas pu être ajoutée : le journal
 // continue alors sans elle (jamais une connexion refusée pour ça).
+// Colonne duree (AG-017, 03/10/2026) : ajoutée à chaud sur une base créée
+// avant, comme journal.site. Appelée avant toute lecture ou écriture d'ateliers.
+function ateliers_colonne_duree(PDO $db): void
+{
+    static $ok = false;
+    if ($ok) return;
+    if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'duree'")->fetch()) {
+        $db->exec('ALTER TABLE ateliers ADD COLUMN duree SMALLINT NULL AFTER horaire');
+    }
+    $ok = true;
+}
+
 function journal_colonne_site(PDO $db): bool
 {
     static $ok = null;
@@ -375,6 +388,7 @@ function api_annees(string $s): ?array
 
 function api_ateliers(PDO $db, array $annees): array
 {
+    ateliers_colonne_duree($db);
     $marques = implode(',', array_fill(0, count($annees), '?'));
     $cols = implode(', ', array_map(fn($c) => "`$c`", array_values(API_CHAMPS_ATELIER)));
     $st = $db->prepare("SELECT $cols FROM ateliers WHERE YEAR(date) IN ($marques) ORDER BY date, horaire, n");

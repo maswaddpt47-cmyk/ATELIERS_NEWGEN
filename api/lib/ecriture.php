@@ -66,6 +66,7 @@ function corbeille_schema(PDO $db): void
 // Un atelier au format du client (celui de getAll), ou null.
 function api_atelier_par_id(PDO $db, string $id): ?array
 {
+    ateliers_colonne_duree($db);
     $cols = implode(', ', array_map(fn($c) => "`$c`", array_values(API_CHAMPS_ATELIER)));
     $s = $db->prepare("SELECT $cols FROM ateliers WHERE id = ?");
     $s->execute([$id]);
@@ -122,6 +123,7 @@ function api_ecrire_atelier(PDO $db, array $d, ?string &$err, string $acteur = '
 {
     $l = api_valider_atelier($d, $err);
     if ($l === null) return null;
+    ateliers_colonne_duree($db);
     $materiel = api_materiel_canonique($db, $d['materiel'] ?? []);
 
     $propre = !$db->inTransaction();
@@ -207,6 +209,17 @@ function api_valider_atelier(array $d, ?string &$err): ?array
                 $l[$cle] = sprintf('%02d:%02d', (int) $m[1], (int) $m[2]);
                 break;
         }
+    }
+    // Durée en minutes (AG-017). Absente de l'envoi (client d'avant, en
+    // cache) : la colonne n'est pas touchée, la durée déjà saisie reste.
+    if (array_key_exists('duree', $d)) {
+        $v = $d['duree'];
+        if (is_array($v) || is_object($v)) { $err = 'duree : valeur invalide'; return null; }
+        $v = trim((string) $v);
+        if ($v === '') $l['duree'] = null;
+        elseif (!preg_match('/^\d+$/', $v) || (int) $v < 30 || (int) $v > 480 || (int) $v % 30) {
+            $err = "duree : « $v » n'est pas une durée valide (30 à 480 minutes, par demi-heure)"; return null;
+        } else $l['duree'] = (int) $v;
     }
     return $l;
 }
