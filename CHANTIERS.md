@@ -129,8 +129,9 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    superviseure (comptes « superviseur » actifs, adresse de Listes → mails),
    mois écoulé comparé au précédent, par conseiller, par partenaire, retards et
    mois suivant. Essai `--test=` reçu le 03/10 (un envoi réel de septembre est parti
-   par erreur avant, `67058e1` l'empêche désormais). **Reste à l'utilisateur** :
-   tâche planifiée Alwaysdata le 1er du mois (`php ~/www/api/lib/bilan.php`). Registre
+   par erreur avant, `67058e1` l'empêche désormais). Tâche planifiée Alwaysdata
+   créée le 03/10 (`0 8 1 * *`) : premier envoi réel le **01/11/2026** (octobre) — à
+   vérifier ce jour-là dans le journal Admin (« bilanMensuel »). Registre
    RGPD (T4 mails automatiques) à compléter : nouveau destinataire.
    (4) **Onglet Planning en essai** (NextStep `e80931f`, NEWGEN `cd4fa79`) :
    frise de la semaine, une ligne par conseiller actif, ateliers à leur heure
