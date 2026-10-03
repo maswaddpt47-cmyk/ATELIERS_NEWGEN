@@ -85,6 +85,31 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-018 — AM/PM calculé par l'API, champ retiré de la saisie — ouvert le 03/10/2026
+**Auteur** : session A — lu sur `2aa9cc2`
+**Proposition** : retirer le choix AM/PM du formulaire « Nouveau » et des lignes
+du cycle ; l'API écrit `ampm` d'après l'heure de début (avant 12:00 → AM)
+pour **tout** atelier qui a un horaire, quoi qu'envoie le client. La colonne
+reste (Agenda, Dashboard, Timeline la lisent). Anomalies : « AM/PM » n'est
+plus un champ manquant. Décision de l'utilisateur, 03/10/2026 : « ce qui
+décide de la tranche si un atelier chevauche, c'est l'heure du début ».
+**Critère déclencheur** : 4 — défaire un existant (choix manuel gardé
+« modifiable à la main », décision du 26/09/2026, `utils.js:405-407`) ;
+et 1 — ce que l'API écrit pour les deux applis change.
+**Ce que ça engage** : un atelier dont l'AM/PM saisi contredit l'horaire
+change de case dans l'Agenda à sa prochaine écriture, sans retour possible
+(l'ancienne valeur n'est gardée nulle part). La requête de contrôle est donnée
+à l'utilisateur ; résultat inconnu au moment de l'écriture.
+**Non vérifié par l'auteur** : (1) le nombre de ces ateliers en production ;
+(2) un usage où l'AM/PM ne suit pas l'heure (atelier à 12:00 compté le matin ?) —
+la raison du « modifiable à la main » du 26/09 n'est pas écrite ; (3) les
+ateliers sans horaire (anciens) gardent l'AM/PM envoyé, faute de mieux.
+**Si personne ne répond, je fais quoi ?** J'implémente ; si la requête de
+contrôle ou un contradicteur révèle des cas légitimes, on rétablit un choix
+manuel pour l'exception seulement.
+**Où regarder** : `api/lib/ecriture.php` (api_valider_atelier), `shared.js`
+(formulaire, cycle, `CHAMPS_OBL` des Anomalies), `utils.js:405-415`.
+
 ## AG-017 — Durée d'un atelier (colonne `duree`) — ouvert le 03/10/2026
 **Auteur** : session A — lu sur `47a9c91`
 **Proposition** : nouvelle colonne `ateliers.duree SMALLINT NULL` (minutes, par
