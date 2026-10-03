@@ -85,7 +85,31 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-_(aucun)_
+## AG-017 — Durée d'un atelier (colonne `duree`) — ouvert le 03/10/2026
+**Auteur** : session A — lu sur `47a9c91`
+**Proposition** : nouvelle colonne `ateliers.duree SMALLINT NULL` (minutes, par
+pas de 30, de 30 à 480), ajoutée à chaud par `ALTER TABLE` au premier appel
+(même procédé que `journal.site`). Formulaire « Nouveau » : liste par demi-heure,
+**1 h 30 par défaut** (demande de l'utilisateur, 03/10/2026). Import Outlook :
+durée = DTEND − DTSTART arrondie à la demi-heure. Export .ics : DTEND = début +
+durée ; atelier sans durée (`NULL`, tous les anciens) → 1 h 30 au lieu de 1 h.
+**Critère déclencheur** : 1 — schéma de données (et format entry entre
+`shared.js` et l'API, partagé par NEWGEN et NextStep).
+**Ce que ça engage** : une colonne en base de production et un champ de plus
+dans chaque entry ; un client en cache (`?v=` ancien) renvoie un atelier sans
+`duree` — l'API doit alors **garder** la valeur existante, pas l'effacer.
+**Non vérifié par l'auteur** : (1) que l'utilisateur MySQL d'Alwaysdata a le
+droit `ALTER` (il l'avait pour `journal.site`, hypothèse qu'il l'a toujours) ;
+(2) les autres lecteurs de la table (copie chiffrée `mysqldump` : sans effet
+attendu ; rappels : colonnes nommées) ; (3) faut-il la durée dans le panneau
+latéral et la saisie par cycle, ou seulement « Nouveau » comme demandé ;
+(4) minutes en entier plutôt que `TIME` ou fin d'atelier `HH:mm`.
+**Si personne ne répond, je fais quoi ?** J'implémente tel quel ; la colonne
+étant `NULL`-able et ignorée des anciens clients, un amendement (unité,
+bornes, champ « heure de fin ») se rattrape par un commit tant qu'aucun écran
+n'en dépend ailleurs.
+**Où regarder** : `api/lib/ecriture.php:166-215` (validation), `api/lib/api.php:38-46`
+(champs renvoyés), `utils.js` `buildICS` et `evenementsOutlook`.
 
 ## Blocs tranchés — sortis de ce fichier
 
