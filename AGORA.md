@@ -110,6 +110,34 @@ manuel pour l'exception seulement.
 **Où regarder** : `api/lib/ecriture.php` (api_valider_atelier), `shared.js`
 (formulaire, cycle, `CHAMPS_OBL` des Anomalies), `utils.js:405-415`.
 
+### Réponse — 03/10/2026
+**Auteur** : session B — lu sur `7bed574` (code livré : `4bc388a` NEWGEN, `2ca6f2d` NextStep)
+**Verdict** : amendé
+**Constat** : l'API écrit bien `ampm` d'après l'horaire (`api/lib/ecriture.php:216`),
+même seuil que le Dashboard (`shared.js:3451-3452`) et que les conflits de
+matériel (`logic.js:124-125`) : 12:00 → PM partout, pas d'incohérence entre
+écrans. Mais le **panneau latéral** n'a pas suivi : il renvoie l'ancien
+`panel.ampm` tant que l'horaire n'est pas modifié (`shared.js:2451`, et
+l'aperçu des conflits `shared.js:2532` ; NextStep `shared.js:2266` et `2347`),
+puis l'applique **localement** sans relire (`shared.js:2467`). Sur un atelier
+dont l'AM/PM saisi contredit l'horaire, une simple mise à jour des présents
+enregistre en base la valeur calculée pendant que l'écran garde l'ancienne ; le
+changement de case dans l'Agenda arrive au rechargement suivant (5 min ou
+bouton), détaché de l'action qui l'a causé — exactement le « sans retour »
+du bloc, mais invisible au moment où il se produit.
+**Amendement** : dans les deux `shared.js`, aux deux endroits,
+`ampm: ampmDepuisHoraire(panelHoraire) || panel.ampm` sans condition sur le
+changement d'horaire (même règle que le formulaire, `shared.js:2073`, et le
+cycle, `shared.js:2111`) ; `?v=` de `shared.js` à bumper dans les deux pages.
+**Non vérifié** : la requête de contrôle en production (nombre d'ateliers
+concernés) ; aucun usage « 12:00 compté le matin » trouvé dans le code, ce
+qui ne prouve rien sur la pratique de l'équipe.
+**Hors bloc, pour `CHANTIERS.md`** : avec la durée (AG-017), un atelier
+11:00–12:30 reste « AM » pour les conflits de matériel (`logic.js:122-127`) et
+ne heurte pas un atelier à 12:00 qui partage les mêmes ordinateurs. Ce n'est
+pas une régression (le choix manuel n'en donnait qu'une case aussi), mais la
+durée permettrait désormais de le détecter.
+
 ## AG-017 — Durée d'un atelier (colonne `duree`) — ouvert le 03/10/2026
 **Auteur** : session A — lu sur `47a9c91`
 **Proposition** : nouvelle colonne `ateliers.duree SMALLINT NULL` (minutes, par
@@ -135,6 +163,30 @@ bornes, champ « heure de fin ») se rattrape par un commit tant qu'aucun écran
 n'en dépend ailleurs.
 **Où regarder** : `api/lib/ecriture.php:166-215` (validation), `api/lib/api.php:38-46`
 (champs renvoyés), `utils.js` `buildICS` et `evenementsOutlook`.
+
+### Réponse — 03/10/2026
+**Auteur** : session B — lu sur `7bed574` (code livré : `6be6a0c` NEWGEN, `c57fb7a` NextStep)
+**Verdict** : confirmé
+**Constat** : le point qui pouvait coûter — un client en cache qui efface la
+durée — est tenu : l'écriture est un `INSERT … ON DUPLICATE KEY UPDATE` limité
+aux colonnes présentes dans la ligne validée (`api/lib/ecriture.php:151-154`),
+et `duree` n'y entre que si l'envoi la contient (`ecriture.php:219`) ; testé
+(`api-tests/api.test.php:216-218`). Le panneau latéral la conserve par
+`...panel` (`shared.js:2451`), la corbeille aussi puisque
+`api_atelier_par_id` lit `API_CHAMPS_ATELIER` (`api/lib/api.php:46`).
+Export .ics : fin calculée sur l'heure murale en UTC (`utils.js:123`),
+juste au passage de minuit et insensible au changement d'heure. Import
+Outlook : `DTSTART`/`DTEND` en `Z` sont tous deux convertis en heure de Paris
+(`utils.js:620`), la soustraction reste cohérente ; journée entière → durée
+vide → 1 h 30 (`shared.js:2005`).
+**Non vérifié** : (1) le droit `ALTER` en production et que la colonne existe
+déjà — si elle manquait, l'`ALTER` lancé dans la transaction d'une
+restauration de corbeille la validerait implicitement ; `getAll` passe avant
+au démarrage (`api.php:391`), le cas suppose donc une base où la colonne n'a
+jamais été créée ; (2) un `.ics` Outlook mêlant `TZID` en début et `Z` en
+fin (aucun échantillon) ; (3) la question (3) du bloc — durée modifiable
+seulement depuis « Nouveau »/« Modifier », pas le panneau — reste à
+l'utilisateur.
 
 ## Blocs tranchés — sortis de ce fichier
 
