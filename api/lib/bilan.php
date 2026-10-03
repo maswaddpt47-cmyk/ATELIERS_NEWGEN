@@ -30,7 +30,13 @@ $test = null;
 $mois = date('Y-m', strtotime('first day of last month'));
 foreach (array_slice($argv, 1) as $arg) {
     if (str_starts_with($arg, '--test=')) $test = substr($arg, 7);
-    if (str_starts_with($arg, '--mois=')) $mois = substr($arg, 7);
+    elseif (str_starts_with($arg, '--mois=')) $mois = substr($arg, 7);
+    else {
+        // Option inconnue : on s'arrête. Le 03/10/2026, un « --adresse » sans
+        // « test= » a lancé un envoi réel toutes les 5 minutes.
+        fwrite(STDERR, "bilan : option inconnue (attendu --test=adresse ou --mois=AAAA-MM)\n");
+        exit(1);
+    }
 }
 if ($test !== null && !filter_var($test, FILTER_VALIDATE_EMAIL)) {
     fwrite(STDERR, "bilan : adresse de test invalide\n");
@@ -174,7 +180,13 @@ $emails = api_json($cfg['emails'] ?? '', []);
 if (!is_array($emails)) $emails = [];
 $noms = $db->query("SELECT conseiller FROM comptes WHERE role = 'superviseur' AND actif = 1")->fetchAll(PDO::FETCH_COLUMN);
 $envoyes = 0; $echecs = 0; $sansAdresse = 0;
+// Un seul bilan par mois et par destinataire, même si la tâche est lancée
+// plusieurs fois (tâche mal réglée, relance) : le journal fait foi.
+$dejaEnvoye = $db->prepare("SELECT COUNT(*) FROM journal WHERE action = 'bilanMensuel' AND conseiller = ? AND ref = ?");
+$doublons = 0;
 foreach ($noms as $nom) {
+    $dejaEnvoye->execute([$nom, $mois]);
+    if ((int) $dejaEnvoye->fetchColumn() > 0) { $doublons++; continue; }
     $e = $emails[$nom] ?? '';
     $adresse = trim((string) (is_array($e) ? ($e['email'] ?? '') : $e));
     if (!filter_var($adresse, FILTER_VALIDATE_EMAIL)) { $sansAdresse++; continue; }
@@ -185,5 +197,5 @@ foreach ($noms as $nom) {
         $echecs++;
     }
 }
-printf("bilan %s : %d mail(s) envoyé(s), %d échec(s), %d superviseur(s) sans adresse\n", $mois, $envoyes, $echecs, $sansAdresse);
+printf("bilan %s : %d mail(s) envoyé(s), %d échec(s), %d superviseur(s) sans adresse, %d déjà servi(s)\n", $mois, $envoyes, $echecs, $sansAdresse, $doublons);
 exit($echecs ? 1 : 0);

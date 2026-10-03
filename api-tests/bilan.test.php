@@ -57,6 +57,11 @@ verifier(!preg_match('/Alice|Sophie|example\.org/', $sortie), 'compte rendu sans
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'bilanMensuel' AND ref = '2026-09'")->fetchColumn() === 1, 'envoi journalisé');
 
 array_map('unlink', glob("$tmp/mails/*.txt"));
+[$code, $sortie] = $lancer('--mois=2026-09');
+verifier($code === 0 && $mails() === [] && str_contains($sortie, '1 déjà servi(s)'), 'relancé le même mois : aucun second envoi');
+[$code, $sortie] = $lancer('--mois=2026-09 --moi@example.org');
+verifier($code === 1 && $mails() === [], 'option inconnue (« test= » oublié) : arrêt, aucun envoi');
+
 [$code, $sortie] = $lancer('--mois=2026-09 --test=moi@example.org');
 $m = $mails();
 verifier($code === 0 && count($m) === 1 && str_contains($m[0], 'A: moi@example.org') && str_contains($m[0], '[TEST]'), 'mode test : un seul mail, à l\'adresse donnée');
