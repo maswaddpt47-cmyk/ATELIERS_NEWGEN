@@ -125,7 +125,12 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    contrôle des AM/PM contradictoires donnée à l'utilisateur, résultat non
    reçu. (2) mention d'information RGPD des agents — texte proposé le 03/10,
    **mise en pause par l'utilisateur** (« oublie le RGPD pour l'instant »).
-   (3) bilan mensuel par mail — destinataires et contenu à faire choisir. Écartés pour
+   (3) bilan mensuel par mail — destinataires et contenu à faire choisir.
+   AG-017 confirmé, AG-018 amendé par la session B (03/10) ; amendement
+   appliqué (volet latéral, NextStep `d0a8a80`, NEWGEN `cb238b9`). **Piste
+   notée par B** : les conflits de matériel ne regardent que la demi-journée
+   de début (`logic.js:122-127`) ; avec la durée, un atelier 11:00–12:30 et un
+   autre à 12:00 sur les mêmes ordinateurs pourraient être détectés. Écartés pour
    l'instant : abonnement agenda partenaires, tri des onglets, aide nouvel
    arrivant.
 
