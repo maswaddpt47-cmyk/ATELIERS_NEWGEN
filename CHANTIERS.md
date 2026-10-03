@@ -131,6 +131,13 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    mois suivant. **Reste à l'utilisateur** : essai `--test=adresse`, puis tâche
    planifiée Alwaysdata le 1er du mois (`php ~/www/api/lib/bilan.php`). Registre
    RGPD (T4 mails automatiques) à compléter : nouveau destinataire.
+   (4) **Onglet Planning en essai** (NextStep `e80931f`, NEWGEN `cd4fa79`) :
+   frise de la semaine, une ligne par conseiller actif, ateliers à leur heure
+   et sur leur durée, volet latéral au clic ; visible par défaut (clé
+   `planning` absente de la config = visible). Approche progressive choisie le
+   03/10 : vivre 2–3 semaines à côté de l'Agenda, puis relire les compteurs
+   d'onglets (Admin → Connexions) avant de retirer l'Agenda ; mensuel
+   (Calendrier gardé ou carte de charge) à trancher ensuite.
    AG-017 confirmé, AG-018 amendé par la session B, **tranchés le 03/10** ; amendement
    appliqué (volet latéral, NextStep `d0a8a80`, NEWGEN `cb238b9`). **Piste
    notée par B** : les conflits de matériel ne regardent que la demi-journée
