@@ -124,7 +124,13 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    NEWGEN `4bc388a`) : l'API l'écrit d'après l'heure de début ; requête de
    contrôle non lancée (choix de l'utilisateur : corrigé à la prochaine écriture). (2) mention d'information RGPD des agents — texte proposé le 03/10,
    **mise en pause par l'utilisateur** (« oublie le RGPD pour l'instant »).
-   (3) bilan mensuel par mail — destinataires et contenu à faire choisir.
+   Durée **obligatoire** (NextStep `12adfd8`, NEWGEN `b38f35a`).
+   (3) **bilan mensuel livré** (`api/lib/bilan.php`, `680b328`, 9 tests) : à la
+   superviseure (comptes « superviseur » actifs, adresse de Listes → mails),
+   mois écoulé comparé au précédent, par conseiller, par partenaire, retards et
+   mois suivant. **Reste à l'utilisateur** : essai `--test=adresse`, puis tâche
+   planifiée Alwaysdata le 1er du mois (`php ~/www/api/lib/bilan.php`). Registre
+   RGPD (T4 mails automatiques) à compléter : nouveau destinataire.
    AG-017 confirmé, AG-018 amendé par la session B, **tranchés le 03/10** ; amendement
    appliqué (volet latéral, NextStep `d0a8a80`, NEWGEN `cb238b9`). **Piste
    notée par B** : les conflits de matériel ne regardent que la demi-journée
