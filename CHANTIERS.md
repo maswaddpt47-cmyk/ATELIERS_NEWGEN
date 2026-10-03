@@ -115,6 +115,16 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
 
 **Pour Claude**
 
+0. **Demande du 03/10/2026, dans l'ordre** : (1) durée d'un atelier — livrée
+   (NextStep `c57fb7a`, NEWGEN `6be6a0c`, AG-017 ouvert), **à tester** : liste
+   « Durée » dans Nouveau et la saisie par cycle, 1 h 30 par défaut, reprise
+   de l'import Outlook, fin du .ics = début + durée ; pas dans le volet
+   latéral (non demandé). (2) mention d'information RGPD des agents (écart du
+   registre §9) — emplacement et contact DPO à faire choisir. (3) bilan
+   mensuel par mail — destinataires et contenu à faire choisir. Écartés pour
+   l'instant : abonnement agenda partenaires, tri des onglets, aide nouvel
+   arrivant.
+
 3. **Documents remis en v1.0 le 02/10/2026** (`ateliers-backups/documents/`) :
    registre de sécurité et registre RGPD (une section par page), procédure
    de restauration (4 pages compactes, fiche d'urgence). Versions internes
