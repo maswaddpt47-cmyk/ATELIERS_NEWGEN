@@ -47,6 +47,7 @@ jobs:
           php api-tests/api.test.php
           php api-tests/sauvegarde.test.php
           php api-tests/rappels.test.php
+          php api-tests/bilan.test.php
 
       # Accès SSH par clé seule (secret ALWAYSDATA_SSH_KEY) depuis le
       # 30/09/2026 : le secret mot de passe a été supprimé. $VIA reste vide,
