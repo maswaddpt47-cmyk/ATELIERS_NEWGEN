@@ -2650,7 +2650,7 @@ function ModaleAvisQR({atelier,onClose}){
       if(!r||!r.ok){setEtat({erreur:(r&&r.error)||'Erreur'});return;}
       const url=urlAvisPour(location.origin,location.pathname,r.jeton);
       const q=qrcode(0,'M');q.addData(url);q.make();
-      setQr(q.createSvgTag({cellSize:8,margin:2,scalable:true}));setEtat({url,avis:r.avis});
+      setQr(q.createSvgTag({cellSize:8,margin:2,scalable:true}));setEtat({url,avis:r.avis,ouvert_du:r.ouvert_du,ouvert_au:r.ouvert_au});
     }catch(e){if(vivant)setEtat({erreur:e.message||'Erreur réseau'});}})();
     return()=>{vivant=false;};},[atelier._id]);
   const titre=`${atelier.thematique||'Atelier'} — ${fmtDate(atelier.date)}${atelier.commune?' — '+atelier.commune:''}`;
