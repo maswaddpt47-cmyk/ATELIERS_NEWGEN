@@ -424,6 +424,25 @@ verifier(appel(['action' => 'saisirAvisPapier'], ['_id' => 'av_vieux', 'attentes
 $pap = appel(['action' => 'saisirAvisPapier'], $T + ['_id' => 'av_vieux', 'attentes' => '3', 'remarque' => '']);
 verifier(($pap['ok'] ?? false) && $db->query("SELECT source FROM avis WHERE atelier_id = 'av_vieux'")->fetchColumn() === 'papier'
     && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'saisirAvisPapier' AND ref = 'av_vieux'")->fetchColumn() === 1, 'avis papier enregistré hors fenêtre, marqué « papier », journalisé');
+// Bilan trimestriel : avis des seuls ateliers « Réalisé » de la période.
+$debut = date('Y-m-d', strtotime('-60 days'));
+verifier(appel(['action' => 'bilanAvis'], ['du' => $debut, 'au' => $auj])['auth'] ?? false, 'bilan des avis : réservé à l\'équipe connectée');
+verifier(!(appel(['action' => 'bilanAvis'], $T + ['du' => $auj, 'au' => $debut])['ok'] ?? true), 'bilan des avis : période à l\'envers refusée');
+$db->exec("UPDATE ateliers SET statut = 'Réalisé' WHERE id = 'av_vieux'");
+$b = appel(['action' => 'bilanAvis'], $T + ['du' => $debut, 'au' => $auj]);
+verifier(($b['ok'] ?? false) && count($b['avis']) === 1 && $b['avis'][0]['atelier_id'] === 'av_vieux' && $b['avis'][0]['attentes'] === 3 && $b['remarques'] === [],
+    'bilan des avis : atelier non réalisé écarté — ' . json_encode($b));
+$db->exec("UPDATE ateliers SET statut = 'Réalisé' WHERE id = 'av_1'");
+$b = appel(['action' => 'bilanAvis'], $T + ['du' => $debut, 'au' => $auj]);
+verifier(count($b['avis'] ?? []) === 2 && $b['remarques'] === ['Merci'] && !array_key_exists('remarque', $b['avis'][0]) && !array_key_exists('cree_le', $b['avis'][0]),
+    'bilan des avis : remarques à part, sans date ni lien avec l\'atelier');
+// Récapitulatif par atelier : tous statuts, remarques rattachées à l'atelier.
+$db->exec("UPDATE ateliers SET statut = 'Planifié' WHERE id = 'av_1'");
+verifier(appel(['action' => 'avisParAtelier'], ['du' => $debut, 'au' => $auj])['auth'] ?? false, 'récapitulatif des avis : réservé à l\'équipe connectée');
+$rp = appel(['action' => 'avisParAtelier'], $T + ['du' => $debut, 'au' => $auj]);
+$par = array_column($rp['ateliers'] ?? [], null, 'atelier_id');
+verifier(count($par) === 2 && $par['av_1']['n'] === 1 && $par['av_1']['attentes'] == 5 && $par['av_1']['aise_oui'] === 1 && $par['av_1']['remarques'] === ['Merci']
+    && $par['av_vieux']['papier'] === 1 && $par['av_vieux']['remarques'] === [], 'récapitulatif des avis par atelier, tous statuts — ' . json_encode($rp));
 // Amendement A : corbeille → avis et jeton gardés ; restauration → rendus ; sortie de corbeille → effacés.
 appel(['action' => 'delete'], $T + ['_id' => 'av_1']);
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);

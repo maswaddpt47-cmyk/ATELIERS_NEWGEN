@@ -177,3 +177,64 @@ function avis_enregistrer(PDO $db, string $atelierId, array $p, string $source):
        ->execute(array_values($l));
     return ['ok' => true];
 }
+
+// Bilan trimestriel (CR « option 1 », module D, 04/10/2026) : les réponses
+// des ateliers « Réalisé » de la période, une ligne par avis, sans date ni
+// remarque ; les remarques à part, sans lien avec leur atelier. Le client
+// agrège (bilanTrimestriel, logic.js). Lecture seule, équipe connectée.
+function action_bilan_avis(PDO $db, array $p): array
+{
+    avis_schema($db);
+    $du = (string) ($p['du'] ?? '');
+    $au = (string) ($p['au'] ?? '');
+    $jour = '/^\d{4}-\d{2}-\d{2}$/';
+    if (!preg_match($jour, $du) || !preg_match($jour, $au) || $du > $au) return ['ok' => false, 'error' => 'Période invalide'];
+    $s = $db->prepare("SELECT v.atelier_id, v.attentes, v.clarte, v.rythme, v.aise, v.autonomie, v.sujet
+                       FROM avis v JOIN ateliers a ON a.id = v.atelier_id
+                       WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ? ORDER BY v.id");
+    $s->execute([$du, $au]);
+    $avis = array_map(fn($r) => ['atelier_id' => $r['atelier_id'],
+        'attentes' => $r['attentes'] !== null ? (int) $r['attentes'] : null,
+        'clarte' => $r['clarte'] !== null ? (int) $r['clarte'] : null,
+        'rythme' => $r['rythme'], 'aise' => $r['aise'], 'autonomie' => $r['autonomie'], 'sujet' => $r['sujet']],
+        $s->fetchAll(PDO::FETCH_ASSOC));
+    $r = $db->prepare("SELECT v.remarque FROM avis v JOIN ateliers a ON a.id = v.atelier_id
+                       WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ? AND v.remarque <> '' ORDER BY v.id LIMIT 100");
+    $r->execute([$du, $au]);
+    return ['ok' => true, 'avis' => $avis, 'remarques' => $r->fetchAll(PDO::FETCH_COLUMN)];
+}
+
+// Récapitulatif des avis atelier par atelier (demande du 04/10/2026), à tout
+// moment, sans attendre le bilan trimestriel : tous statuts, ateliers datés
+// de la période. Mêmes informations que la fenêtre du QR de chaque atelier,
+// réunies dans un tableau. Lecture seule, équipe connectée.
+function action_avis_par_atelier(PDO $db, array $p): array
+{
+    avis_schema($db);
+    $du = (string) ($p['du'] ?? '');
+    $au = (string) ($p['au'] ?? '');
+    $jour = '/^\d{4}-\d{2}-\d{2}$/';
+    if (!preg_match($jour, $du) || !preg_match($jour, $au) || $du > $au) return ['ok' => false, 'error' => 'Période invalide'];
+    $s = $db->prepare("SELECT v.atelier_id, COUNT(*) n, SUM(v.source = 'papier') papier,
+                              AVG(v.attentes) attentes, AVG(v.clarte) clarte,
+                              SUM(v.rythme = 'Adapté') rythme_ok, SUM(v.rythme IS NOT NULL) rythme_n,
+                              SUM(v.aise = 'Oui') aise_oui, SUM(v.aise IS NOT NULL) aise_n,
+                              SUM(v.autonomie = 'Oui') autonomie_oui, SUM(v.autonomie IS NOT NULL) autonomie_n
+                       FROM avis v JOIN ateliers a ON a.id = v.atelier_id
+                       WHERE a.date BETWEEN ? AND ? GROUP BY v.atelier_id");
+    $s->execute([$du, $au]);
+    $r = $db->prepare("SELECT v.atelier_id, v.remarque FROM avis v JOIN ateliers a ON a.id = v.atelier_id
+                       WHERE a.date BETWEEN ? AND ? AND v.remarque <> '' ORDER BY v.id");
+    $r->execute([$du, $au]);
+    $rem = [];
+    foreach ($r->fetchAll(PDO::FETCH_ASSOC) as $l) $rem[$l['atelier_id']][] = $l['remarque'];
+    $moy = fn($v) => $v !== null ? round((float) $v, 1) : null;
+    return ['ok' => true, 'ateliers' => array_map(fn($l) => [
+        'atelier_id' => $l['atelier_id'], 'n' => (int) $l['n'], 'papier' => (int) $l['papier'],
+        'attentes' => $moy($l['attentes']), 'clarte' => $moy($l['clarte']),
+        'rythme_ok' => (int) $l['rythme_ok'], 'rythme_n' => (int) $l['rythme_n'],
+        'aise_oui' => (int) $l['aise_oui'], 'aise_n' => (int) $l['aise_n'],
+        'autonomie_oui' => (int) $l['autonomie_oui'], 'autonomie_n' => (int) $l['autonomie_n'],
+        'remarques' => $rem[$l['atelier_id']] ?? [],
+    ], $s->fetchAll(PDO::FETCH_ASSOC))];
+}
