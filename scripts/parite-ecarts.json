@@ -21,8 +21,8 @@
       "NEWGEN admin_app.js:171",
       "NextStep admin_app.js:171"
     ],
-    "newgen": "3cfaa7680b/dbb006553f",
-    "nextstep": "ae77a26ac9/00dc701c50",
+    "newgen": "709fb9211c/dbb006553f",
+    "nextstep": "bda05eacd4/00dc701c50",
     "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs."
   },
   "VueHistorique": {
