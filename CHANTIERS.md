@@ -135,6 +135,11 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    répond, `lib/` fermé, pages servies) — https://ateliers-numeriques.alwaysdata.net/sandbox/
    (comptes « Démo … », mot de passe = `SANDBOX_MDP_DEMO`). Circuit : travail
    sur `sandbox` → test par l'utilisateur → fusion dans `main` → production.
+   **Dans le bac à sable, à tester** (branche `sandbox`, `b4d5880`) : fiche
+   bilan (AG-020) avec précision « Autre » (bug « « A » n'est pas un choix »
+   corrigé, test `basculerBilan`) ; avis des stagiaires par QR code (AG-021,
+   `api/lib/avis.php`, `avis.html`, `vendor/qrcode-generator-2.0.4`). Avant la
+   production : NextStep (port du volet), registre RGPD (T6 avis), Nouveautés.
 
 0. **Demande du 03/10/2026, dans l'ordre** : (1) durée d'un atelier — livrée
    (NextStep `c57fb7a`, NEWGEN `6be6a0c`, AG-017 ouvert), **à tester** : liste
