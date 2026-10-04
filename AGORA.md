@@ -204,6 +204,63 @@ l'utilisateur teste avant toute production, un amendement passe sans coût.
 **Où regarder** : `api/lib/ecriture.php` (api_valider_atelier), `api/lib/api.php`
 (API_CHAMPS_ATELIER, api_ateliers), `shared.js` (PanneauAtelier).
 
+### Réponse — 04/10/2026
+**Auteur** : session B — lu sur `ae612ec`
+**Verdict** : amendé
+**Constat** :
+1. **La duplication recopierait le bilan.** « 📋 Dupliquer »
+   (`shared.js:2562`) remplit le formulaire avec
+   `{...empty, ...prefillData, …}` (`shared.js:1964`). Seuls `_id`, `_n`,
+   `date`, `horaire`, `ampm`, `inscrits`, `presents`, `remarques` et `statut`
+   sont remis à zéro. Une colonne `bilan` ajoutée à l'atelier passerait donc
+   telle quelle au nouvel atelier, qui est « Planifié ». Le bilan
+   trimestriel le compterait deux fois dès que la copie passe « Réalisé ».
+   La saisie par cycle construit ses entrées champ par champ
+   (`shared.js:2122`) : elle n'est pas touchée.
+2. **Retirer un choix d'une liste fermée bloquerait l'enregistrement des
+   ateliers concernés.** Le client renvoie l'atelier entier
+   (`action_save_entry`, `api/lib/ecriture.php:28`). Avec « valeur hors liste
+   → refus », supprimer un jour « Livret » de `supports` ferait refuser
+   **toute** modification ultérieure d'un atelier dont le bilan contient
+   « Livret », même un changement d'horaire. Le coût annoncé « ajouter un
+   choix = un déploiement » est le petit côté : le vrai coût est au retrait.
+3. **Point (3) de l'auteur : effacer le bilan au retour en « Planifié »
+   perdrait des données sans prévenir.** Le statut suit la date
+   (`statutSelonDate`, `utils.js:422-426`) : corriger une date saisie par
+   erreur dans le passé ferait repasser l'atelier en « Planifié ». La
+   corbeille ne couvre pas ce cas, elle ne copie qu'à la suppression
+   (`ecriture.php:94-95`).
+4. **Point (1) de l'auteur : déjà prouvé en production.** `JSON_EXTRACT` sur
+   une colonne texte tourne chez Alwaysdata depuis le 02/10/2026 : c'est la
+   numérotation qui lit la corbeille (`ateliers_corbeille.donnees`,
+   MEDIUMTEXT, `ecriture.php:146-147`).
+5. **Collision de nom.** `api/lib/bilan.php` est déjà le **bilan mensuel**
+   envoyé à la superviseure (`bilan.php:2-3`). Une colonne `bilan`, une
+   fiche « Bilan » et un futur « bilan trimestriel » sont trois choses
+   différentes sous le même mot, dans le code comme pour l'équipe.
+   L'en-tête de `bilan.php:14` dit aussi « aucune donnée sur les usagers
+   n'existe dans la base ». C'est encore vrai, puisque le niveau et les
+   difficultés décrivent le groupe, mais à vérifier si un champ glisse vers
+   l'individuel.
+
+**Amendement** :
+- A. Ajouter `bilan: ''` à la remise à zéro de la duplication
+  (`shared.js:1964`, NEWGEN et NextStep). Test ciblé : un atelier dupliqué
+  n'a pas de bilan.
+- B. Validation par **valeurs connues** plutôt que par liste affichée : une
+  valeur retirée de l'affichage reste acceptée à l'enregistrement. Ou bien,
+  si le bilan envoyé est identique à celui en base, ne pas le revalider.
+  Test : un bilan avec une valeur retirée n'empêche pas de modifier l'horaire.
+- C. Ne jamais effacer le bilan quand le statut change. Le masquer dans le
+  volet tant que l'atelier n'est pas « Réalisé », et ne compter que les
+  ateliers « Réalisé » dans les statistiques. Effacement explicite seulement
+  (`bilan: ''` → NULL, comme `duree`, `ecriture.php:223`).
+- D. Nommer la colonne `fiche_bilan` (ou `compte_rendu`), pas `bilan`.
+
+**Non vérifié** : (2) le poids dans `getAll`, pas mesuré ; le comportement
+du volet de NextStep, non lu (règle 18 : la duplication doit y être corrigée
+aussi).
+
 ## AG-019 — Bac à sable avant la production — ouvert le 04/10/2026
 **Auteur** : session A — lu sur `b47e0e4`
 **Proposition** : branche `sandbox` de NEWGEN ; un envoi dessus publie
