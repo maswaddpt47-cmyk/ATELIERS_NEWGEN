@@ -350,6 +350,8 @@ fonctionnalité validée ou sur demande de revue. Une piste écartée ne se
 repropose pas sans fait nouveau.
 
 **Proposées, en attente**
+- 04/10/2026, fin du CR « option 1 » : **fiche bilan et avis dans le bilan mensuel** envoyé à la superviseure le 1er du mois (`api/lib/bilan.php`) — elle reçoit aujourd'hui l'activité seule ; les chiffres existent déjà (bilan trimestriel).
+- 04/10/2026 : **rappel du matin pour une fiche bilan vide** sur un atelier « Réalisé », comme le rappel existant des ateliers restés « Planifié » — le bilan trimestriel compte les ateliers « sans fiche », rien ne pousse à la remplir.
 - Conflits de matériel tenant compte de la durée : un atelier 11:00–12:30 et un autre à 12:00 sur les mêmes ordinateurs (relevé par la session B, AG-018, 03/10/2026 ; `logic.js` ne regarde que la demi-journée de début).
 
 **Écartées** (date — piste — raison)
