@@ -131,10 +131,10 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'usageOnglets':    return action_usage_onglets($db, $p);
         case 'getUsageOnglets': return action_get_usage_onglets($db);
         case 'creerTicket':     return action_creer_ticket($db, $p, $session);
-        case 'jetonAvis':       return action_jeton_avis($db, $p);
+        case 'jetonAvis':       return action_jeton_avis($db, $p, $session);
         case 'saisirAvisPapier': return action_saisir_avis_papier($db, $p, $session);
-        case 'bilanAvis':       return action_bilan_avis($db, $p);
-        case 'avisParAtelier':  return action_avis_par_atelier($db, $p);
+        case 'bilanAvis':       return action_bilan_avis($db, $p, $session);
+        case 'avisParAtelier':  return action_avis_par_atelier($db, $p, $session);
         case 'getTickets':      return action_get_tickets($db, $session);
         case 'repondreTicket':  return action_repondre_ticket($db, $p, $session);
         case 'supprimerTicket': return action_supprimer_ticket($db, $p);

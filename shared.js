@@ -1357,6 +1357,9 @@ window.onLoginSuccess = function(conseiller, res){
     window.authToken.set(res.token);
     window.authToken.setRole(res.role || 'user');
     sessionStorage.setItem('gs_conseiller', conseiller);
+    // Personne connectée, que le sélecteur de conseiller ne change pas
+    // (gs_conseiller, lui, suit le sélecteur) : onglet « Mes bilans ».
+    sessionStorage.setItem('gs_moi', conseiller);
     // Pas de logLogin : checkPassword journalise déjà la connexion.
   }
 };
@@ -1378,10 +1381,12 @@ window.authToken = {
     if(t){
       try{ fetch(`${API_PHP_URL}?action=logout`, {method:'POST', keepalive:true, headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'token='+encodeURIComponent(t)}).catch(()=>{}); }catch(_){}
     }
-    sessionStorage.removeItem('gs_token'); sessionStorage.removeItem('gs_role'); sessionStorage.removeItem('gs_conseiller');
+    sessionStorage.removeItem('gs_token'); sessionStorage.removeItem('gs_role'); sessionStorage.removeItem('gs_conseiller'); sessionStorage.removeItem('gs_moi');
   },
   getRole()   { return sessionStorage.getItem('gs_role') || 'user'; },
-  setRole(r)  { sessionStorage.setItem('gs_role', r); }
+  setRole(r)  { sessionStorage.setItem('gs_role', r); },
+  // Connexion antérieure au 04/10/2026 : pas de gs_moi, repli sur gs_conseiller.
+  getMoi()    { return sessionStorage.getItem('gs_moi') || sessionStorage.getItem('gs_conseiller') || ''; }
 };
 
 (function(){
@@ -5868,7 +5873,7 @@ const BILAN_TRIM_CSS=`.bt h1{font-size:20px;color:#0f766e;margin:0 0 2px}.bt h2{
 .bt-barre{display:grid;grid-template-columns:42% 1fr auto;gap:6px;align-items:center;font-size:12px;margin:3px 0}.bt-lib{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bt-fond{background:#f1f5f9;border-radius:4px;height:9px;overflow:hidden}.bt-fond span{display:block;height:100%;background:#14b8a6}.bt-val{color:#475569;white-space:nowrap}
 .bt-rem{font-size:12px;color:#475569;font-style:italic;padding-left:18px}.bt-table{width:100%;border-collapse:collapse;font-size:12px}.bt-table th,.bt-table td{border-bottom:1px solid #e2e8f0;padding:5px 6px;text-align:left}.bt-table th{background:#f8fafc}
 @media print{.bt *{-webkit-print-color-adjust:exact;print-color-adjust:exact}}`;
-function VueBilanTrimestriel({entries}){
+function VueBilanTrimestriel({entries,moi}){
   const defaut=trimestrePrecedent(todayLocal());
   const[annee,setAnnee]=React.useState(defaut.annee);
   const[t,setT]=React.useState(defaut.t);
@@ -5876,7 +5881,7 @@ function VueBilanTrimestriel({entries}){
   const[debut,fin]=bornesTrimestre(annee,t);
   React.useEffect(()=>{let vivant=true;setAv(null);
     (async()=>{try{
-      const r=await apiFetch('bilanAvis',{du:debut,au:fin});
+      const r=await apiFetch('bilanAvis',moi?{du:debut,au:fin,moi:'1'}:{du:debut,au:fin});
       if(vivant)setAv(r&&r.ok?{avis:r.avis,remarques:r.remarques}:{erreur:(r&&r.error)||'Erreur'});
     }catch(e){if(vivant)setAv({erreur:e.message||'Erreur réseau'});}})();
     return()=>{vivant=false;};},[debut,fin]);
@@ -5905,7 +5910,7 @@ function VueBilanTrimestriel({entries}){
 // (le bilan trimestriel, lui, porte sur un trimestre clos). Action de
 // lecture avisParAtelier, appelée à l'ouverture de l'onglet et au changement
 // de période, jamais au démarrage.
-function VueAvisAteliers({entries}){
+function VueAvisAteliers({entries,moi}){
   const auj=todayLocal();
   const[du,setDu]=React.useState(addJoursIso(auj,-90));
   const[au,setAu]=React.useState(auj);
@@ -5914,7 +5919,7 @@ function VueAvisAteliers({entries}){
   React.useEffect(()=>{let vivant=true;setRes(null);
     if(!du||!au||du>au){setRes({erreur:'Période invalide'});return;}
     (async()=>{try{
-      const r=await apiFetch('avisParAtelier',{du,au});
+      const r=await apiFetch('avisParAtelier',moi?{du,au,moi:'1'}:{du,au});
       if(vivant)setRes(r&&r.ok?{ateliers:r.ateliers||[]}:{erreur:(r&&r.error)||'Erreur'});
     }catch(e){if(vivant)setRes({erreur:e.message||'Erreur réseau'});}})();
     return()=>{vivant=false;};},[du,au]);
@@ -5955,8 +5960,35 @@ function VueAvisAteliers({entries}){
               l.remarques.map((r,i)=>CE('div',{key:i},'« '+r+' »')))))))))));
 }
 
+// ── Mes bilans (page conseillers, 04/10/2026) ───────────────────────────
+// Décision de l'utilisateur : les conseillers n'ont pas accès aux stats
+// générales ; bilan mensuel, avis par atelier et bilan trimestriel sortent
+// de Stats et ne portent que sur les ateliers que la personne connectée
+// anime ou co-anime. Les avis sont filtrés par l'API (moi=1) ; les ateliers,
+// eux, arrivent déjà tous par getAll : ici le filtre est d'affichage.
+function VueMesBilans({entries}){
+  const moi=window.authToken.getMoi();
+  const[tab,setTab]=React.useState('avis');
+  const miens=React.useMemo(()=>(entries||[]).filter(e=>moi&&(e.conseiller===moi||e.co_animateur===moi)),[entries,moi]);
+  const TABS=[
+    {id:'avis',      ico:'💬', label:'Avis par atelier'},
+    {id:'mensuel',   ico:'📈', label:'Bilan mensuel'},
+    {id:'trimestre', ico:'🗓️', label:'Bilan trimestriel'},
+  ];
+  return CE('div',null,
+    CE('div',{style:{fontSize:13,color:'#64748b',marginBottom:8}},`Ateliers que vous animez ou co-animez — ${moi||'?'}`),
+    CE('div',{style:{display:'flex',borderBottom:'2px solid #e5e7eb',marginBottom:16,gap:4,overflowX:'auto'}},
+      TABS.map(t=>CE('button',{key:t.id,onClick:()=>setTab(t.id),style:{padding:'8px 18px',border:'none',background:'none',cursor:'pointer',fontSize:13,fontWeight:tab===t.id?700:400,fontFamily:'inherit',
+        color:tab===t.id?'var(--accent,#0ea5e9)':'#6b7280',borderBottom:tab===t.id?'3px solid var(--accent,#0ea5e9)':'3px solid transparent',marginBottom:-2,whiteSpace:'nowrap'}},t.ico+' '+t.label))),
+    !moi?CE('div',{className:'card',style:{color:'#b91c1c'}},'Reconnectez-vous pour afficher vos bilans.')
+    :CE(React.Fragment,null,
+      tab==='avis'&&CE(VueAvisAteliers,{entries:miens,moi:true}),
+      tab==='mensuel'&&CE(VuePowerBI,{entries:miens,conseillers:[moi]}),
+      tab==='trimestre'&&CE(VueBilanTrimestriel,{entries:miens,moi:true})));
+}
+
 // ── VueDashboardTabs — Dashboard unifié (5 onglets) ──────────
-function VueDashboardTabs({entries, conseillers}){
+function VueDashboardTabs({entries, conseillers, sansBilans}){
   const[tab,setTab]=React.useState('dashboard');
   const TABS=[
     {id:'dashboard', ico:'🚀', label:'Synthèse'},
@@ -5964,7 +5996,7 @@ function VueDashboardTabs({entries, conseillers}){
     {id:'powerbi',    ico:'📈', label:'Bilan mensuel'},
     {id:'avis',       ico:'💬', label:'Avis par atelier'},
     {id:'trimestre',  ico:'🗓️', label:'Bilan trimestriel'},
-  ];
+  ].filter(t=>!sansBilans||t.id==='dashboard'||t.id==='graphiques');
   return CE('div',null,
     CE('div',{style:{display:'flex',borderBottom:'2px solid #e5e7eb',marginBottom:16,gap:4,overflowX:'auto'}},
       TABS.map(t=>CE('button',{

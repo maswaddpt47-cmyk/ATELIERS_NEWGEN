@@ -74,13 +74,35 @@ function avis_resume(PDO $db, string $atelierId): array
         'remarques' => $rem->fetchAll(PDO::FETCH_COLUMN)];
 }
 
-function action_jeton_avis(PDO $db, array $p): array
+// Avis d'un atelier : réservés à son animateur et à son co-animateur
+// (décision de l'utilisateur, 04/10/2026) ; l'Admin et la superviseure voient
+// tout. Filtre SQL sur la table ateliers (alias a) et ses paramètres.
+// moi=1 : restreint aussi l'Admin à ses propres ateliers (onglet « Mes bilans »).
+function avis_filtre_conum(array $session, array $p = []): array
+{
+    if (in_array($session['role'] ?? '', API_ROLES_ADMIN, true) && empty($p['moi'])) return ['', []];
+    $nom = (string) ($session['conseiller'] ?? '');
+    return [' AND (a.conseiller = ? OR a.co_animateur = ?)', [$nom, $nom]];
+}
+
+// L'atelier existe et la personne connectée peut en voir les avis ; sinon
+// le message de refus.
+function avis_atelier_autorise(PDO $db, string $id, array $session): ?string
+{
+    [$f, $fp] = avis_filtre_conum($session);
+    $s = $db->prepare("SELECT a.id FROM ateliers a WHERE a.id = ?$f");
+    $s->execute(array_merge([$id], $fp));
+    if ($s->fetchColumn() !== false) return null;
+    $e = $db->prepare('SELECT id FROM ateliers WHERE id = ?');
+    $e->execute([$id]);
+    return $e->fetchColumn() === false ? 'Atelier introuvable' : 'Les avis de cet atelier sont réservés à son animateur et à son co-animateur';
+}
+
+function action_jeton_avis(PDO $db, array $p, array $session): array
 {
     avis_schema($db);
     $id = (string) ($p['_id'] ?? '');
-    $s = $db->prepare('SELECT id FROM ateliers WHERE id = ?');
-    $s->execute([$id]);
-    if ($s->fetchColumn() === false) return ['ok' => false, 'error' => 'Atelier introuvable'];
+    if (($refus = avis_atelier_autorise($db, $id, $session)) !== null) return ['ok' => false, 'error' => $refus];
     // INSERT IGNORE : rejouer l'appel rend le même jeton.
     $db->prepare('INSERT IGNORE INTO avis_jetons (atelier_id, jeton, cree_le) VALUES (?, ?, ?)')
        ->execute([$id, bin2hex(random_bytes(16)), date('Y-m-d H:i:s')]);
@@ -141,9 +163,7 @@ function action_saisir_avis_papier(PDO $db, array $p, array $session): array
 {
     avis_schema($db);
     $id = (string) ($p['_id'] ?? '');
-    $s = $db->prepare('SELECT id FROM ateliers WHERE id = ?');
-    $s->execute([$id]);
-    if ($s->fetchColumn() === false) return ['ok' => false, 'error' => 'Atelier introuvable'];
+    if (($refus = avis_atelier_autorise($db, $id, $session)) !== null) return ['ok' => false, 'error' => $refus];
     $r = avis_enregistrer($db, $id, $p, 'papier');
     if ($r['ok']) api_journal($db, 'saisirAvisPapier', $session['conseiller'], $id, $session['role'], 1, 0, '', '');
     return $r;
@@ -182,25 +202,26 @@ function avis_enregistrer(PDO $db, string $atelierId, array $p, string $source):
 // des ateliers « Réalisé » de la période, une ligne par avis, sans date ni
 // remarque ; les remarques à part, sans lien avec leur atelier. Le client
 // agrège (bilanTrimestriel, logic.js). Lecture seule, équipe connectée.
-function action_bilan_avis(PDO $db, array $p): array
+function action_bilan_avis(PDO $db, array $p, array $session): array
 {
     avis_schema($db);
+    [$f, $fp] = avis_filtre_conum($session, $p);
     $du = (string) ($p['du'] ?? '');
     $au = (string) ($p['au'] ?? '');
     $jour = '/^\d{4}-\d{2}-\d{2}$/';
     if (!preg_match($jour, $du) || !preg_match($jour, $au) || $du > $au) return ['ok' => false, 'error' => 'Période invalide'];
     $s = $db->prepare("SELECT v.atelier_id, v.attentes, v.clarte, v.rythme, v.aise, v.autonomie, v.sujet
                        FROM avis v JOIN ateliers a ON a.id = v.atelier_id
-                       WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ? ORDER BY v.id");
-    $s->execute([$du, $au]);
+                       WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ?$f ORDER BY v.id");
+    $s->execute(array_merge([$du, $au], $fp));
     $avis = array_map(fn($r) => ['atelier_id' => $r['atelier_id'],
         'attentes' => $r['attentes'] !== null ? (int) $r['attentes'] : null,
         'clarte' => $r['clarte'] !== null ? (int) $r['clarte'] : null,
         'rythme' => $r['rythme'], 'aise' => $r['aise'], 'autonomie' => $r['autonomie'], 'sujet' => $r['sujet']],
         $s->fetchAll(PDO::FETCH_ASSOC));
     $r = $db->prepare("SELECT v.remarque FROM avis v JOIN ateliers a ON a.id = v.atelier_id
-                       WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ? AND v.remarque <> '' ORDER BY v.id LIMIT 100");
-    $r->execute([$du, $au]);
+                       WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ?$f AND v.remarque <> '' ORDER BY v.id LIMIT 100");
+    $r->execute(array_merge([$du, $au], $fp));
     return ['ok' => true, 'avis' => $avis, 'remarques' => $r->fetchAll(PDO::FETCH_COLUMN)];
 }
 
@@ -208,9 +229,10 @@ function action_bilan_avis(PDO $db, array $p): array
 // moment, sans attendre le bilan trimestriel : tous statuts, ateliers datés
 // de la période. Mêmes informations que la fenêtre du QR de chaque atelier,
 // réunies dans un tableau. Lecture seule, équipe connectée.
-function action_avis_par_atelier(PDO $db, array $p): array
+function action_avis_par_atelier(PDO $db, array $p, array $session): array
 {
     avis_schema($db);
+    [$f, $fp] = avis_filtre_conum($session, $p);
     $du = (string) ($p['du'] ?? '');
     $au = (string) ($p['au'] ?? '');
     $jour = '/^\d{4}-\d{2}-\d{2}$/';
@@ -221,11 +243,11 @@ function action_avis_par_atelier(PDO $db, array $p): array
                               SUM(v.aise = 'Oui') aise_oui, SUM(v.aise IS NOT NULL) aise_n,
                               SUM(v.autonomie = 'Oui') autonomie_oui, SUM(v.autonomie IS NOT NULL) autonomie_n
                        FROM avis v JOIN ateliers a ON a.id = v.atelier_id
-                       WHERE a.date BETWEEN ? AND ? GROUP BY v.atelier_id");
-    $s->execute([$du, $au]);
+                       WHERE a.date BETWEEN ? AND ?$f GROUP BY v.atelier_id");
+    $s->execute(array_merge([$du, $au], $fp));
     $r = $db->prepare("SELECT v.atelier_id, v.remarque FROM avis v JOIN ateliers a ON a.id = v.atelier_id
-                       WHERE a.date BETWEEN ? AND ? AND v.remarque <> '' ORDER BY v.id");
-    $r->execute([$du, $au]);
+                       WHERE a.date BETWEEN ? AND ?$f AND v.remarque <> '' ORDER BY v.id");
+    $r->execute(array_merge([$du, $au], $fp));
     $rem = [];
     foreach ($r->fetchAll(PDO::FETCH_ASSOC) as $l) $rem[$l['atelier_id']][] = $l['remarque'];
     $moy = fn($v) => $v !== null ? round((float) $v, 1) : null;
