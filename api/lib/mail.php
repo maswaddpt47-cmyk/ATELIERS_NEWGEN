@@ -38,6 +38,8 @@ function mail_envoyer(string $a, string $sujet, string $texte, string $html): bo
     }
     // Pas de saut de ligne dans un en-tête : empêche l'injection d'en-têtes.
     $sujet = str_replace(["\r", "\n"], ' ', $sujet);
+    // Bac à sable (AG-019 amendé) : un mail qui en part se reconnaît.
+    if ((api_config()['bac_a_sable'] ?? false) === true) $sujet = '[BAC À SABLE] ' . $sujet;
     $de = mail_expediteur();
     $frontiere = 'b' . bin2hex(random_bytes(12));
     $entetes = implode("\r\n", [

@@ -36,6 +36,9 @@ $db->exec("UPDATE ateliers SET remarques = 'essai' WHERE id = 'demo_1'");
 [$code] = $lancer("$tmp/sbx.php");
 verifier($code === 0 && $db->query("SELECT remarques FROM ateliers WHERE id = 'demo_1'")->fetchColumn() === 'essai', 'redéploiement : les essais sont gardés');
 
+$dossier = fn(string $cfg) => trim((string) shell_exec('ATELIERS_API_CONFIG=' . escapeshellarg($cfg) . ' php -r ' . escapeshellarg('require "' . __DIR__ . '/../api/lib/copie.php"; echo sauvegarde_dossier();')));
+verifier(str_ends_with($dossier("$tmp/sbx.php"), '/sauvegardes-sandbox') && str_ends_with($dossier("$tmp/prod.php"), '/sauvegardes'), 'copies du bac à sable dans leur propre dossier, jamais celui de la production');
+
 $db->exec('DROP DATABASE ateliers_test_sandbox');
 exec('rm -rf ' . escapeshellarg($tmp));
 echo $echecs ? "\n$echecs échec(s)\n" : "\nTous les tests passent.\n";

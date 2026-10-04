@@ -6,10 +6,14 @@ require_once __DIR__ . '/base.php';
 
 const SAUVEGARDE_JOURS = 30;
 
-// lib/ → api/ → www/ → dossier personnel du compte.
+// lib/ → api/ → www/ → dossier personnel du compte. Bac à sable : son propre
+// dossier (AG-019 amendé) — ses copies de fausses données ne doivent ni
+// tomber dans celui de la production ni masquer, dans la page Sauvegardes,
+// une copie de nuit de la production qui échoue.
 function sauvegarde_dossier(): string
 {
-    return getenv('ATELIERS_SAUVEGARDE_DIR') ?: dirname(__DIR__, 3) . '/sauvegardes';
+    if (getenv('ATELIERS_SAUVEGARDE_DIR')) return getenv('ATELIERS_SAUVEGARDE_DIR');
+    return dirname(__DIR__, 3) . (((api_config()['bac_a_sable'] ?? false) === true) ? '/sauvegardes-sandbox' : '/sauvegardes');
 }
 
 // Fait une copie et purge les anciennes. Renvoie ['ok' => true, 'message' =>
