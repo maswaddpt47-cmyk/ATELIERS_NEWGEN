@@ -43,7 +43,7 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin.
   Alwaysdata ; journal 12 mois.
 - **Documents à diffusion restreinte**, dépôt privé
   `ateliers-backups/documents/` : registre de sécurité et registre RGPD
-  (art. 30) **v1.3** (04/10 : T6 avis des stagiaires, RGPD-20), procédure de
+  (art. 30) **v1.4** (04/10 : T6 avis des stagiaires, RGPD-20 ; T4 bilan mensuel), procédure de
   restauration ; versions antérieures dans `documents/archives/`, rendu par
   `documents/sources/rendre.js`. Prochaine révision : audit du 01/01/2027
   (ACME Alwaysdata à vérifier auprès de l'hébergeur).
@@ -104,28 +104,26 @@ sont datées du 05/10 à la demande de l'utilisateur.
    **20/10**, relire les compteurs d'onglets (Admin → Connexions) avec
    l'utilisateur avant de retirer l'Agenda ; le mensuel (Calendrier gardé ou
    carte de charge) se tranche ensuite.
-2. **Registre RGPD, T4** (mails automatiques) : ajouter le bilan mensuel et
-   son destinataire (la superviseure) à la prochaine version des registres.
-3. **Mention d'information RGPD des agents** : texte proposé le 03/10, **mis
+2. **Mention d'information RGPD des agents** : texte proposé le 03/10, **mis
    en pause par l'utilisateur** — ne pas relancer sans sa demande.
-4. **Supports par atelier (pptx, docx…) — mis de côté le 04/10** : les
+3. **Supports par atelier (pptx, docx…) — mis de côté le 04/10** : les
    supports sont sur un **réseau interne**. Une page en https ne peut pas
    ouvrir un lien `file://` vers un lecteur réseau (bloqué par les
    navigateurs, hypothèse à vérifier sur un poste CD47) : il faudrait des
    liens SharePoint/OneDrive ou un dépôt chez Alwaysdata. Bloc AGORA au choix
    du stockage (critère 1).
-5. **Réimport Outlook** : un rendez-vous simple importé **avant** le 03/10 et
+4. **Réimport Outlook** : un rendez-vous simple importé **avant** le 03/10 et
    déplacé depuis n'est pas reconnu (apparaît nouveau + supprimé). Options 2
    (calendrier publié) et 3 (Microsoft 365) écartées pour l'instant : DPO / DSI.
-6. Écarté du CR « option 1 » : PWA (AG-012), nouveau modèle de données,
+5. Écarté du CR « option 1 » : PWA (AG-012), nouveau modèle de données,
    PHPWord/TCPDF.
 
 **Sans urgence**
 
-7. **Import des disponibilités Outlook** (« Disponibilité uniquement ») pour
+6. **Import des disponibilités Outlook** (« Disponibilité uniquement ») pour
    griser les créneaux occupés dans l'Agenda, lu dans le navigateur
    seulement — à proposer si l'import des ateliers ne suffit pas.
-8. **Thématique « TBD »** : visible telle quelle dans les statistiques tant
+7. **Thématique « TBD »** : visible telle quelle dans les statistiques tant
    qu'elle n'est pas remplacée — à surveiller.
 
 **Audit trimestriel** : routine `trig_01J6ZMsLHKbgXAQsRYgQL16q` (6 dépôts,
@@ -256,10 +254,10 @@ fonctionnalité validée ou sur demande de revue. Une piste écartée ne se
 repropose pas sans fait nouveau.
 
 **Proposées, en attente**
-- 04/10/2026, fin du CR « option 1 » : **fiche bilan et avis dans le bilan mensuel** envoyé à la superviseure le 1er du mois (`api/lib/bilan.php`) — elle reçoit aujourd'hui l'activité seule ; les chiffres existent déjà (bilan trimestriel).
 - 04/10/2026 : **rappel du matin pour une fiche bilan vide** sur un atelier « Réalisé », comme le rappel existant des ateliers restés « Planifié » — le bilan trimestriel compte les ateliers « sans fiche », rien ne pousse à la remplir.
 
 **Retenues et livrées**
+- 04/10/2026 — fiche bilan et avis dans le bilan mensuel de la superviseure — en production le 04/10 (`27a9b9c`), en chiffres seulement ; registres v1.4 (T4).
 - 04/10/2026 — conflits de matériel tenant compte de la durée (relevé par la session B, AG-018) — en production le 04/10 (AG-022).
 
 **Écartées** (date — piste — raison)
