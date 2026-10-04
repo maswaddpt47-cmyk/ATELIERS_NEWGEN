@@ -119,8 +119,9 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    (a) fiche bilan d'atelier, **option a choisie le 04/10** : les 5 champs du
    CR (niveau, objectif atteint, difficultés en cases, support, suite à
    donner), section « 📝 Bilan » du volet latéral une fois l'atelier
-   « Réalisé » ; liste des supports à créer dans Admin → Listes (vide au
-   départ) ; nouvelle table → bloc AGORA à l'implémentation, (b) avis des stagiaires par QR code —
+   « Réalisé » ; support = **types**, choix multiple (Diaporama, Fiche
+   pas-à-pas, Vidéo, Démonstration, Exercices pratiques, Livret, Aucun —
+   décidé le 04/10 ; une bibliothèque de documents viendra plus tard si besoin) ; nouvelle table → bloc AGORA à l'implémentation, (b) avis des stagiaires par QR code —
    **avant** le DPO, décision de l'utilisateur : rester anonyme, sans
    « recontact » ni tranche d'âge tant que le DPO n'a pas validé ; nouveau
    traitement au registre ; page publique à protéger (jeton, plafond, pas
