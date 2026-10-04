@@ -85,6 +85,33 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-021 — Avis des stagiaires par QR code — ouvert le 04/10/2026
+**Auteur** : session A — lu sur `794c46b`
+**Proposition** : deux tables, `avis_jetons` (atelier_id → jeton aléatoire de
+32 caractères, créé à la demande) et `avis` (atelier_id, date, 6 réponses du
+CR + remarque, **aucun nom, aucune IP**). Deux actions **publiques** (sans
+connexion) : `avisPublic` (date et thématique de l'atelier, rien d'autre) et
+`deposerAvis` ; acceptées de la veille à 30 jours après l'atelier, 60 avis au
+plus par atelier, réponses hors liste refusées. Une action conseiller
+`jetonAvis` (jeton + résumé des avis). Page `avis.html` statique dans NEWGEN
+(GitHub Pages), seule adresse du QR pour les deux applis ; QR dessiné dans le
+navigateur (`vendor/qrcode-generator-2.0.4`, MIT, sans service externe). Purge
+des avis à 24 mois. Avant l'avis du DPO (décision de l'utilisateur, 04/10) :
+ni tranche d'âge ni « être recontacté ». Bac à sable d'abord (AG-019).
+**Critère déclencheur** : 1 — schéma, nouvelle dépendance, et première
+surface publique de l'API.
+**Ce que ça engage** : une page et deux actions ouvertes à tous ; un jeton
+diffusé (affiche, projection) permet à n'importe qui de déposer jusqu'à 60
+avis pendant 30 jours ; données des usagers (même anonymes) → nouveau
+traitement au registre.
+**Non vérifié par l'auteur** : (1) le plafond de 60 et la fenêtre de 30 jours
+(choix de l'auteur, sans mesure) ; (2) qu'un avis « papier » saisi après coup
+par l'agent tienne dans la fenêtre ; (3) la lisibilité d'un QR projeté ; (4)
+que l'anti-doublon du navigateur (localStorage) suffise.
+**Si personne ne répond, je fais quoi ?** J'implémente dans le bac à sable ;
+rien en production avant le test de l'utilisateur.
+**Où regarder** : `api/lib/avis.php`, `avis.html`, `shared.js` (PanneauAtelier).
+
 ## AG-020 — Fiche bilan d'atelier (colonne `bilan`) — ouvert le 04/10/2026
 **Auteur** : session A — lu sur `54ee784`
 **Proposition** : une colonne `ateliers.bilan TEXT NULL` contenant un JSON
