@@ -7,6 +7,7 @@
 // jetable ; les mails sont écrits dans un dossier au lieu d'être envoyés.
 
 require __DIR__ . '/outils.php';
+require_once __DIR__ . '/../api/lib/avis.php';   // avis_schema
 
 $mysql = getenv('ATELIERS_TEST_MYSQL');
 if (!$mysql) { echo "(bilan non testé : ATELIERS_TEST_MYSQL non défini)\n"; exit(0); }
@@ -27,6 +28,13 @@ $ins->execute(['s3', 'Annulé', '2026-09-12', 'Alice', 'MSA <b>', 4, null]);
 $ins->execute(['s4', 'Planifié', '2026-09-20', 'Bruno', 'MSA <b>', 4, null]);   // date passée : en retard
 $ins->execute(['a1', 'Réalisé', '2026-08-05', 'Alice', 'CAF', 5, 2]);           // mois précédent
 $ins->execute(['o1', 'Planifié', '2026-10-06', 'Alice', 'CAF', 4, null]);        // mois suivant
+// Qualité (04/10/2026) : fiches bilan et avis des ateliers réalisés du mois.
+$db->prepare("UPDATE ateliers SET fiche_bilan = ? WHERE id = 's1'")->execute([json_encode(['objectif' => 'Oui', 'difficultes' => ['Connexion', 'Autre'], 'difficultes_autre' => 'Salle Martin', 'suite' => 'Nouvel atelier'], JSON_UNESCAPED_UNICODE)]);
+avis_schema($db);
+$av = $db->prepare("INSERT INTO avis (atelier_id, cree_le, attentes, clarte, aise, autonomie, remarque, source) VALUES (?, ?, ?, ?, ?, ?, ?, 'qr')");
+$av->execute(['s1', '2026-09-03', 5, 4, 'Oui', 'Non', 'Merci à Alice']);
+$av->execute(['s1', '2026-09-03', 4, 4, 'Un peu', 'Oui', '']);
+$av->execute(['s3', '2026-09-12', 1, 1, 'Non', 'Non', '']);   // atelier annulé : ignoré
 $cpt = $db->prepare("INSERT INTO comptes (conseiller, hash, role, actif, doit_changer) VALUES (?, NULL, ?, ?, 0)");
 $cpt->execute(['Sophie', 'superviseur', 1]);
 $cpt->execute(['Ancienne', 'superviseur', 0]);
@@ -54,6 +62,9 @@ verifier(str_contains($t, 'Inscrits (ateliers réalisés) : 10') && str_contains
 verifier(str_contains($t, '- Alice : 1 réalisé(s) sur 2, 5 présent(s) / 6 inscrit(s)') && str_contains($t, '- CAF : 2 réalisé(s) sur 2'), 'par conseiller et par partenaire');
 verifier(str_contains($t, '1 atelier(s) de septembre 2026 encore « Planifié »') && str_contains($t, '1 atelier(s) planifié(s) en octobre'), 'points d\'attention : retards, mois suivant');
 verifier(!preg_match('/Alice|Sophie|example\.org/', $sortie), 'compte rendu sans nom ni adresse');
+verifier(str_contains($t, 'Fiches bilan remplies : 1 sur 2 atelier(s) réalisé(s)') && str_contains($t, 'Objectif atteint : Oui : 1') && str_contains($t, 'Difficultés rencontrées : Connexion : 1, Autre : 1')
+    && str_contains($t, 'Avis des stagiaires : 2 avis sur 1 atelier(s)') && str_contains($t, 'Réponse aux attentes : 4,5/5') && str_contains($t, 'Plus à l\'aise (« oui ») : 1 sur 2'), 'qualité : fiches bilan et avis des seuls ateliers réalisés');
+verifier(!str_contains($t, 'Merci à Alice') && !str_contains($t, 'Salle Martin'), 'qualité : ni remarque d\'avis ni précision libre dans le mail');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'bilanMensuel' AND ref = '2026-09'")->fetchColumn() === 1, 'envoi journalisé');
 
 array_map('unlink', glob("$tmp/mails/*.txt"));
