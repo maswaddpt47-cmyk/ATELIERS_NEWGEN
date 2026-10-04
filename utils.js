@@ -533,6 +533,17 @@ function voiesPlanning(items){
   return fins.length;
 }
 
+// Fiche bilan d'atelier (AG-020, 04/10/2026) : mêmes listes que l'API
+// (BILAN_CHOIX, api/lib/ecriture.php — comparées par utils.test.js).
+const BILAN_CHOIX={
+  niveau:['Débutant','Intermédiaire','Avancé'],
+  objectif:['Oui','Partiellement','Non'],
+  difficultes:['Matériel','Connexion','Niveau hétérogène','Absences','Autre'],
+  supports:['Diaporama','Fiche pas-à-pas','Vidéo','Démonstration','Exercices pratiques','Livret','Aucun'],
+  suite:['Nouvel atelier','Orientation','Rien'],
+};
+const BILAN_MULTIPLES=['difficultes','supports'];
+
 // Adresse de l'API (bac à sable, AG-019, 04/10/2026) : les pages servies
 // sous ateliers-numeriques.alwaysdata.net/sandbox/ parlent à l'API du bac à
 // sable ; toute autre adresse (GitHub Pages, tests) à celle de production.
@@ -806,7 +817,7 @@ if (typeof module !== 'undefined') {
     normCommune,normalizeCommune,stripAccents,htmlEsc,trunc,
     normalizeDate,normalizeHoraire,fmtDate,fmtCardDate,todayLocal,addJoursIso,
     escapeICS,foldICSLine,parseHoraireICS,parseDateICS,buildICS,
-    DUREE_DEFAUT,DUREES_ATELIER,dureeArrondie,fmtDuree,minutesHoraire,voiesPlanning,urlApiPour,
+    DUREE_DEFAUT,DUREES_ATELIER,dureeArrondie,fmtDuree,minutesHoraire,voiesPlanning,urlApiPour,BILAN_CHOIX,BILAN_MULTIPLES,
     resumeLogsTexte,
     suppressionAboutie,
     anneesListe,

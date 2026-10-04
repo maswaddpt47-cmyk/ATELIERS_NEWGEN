@@ -2439,6 +2439,28 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
 // Extrait le 26/09/2026 : il existait en deux copies, et l'Agenda en
 // demandait une troisième (demande de l'utilisateur).
 // ═══════════════════════════════════════════════════════════
+// Fiche bilan d'atelier (AG-020, 04/10/2026) : choix uniques en pastilles
+// (un second clic désélectionne), choix multiples en cases. Listes :
+// BILAN_CHOIX (utils.js), contrôlées aussi par l'API.
+function FicheBilan({valeur,onChange}){
+  const v=valeur||{};
+  const LIB={niveau:'Niveau du groupe',objectif:'Objectif atteint',difficultes:'Difficultés',supports:'Supports utilisés',suite:'Suite à donner'};
+  const basculer=(cle,x)=>{
+    const n={...v};
+    if(BILAN_MULTIPLES.includes(cle)){const l=new Set(n[cle]||[]);l.has(x)?l.delete(x):l.add(x);n[cle]=[...l];if(!n[cle].length)delete n[cle];}
+    else if(n[cle]===x)delete n[cle];else n[cle]=x;
+    onChange(n);
+  };
+  return CE('div',{style:{border:'1.5px solid #bbf7d0',background:'#f0fdf4',borderRadius:10,padding:'10px 12px',display:'flex',flexDirection:'column',gap:8}},
+    CE('div',{style:{fontSize:13,fontWeight:700,color:'#166534'}},'📝 Bilan de l\'atelier'),
+    Object.keys(BILAN_CHOIX).map(cle=>CE('div',{key:cle},
+      CE('div',{style:{fontSize:11,fontWeight:700,color:'#4b5563',marginBottom:4,textTransform:'uppercase',letterSpacing:'.04em'}},LIB[cle]+(BILAN_MULTIPLES.includes(cle)?' (plusieurs choix)':'')),
+      CE('div',{style:{display:'flex',flexWrap:'wrap',gap:5}},BILAN_CHOIX[cle].map(x=>{
+        const actif=BILAN_MULTIPLES.includes(cle)?(v[cle]||[]).includes(x):v[cle]===x;
+        return CE('button',{key:x,type:'button',onClick:()=>basculer(cle,x),'aria-pressed':actif,style:{padding:'5px 10px',borderRadius:16,fontSize:12,cursor:'pointer',
+          border:'1.5px solid '+(actif?'#16a34a':'#d1d5db'),background:actif?'#16a34a':'#fff',color:actif?'#fff':'#374151',fontWeight:actif?700:500}},(BILAN_MULTIPLES.includes(cle)?(actif?'☑ ':'☐ '):'')+x);})))));
+}
+
 function PanneauAtelier({panel,onClose,entries,onEntryUpdated,onRefresh,onEdit,onDuplicate,canDelete,onAskDelete}){
   const[panelStatut,setPanelStatut]=React.useState('');
   const[panelInscrits,setPanelInscrits]=React.useState('');
@@ -2452,14 +2474,15 @@ function PanneauAtelier({panel,onClose,entries,onEntryUpdated,onRefresh,onEdit,o
   const[panelPrelev,setPanelPrelev]=React.useState('');
   const[panelRetour,setPanelRetour]=React.useState('');
   const[panelNote,setPanelNote]=React.useState('');
+  const[panelBilan,setPanelBilan]=React.useState({});
   const[saving,setSaving]=React.useState(false);
   // Réinitialise les champs à chaque atelier ouvert (ce que faisait openPanel).
-  React.useEffect(()=>{if(!panel)return;const e=panel;setPanelStatut(e.statut);setPanelInscrits(e.inscrits===undefined||e.inscrits===''?'':String(e.inscrits));setPanelPresents(e.presents===undefined||e.presents===''?'':String(e.presents));setPanelThematique(e.thematique||'');setPanelNote(e.remarques||'');setPanelDate(normalizeDate(e.date)||'');setPanelHoraire(normalizeHoraire(e.horaire)||'');setPanelDuree(parseInt(e.duree)||DUREE_DEFAUT);setPanelNbOrdi(e.nb_ordinateurs===undefined||e.nb_ordinateurs===''||e.nb_ordinateurs===null?'':String(e.nb_ordinateurs));setPanelPublic(e.public||'');setPanelMobile(matIncludes(e.materiel,'Classe mobile'));setPanelPrelev(normalizeDate(e.date_prelevement_materiel)||'');setPanelRetour(normalizeDate(e.date_retour_materiel)||'');},[panel]);
+  React.useEffect(()=>{if(!panel)return;const e=panel;setPanelStatut(e.statut);setPanelInscrits(e.inscrits===undefined||e.inscrits===''?'':String(e.inscrits));setPanelPresents(e.presents===undefined||e.presents===''?'':String(e.presents));setPanelThematique(e.thematique||'');setPanelNote(e.remarques||'');setPanelDate(normalizeDate(e.date)||'');setPanelHoraire(normalizeHoraire(e.horaire)||'');setPanelDuree(parseInt(e.duree)||DUREE_DEFAUT);setPanelBilan(e.bilan&&typeof e.bilan==='object'?e.bilan:{});setPanelNbOrdi(e.nb_ordinateurs===undefined||e.nb_ordinateurs===''||e.nb_ordinateurs===null?'':String(e.nb_ordinateurs));setPanelPublic(e.public||'');setPanelMobile(matIncludes(e.materiel,'Classe mobile'));setPanelPrelev(normalizeDate(e.date_prelevement_materiel)||'');setPanelRetour(normalizeDate(e.date_retour_materiel)||'');},[panel]);
   const closePanel=onClose;
   async function savePanel(){
     if(!panel)return;if(!panelDate){showToast('❌ Date requise',false);return;}if(panelMobile&&!(parseInt(panelNbOrdi)>0)){showToast('❌ Ordinateurs prêtés requis avec la Classe mobile',false);return;}setSaving(true);
     try{
-      const updated={...panel,statut:panelStatut,inscrits:panelInscrits===''?'':parseInt(panelInscrits)||0,presents:panelPresents===''?'':parseInt(panelPresents)||0,thematique:panelThematique,date:panelDate,horaire:panelHoraire,ampm:ampmDepuisHoraire(panelHoraire)||panel.ampm,duree:parseInt(panelDuree)||DUREE_DEFAUT,public:panelPublic,nb_ordinateurs:panelMobile?(panelNbOrdi===''?'':parseInt(panelNbOrdi)||0):'',date_prelevement_materiel:panelMobile?panelPrelev:'',date_retour_materiel:panelMobile?panelRetour:'',remarques:panelNote,materiel:matierePanneau(panel,panelMobile).join('|')};
+      const updated={...panel,bilan:panelStatut==='Réalisé'?(Object.keys(panelBilan).length?panelBilan:''):(panel.bilan||''),statut:panelStatut,inscrits:panelInscrits===''?'':parseInt(panelInscrits)||0,presents:panelPresents===''?'':parseInt(panelPresents)||0,thematique:panelThematique,date:panelDate,horaire:panelHoraire,ampm:ampmDepuisHoraire(panelHoraire)||panel.ampm,duree:parseInt(panelDuree)||DUREE_DEFAUT,public:panelPublic,nb_ordinateurs:panelMobile?(panelNbOrdi===''?'':parseInt(panelNbOrdi)||0):'',date_prelevement_materiel:panelMobile?panelPrelev:'',date_retour_materiel:panelMobile?panelRetour:'',remarques:panelNote,materiel:matierePanneau(panel,panelMobile).join('|')};
       const res=await apiFetch('saveEntry',{entry:updated});
       if(!res.ok)throw new Error(res.error);
       showToast('✅ Mis à jour');closePanel();
@@ -2553,7 +2576,11 @@ function PanneauAtelier({panel,onClose,entries,onEntryUpdated,onRefresh,onEdit,o
           CE('div',{className:'sp-field'},CE('label',null,'Thématique'),
             CE(ComboThematique,{value:panelThematique,onChange:setPanelThematique,entries:entries})),
           CE('div',{className:'sp-field'},CE('label',null,'Remarques'),
-            CE('textarea',{value:panelNote,onChange:e=>setPanelNote(e.target.value),rows:3,placeholder:'Ajouter une note…',style:{width:'100%',padding:'8px 10px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:13,resize:'vertical'}}))
+            CE('textarea',{value:panelNote,onChange:e=>setPanelNote(e.target.value),rows:3,placeholder:'Ajouter une note…',style:{width:'100%',padding:'8px 10px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:13,resize:'vertical'}})),
+          // Fiche bilan (AG-020, 04/10/2026) : une fois l'atelier réalisé.
+          panelStatut==='Réalisé'
+            ?CE(FicheBilan,{valeur:panelBilan,onChange:setPanelBilan})
+            :CE('div',{style:{fontSize:12,color:'#94a3b8',padding:'4px 0'}},'📝 La fiche bilan se remplit quand l\'atelier passe en « Réalisé ».'),
         ),
         CE('div',{className:'side-panel-footer',style:{flexDirection:'column',gap:8}},
           CE('button',{className:'btn btn-primary',style:{width:'100%',padding:'12px',fontSize:15,fontWeight:700,background:'#16a34a',borderColor:'#16a34a'},onClick:savePanel,disabled:saving},saving?'…':'💾 Enregistrer'),

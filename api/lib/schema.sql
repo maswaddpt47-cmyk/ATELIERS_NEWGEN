@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS ateliers (
   date                      DATE         NOT NULL,
   horaire                   CHAR(5)      NULL,               -- 'HH:mm'
   duree                     SMALLINT     NULL,               -- minutes, par 30 (AG-017, 03/10/2026)
+  bilan                     TEXT         NULL,               -- fiche bilan, JSON validé (AG-020, 04/10/2026)
   ampm                      VARCHAR(10)  NOT NULL DEFAULT '',
   orienteur                 TEXT         NOT NULL,
   commune                   VARCHAR(255) NOT NULL DEFAULT '',

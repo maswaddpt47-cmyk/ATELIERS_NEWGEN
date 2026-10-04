@@ -77,6 +77,7 @@ function api_atelier_par_id(PDO $db, string $id): ?array
     $m = $db->prepare('SELECT materiel FROM ateliers_materiel WHERE atelier_id = ? ORDER BY materiel');
     $m->execute([$id]);
     $e['materiel'] = $m->fetchAll(PDO::FETCH_COLUMN);
+    $e['bilan'] = api_bilan_lu($e['bilan'] ?? '');
     return $e;
 }
 
@@ -165,6 +166,54 @@ function api_ecrire_atelier(PDO $db, array $d, ?string &$err, string $acteur = '
     return $l['id'];
 }
 
+// Fiche bilan d'atelier (AG-020, 04/10/2026) : listes fermées, choix de
+// l'utilisateur du 04/10 (champs du CR « option 1 »).
+const BILAN_CHOIX = [
+    'niveau' => ['Débutant', 'Intermédiaire', 'Avancé'],
+    'objectif' => ['Oui', 'Partiellement', 'Non'],
+    'difficultes' => ['Matériel', 'Connexion', 'Niveau hétérogène', 'Absences', 'Autre'],
+    'supports' => ['Diaporama', 'Fiche pas-à-pas', 'Vidéo', 'Démonstration', 'Exercices pratiques', 'Livret', 'Aucun'],
+    'suite' => ['Nouvel atelier', 'Orientation', 'Rien'],
+];
+const BILAN_MULTIPLES = ['difficultes', 'supports'];
+
+// Bilan reçu (objet ou JSON) → JSON à écrire, ou null si vide. Refus d'une
+// clé ou d'une valeur hors liste ($err).
+function api_bilan_valide(mixed $v, ?string &$err): ?string
+{
+    $err = null;
+    if (is_string($v)) {
+        if (trim($v) === '') return null;
+        $v = json_decode($v, true);
+    }
+    if ($v === null || $v === []) return null;
+    if (!is_array($v)) { $err = 'bilan : format invalide'; return null; }
+    $b = [];
+    foreach ($v as $cle => $val) {
+        if (!isset(BILAN_CHOIX[$cle])) { $err = "bilan : champ inconnu « $cle »"; return null; }
+        if (in_array($cle, BILAN_MULTIPLES, true)) {
+            if (!is_array($val)) { $err = "bilan : $cle doit être une liste"; return null; }
+            $val = array_values(array_unique(array_map('strval', $val)));
+            foreach ($val as $x) if (!in_array($x, BILAN_CHOIX[$cle], true)) { $err = "bilan : « $x » n'est pas un choix de $cle"; return null; }
+            if ($val) $b[$cle] = $val;
+        } else {
+            $val = (string) $val;
+            if ($val === '') continue;
+            if (!in_array($val, BILAN_CHOIX[$cle], true)) { $err = "bilan : « $val » n'est pas un choix de $cle"; return null; }
+            $b[$cle] = $val;
+        }
+    }
+    return $b ? json_encode($b, JSON_UNESCAPED_UNICODE) : null;
+}
+
+// Bilan lu en base → objet pour le client ('' si aucun).
+function api_bilan_lu(mixed $v): array|string
+{
+    if (!is_string($v) || $v === '') return '';
+    $b = json_decode($v, true);
+    return is_array($b) ? $b : '';
+}
+
 // Convertit un atelier reçu du client en ligne de la table, ou null.
 function api_valider_atelier(array $d, ?string &$err): ?array
 {
@@ -214,6 +263,12 @@ function api_valider_atelier(array $d, ?string &$err): ?array
     // Le champ n'est plus saisi ; un client d'avant qui l'envoie est corrigé.
     // Sans horaire (anciens ateliers) : la valeur envoyée est gardée.
     if (($l['horaire'] ?? null) !== null) $l['ampm'] = (int) substr($l['horaire'], 0, 2) < 12 ? 'AM' : 'PM';
+    // Fiche bilan (AG-020) : absente de l'envoi → inchangée (client en cache).
+    if (array_key_exists('bilan', $d)) {
+        $b = api_bilan_valide($d['bilan'], $err);
+        if ($err !== null) return null;
+        $l['bilan'] = $b;
+    }
     // Durée en minutes (AG-017). Absente de l'envoi (client d'avant, en
     // cache) : la colonne n'est pas touchée, la durée déjà saisie reste.
     if (array_key_exists('duree', $d)) {

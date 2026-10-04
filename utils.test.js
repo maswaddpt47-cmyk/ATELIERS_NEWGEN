@@ -884,3 +884,17 @@ describe('urlApiPour', () => {
     assert.equal(urlApiPour('ateliers-numeriques.alwaysdata.net', '/sandbox/index.html'), 'https://ateliers-numeriques.alwaysdata.net/api-sandbox/index.php');
   });
 });
+
+// ── Fiche bilan : listes identiques à celles de l'API (AG-020) ──────────────
+describe('BILAN_CHOIX', () => {
+  it('mêmes choix que BILAN_CHOIX de l\'API', () => {
+    const fs = require('fs'), path = require('path');
+    const php = path.join(__dirname, 'api/lib/ecriture.php');
+    if (!fs.existsSync(php)) return;   // NextStep : l'API vit dans NEWGEN
+    const { BILAN_CHOIX } = require('./utils.js');
+    const bloc = fs.readFileSync(php, 'utf8').match(/const BILAN_CHOIX = \[([\s\S]*?)\];/)[1];
+    const api = {};
+    for (const m of bloc.matchAll(/'(\w+)' => \[([^\]]*)\]/g)) api[m[1]] = [...m[2].matchAll(/'([^']*)'/g)].map(x => x[1]);
+    assert.deepEqual(api, BILAN_CHOIX);
+  });
+});

@@ -44,6 +44,7 @@ const API_CHAMPS_ATELIER = [
     'date_prelevement_materiel' => 'date_prelevement_materiel',
     'date_retour_materiel' => 'date_retour_materiel',
     'duree' => 'duree',
+    'bilan' => 'bilan',
 ];
 
 // Point d'entrée : choisit l'action et applique la règle d'accès.
@@ -262,6 +263,10 @@ function ateliers_colonne_duree(PDO $db): void
     if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'duree'")->fetch()) {
         $db->exec('ALTER TABLE ateliers ADD COLUMN duree SMALLINT NULL AFTER horaire');
     }
+    // Fiche bilan (AG-020, 04/10/2026) : même procédé.
+    if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'bilan'")->fetch()) {
+        $db->exec('ALTER TABLE ateliers ADD COLUMN bilan TEXT NULL');
+    }
     $ok = true;
 }
 
@@ -411,6 +416,7 @@ function api_ateliers(PDO $db, array $annees): array
             $e[$cle] = $l[$col] ?? '';
         }
         $e['materiel'] = $materiel[$l['id']] ?? [];
+        $e['bilan'] = api_bilan_lu($e['bilan'] ?? '');
         $entries[] = $e;
     }
     return $entries;

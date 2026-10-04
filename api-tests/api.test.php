@@ -223,6 +223,15 @@ appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj)]);
 verifier($lire('entry_1')['duree'] === 120, 'durée enregistrée, gardée par un envoi sans durée (client en cache)');
 $r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['duree' => 45])]);
 verifier($r['ok'] === false && str_contains($r['error'], 'duree') && $lire('entry_1')['duree'] === 120, 'durée hors demi-heure : refusée');
+// Fiche bilan (AG-020) : objet validé, gardé par un envoi sans bilan, refus hors liste.
+$bilan = ['niveau' => 'Débutant', 'objectif' => 'Partiellement', 'difficultes' => ['Connexion', 'Absences'], 'supports' => ['Diaporama'], 'suite' => 'Nouvel atelier'];
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['bilan' => $bilan])]);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj)]);
+verifier($lire('entry_1')['bilan'] === $bilan, 'bilan enregistré tel quel, gardé par un envoi sans bilan (client en cache)');
+$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['bilan' => ['objectif' => 'Peut-être']])]);
+verifier($r['ok'] === false && str_contains($r['error'], 'bilan') && $lire('entry_1')['bilan'] === $bilan, 'bilan : valeur hors liste refusée');
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['bilan' => ''])]);
+verifier($lire('entry_1')['bilan'] === '', 'bilan vidé');
 verifier($db->query("SELECT conseiller FROM journal WHERE action = 'delete' ORDER BY id DESC LIMIT 1")->fetchColumn() === 'Nouveau Venu', 'suppression journalisée au nom de la personne connectée');
 
 echo "API — administration\n";
