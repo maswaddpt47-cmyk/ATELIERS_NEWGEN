@@ -1,0 +1,117 @@
+# Bac à sable (AG-019, 04/10/2026) : chaque push sur la branche `sandbox`
+# publie, chez Alwaysdata et SANS toucher à la production :
+#   - l'API dans ~/www/api-sandbox/, avec ~/config-api-sandbox.php ;
+#   - les pages dans ~/www/sandbox/ → https://<compte>.alwaysdata.net/sandbox/
+#     (elles parlent à l'API du bac à sable : urlApiPour, utils.js).
+# Base MySQL séparée, remplie de FAUSSES données (api/lib/sandbox_seed.php).
+#
+# Secrets du dépôt, saisis par l'utilisateur, jamais vus par Claude :
+#   SANDBOX_DB_NOM, SANDBOX_DB_UTILISATEUR, SANDBOX_DB_MOT_DE_PASSE
+#     base et utilisateur MySQL réservés au bac à sable ;
+#   SANDBOX_MDP_DEMO  mot de passe des comptes de démonstration (12 car. min.)
+# et ceux de la production pour l'accès SSH (ALWAYSDATA_COMPTE, _SSH_KEY).
+name: Déploiement du bac à sable
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [sandbox]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-sandbox
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/sandbox'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier la syntaxe (PHP, JS)
+        run: |
+          for f in api/*.php api/lib/*.php api-tests/*.php; do php -l "$f"; done
+          for f in utils.js logic.js shared.js app.js admin_app.js admin_config.js; do node --check "$f"; done
+
+      - name: Tests Node
+        run: node --test utils.test.js logic.test.js contract.test.js
+
+      - name: Tests de l'API (base MySQL jetable)
+        env:
+          ATELIERS_TEST_MYSQL: root@127.0.0.1
+          ATELIERS_TEST_MYSQL_MDP: root
+        run: |
+          sudo systemctl start mysql.service
+          for t in api-tests/*.test.php; do php "$t"; done
+
+      # Jamais la base de production : refus si un secret manque ou si la
+      # base du bac à sable porte le même nom que celle de la production.
+      - name: Contrôler les secrets du bac à sable
+        env:
+          SBX_NOM: ${{ secrets.SANDBOX_DB_NOM }}
+          SBX_UTIL: ${{ secrets.SANDBOX_DB_UTILISATEUR }}
+          SBX_MDP: ${{ secrets.SANDBOX_DB_MOT_DE_PASSE }}
+          SBX_DEMO: ${{ secrets.SANDBOX_MDP_DEMO }}
+          PROD_NOM: ${{ secrets.ALWAYSDATA_DB_NOM }}
+          PROD_UTIL: ${{ secrets.ALWAYSDATA_DB_UTILISATEUR }}
+        run: |
+          for v in SBX_NOM SBX_UTIL SBX_MDP SBX_DEMO; do
+            if [ -z "${!v}" ]; then echo "::error::Secret du bac à sable absent ($v)"; exit 1; fi
+          done
+          if [ "$SBX_NOM" = "$PROD_NOM" ] || [ "$SBX_UTIL" = "$PROD_UTIL" ]; then
+            echo "::error::La base ou l'utilisateur du bac à sable est celui de la production : refusé"; exit 1
+          fi
+          if [ ${#SBX_DEMO} -lt 12 ]; then echo "::error::SANDBOX_MDP_DEMO : 12 caractères au moins"; exit 1; fi
+
+      - name: Préparer l'accès SSH
+        env:
+          CLE: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: Écrire ~/config-api-sandbox.php
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+          DB_NOM: ${{ secrets.SANDBOX_DB_NOM }}
+          DB_UTILISATEUR: ${{ secrets.SANDBOX_DB_UTILISATEUR }}
+          DB_MOT_DE_PASSE: ${{ secrets.SANDBOX_DB_MOT_DE_PASSE }}
+          MDP_DEMO: ${{ secrets.SANDBOX_MDP_DEMO }}
+        run: |
+          umask 077
+          php -r 'echo "<?php\n// Écrit par deploy-sandbox.yml depuis les Secrets GitHub. Ne pas modifier ici.\nreturn " . var_export([
+            "db_hote" => "mysql-" . getenv("COMPTE") . ".alwaysdata.net",
+            "db_nom" => getenv("DB_NOM"),
+            "db_utilisateur" => getenv("DB_UTILISATEUR"),
+            "db_mot_de_passe" => getenv("DB_MOT_DE_PASSE"),
+            "bac_a_sable" => true,
+            "mdp_demo" => getenv("MDP_DEMO"),
+          ], true) . ";\n";' > config-api-sandbox.php
+          php -l config-api-sandbox.php >/dev/null
+          rsync -zp --chmod=F600 -e "ssh -o StrictHostKeyChecking=accept-new" \
+            config-api-sandbox.php "$COMPTE@ssh-$COMPTE.alwaysdata.net:config-api-sandbox.php"
+          rm -f config-api-sandbox.php
+
+      - name: Copier l'API et les pages, remplir la base
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+        run: |
+          SSH="ssh -o StrictHostKeyChecking=accept-new"
+          rsync -az -e "$SSH" api/ "$COMPTE@ssh-$COMPTE.alwaysdata.net:www/api-sandbox/"
+          mkdir -p pages && cp -r index.html admin.html *.css utils.js logic.js shared.js app.js admin_app.js admin_config.js xlsxstyle.js icons vendor pages/
+          rsync -az --delete -e "$SSH" pages/ "$COMPTE@ssh-$COMPTE.alwaysdata.net:www/sandbox/"
+          $SSH "$COMPTE@ssh-$COMPTE.alwaysdata.net" 'php www/api-sandbox/lib/sandbox_seed.php'
+
+      - name: Vérifier en ligne
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+        run: |
+          curl -fsS -d action=getComptes "https://$COMPTE.alwaysdata.net/api-sandbox/index.php" | grep -q '"ok":true'
+          code=$(curl -s -o /dev/null -w '%{http_code}' "https://$COMPTE.alwaysdata.net/api-sandbox/lib/schema.sql")
+          if [ "$code" = "200" ]; then echo "::error::api-sandbox/lib/ lisible depuis internet"; exit 1; fi
+          curl -fsS "https://$COMPTE.alwaysdata.net/sandbox/index.html" | grep -q 'shared.js'
+          echo "::notice::Bac à sable : https://$COMPTE.alwaysdata.net/sandbox/"

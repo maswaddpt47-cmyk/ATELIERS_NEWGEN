@@ -712,7 +712,16 @@ function FadeItem({children,delay=0,style={}}){
 //   - une réponse {auth:true} (jeton absent ou expiré) déclenche l'événement
 //     « ateliers:auth-expiree » : les deux applis reviennent à l'écran de
 //     connexion (amendement 3 d'AG-011).
-const API_PHP_URL = 'https://ateliers-numeriques.alwaysdata.net/api/index.php';
+const API_PHP_URL = urlApiPour(location.hostname, location.pathname);
+// Bac à sable (AG-019) : bandeau et titre pour ne jamais le confondre avec la
+// production.
+if(API_PHP_URL.indexOf('/api-sandbox/')>=0){
+  const poser=()=>{if(document.getElementById('bandeau-bac-a-sable'))return;const b=document.createElement('div');b.id='bandeau-bac-a-sable';
+    b.textContent='BAC À SABLE — fausses données, rien n\'arrive en production';
+    b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#ea580c;color:#fff;font:700 11px/18px sans-serif;text-align:center;pointer-events:none;letter-spacing:.04em';
+    document.body.appendChild(b);document.title='[BAC À SABLE] '+document.title;};
+  if(document.body)poser();else document.addEventListener('DOMContentLoaded',poser);
+}
 // Un onglet resté sur ?backend=gas l'avait mémorisé : on l'efface.
 try{ sessionStorage.removeItem('ateliers_backend'); }catch(_){}
 // Adresse et corps d'un appel : POST vers l'API (action dans l'URL pour lire

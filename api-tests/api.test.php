@@ -74,6 +74,11 @@ preg_match('/function buildEntry.*?return \{(.*?)\.\.\.overrides/s', file_get_co
 preg_match_all('/^\s*(\w+)\s*:/m', $m[1] ?? '', $mm);
 $champsClient = $mm[1];
 
+echo "API — configuration\n";
+verifier(api_chemin_config('/home/compte/www/api/lib') === '/home/compte/config-api.php'
+    && api_chemin_config('/home/compte/www/api-sandbox/lib') === '/home/compte/config-api-sandbox.php',
+    'bac à sable : sa propre configuration, jamais celle de la production (AG-019)');
+
 echo "API — connexion\n";
 $r = appel(['action' => 'getComptes'], [], $ent);
 verifier(in_array('Access-Control-Allow-Origin: https://maswaddpt47-cmyk.github.io', $ent, true), 'CORS limité à github.io');

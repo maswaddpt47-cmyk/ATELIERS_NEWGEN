@@ -87,21 +87,23 @@ bloc n'avait pas lieu d'être.
 
 ## AG-019 — Bac à sable avant la production — ouvert le 04/10/2026
 **Auteur** : session A — lu sur `b47e0e4`
-**Proposition** : branche `sandbox` de NEWGEN ; un envoi dessus publie l'API
-dans `~/www/api-sandbox/` (base MySQL séparée, **fausses données** seulement,
-secret GitHub distinct) et les pages sous `…/ATELIERS_NEWGEN/sandbox/`
-(construites depuis la branche dans l'artefact Pages de `main`), avec un
-bandeau « BAC À SABLE ». Les pages choisissent l'API d'après le chemin
-(`/sandbox/` → `api-sandbox`). Validé dans le bac à sable → fusion dans
+**Proposition** : branche `sandbox` de NEWGEN ; un envoi dessus publie
+(`deploy-sandbox.yml`) l'API dans `~/www/api-sandbox/` (base MySQL et
+utilisateur séparés, **fausses données** seulement, `~/config-api-sandbox.php`
+choisi d'après le dossier de l'API, sans repli sur celui de la production) et
+les pages dans `~/www/sandbox/` — **chez Alwaysdata, pas sur GitHub Pages**
+(révisé par l'auteur le 04/10/2026 avant toute réponse : le déploiement Pages
+de production reste intact), avec un bandeau « BAC À SABLE ». Les pages
+choisissent l'API d'après l'adresse (`urlApiPour`, testée : production →
+jamais `api-sandbox`). Validé dans le bac à sable → fusion dans
 `main` → production des deux sites. Demande de l'utilisateur, 04/10/2026.
 **Critère déclencheur** : 1 — ferme une porte sur le circuit de déploiement
 (deux pipelines, deux bases, un aiguillage d'URL dans `shared.js`).
 **Ce que ça engage** : un aiguillage d'URL mal écrit enverrait les pages de
 production vers la base de test (ou l'inverse) ; un second dossier d'API
 servi publiquement ; une base de plus à tenir à jour (schéma).
-**Non vérifié par l'auteur** : (1) que `deploy.yml` peut assembler deux
-branches dans un seul artefact Pages sans casser le déploiement de `main` ;
-(2) qu'un utilisateur MySQL dédié peut être limité à la base de test chez
+**Non vérifié par l'auteur** : (1) que le site Alwaysdata sert bien des pages
+statiques sous `~/www/sandbox/` ; (2) qu'un utilisateur MySQL dédié peut être limité à la base de test chez
 Alwaysdata ; (3) l'effet sur `parite.js` et le cache-busting (`?v=`) d'une
 copie des pages sous `/sandbox/` ; (4) NextStep : bac à sable commun (pages
 NEWGEN seulement) ou le sien.

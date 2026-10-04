@@ -9,12 +9,22 @@
 
 date_default_timezone_set('Europe/Paris');
 
+// Fichier de configuration d'après le dossier de l'API (bac à sable, AG-019,
+// 04/10/2026) : www/api/ → ~/config-api.php (production), www/api-sandbox/ →
+// ~/config-api-sandbox.php. Jamais de repli de l'un sur l'autre : sans son
+// propre fichier, le bac à sable n'a pas de base, il ne lit pas celle de la
+// production.
+function api_chemin_config(string $dossierLib): string
+{
+    // lib/ → api*/ → www/ → dossier personnel du compte.
+    return dirname($dossierLib, 3) . '/config-' . basename(dirname($dossierLib)) . '.php';
+}
+
 function api_config(): array
 {
     static $config = null;
     if ($config !== null) return $config;
-    // lib/ → api/ → www/ → dossier personnel du compte.
-    $chemin = getenv('ATELIERS_API_CONFIG') ?: dirname(__DIR__, 3) . '/config-api.php';
+    $chemin = getenv('ATELIERS_API_CONFIG') ?: api_chemin_config(__DIR__);
     $config = is_file($chemin) ? (require $chemin) : [];
     if (!is_array($config)) $config = [];
     return $config;
