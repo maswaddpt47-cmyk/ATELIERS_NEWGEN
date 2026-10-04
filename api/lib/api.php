@@ -45,7 +45,7 @@ const API_CHAMPS_ATELIER = [
     'date_prelevement_materiel' => 'date_prelevement_materiel',
     'date_retour_materiel' => 'date_retour_materiel',
     'duree' => 'duree',
-    'bilan' => 'bilan',
+    'fiche_bilan' => 'fiche_bilan',
 ];
 
 // Point d'entrée : choisit l'action et applique la règle d'accès.
@@ -272,9 +272,12 @@ function ateliers_colonne_duree(PDO $db): void
     if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'duree'")->fetch()) {
         $db->exec('ALTER TABLE ateliers ADD COLUMN duree SMALLINT NULL AFTER horaire');
     }
-    // Fiche bilan (AG-020, 04/10/2026) : même procédé.
-    if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'bilan'")->fetch()) {
-        $db->exec('ALTER TABLE ateliers ADD COLUMN bilan TEXT NULL');
+    // Fiche bilan (AG-020, 04/10/2026) : même procédé. Nommée fiche_bilan
+    // (amendement D) : « bilan » est déjà le bilan mensuel (bilan.php). La
+    // première version du bac à sable l'avait nommée bilan : renommée.
+    if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'fiche_bilan'")->fetch()) {
+        if ($db->query("SHOW COLUMNS FROM ateliers LIKE 'bilan'")->fetch()) $db->exec('ALTER TABLE ateliers CHANGE bilan fiche_bilan TEXT NULL');
+        else $db->exec('ALTER TABLE ateliers ADD COLUMN fiche_bilan TEXT NULL');
     }
     $ok = true;
 }
@@ -425,7 +428,7 @@ function api_ateliers(PDO $db, array $annees): array
             $e[$cle] = $l[$col] ?? '';
         }
         $e['materiel'] = $materiel[$l['id']] ?? [];
-        $e['bilan'] = api_bilan_lu($e['bilan'] ?? '');
+        $e['fiche_bilan'] = api_bilan_lu($e['fiche_bilan'] ?? '');
         $entries[] = $e;
     }
     return $entries;

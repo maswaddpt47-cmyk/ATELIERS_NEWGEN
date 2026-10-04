@@ -32,7 +32,7 @@ function buildEntry(overrides = {}) {
     date_prelevement_materiel: '',
     date_retour_materiel:      '',
     duree:                     90,
-    bilan:                     '',
+    fiche_bilan:               '',
     ...overrides,
   };
 }

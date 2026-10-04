@@ -225,17 +225,23 @@ $r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['dure
 verifier($r['ok'] === false && str_contains($r['error'], 'duree') && $lire('entry_1')['duree'] === 120, 'durée hors demi-heure : refusée');
 // Fiche bilan (AG-020) : objet validé, gardé par un envoi sans bilan, refus hors liste.
 $bilan = ['niveau' => 'Débutant', 'objectif' => 'Partiellement', 'difficultes' => ['Connexion', 'Absences'], 'supports' => ['Diaporama'], 'suite' => 'Nouvel atelier'];
-appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['bilan' => $bilan])]);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['fiche_bilan' => $bilan])]);
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj)]);
-verifier($lire('entry_1')['bilan'] === $bilan, 'bilan enregistré tel quel, gardé par un envoi sans bilan (client en cache)');
-$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['bilan' => ['objectif' => 'Peut-être']])]);
-verifier($r['ok'] === false && str_contains($r['error'], 'bilan') && $lire('entry_1')['bilan'] === $bilan, 'bilan : valeur hors liste refusée');
-appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['bilan' => ['difficultes' => ['Autre'], 'difficultes_autre' => 'Coupure de courant']])]);
-$b1 = $lire('entry_1')['bilan'];
-appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['bilan' => ['difficultes' => ['Connexion'], 'difficultes_autre' => 'oublié']])]);
-verifier(($b1['difficultes_autre'] ?? '') === 'Coupure de courant' && !isset($lire('entry_1')['bilan']['difficultes_autre']), 'précision « Autre » gardée seulement si « Autre » est coché');
-appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['bilan' => ''])]);
-verifier($lire('entry_1')['bilan'] === '', 'bilan vidé');
+verifier($lire('entry_1')['fiche_bilan'] === $bilan, 'bilan enregistré tel quel, gardé par un envoi sans bilan (client en cache)');
+$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['fiche_bilan' => ['objectif' => 'Peut-être']])]);
+verifier($r['ok'] === false && str_contains($r['error'], 'fiche bilan') && $lire('entry_1')['fiche_bilan'] === $bilan, 'bilan : valeur hors liste refusée');
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['fiche_bilan' => ['difficultes' => ['Autre'], 'difficultes_autre' => 'Coupure de courant']])]);
+$b1 = $lire('entry_1')['fiche_bilan'];
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['fiche_bilan' => ['difficultes' => ['Connexion'], 'difficultes_autre' => 'oublié']])]);
+verifier(($b1['difficultes_autre'] ?? '') === 'Coupure de courant' && !isset($lire('entry_1')['fiche_bilan']['difficultes_autre']), 'précision « Autre » gardée seulement si « Autre » est coché');
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['fiche_bilan' => ''])]);
+verifier($lire('entry_1')['fiche_bilan'] === '', 'bilan vidé');
+// Amendement B : une valeur retirée des listes n'empêche pas de modifier l'atelier.
+$db->exec("UPDATE ateliers SET fiche_bilan = '{\"supports\":[\"Rétroprojecteur\"]}' WHERE id = 'entry_1'");
+$ancien = $lire('entry_1')['fiche_bilan'];
+$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['horaire' => '15:00', 'fiche_bilan' => $ancien] + $maj)]);
+verifier(($r['ok'] ?? false) && $lire('entry_1')['horaire'] === '15:00' && $lire('entry_1')['fiche_bilan'] === $ancien, 'fiche avec un choix retiré, renvoyée telle quelle : l\'atelier reste modifiable');
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['fiche_bilan' => ''])]);
 verifier($db->query("SELECT conseiller FROM journal WHERE action = 'delete' ORDER BY id DESC LIMIT 1")->fetchColumn() === 'Nouveau Venu', 'suppression journalisée au nom de la personne connectée');
 
 echo "API — administration\n";
