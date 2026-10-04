@@ -131,6 +131,14 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
      port du même jour, Nouveautés 25-26 datées du 05/10).
    - **(e) « Mes bilans »** : validé au bac à sable, **en production le
      04/10** (NEWGEN `063e19a`, NextStep même jour, Nouveauté 27 du 05/10).
+   - **(f) « Mes bilans » masquable par l'Admin** : en production le 04/10
+     (NEWGEN `2ad7360`, NextStep `ceb8767`). Pas de Nouveauté (réglage Admin).
+   - **Décision à trancher (04/10)** : joindre un support (pptx, docx…) à un
+     atelier et l'ouvrir depuis l'appli. Proposé : bibliothèque de supports
+     par **liens** (OneDrive/SharePoint), sans stockage chez Alwaysdata
+     (quota disque non vérifié, sauvegardes, droits). En attente de la
+     réponse de l'utilisateur (où sont les supports aujourd'hui). Bloc AGORA
+     à ouvrir au choix du stockage (critère 1, schéma de données).
    Écartés du CR : PWA (AG-012), nouveau modèle de données, PHPWord/TCPDF.
 
 0. **Demande du 03/10/2026, dans l'ordre** : (1) durée d'un atelier — livrée
