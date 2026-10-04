@@ -123,9 +123,10 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
      validés au bac à sable le 04/10, **en production le 04/10** (NEWGEN
      `04dc378`, NextStep `1d43b34`, Nouveautés 23-24 datées du 05/10 à la
      demande de l'utilisateur). Avis anonymes, sans âge ni recontact tant que
-     le DPO n'a pas validé. **Reste : registre RGPD, traitement T6 (avis ;
-     les remarques libres peuvent identifier)** dans `ateliers-backups`, hors
-     de portée de cette session au 04/10.
+     le DPO n'a pas validé. Registres RGPD et sécurité **v1.2** (T6, RGPD-20) poussés
+     dans `ateliers-backups` le 04/10 (`3a0512c`), **à relire par le DPO**.
+     Écarts ouverts par T6 : mention d'information du questionnaire sans
+     contact DPO ni droits ; pas de suppression d'un avis isolé.
    - **(c) bilan trimestriel et (d) avis par atelier** : validés au bac à
      sable le 04/10, **en production le 04/10** (NEWGEN `6f5f449`, NextStep
      port du même jour, Nouveautés 25-26 datées du 05/10).
