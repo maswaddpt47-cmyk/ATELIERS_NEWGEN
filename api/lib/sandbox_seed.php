@@ -34,6 +34,7 @@ foreach (import_requetes_schema() as $sql) $db->exec($sql);
 if ((int) $db->query('SELECT COUNT(*) FROM ateliers')->fetchColumn() > 0) {
     echo "sandbox_seed : ateliers déjà là, gardés\n";
     seed_avis_et_fiches($db);
+    seed_conflits_test($db);
     exit(0);
 }
 
@@ -82,6 +83,7 @@ for ($j = -60; $j <= 60; $j++) {
 }
 echo "sandbox_seed : $n ateliers fictifs, " . count($comptes) . " comptes de démonstration\n";
 seed_avis_et_fiches($db);
+seed_conflits_test($db);
 
 // Avis de stagiaires et fiches bilan FICTIFS (demande du 04/10/2026, pour
 // tester « Avis par atelier », le bilan trimestriel et la suppression d'un
@@ -124,4 +126,37 @@ function seed_avis_et_fiches(PDO $db): void
     }
     $db->exec("REPLACE INTO config (cle, valeur) VALUES ('sandbox_avis_fictifs', '1')");
     echo "sandbox_seed : $nAvis avis fictifs, $nFiches fiches bilan fictives\n";
+}
+
+// Ateliers de test des conflits de matériel à l'heure près (AG-022,
+// 04/10/2026), une seule fois (repère « sandbox_conflits_test ») : deux jours
+// ouvrés à venir, Classe mobile et 6 ordinateurs chacun, stock 10.
+//  - jour 1 : Alice 11:00–12:30 et Bruno 12:00–13:30 → conflit d'ordinateurs
+//    de 12:00 à 13:00 et conflit de Classe mobile (l'après-midi) ;
+//  - jour 2 : Chloé 09:00–10:00 et Bruno 10:30–11:30 → pas de conflit
+//    d'ordinateurs (30 min de marge respectées), conflit de Classe mobile
+//    (même matinée).
+function seed_conflits_test(PDO $db): void
+{
+    if ($db->query("SELECT COUNT(*) FROM config WHERE cle = 'sandbox_conflits_test'")->fetchColumn() > 0) return;
+    $ouvre = function (string $d): string {
+        do { $d = date('Y-m-d', strtotime("$d +1 day")); } while ((int) date('N', strtotime($d)) > 5);
+        return $d;
+    };
+    $j1 = $ouvre(date('Y-m-d'));
+    $j2 = $ouvre($j1);
+    $a = $db->prepare("REPLACE INTO ateliers (id, n, statut, date, horaire, duree, ampm, orienteur, commune, lieu, thematique, inscrits, presents, public, conseiller, co_animateur, residence, remarques, nb_ordinateurs)
+                       VALUES (?, NULL, 'Planifié', ?, ?, ?, ?, 'CCAS Démo', ?, 'Salle de démonstration', 'Test conflit matériel', 6, NULL, 'Tout public', ?, '', '', 'Atelier de test des conflits (AG-022)', 6)");
+    $m = $db->prepare("REPLACE INTO ateliers_materiel (atelier_id, materiel) VALUES (?, 'Classe mobile')");
+    foreach ([
+        ['demo_conflit_1', $j1, '11:00', 90, 'AM', 'AGEN (47000)', 'Alice Démo'],
+        ['demo_conflit_2', $j1, '12:00', 90, 'PM', 'FUMEL (47500)', 'Bruno Démo'],
+        ['demo_conflit_3', $j2, '09:00', 60, 'AM', 'NÉRAC (47600)', 'Chloé Démo'],
+        ['demo_conflit_4', $j2, '10:30', 60, 'AM', 'MARMANDE (47200)', 'Bruno Démo'],
+    ] as $l) {
+        $a->execute($l);
+        $m->execute([$l[0]]);
+    }
+    $db->exec("REPLACE INTO config (cle, valeur) VALUES ('sandbox_conflits_test', '1')");
+    echo "sandbox_seed : 4 ateliers de test des conflits ($j1, $j2)\n";
 }

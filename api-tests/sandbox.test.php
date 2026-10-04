@@ -47,6 +47,8 @@ $fiches = (int) $db->query("SELECT COUNT(*) FROM ateliers WHERE fiche_bilan LIKE
 verifier($nAvis > 10 && $trop === 0 && $horsReal === 0 && $fiches > 5, "avis fictifs ($nAvis) et fiches bilan fictives ($fiches) : ateliers réalisés seulement, jamais plus d'avis que de présents");
 [$code] = $lancer("$tmp/sbx.php");
 verifier($code === 0 && (int) $db->query('SELECT COUNT(*) FROM avis')->fetchColumn() === $nAvis, 'redéploiement : avis fictifs pas dupliqués');
+$conf = $db->query("SELECT a.id, a.horaire, a.duree, a.nb_ordinateurs, m.materiel FROM ateliers a JOIN ateliers_materiel m ON m.atelier_id = a.id WHERE a.id LIKE 'demo\\_conflit\\_%' ORDER BY a.id")->fetchAll(PDO::FETCH_ASSOC);
+verifier(count($conf) === 4 && $conf[0]['horaire'] === '11:00' && (int) $conf[0]['duree'] === 90 && $conf[0]['materiel'] === 'Classe mobile', 'ateliers de test des conflits de matériel créés (AG-022)');
 $dossier = fn(string $cfg) => trim((string) shell_exec('ATELIERS_API_CONFIG=' . escapeshellarg($cfg) . ' php -r ' . escapeshellarg('require "' . __DIR__ . '/../api/lib/copie.php"; echo sauvegarde_dossier();')));
 verifier(str_ends_with($dossier("$tmp/sbx.php"), '/sauvegardes-sandbox') && str_ends_with($dossier("$tmp/prod.php"), '/sauvegardes'), 'copies du bac à sable dans leur propre dossier, jamais celui de la production');
 
