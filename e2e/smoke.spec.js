@@ -36,6 +36,7 @@ const INDEX_VIEWS = [
   { label: 'Historique', ariaLabel: 'Historique' },
   { label: 'Nouveau',    ariaLabel: 'Nouveau'    },
   { label: 'Stats',      ariaLabel: 'Stats'      },
+  { label: 'Avis par atelier', ariaLabel: '💬 Avis par atelier' },     // sous-onglet du Dashboard (04/10/2026)
   { label: 'Bilan trimestriel', ariaLabel: '🗓️ Bilan trimestriel' },   // sous-onglet du Dashboard (04/10/2026)
   { label: 'Agenda',     ariaLabel: 'Agenda'     },
   { label: 'Planning',   ariaLabel: 'Planning'   },
@@ -52,6 +53,7 @@ const ADMIN_VIEWS = [
   { label: 'Historique', ariaLabel: 'Historique' },
   { label: 'Nouveau',    ariaLabel: 'Nouveau'    },
   { label: 'Dashboard',  ariaLabel: 'Dashboard'  },
+  { label: 'Avis par atelier', ariaLabel: '💬 Avis par atelier' },     // sous-onglet du Dashboard (04/10/2026)
   { label: 'Bilan trimestriel', ariaLabel: '🗓️ Bilan trimestriel' },   // sous-onglet du Dashboard (04/10/2026)
   { label: 'Agenda',     ariaLabel: 'Agenda'     },
   { label: 'Planning',   ariaLabel: 'Planning'   },

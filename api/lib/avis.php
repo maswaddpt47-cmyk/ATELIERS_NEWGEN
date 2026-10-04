@@ -203,3 +203,38 @@ function action_bilan_avis(PDO $db, array $p): array
     $r->execute([$du, $au]);
     return ['ok' => true, 'avis' => $avis, 'remarques' => $r->fetchAll(PDO::FETCH_COLUMN)];
 }
+
+// Récapitulatif des avis atelier par atelier (demande du 04/10/2026), à tout
+// moment, sans attendre le bilan trimestriel : tous statuts, ateliers datés
+// de la période. Mêmes informations que la fenêtre du QR de chaque atelier,
+// réunies dans un tableau. Lecture seule, équipe connectée.
+function action_avis_par_atelier(PDO $db, array $p): array
+{
+    avis_schema($db);
+    $du = (string) ($p['du'] ?? '');
+    $au = (string) ($p['au'] ?? '');
+    $jour = '/^\d{4}-\d{2}-\d{2}$/';
+    if (!preg_match($jour, $du) || !preg_match($jour, $au) || $du > $au) return ['ok' => false, 'error' => 'Période invalide'];
+    $s = $db->prepare("SELECT v.atelier_id, COUNT(*) n, SUM(v.source = 'papier') papier,
+                              AVG(v.attentes) attentes, AVG(v.clarte) clarte,
+                              SUM(v.rythme = 'Adapté') rythme_ok, SUM(v.rythme IS NOT NULL) rythme_n,
+                              SUM(v.aise = 'Oui') aise_oui, SUM(v.aise IS NOT NULL) aise_n,
+                              SUM(v.autonomie = 'Oui') autonomie_oui, SUM(v.autonomie IS NOT NULL) autonomie_n
+                       FROM avis v JOIN ateliers a ON a.id = v.atelier_id
+                       WHERE a.date BETWEEN ? AND ? GROUP BY v.atelier_id");
+    $s->execute([$du, $au]);
+    $r = $db->prepare("SELECT v.atelier_id, v.remarque FROM avis v JOIN ateliers a ON a.id = v.atelier_id
+                       WHERE a.date BETWEEN ? AND ? AND v.remarque <> '' ORDER BY v.id");
+    $r->execute([$du, $au]);
+    $rem = [];
+    foreach ($r->fetchAll(PDO::FETCH_ASSOC) as $l) $rem[$l['atelier_id']][] = $l['remarque'];
+    $moy = fn($v) => $v !== null ? round((float) $v, 1) : null;
+    return ['ok' => true, 'ateliers' => array_map(fn($l) => [
+        'atelier_id' => $l['atelier_id'], 'n' => (int) $l['n'], 'papier' => (int) $l['papier'],
+        'attentes' => $moy($l['attentes']), 'clarte' => $moy($l['clarte']),
+        'rythme_ok' => (int) $l['rythme_ok'], 'rythme_n' => (int) $l['rythme_n'],
+        'aise_oui' => (int) $l['aise_oui'], 'aise_n' => (int) $l['aise_n'],
+        'autonomie_oui' => (int) $l['autonomie_oui'], 'autonomie_n' => (int) $l['autonomie_n'],
+        'remarques' => $rem[$l['atelier_id']] ?? [],
+    ], $s->fetchAll(PDO::FETCH_ASSOC))];
+}

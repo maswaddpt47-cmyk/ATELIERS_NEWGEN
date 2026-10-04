@@ -5900,13 +5900,69 @@ function VueBilanTrimestriel({entries}){
       :CE('div',{className:'bt',dangerouslySetInnerHTML:{__html:html}}));
 }
 
-// ── VueDashboardTabs — Dashboard unifié (4 onglets) ──────────
+// ── Avis par atelier (demande du 04/10/2026) ──────────────────────────────
+// Récapitulatif des avis des stagiaires atelier par atelier, à tout moment
+// (le bilan trimestriel, lui, porte sur un trimestre clos). Action de
+// lecture avisParAtelier, appelée à l'ouverture de l'onglet et au changement
+// de période, jamais au démarrage.
+function VueAvisAteliers({entries}){
+  const auj=todayLocal();
+  const[du,setDu]=React.useState(addJoursIso(auj,-90));
+  const[au,setAu]=React.useState(auj);
+  const[res,setRes]=React.useState(null);
+  const[ouvert,setOuvert]=React.useState({});
+  React.useEffect(()=>{let vivant=true;setRes(null);
+    if(!du||!au||du>au){setRes({erreur:'Période invalide'});return;}
+    (async()=>{try{
+      const r=await apiFetch('avisParAtelier',{du,au});
+      if(vivant)setRes(r&&r.ok?{ateliers:r.ateliers||[]}:{erreur:(r&&r.error)||'Erreur'});
+    }catch(e){if(vivant)setRes({erreur:e.message||'Erreur réseau'});}})();
+    return()=>{vivant=false;};},[du,au]);
+  const parId=Object.fromEntries((entries||[]).map(e=>[e._id,e]));
+  const lignes=(res&&res.ateliers||[]).map(a=>({...a,e:parId[a.atelier_id]||{}}))
+    .sort((x,y)=>String(normalizeDate(y.e.date)||'').localeCompare(String(normalizeDate(x.e.date)||'')));
+  const totalAvis=lignes.reduce((t,l)=>t+l.n,0);
+  const note=v=>v===null||v===undefined?'—':String(v).replace('.',',')+'/5';
+  const part=(o,n)=>n?`${o}/${n}`:'—';
+  const COLS=['Date','Thématique','Commune','Conseiller','Avis','Attentes','Clarté','Rythme adapté','Plus à l\'aise','Refaire seul'];
+  const cellules=l=>[fmtDate(l.e.date),l.e.thematique||'—',l.e.commune||'—',l.e.conseiller||'—',l.n+(l.papier?` (dont ${l.papier} papier)`:''),note(l.attentes),note(l.clarte),part(l.rythme_ok,l.rythme_n),part(l.aise_oui,l.aise_n),part(l.autonomie_oui,l.autonomie_n)];
+  function imprimer(){
+    const w=window.open('','_blank');if(!w){showToast('Autorisez les fenêtres pour ce site',false);return;}
+    const e=htmlEsc;
+    const corps=lignes.map(l=>`<tr>${cellules(l).map(c=>`<td>${e(String(c))}</td>`).join('')}</tr>`+(l.remarques.length?`<tr><td></td><td colspan="9" class="rem">${l.remarques.map(r=>'« '+e(r)+' »').join('<br>')}</td></tr>`:'')).join('');
+    w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Avis des stagiaires par atelier</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#0f172a}h1{font-size:18px;color:#0f766e}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border-bottom:1px solid #e2e8f0;padding:4px 5px;text-align:left;vertical-align:top}th{background:#f8fafc}.rem{font-style:italic;color:#475569}</style></head><body><h1>Avis des stagiaires par atelier</h1><p style="font-size:12px;color:#64748b">Ateliers du ${fmtDate(du)} au ${fmtDate(au)} — ${lignes.length} atelier(s), ${totalAvis} avis. Avis anonymes. Édité le ${fmtDate(auj)}.</p><table><thead><tr>${COLS.map(c=>`<th>${e(c)}</th>`).join('')}</tr></thead><tbody>${corps}</tbody></table><script>window.print();<\/script></body></html>`);
+    w.document.close();
+  }
+  const champ={padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:13};
+  const td={padding:'6px 8px',borderBottom:'1px solid #e2e8f0',fontSize:12,verticalAlign:'top',whiteSpace:'nowrap'};
+  return CE('div',{className:'card'},
+    CE('div',{style:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:12}},
+      CE('label',{style:{fontSize:13}},'Du ',CE('input',{type:'date',value:du,onChange:e=>setDu(e.target.value),style:champ})),
+      CE('label',{style:{fontSize:13}},'Au ',CE('input',{type:'date',value:au,onChange:e=>setAu(e.target.value),style:champ})),
+      CE('button',{type:'button',className:'btn btn-primary btn-sm',disabled:!lignes.length,onClick:imprimer},'🖨️ Imprimer / PDF')),
+    !res?CE('div',{style:{padding:30,color:'#64748b',textAlign:'center'}},'Chargement des avis…')
+    :res.erreur?CE('div',{style:{color:'#b91c1c',padding:16}},'❌ '+res.erreur)
+    :!lignes.length?CE('div',{style:{padding:30,color:'#64748b',textAlign:'center'}},'Aucun avis pour les ateliers de cette période.')
+    :CE(React.Fragment,null,
+      CE('div',{style:{fontSize:12,color:'#64748b',marginBottom:8}},`${lignes.length} atelier${lignes.length>1?'s':''} avec des avis, ${totalAvis} avis en tout. Cliquez sur une ligne pour lire ses remarques.`),
+      CE('div',{style:{overflowX:'auto'}},
+        CE('table',{style:{width:'100%',borderCollapse:'collapse'}},
+          CE('thead',null,CE('tr',null,COLS.map(c=>CE('th',{key:c,style:{...td,background:'#f8fafc',textAlign:'left',fontWeight:700}},c)))),
+          CE('tbody',null,lignes.map(l=>CE(React.Fragment,{key:l.atelier_id},
+            CE('tr',{onClick:()=>setOuvert(o=>({...o,[l.atelier_id]:!o[l.atelier_id]})),style:{cursor:l.remarques.length?'pointer':'default'}},
+              cellules(l).map((c,i)=>CE('td',{key:i,style:td},i===0&&l.remarques.length?(ouvert[l.atelier_id]?'▾ ':'▸ ')+c:c))),
+            ouvert[l.atelier_id]&&l.remarques.length>0&&CE('tr',null,CE('td',{colSpan:COLS.length,style:{...td,whiteSpace:'normal',fontStyle:'italic',color:'#475569',background:'#f8fafc'}},
+              l.remarques.map((r,i)=>CE('div',{key:i},'« '+r+' »')))))))))));
+}
+
+// ── VueDashboardTabs — Dashboard unifié (5 onglets) ──────────
 function VueDashboardTabs({entries, conseillers}){
   const[tab,setTab]=React.useState('dashboard');
   const TABS=[
     {id:'dashboard', ico:'🚀', label:'Synthèse'},
     {id:'graphiques', ico:'📊', label:'Analyse'},
     {id:'powerbi',    ico:'📈', label:'Bilan mensuel'},
+    {id:'avis',       ico:'💬', label:'Avis par atelier'},
     {id:'trimestre',  ico:'🗓️', label:'Bilan trimestriel'},
   ];
   return CE('div',null,
@@ -5926,6 +5982,7 @@ function VueDashboardTabs({entries, conseillers}){
     tab==='dashboard'  && CE(VueDashboard,{entries}),
     tab==='graphiques' && CE(VueGraphiques,{entries}),
     tab==='powerbi'    && CE(VuePowerBI,{entries,conseillers}),
+    tab==='avis'       && CE(VueAvisAteliers,{entries}),
     tab==='trimestre'  && CE(VueBilanTrimestriel,{entries})
   );
 }

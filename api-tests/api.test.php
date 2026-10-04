@@ -436,6 +436,13 @@ $db->exec("UPDATE ateliers SET statut = 'Réalisé' WHERE id = 'av_1'");
 $b = appel(['action' => 'bilanAvis'], $T + ['du' => $debut, 'au' => $auj]);
 verifier(count($b['avis'] ?? []) === 2 && $b['remarques'] === ['Merci'] && !array_key_exists('remarque', $b['avis'][0]) && !array_key_exists('cree_le', $b['avis'][0]),
     'bilan des avis : remarques à part, sans date ni lien avec l\'atelier');
+// Récapitulatif par atelier : tous statuts, remarques rattachées à l'atelier.
+$db->exec("UPDATE ateliers SET statut = 'Planifié' WHERE id = 'av_1'");
+verifier(appel(['action' => 'avisParAtelier'], ['du' => $debut, 'au' => $auj])['auth'] ?? false, 'récapitulatif des avis : réservé à l\'équipe connectée');
+$rp = appel(['action' => 'avisParAtelier'], $T + ['du' => $debut, 'au' => $auj]);
+$par = array_column($rp['ateliers'] ?? [], null, 'atelier_id');
+verifier(count($par) === 2 && $par['av_1']['n'] === 1 && $par['av_1']['attentes'] == 5 && $par['av_1']['aise_oui'] === 1 && $par['av_1']['remarques'] === ['Merci']
+    && $par['av_vieux']['papier'] === 1 && $par['av_vieux']['remarques'] === [], 'récapitulatif des avis par atelier, tous statuts — ' . json_encode($rp));
 // Amendement A : corbeille → avis et jeton gardés ; restauration → rendus ; sortie de corbeille → effacés.
 appel(['action' => 'delete'], $T + ['_id' => 'av_1']);
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
