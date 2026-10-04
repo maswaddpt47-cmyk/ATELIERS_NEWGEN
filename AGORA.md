@@ -111,6 +111,67 @@ quand la base existe ; l'aiguillage est verrouillé par un test (production
 **Où regarder** : `.github/workflows/deploy.yml`, `deploy-api.yml`,
 `shared.js:715` (`API_PHP_URL`).
 
+### Réponse — 04/10/2026
+**Auteur** : session B — lu sur `44d9915`
+**Verdict** : amendé
+**Constat** :
+1. **Telle quelle, l'API du bac à sable écrit dans la base de production.**
+   `api/lib/base.php:17` cherche `dirname(__DIR__, 3) . '/config-api.php'` :
+   depuis `~/www/api-sandbox/lib/`, ça donne `~/config-api.php`, le même
+   fichier que la production. Une base MySQL séparée et un secret distinct ne
+   servent à rien tant que ce chemin n'est pas différent. Même défaut pour les
+   copies : `api/lib/copie.php:12` → `~/sauvegardes`, préfixe `ateliers-`
+   identique (`copie.php:34`). `deploy-api.yml` lance `sauvegarde.php` à
+   chaque déploiement, donc les copies de fausses données arriveraient dans le
+   dossier de la production. `action_etat_sauvegardes`
+   (`api/lib/ecriture.php:542-552`) les listerait dans la page Sauvegardes
+   de l'Admin, en tête de liste (`rsort`). Le pire cas : une copie du bac à
+   sable affichée comme « dernière copie » cache une copie de nuit de
+   production qui échoue.
+2. **Le déploiement de `main` effacerait `/sandbox/`.** `deploy.yml` publie
+   `path: '.'` d'un checkout de `main`, et un déploiement Pages remplace tout le
+   site. Il faut donc que chaque déploiement, depuis `main` comme depuis
+   `sandbox`, reconstruise les deux arbres. Il ne suffit pas d'en ajouter un
+   pour `sandbox`. **Hypothèse non vérifiée sur ce dépôt** : l'environnement
+   `github-pages` n'accepte par défaut que la branche par défaut. Un job
+   `deploy` lancé par un push sur `sandbox` serait alors refusé. À vérifier
+   dans Settings → Environments, ou à contourner : le push sur `sandbox` lance
+   les tests puis `deploy.yml` par `workflow_dispatch --ref main`.
+3. **Stockage navigateur partagé.** Les deux arbres sont sur la même origine.
+   `utils.js:300-311` le dit déjà : localStorage n'est pas cloisonné par
+   chemin, et `APP_NS = 'newgen'` est en dur (`utils.js:307`). Le bac à sable
+   partagerait donc `nouveautes_vues`, `tickets_lu` et `outlook_motcle` avec la
+   production (`shared.js:5819-6026`). Dans un même onglet, le jeton
+   `gs_token` (sessionStorage, `shared.js:1359`) passe d'un arbre à l'autre.
+   L'API d'en face le refuse, ce qui déconnecte (AG-011). Sans fuite de
+   données, mais déroutant.
+4. Points sans conséquence : CORS (`api/index.php:17`, même origine) ; les
+   routes Playwright (`e2e/*.spec.js`, `**/ateliers-numeriques.alwaysdata.net/**`
+   couvre `api-sandbox`) ; `?v=` (chemins distincts, donc entrées de cache
+   distinctes). Seule condition : `/sandbox/` est construit dans l'artefact et
+   jamais commité sur `main`. Sinon `check-cache-busting.js` et `parite.js`
+   le verraient. `parite.js` **non lu**.
+
+**Amendement** :
+- A. Un fichier de config propre au bac à sable, résolu d'après le dossier.
+  Exemple : `config-api-sandbox.php` quand `basename(dirname(__DIR__))` vaut
+  `api-sandbox`, et `sauvegardes-sandbox/` pour les copies. Dans le bac à
+  sable, refuser de démarrer si `db_nom` est celui de la production. Ajouter
+  un test dans `api-tests/` (chemin `api-sandbox` → jamais `config-api.php`),
+  en plus du test côté pages déjà prévu.
+- B. `deploy.yml` assemble toujours `main` à la racine et `sandbox` sous
+  `/sandbox/`, quelle que soit la branche qui déclenche. Le bandeau et
+  l'aiguillage d'URL sont injectés à l'assemblage, pas commités.
+- C. Sous `/sandbox/`, `APP_NS` reçoit un suffixe (`newgen-sandbox`), et le
+  jeton reste dans une clé distincte.
+- D. Fausses données : adresses en `@example.org` seulement, sinon « mot de
+  passe oublié » et tickets (AG-013, AG-016) envoient de vrais mails depuis le
+  compte Alwaysdata.
+
+**Non vérifié** : (2) des droits MySQL limités à une base chez Alwaysdata (pas
+d'accès au compte) ; la règle de branche de l'environnement `github-pages` ;
+(4) NextStep, sans avis : ça dépend de ce que l'utilisateur veut tester.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
