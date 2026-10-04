@@ -130,9 +130,11 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    sable** (AG-019). Base et utilisateur créés par l'utilisateur le 04/10 ;
    code prêt (`4dd32e9`, NextStep `a07254b`) : `deploy-sandbox.yml`, pages et
    API chez Alwaysdata (`/sandbox/`, `/api-sandbox/`), fausses données
-   (`sandbox_seed.php`). **Reste** : 4 secrets (`SANDBOX_DB_NOM`,
-   `SANDBOX_DB_UTILISATEUR`, `SANDBOX_DB_MOT_DE_PASSE`, `SANDBOX_MDP_DEMO`),
-   puis créer la branche `sandbox` depuis `main` (premier déploiement).
+   (`sandbox_seed.php`). **En ligne le 04/10** : secrets posés, branche
+   `sandbox` créée, premier déploiement réussi (contrôles du workflow : API
+   répond, `lib/` fermé, pages servies) — https://ateliers-numeriques.alwaysdata.net/sandbox/
+   (comptes « Démo … », mot de passe = `SANDBOX_MDP_DEMO`). Circuit : travail
+   sur `sandbox` → test par l'utilisateur → fusion dans `main` → production.
 
 0. **Demande du 03/10/2026, dans l'ordre** : (1) durée d'un atelier — livrée
    (NextStep `c57fb7a`, NEWGEN `6be6a0c`, AG-017 ouvert), **à tester** : liste
