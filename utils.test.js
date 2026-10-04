@@ -904,9 +904,10 @@ describe('urlAvisPour', () => {
   const { urlAvisPour } = require('./utils.js');
   it('NEWGEN et NextStep → avis.html de NEWGEN ; bac à sable → le sien', () => {
     const J = '0123456789abcdef0123456789abcdef';
-    assert.equal(urlAvisPour('https://maswaddpt47-cmyk.github.io', '/ateliers-cd47_NextStep/index.html', J), 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/avis.html?a=' + J);
-    assert.equal(urlAvisPour('https://maswaddpt47-cmyk.github.io', '/ATELIERS_NEWGEN/', J), 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/avis.html?a=' + J);
-    assert.equal(urlAvisPour('https://ateliers-numeriques.alwaysdata.net', '/sandbox/admin.html', J), 'https://ateliers-numeriques.alwaysdata.net/sandbox/avis.html?a=' + J);
+    assert.equal(urlAvisPour('https://maswaddpt47-cmyk.github.io', '/ateliers-cd47_NextStep/index.html', J), 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/avis.html#' + J);
+    assert.equal(urlAvisPour('https://maswaddpt47-cmyk.github.io', '/ATELIERS_NEWGEN/', J), 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/avis.html#' + J);
+    assert.equal(urlAvisPour('https://ateliers-numeriques.alwaysdata.net', '/sandbox/admin.html', J), 'https://ateliers-numeriques.alwaysdata.net/sandbox/avis.html#' + J);
+    assert.ok(!urlAvisPour('https://maswaddpt47-cmyk.github.io', '/', J).includes('?'), 'jeton jamais dans la partie envoyée au serveur');
   });
 });
 

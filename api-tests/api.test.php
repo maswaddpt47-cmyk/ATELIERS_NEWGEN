@@ -407,6 +407,23 @@ $col = $db->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_s
 verifier((int) $col === 0, '[RGPD-20] avis anonymes : aucune colonne IP, nom, âge ou contact');
 $res = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1'])['avis'];
 verifier($res['n'] === 1 && $res['attentes'] == 5 && $res['remarques'] === ['Merci'], 'résumé des avis pour la fiche : ' . json_encode($res));
+verifier($db->query("SELECT cree_le FROM avis LIMIT 1")->fetchColumn() === $auj . ' 00:00:00', 'avis daté du jour seulement, sans l\'heure (amendement B)');
+// Amendement D : avis papier, par un conseiller connecté, sans fenêtre de dates.
+verifier(appel(['action' => 'saisirAvisPapier'], ['_id' => 'av_vieux', 'attentes' => '3'])['auth'] ?? false, 'avis papier : réservé à l\'équipe connectée');
+$pap = appel(['action' => 'saisirAvisPapier'], $T + ['_id' => 'av_vieux', 'attentes' => '3', 'remarque' => '']);
+verifier(($pap['ok'] ?? false) && $db->query("SELECT source FROM avis WHERE atelier_id = 'av_vieux'")->fetchColumn() === 'papier'
+    && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'saisirAvisPapier' AND ref = 'av_vieux'")->fetchColumn() === 1, 'avis papier enregistré hors fenêtre, marqué « papier », journalisé');
+// Amendement A : corbeille → avis et jeton gardés ; restauration → rendus ; sortie de corbeille → effacés.
+appel(['action' => 'delete'], $T + ['_id' => 'av_1']);
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'av_1']);
+$apres = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1']);
+verifier(($apres['jeton'] ?? '') === $j['jeton'] && $apres['avis']['n'] === 1, 'atelier supprimé puis restauré : même jeton, avis gardés');
+appel(['action' => 'delete'], $T + ['_id' => 'av_1']);
+$db->exec("UPDATE ateliers_corbeille SET supprime_le = NOW() - INTERVAL 40 DAY WHERE id = 'av_1'");
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+verifier((int) $db->query("SELECT COUNT(*) FROM avis WHERE atelier_id = 'av_1'")->fetchColumn() === 0
+    && (int) $db->query("SELECT COUNT(*) FROM avis_jetons WHERE atelier_id = 'av_1'")->fetchColumn() === 0, 'atelier sorti de la corbeille : ses avis et son jeton partent avec lui');
 $db->exec("UPDATE avis SET cree_le = '" . date('Y-m-d H:i:s', strtotime('-25 months')) . "'");
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
 verifier((int) $db->query('SELECT COUNT(*) FROM avis')->fetchColumn() === 0, '[RGPD-20] avis purgés à 24 mois');

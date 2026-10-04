@@ -32,8 +32,13 @@ function avis_schema(PDO $db): void
         id INT NOT NULL AUTO_INCREMENT, atelier_id VARCHAR(64) NOT NULL, cree_le DATETIME NOT NULL,
         attentes TINYINT NULL, rythme VARCHAR(20) NULL, clarte TINYINT NULL, aise VARCHAR(20) NULL,
         autonomie VARCHAR(20) NULL, sujet VARCHAR(40) NULL, sujet_autre VARCHAR(60) NULL, remarque VARCHAR(500) NULL,
+        source VARCHAR(10) NOT NULL DEFAULT 'qr',
         PRIMARY KEY (id), KEY idx_atelier (atelier_id), KEY idx_cree (cree_le)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    // Table créée avant l'amendement D d'AG-021 (bac à sable) : colonne source.
+    if (!$db->query("SHOW COLUMNS FROM avis LIKE 'source'")->fetch()) {
+        $db->exec("ALTER TABLE avis ADD COLUMN source VARCHAR(10) NOT NULL DEFAULT 'qr'");
+    }
     $fait = true;
 }
 
@@ -42,6 +47,14 @@ function avis_purger(PDO $db): void
     avis_schema($db);
     $limite = date('Y-m-d H:i:s', strtotime('-' . AVIS_CONSERVATION_MOIS . ' months'));
     $db->prepare('DELETE FROM avis WHERE cree_le < ?')->execute([$limite]);
+    // Pas de clé étrangère en cascade (amendement A d'AG-021) : un atelier mis
+    // à la corbeille garde ses avis et son jeton, rendus à la restauration ;
+    // ils ne partent qu'avec l'atelier sorti de la corbeille.
+    corbeille_schema($db);
+    foreach (['avis', 'avis_jetons'] as $t) {
+        $db->exec("DELETE FROM $t WHERE atelier_id NOT IN (SELECT id FROM ateliers)
+                   AND atelier_id NOT IN (SELECT id FROM ateliers_corbeille)");
+    }
 }
 
 // Résumé des avis d'un atelier, pour la fiche (conseiller).
@@ -106,10 +119,32 @@ function action_deposer_avis(PDO $db, array $p): array
 {
     $a = avis_atelier($db, (string) ($p['a'] ?? ''), $err);
     if ($a === null) return ['ok' => false, 'error' => $err];
+    return avis_enregistrer($db, $a['id'], $p, 'qr');
+}
+
+// Avis papier recopié par un conseiller connecté (amendement D d'AG-021) :
+// sans fenêtre de dates ; journalisé au nom du conseiller (sans le contenu).
+function action_saisir_avis_papier(PDO $db, array $p, array $session): array
+{
+    avis_schema($db);
+    $id = (string) ($p['_id'] ?? '');
+    $s = $db->prepare('SELECT id FROM ateliers WHERE id = ?');
+    $s->execute([$id]);
+    if ($s->fetchColumn() === false) return ['ok' => false, 'error' => 'Atelier introuvable'];
+    $r = avis_enregistrer($db, $id, $p, 'papier');
+    if ($r['ok']) api_journal($db, 'saisirAvisPapier', $session['conseiller'], $id, $session['role'], 1, 0, '', '');
+    return $r;
+}
+
+function avis_enregistrer(PDO $db, string $atelierId, array $p, string $source): array
+{
+    $a = ['id' => $atelierId];
     $n = $db->prepare('SELECT COUNT(*) FROM avis WHERE atelier_id = ?');
     $n->execute([$a['id']]);
     if ((int) $n->fetchColumn() >= AVIS_MAX) return ['ok' => false, 'error' => 'Nombre maximal d\'avis atteint pour cet atelier'];
-    $l = ['atelier_id' => $a['id'], 'cree_le' => date('Y-m-d H:i:s')];
+    // Date seule, pas l'heure (amendement B) : avec des groupes de 3 à 6
+    // personnes, l'heure d'un avis aiderait à reconnaître qui l'a donné.
+    $l = ['atelier_id' => $a['id'], 'cree_le' => date('Y-m-d'), 'source' => $source];
     foreach (AVIS_NOTES as $c) {
         $v = trim((string) ($p[$c] ?? ''));
         if ($v === '') { $l[$c] = null; continue; }
@@ -123,7 +158,7 @@ function action_deposer_avis(PDO $db, array $p): array
     }
     $l['sujet_autre'] = ($l['sujet'] ?? '') === 'Autre' ? (mb_substr(trim((string) ($p['sujet_autre'] ?? '')), 0, 60) ?: null) : null;
     $l['remarque'] = mb_substr(trim((string) ($p['remarque'] ?? '')), 0, 500);
-    if (count(array_filter($l, fn($v) => $v !== null && $v !== '')) <= 2) return ['ok' => false, 'error' => 'Répondez au moins à une question'];
+    if (count(array_filter($l, fn($v) => $v !== null && $v !== '')) <= 3) return ['ok' => false, 'error' => 'Répondez au moins à une question'];
     $cols = array_keys($l);
     $db->prepare('INSERT INTO avis (' . implode(', ', $cols) . ') VALUES (' . implode(', ', array_fill(0, count($cols), '?')) . ')')
        ->execute(array_values($l));

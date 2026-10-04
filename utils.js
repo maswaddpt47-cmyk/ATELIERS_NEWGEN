@@ -569,8 +569,10 @@ function urlApiPour(hote,chemin){
 // Adresse du questionnaire d'avis d'un atelier (QR code, AG-021) : une seule
 // page publique, avis.html de NEWGEN, pour les deux applis ; celle du bac à
 // sable pour le bac à sable ; à côté de la page courante ailleurs (tests).
+// Jeton dans le fragment (#), jamais envoyé à l'hébergeur des pages : ses
+// journaux n'associent pas une adresse IP à un atelier (amendement B).
 function urlAvisPour(origine,chemin,jeton){
-  const q='avis.html?a='+encodeURIComponent(jeton);
+  const q='avis.html#'+encodeURIComponent(jeton);
   if(/github\.io$/.test(String(origine)))return 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/'+q;
   if(/^\/sandbox(\/|$)/.test(String(chemin||'')))return origine+'/sandbox/'+q;
   return origine+String(chemin||'/').replace(/[^/]*$/,'')+q;

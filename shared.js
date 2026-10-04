@@ -799,7 +799,9 @@ const GAS_ACTIONS_ECRITURE = new Set([
   'restaurerCorbeille','copieMaintenant',
   // Tickets (AG-016) : creerTicket est rejouable sans effet (id client), mais
   // jamais doublé en vol ; repondreTicket non plus.
-  'creerTicket','repondreTicket','supprimerTicket'
+  'creerTicket','repondreTicket','supprimerTicket',
+  // Avis papier : chaque envoi crée un avis, jamais doublé (AG-021).
+  'saisirAvisPapier'
 ]);
 const GAS_HEDGE_MS            = 7000;   // délai avant de doubler une lecture
 const GAS_TENTATIVES_LECTURE  = 3;
@@ -2602,7 +2604,42 @@ function PanneauAtelier({panel,onClose,entries,onEntryUpdated,onRefresh,onEdit,o
 
 // Fenêtre du QR code des avis (AG-021) : jeton demandé à l'ouverture
 // (jamais au démarrage), QR dessiné dans le navigateur, résumé des avis.
+// Avis papier recopié par le conseiller (amendement D d'AG-021) : mêmes
+// questions que avis.html, sans fenêtre de dates, marqué « papier ».
+const AVIS_QUESTIONS=[
+  ['attentes','Attentes (étoiles)',['1','2','3','4','5']],
+  ['rythme','Rythme',['Trop lent','Adapté','Trop rapide']],
+  ['clarte','Clarté (étoiles)',['1','2','3','4','5']],
+  ['aise','Plus à l\'aise',['Non','Un peu','Oui']],
+  ['autonomie','Refaire seul(e)',['Oui','Avec de l\'aide','Non']],
+  ['sujet','Sujet souhaité',['Smartphone','Messagerie','Démarches en ligne','Sécurité','Intelligence artificielle','Autre']],
+];
+function FormulaireAvisPapier({atelierId,onEnregistre}){
+  const vide={};
+  const[r,setR]=React.useState(vide);
+  const[envoi,setEnvoi]=React.useState(false);
+  const champ={width:'100%',padding:'6px 8px',border:'1.5px solid #e2e8f0',borderRadius:6,fontSize:13};
+  async function envoyer(){
+    setEnvoi(true);
+    try{
+      const res=await apiFetch('saisirAvisPapier',{_id:atelierId,...r});
+      if(!res||!res.ok)throw new Error((res&&res.error)||'Erreur');
+      const maj=await apiFetch('jetonAvis',{_id:atelierId});
+      if(maj&&maj.ok)onEnregistre(maj.avis);
+      showToast('✅ Avis papier enregistré');setR(vide);
+    }catch(e){showToast('❌ '+(e.message||'Erreur réseau'),false);}
+    finally{setEnvoi(false);}
+  }
+  return CE('div',{style:{textAlign:'left',border:'1.5px dashed #99f6e4',borderRadius:10,padding:10,marginBottom:12,display:'grid',gap:6}},
+    AVIS_QUESTIONS.map(([k,lib,choix])=>CE('label',{key:k,style:{fontSize:12,fontWeight:600,color:'#334155'}},lib,
+      CE('select',{value:r[k]||'',onChange:e=>setR(x=>({...x,[k]:e.target.value})),style:champ},CE('option',{value:''},'—'),choix.map(c=>CE('option',{key:c,value:c},c))))),
+    r.sujet==='Autre'&&CE('input',{type:'text',maxLength:60,placeholder:'Lequel ?',value:r.sujet_autre||'',onChange:e=>setR(x=>({...x,sujet_autre:e.target.value})),style:champ}),
+    CE('textarea',{rows:2,maxLength:500,placeholder:'Remarque (sans aucun nom)',value:r.remarque||'',onChange:e=>setR(x=>({...x,remarque:e.target.value})),style:champ}),
+    CE('button',{type:'button',className:'btn btn-primary btn-sm',disabled:envoi||!Object.values(r).some(v=>v),onClick:envoyer},envoi?'…':'Enregistrer cet avis papier'));
+}
+
 function ModaleAvisQR({atelier,onClose}){
+  const[papier,setPapier]=React.useState(false);
   const[etat,setEtat]=React.useState(null);
   const[qr,setQr]=React.useState('');
   React.useEffect(()=>{let vivant=true;
@@ -2636,7 +2673,8 @@ function ModaleAvisQR({atelier,onClose}){
         CE('div',{style:{fontSize:11,color:'#64748b',wordBreak:'break-all',margin:'6px 0 10px'}},etat.url),
         CE('div',{style:{display:'flex',gap:6,justifyContent:'center',flexWrap:'wrap',marginBottom:12}},
           CE('button',{type:'button',className:'btn btn-primary btn-sm',onClick:imprimer},'🖨️ Imprimer / projeter'),
-          CE('a',{href:etat.url,target:'_blank',rel:'noopener',className:'btn btn-secondary btn-sm',style:{textDecoration:'none'}},'✍️ Saisir un avis papier')),
+          CE('button',{type:'button',className:'btn btn-secondary btn-sm',onClick:()=>setPapier(p=>!p)},papier?'Fermer la saisie papier':'✍️ Saisir un avis papier')),
+        papier&&CE(FormulaireAvisPapier,{atelierId:atelier._id,onEnregistre:avis=>setEtat(e=>({...e,avis}))}),
         CE('div',{style:{textAlign:'left',background:'#f8fafc',borderRadius:10,padding:'10px 12px',fontSize:13}},
           CE('div',{style:{fontWeight:700,marginBottom:4}},a.n?`${a.n} avis reçu${a.n>1?'s':''}`:'Aucun avis pour l\'instant'),
           a.n>0&&CE('div',null,`Attentes : ${a.attentes??'—'}/5 · Clarté : ${a.clarte??'—'}/5`),
