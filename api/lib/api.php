@@ -21,6 +21,7 @@
 require_once __DIR__ . '/base.php';
 require_once __DIR__ . '/ecriture.php';
 require_once __DIR__ . '/tickets.php';
+require_once __DIR__ . '/avis.php';
 
 const API_JETON_DUREE_S = 6 * 3600;          // comme TOKEN_TTL_SECONDS du GAS
 const API_ECHECS_MAX = 5;                    // 5 échecs → blocage 15 min
@@ -30,7 +31,7 @@ const API_ROLES_ADMIN = ['admin', 'superviseur'];
 // 24/09/2026. Purge à chaque connexion réussie (pas besoin de tâche planifiée).
 const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
-const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'getTickets'];
+const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
 const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket'];
 
@@ -44,6 +45,7 @@ const API_CHAMPS_ATELIER = [
     'date_prelevement_materiel' => 'date_prelevement_materiel',
     'date_retour_materiel' => 'date_retour_materiel',
     'duree' => 'duree',
+    'fiche_bilan' => 'fiche_bilan',
 ];
 
 // Point d'entrée : choisit l'action et applique la règle d'accès.
@@ -71,6 +73,11 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
         case 'reinitMotDePasse':
             require_once __DIR__ . '/reinit.php';
             return action_reinit_mot_de_passe($db, $p);
+        // Avis des stagiaires (AG-021) : page publique, sans connexion.
+        case 'avisPublic':
+            return action_avis_public($db, $p);
+        case 'deposerAvis':
+            return action_deposer_avis($db, $p);
         case 'logLogin':
             // Journalisé par checkPassword ; gardé pour le client actuel.
             return ['ok' => true];
@@ -124,6 +131,8 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'usageOnglets':    return action_usage_onglets($db, $p);
         case 'getUsageOnglets': return action_get_usage_onglets($db);
         case 'creerTicket':     return action_creer_ticket($db, $p, $session);
+        case 'jetonAvis':       return action_jeton_avis($db, $p);
+        case 'saisirAvisPapier': return action_saisir_avis_papier($db, $p, $session);
         case 'getTickets':      return action_get_tickets($db, $session);
         case 'repondreTicket':  return action_repondre_ticket($db, $p, $session);
         case 'supprimerTicket': return action_supprimer_ticket($db, $p);
@@ -188,6 +197,7 @@ function action_check_password(PDO $db, array $p): array
     corbeille_schema($db);
     $db->exec('DELETE FROM ateliers_corbeille WHERE supprime_le < NOW() - INTERVAL ' . CORBEILLE_JOURS . ' DAY');
     tickets_purger($db);   // RGPD : 12 mois après clôture, 24 mois si jamais clos (AG-016)
+    avis_purger($db);      // RGPD : avis des stagiaires, 24 mois ; ceux d'un atelier sorti de la corbeille (AG-021)
     $db->prepare('INSERT INTO sessions (jeton_hash, conseiller, role, expire) VALUES (?, ?, ?, ?)')
        ->execute([hash('sha256', $jeton), $nom, $compte['role'], date('Y-m-d H:i:s', time() + API_JETON_DUREE_S)]);
     // Journalisé ici (le GAS attendait un logLogin du client, falsifiable).
@@ -261,6 +271,13 @@ function ateliers_colonne_duree(PDO $db): void
     if ($ok) return;
     if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'duree'")->fetch()) {
         $db->exec('ALTER TABLE ateliers ADD COLUMN duree SMALLINT NULL AFTER horaire');
+    }
+    // Fiche bilan (AG-020, 04/10/2026) : même procédé. Nommée fiche_bilan
+    // (amendement D) : « bilan » est déjà le bilan mensuel (bilan.php). La
+    // première version du bac à sable l'avait nommée bilan : renommée.
+    if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'fiche_bilan'")->fetch()) {
+        if ($db->query("SHOW COLUMNS FROM ateliers LIKE 'bilan'")->fetch()) $db->exec('ALTER TABLE ateliers CHANGE bilan fiche_bilan TEXT NULL');
+        else $db->exec('ALTER TABLE ateliers ADD COLUMN fiche_bilan TEXT NULL');
     }
     $ok = true;
 }
@@ -411,6 +428,7 @@ function api_ateliers(PDO $db, array $annees): array
             $e[$cle] = $l[$col] ?? '';
         }
         $e['materiel'] = $materiel[$l['id']] ?? [];
+        $e['fiche_bilan'] = api_bilan_lu($e['fiche_bilan'] ?? '');
         $entries[] = $e;
     }
     return $entries;

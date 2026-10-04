@@ -223,6 +223,25 @@ appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj)]);
 verifier($lire('entry_1')['duree'] === 120, 'durée enregistrée, gardée par un envoi sans durée (client en cache)');
 $r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['duree' => 45])]);
 verifier($r['ok'] === false && str_contains($r['error'], 'duree') && $lire('entry_1')['duree'] === 120, 'durée hors demi-heure : refusée');
+// Fiche bilan (AG-020) : objet validé, gardé par un envoi sans bilan, refus hors liste.
+$bilan = ['niveau' => 'Débutant', 'objectif' => 'Partiellement', 'difficultes' => ['Connexion', 'Absences'], 'supports' => ['Diaporama'], 'suite' => 'Nouvel atelier'];
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['fiche_bilan' => $bilan])]);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj)]);
+verifier($lire('entry_1')['fiche_bilan'] === $bilan, 'bilan enregistré tel quel, gardé par un envoi sans bilan (client en cache)');
+$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['fiche_bilan' => ['objectif' => 'Peut-être']])]);
+verifier($r['ok'] === false && str_contains($r['error'], 'fiche bilan') && $lire('entry_1')['fiche_bilan'] === $bilan, 'bilan : valeur hors liste refusée');
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['fiche_bilan' => ['difficultes' => ['Autre'], 'difficultes_autre' => 'Coupure de courant']])]);
+$b1 = $lire('entry_1')['fiche_bilan'];
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['fiche_bilan' => ['difficultes' => ['Connexion'], 'difficultes_autre' => 'oublié']])]);
+verifier(($b1['difficultes_autre'] ?? '') === 'Coupure de courant' && !isset($lire('entry_1')['fiche_bilan']['difficultes_autre']), 'précision « Autre » gardée seulement si « Autre » est coché');
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['fiche_bilan' => ''])]);
+verifier($lire('entry_1')['fiche_bilan'] === '', 'bilan vidé');
+// Amendement B : une valeur retirée des listes n'empêche pas de modifier l'atelier.
+$db->exec("UPDATE ateliers SET fiche_bilan = '{\"supports\":[\"Rétroprojecteur\"]}' WHERE id = 'entry_1'");
+$ancien = $lire('entry_1')['fiche_bilan'];
+$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['horaire' => '15:00', 'fiche_bilan' => $ancien] + $maj)]);
+verifier(($r['ok'] ?? false) && $lire('entry_1')['horaire'] === '15:00' && $lire('entry_1')['fiche_bilan'] === $ancien, 'fiche avec un choix retiré, renvoyée telle quelle : l\'atelier reste modifiable');
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['fiche_bilan' => ''])]);
 verifier($db->query("SELECT conseiller FROM journal WHERE action = 'delete' ORDER BY id DESC LIMIT 1")->fetchColumn() === 'Nouveau Venu', 'suppression journalisée au nom de la personne connectée');
 
 echo "API — administration\n";
@@ -371,6 +390,54 @@ $db->exec("UPDATE tickets SET clos_le = NULL, cree_le = '" . date('Y-m-d H:i:s',
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
 verifier((int) $db->query("SELECT COUNT(*) FROM tickets")->fetchColumn() === 0, '[RGPD-19] tickets supprimés : clos depuis 36 mois, ou jamais clos depuis 24 mois');
 array_map('unlink', glob("$dossierMails/*.txt"));
+
+echo "API — avis des stagiaires (AG-021)\n";
+$auj = date('Y-m-d');
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_1', 'date' => $auj, 'horaire' => '10:00', 'thematique' => 'Smartphone', 'conseiller' => 'Conseiller Test', 'commune' => 'Nérac'])]);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_vieux', 'date' => date('Y-m-d', strtotime('-40 days')), 'thematique' => 'X', 'conseiller' => 'Conseiller Test'])]);
+verifier(appel(['action' => 'jetonAvis'], ['_id' => 'av_1'])['auth'] ?? false, 'jeton d\'avis : réservé à l\'équipe connectée');
+$j = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1']);
+$j2 = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1']);
+verifier(($j['ok'] ?? false) && preg_match('/^[0-9a-f]{32}$/', $j['jeton']) && $j2['jeton'] === $j['jeton'], 'jeton aléatoire, le même à chaque demande');
+$pub = appel(['action' => 'avisPublic'], ['a' => $j['jeton']]);
+verifier(($pub['ok'] ?? false) && $pub['atelier'] === ['date' => $auj, 'thematique' => 'Smartphone'], 'page publique : date et thème seulement (ni animateur, ni lieu)');
+$ok = appel(['action' => 'deposerAvis'], ['a' => $j['jeton'], 'attentes' => '5', 'rythme' => 'Adapté', 'clarte' => '4', 'aise' => 'Oui', 'autonomie' => 'Avec de l\'aide', 'sujet' => 'Autre', 'sujet_autre' => 'Tablette', 'remarque' => 'Merci']);
+verifier(($ok['ok'] ?? false) === true, 'avis déposé sans connexion');
+verifier(!(appel(['action' => 'deposerAvis'], ['a' => $j['jeton'], 'attentes' => '9'])['ok'] ?? true)
+    && !(appel(['action' => 'deposerAvis'], ['a' => $j['jeton'], 'rythme' => 'Bof'])['ok'] ?? true)
+    && !(appel(['action' => 'deposerAvis'], ['a' => $j['jeton']])['ok'] ?? true), 'réponse hors liste ou avis vide : refusés');
+verifier(!(appel(['action' => 'deposerAvis'], ['a' => str_repeat('0', 32), 'attentes' => '5'])['ok'] ?? true), 'jeton inconnu : refusé');
+$jv = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_vieux']);
+$f = appel(['action' => 'avisPublic'], ['a' => $jv['jeton']]);
+verifier(!($f['ok'] ?? true) && str_contains($f['error'] ?? '', 'fermé depuis le'), 'atelier passé depuis plus de 30 jours : questionnaire fermé, avec la date');
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_futur', 'date' => date('Y-m-d', strtotime('+10 days')), 'thematique' => 'X', 'conseiller' => 'Conseiller Test'])]);
+$jf = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_futur']);
+$f = appel(['action' => 'avisPublic'], ['a' => $jf['jeton']]);
+verifier(!($f['ok'] ?? true) && str_contains($f['error'] ?? '', 'ouvrira le ' . date('d/m/Y', strtotime('+10 days'))) && $jf['ouvert_du'] === date('Y-m-d', strtotime('+10 days')), 'atelier à venir : questionnaire ouvert le jour de l\'atelier seulement, dates données à la fenêtre du QR');
+$col = $db->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'avis' AND column_name IN ('ip', 'adresse_ip', 'nom', 'prenom', 'age', 'tranche_age', 'contact', 'recontact', 'email', 'telephone')")->fetchColumn();
+verifier((int) $col === 0, '[RGPD-20] avis anonymes : aucune colonne IP, nom, âge ou contact');
+$res = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1'])['avis'];
+verifier($res['n'] === 1 && $res['attentes'] == 5 && $res['remarques'] === ['Merci'], 'résumé des avis pour la fiche : ' . json_encode($res));
+verifier($db->query("SELECT cree_le FROM avis LIMIT 1")->fetchColumn() === $auj . ' 00:00:00', 'avis daté du jour seulement, sans l\'heure (amendement B)');
+// Amendement D : avis papier, par un conseiller connecté, sans fenêtre de dates.
+verifier(appel(['action' => 'saisirAvisPapier'], ['_id' => 'av_vieux', 'attentes' => '3'])['auth'] ?? false, 'avis papier : réservé à l\'équipe connectée');
+$pap = appel(['action' => 'saisirAvisPapier'], $T + ['_id' => 'av_vieux', 'attentes' => '3', 'remarque' => '']);
+verifier(($pap['ok'] ?? false) && $db->query("SELECT source FROM avis WHERE atelier_id = 'av_vieux'")->fetchColumn() === 'papier'
+    && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'saisirAvisPapier' AND ref = 'av_vieux'")->fetchColumn() === 1, 'avis papier enregistré hors fenêtre, marqué « papier », journalisé');
+// Amendement A : corbeille → avis et jeton gardés ; restauration → rendus ; sortie de corbeille → effacés.
+appel(['action' => 'delete'], $T + ['_id' => 'av_1']);
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'av_1']);
+$apres = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1']);
+verifier(($apres['jeton'] ?? '') === $j['jeton'] && $apres['avis']['n'] === 1, 'atelier supprimé puis restauré : même jeton, avis gardés');
+appel(['action' => 'delete'], $T + ['_id' => 'av_1']);
+$db->exec("UPDATE ateliers_corbeille SET supprime_le = NOW() - INTERVAL 40 DAY WHERE id = 'av_1'");
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+verifier((int) $db->query("SELECT COUNT(*) FROM avis WHERE atelier_id = 'av_1'")->fetchColumn() === 0
+    && (int) $db->query("SELECT COUNT(*) FROM avis_jetons WHERE atelier_id = 'av_1'")->fetchColumn() === 0, 'atelier sorti de la corbeille : ses avis et son jeton partent avec lui');
+$db->exec("UPDATE avis SET cree_le = '" . date('Y-m-d H:i:s', strtotime('-25 months')) . "'");
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+verifier((int) $db->query('SELECT COUNT(*) FROM avis')->fetchColumn() === 0, '[RGPD-20] avis purgés à 24 mois');
 
 echo "API — mot de passe oublié\n";
 $mails = function () use ($dossierMails) { $f = glob("$dossierMails/*.txt"); sort($f); return array_map('file_get_contents', $f); };
