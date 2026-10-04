@@ -116,8 +116,11 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
 **Pour Claude**
 
 0bis. **Fiches rattachées aux ateliers (CR « option 1 », 04/10/2026)**. Ordre :
-   (a) fiche bilan d'atelier (« champs existants » : sens à confirmer — ceux
-   du CR ou ceux déjà dans l'appli ?), (b) avis des stagiaires par QR code —
+   (a) fiche bilan d'atelier, **option a choisie le 04/10** : les 5 champs du
+   CR (niveau, objectif atteint, difficultés en cases, support, suite à
+   donner), section « 📝 Bilan » du volet latéral une fois l'atelier
+   « Réalisé » ; liste des supports à créer dans Admin → Listes (vide au
+   départ) ; nouvelle table → bloc AGORA à l'implémentation, (b) avis des stagiaires par QR code —
    **avant** le DPO, décision de l'utilisateur : rester anonyme, sans
    « recontact » ni tranche d'âge tant que le DPO n'a pas validé ; nouveau
    traitement au registre ; page publique à protéger (jeton, plafond, pas
