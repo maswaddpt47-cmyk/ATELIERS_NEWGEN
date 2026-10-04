@@ -115,6 +115,17 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
 
 **Pour Claude**
 
+0bis. **Fiches rattachées aux ateliers (CR « option 1 », 04/10/2026)**. Ordre :
+   (a) fiche bilan d'atelier (« champs existants » : sens à confirmer — ceux
+   du CR ou ceux déjà dans l'appli ?), (b) avis des stagiaires par QR code —
+   **avant** le DPO, décision de l'utilisateur : rester anonyme, sans
+   « recontact » ni tranche d'âge tant que le DPO n'a pas validé ; nouveau
+   traitement au registre ; page publique à protéger (jeton, plafond, pas
+   d'IP), (c) bilan trimestriel imprimable. Écartés du CR : PWA (AG-012),
+   nouveau modèle de données, PHPWord/TCPDF. **Tout passe d'abord par le bac à
+   sable** (AG-019) : l'utilisateur crée la base Alwaysdata le 05/10 et en
+   donne le nom ; mot de passe en secret GitHub.
+
 0. **Demande du 03/10/2026, dans l'ordre** : (1) durée d'un atelier — livrée
    (NextStep `c57fb7a`, NEWGEN `6be6a0c`, AG-017 ouvert), **à tester** : liste
    « Durée » dans Nouveau et la saisie par cycle, 1 h 30 par défaut, reprise
