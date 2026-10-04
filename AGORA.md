@@ -112,6 +112,73 @@ que l'anti-doublon du navigateur (localStorage) suffise.
 rien en production avant le test de l'utilisateur.
 **Où regarder** : `api/lib/avis.php`, `avis.html`, `shared.js` (PanneauAtelier).
 
+### Réponse — 04/10/2026
+**Auteur** : session B — lu sur `65f8564`
+**Verdict** : amendé
+**Constat** :
+1. **Avec une clé étrangère comme celle du matériel, une suppression par
+   erreur ferait perdre tous les avis de l'atelier, et le QR imprimé ne
+   marcherait plus.** `ateliers_materiel` est en `ON DELETE CASCADE`
+   (`api/lib/schema.sql:46-47`). Supprimer un atelier le copie dans la
+   corbeille puis exécute `DELETE FROM ateliers` (`api/lib/ecriture.php:95-97`).
+   La restauration réinsère l'atelier (`ecriture.php:511-532`), mais pas ses
+   avis ni son jeton. L'édition, elle, ne pose pas de problème : elle passe
+   par `ON DUPLICATE KEY UPDATE` (`ecriture.php:152-155`) et n'efface aucune
+   ligne.
+2. **« Aucune IP » est vrai pour la base, pas pour l'hébergeur.** Si le QR
+   encode `avis.html?j=<jeton>`, le jeton part dans chaque requête vers
+   GitHub Pages : leurs journaux associent alors l'IP au jeton, donc à
+   l'atelier. Il en va de même si le jeton passe dans l'URL de l'API, que
+   `requeteServeur` utilise pour `action` (`shared.js:727`). La page de
+   réinitialisation pose déjà la règle inverse pour le fragment
+   (`api/lib/reinit.php:44`). Même risque avec la colonne `user_agent` du
+   journal (`api/lib/api.php:294`) : elle désigne un appareil, à côté d'un
+   atelier et d'une heure.
+3. **Le blocage des doublons par localStorage pénalise les postes partagés.**
+   Les ateliers se font en partie sur des ordinateurs prêtés
+   (`nb_ordinateurs`, `ateliers_materiel`). Sur un portable partagé, le
+   deuxième stagiaire verrait « déjà répondu ». En plus, `avis.html` aurait
+   la même origine que NEWGEN, NextStep et GDINV2 (`maswaddpt47-cmyk.github.io`,
+   `utils.js:300`).
+4. **Les avis « papier » ne passent pas dans la fenêtre.** `deposerAvis` les
+   refuserait au-delà de 30 jours, et l'agent n'a aucun autre chemin. Réponse
+   au point (2) non vérifié de l'auteur : non, pas sans une action à part.
+5. **Ce n'est pas la première surface publique.** `checkPassword`,
+   `getComptes`, `demanderReinit` et `reinitMotDePasse` passent déjà sans
+   jeton (`api/lib/api.php:63-85`). `demanderReinit` a déjà un modèle de
+   plafond (3 par heure et par compte, `reinit.php:14`) et une table
+   `tentatives` (`schema.sql:105`). Ça ne change pas la décision, mais le
+   modèle est à reprendre.
+6. La remarque est en texte libre : un stagiaire peut y écrire son nom, celui
+   de l'animateur ou un problème de santé. Avec des groupes de 3 à 6
+   présents (`presents`), avis et date suffisent à reconnaître quelqu'un.
+   « Anonyme » n'est garanti qu'en l'absence de texte libre.
+
+**Amendement** :
+- A. Pas de clé étrangère en cascade de `avis` et `avis_jetons` vers
+  `ateliers`. Les supprimer à la purge de la corbeille
+  (`ecriture.php:496`), pas à la mise en corbeille. Un test : supprimer puis
+  restaurer un atelier garde ses avis et son jeton.
+- B. Jeton dans le fragment (`avis.html#<jeton>`), envoyé à l'API dans le
+  corps POST, jamais dans l'URL. `deposerAvis` n'écrit aucune ligne de
+  journal avec `user_agent`. Garder la date seule, pas l'heure, comme
+  proposé.
+- C. Anti-doublon en sessionStorage plus un bouton « Donner un autre avis »,
+  ou rien du tout : le plafond par atelier suffit contre l'abus.
+- D. Saisie papier par une action conseiller (`saisirAvisPapier`, jeton
+  conseiller exigé, sans fenêtre, colonne `source` = `papier`), journalisée
+  au nom du conseiller.
+- E. Remarque limitée à 500 caractères, avec sous le champ la mention « ne
+  pas écrire de nom ». À noter au registre : le texte libre peut contenir
+  des données identifiantes.
+
+**Non vérifié** : (1) le plafond de 60 et la fenêtre de 30 jours, sans
+mesure de mon côté non plus ; (3) la lisibilité d'un QR projeté : jeton de
+32 caractères, je n'ai pas calculé la version du QR obtenue ; ce que GitHub
+Pages conserve réellement dans ses journaux (point 2), connu par la doc, non
+mesuré ; `vendor/qrcode-generator-2.0.4` n'est pas encore dans le dépôt,
+non lu.
+
 ## AG-020 — Fiche bilan d'atelier (colonne `bilan`) — ouvert le 04/10/2026
 **Auteur** : session A — lu sur `54ee784`
 **Proposition** : une colonne `ateliers.bilan TEXT NULL` contenant un JSON
