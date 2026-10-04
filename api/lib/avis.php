@@ -177,3 +177,29 @@ function avis_enregistrer(PDO $db, string $atelierId, array $p, string $source):
        ->execute(array_values($l));
     return ['ok' => true];
 }
+
+// Bilan trimestriel (CR « option 1 », module D, 04/10/2026) : les réponses
+// des ateliers « Réalisé » de la période, une ligne par avis, sans date ni
+// remarque ; les remarques à part, sans lien avec leur atelier. Le client
+// agrège (bilanTrimestriel, logic.js). Lecture seule, équipe connectée.
+function action_bilan_avis(PDO $db, array $p): array
+{
+    avis_schema($db);
+    $du = (string) ($p['du'] ?? '');
+    $au = (string) ($p['au'] ?? '');
+    $jour = '/^\d{4}-\d{2}-\d{2}$/';
+    if (!preg_match($jour, $du) || !preg_match($jour, $au) || $du > $au) return ['ok' => false, 'error' => 'Période invalide'];
+    $s = $db->prepare("SELECT v.atelier_id, v.attentes, v.clarte, v.rythme, v.aise, v.autonomie, v.sujet
+                       FROM avis v JOIN ateliers a ON a.id = v.atelier_id
+                       WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ? ORDER BY v.id");
+    $s->execute([$du, $au]);
+    $avis = array_map(fn($r) => ['atelier_id' => $r['atelier_id'],
+        'attentes' => $r['attentes'] !== null ? (int) $r['attentes'] : null,
+        'clarte' => $r['clarte'] !== null ? (int) $r['clarte'] : null,
+        'rythme' => $r['rythme'], 'aise' => $r['aise'], 'autonomie' => $r['autonomie'], 'sujet' => $r['sujet']],
+        $s->fetchAll(PDO::FETCH_ASSOC));
+    $r = $db->prepare("SELECT v.remarque FROM avis v JOIN ateliers a ON a.id = v.atelier_id
+                       WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ? AND v.remarque <> '' ORDER BY v.id LIMIT 100");
+    $r->execute([$du, $au]);
+    return ['ok' => true, 'avis' => $avis, 'remarques' => $r->fetchAll(PDO::FETCH_COLUMN)];
+}

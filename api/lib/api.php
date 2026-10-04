@@ -31,7 +31,7 @@ const API_ROLES_ADMIN = ['admin', 'superviseur'];
 // 24/09/2026. Purge à chaque connexion réussie (pas besoin de tâche planifiée).
 const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
-const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier'];
+const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier', 'bilanAvis'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
 const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket'];
 
@@ -133,6 +133,7 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'creerTicket':     return action_creer_ticket($db, $p, $session);
         case 'jetonAvis':       return action_jeton_avis($db, $p);
         case 'saisirAvisPapier': return action_saisir_avis_papier($db, $p, $session);
+        case 'bilanAvis':       return action_bilan_avis($db, $p);
         case 'getTickets':      return action_get_tickets($db, $session);
         case 'repondreTicket':  return action_repondre_ticket($db, $p, $session);
         case 'supprimerTicket': return action_supprimer_ticket($db, $p);
