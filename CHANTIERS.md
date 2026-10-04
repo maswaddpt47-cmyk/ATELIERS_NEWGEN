@@ -130,6 +130,9 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
      Dashboard (deux pages), imprimable, **au bac à sable** (`fe0703e`), **à
      tester par l'utilisateur**. Puis : fusion dans `main`, port NextStep
      (`logic.js`, `shared.js`), Nouveautés.
+   - **(d) avis par atelier** (demande du 04/10) : sous-onglet « 💬 Avis par
+     atelier » du Dashboard, récapitulatif à tout moment, **au bac à sable**
+     (`3055379`), à tester ; part en production avec (c).
    Écartés du CR : PWA (AG-012), nouveau modèle de données, PHPWord/TCPDF.
 
 0. **Demande du 03/10/2026, dans l'ordre** : (1) durée d'un atelier — livrée
