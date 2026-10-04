@@ -85,6 +85,31 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-020 — Fiche bilan d'atelier (colonne `bilan`) — ouvert le 04/10/2026
+**Auteur** : session A — lu sur `54ee784`
+**Proposition** : une colonne `ateliers.bilan TEXT NULL` contenant un JSON
+validé par l'API : `niveau` (Débutant / Intermédiaire / Avancé), `objectif`
+(Oui / Partiellement / Non), `difficultes` et `supports` (listes fermées, choix
+multiples), `suite` (Nouvel atelier / Orientation / Rien). Valeur hors liste →
+refus. Ajoutée à chaud comme `duree` (AG-017) ; absente de l'envoi (client en
+cache) → inchangée. Saisie dans le volet latéral quand l'atelier est
+« Réalisé ». Développée d'abord dans le bac à sable (AG-019). Choix de
+l'utilisateur du 04/10 : les 5 champs du CR, supports en types à choix
+multiple.
+**Critère déclencheur** : 1 — schéma de données et format entry.
+**Ce que ça engage** : une colonne JSON plutôt que cinq colonnes ou une table
+`bilans` : simple à faire voyager (getAll, corbeille, application locale),
+mais les statistiques passent par `JSON_EXTRACT` (bilan trimestriel) ;
+listes fermées dans le code : ajouter un choix = un déploiement.
+**Non vérifié par l'auteur** : (1) que MariaDB d'Alwaysdata accepte
+`JSON_EXTRACT` sur une colonne TEXT (oui en local, MariaDB 10.x) ; (2) le
+poids dans `getAll` (≈ 150 octets par atelier réalisé) ; (3) si un bilan doit
+s'effacer quand l'atelier repasse en « Planifié ».
+**Si personne ne répond, je fais quoi ?** J'implémente dans le bac à sable ;
+l'utilisateur teste avant toute production, un amendement passe sans coût.
+**Où regarder** : `api/lib/ecriture.php` (api_valider_atelier), `api/lib/api.php`
+(API_CHAMPS_ATELIER, api_ateliers), `shared.js` (PanneauAtelier).
+
 ## AG-019 — Bac à sable avant la production — ouvert le 04/10/2026
 **Auteur** : session A — lu sur `b47e0e4`
 **Proposition** : branche `sandbox` de NEWGEN ; un envoi dessus publie
