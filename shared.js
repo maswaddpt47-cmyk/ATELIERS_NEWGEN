@@ -2655,7 +2655,7 @@ function ModaleAvisQR({atelier,onClose}){
       if(!r||!r.ok){setEtat({erreur:(r&&r.error)||'Erreur'});return;}
       const url=urlAvisPour(location.origin,location.pathname,r.jeton);
       const q=qrcode(0,'M');q.addData(url);q.make();
-      setQr(q.createSvgTag({cellSize:8,margin:2,scalable:true}));setEtat({url,avis:r.avis,ouvert_du:r.ouvert_du,ouvert_au:r.ouvert_au});
+      setQr(q.createSvgTag({cellSize:8,margin:2,scalable:true}));setEtat({url,avis:r.avis,plafond:r.plafond,ouvert_du:r.ouvert_du,ouvert_au:r.ouvert_au});
     }catch(e){if(vivant)setEtat({erreur:e.message||'Erreur réseau'});}})();
     return()=>{vivant=false;};},[atelier._id]);
   const titre=`${atelier.thematique||'Atelier'} — ${fmtDate(atelier.date)}${atelier.commune?' — '+atelier.commune:''}`;
@@ -2681,7 +2681,8 @@ function ModaleAvisQR({atelier,onClose}){
           CE('button',{type:'button',className:'btn btn-secondary btn-sm',onClick:()=>setPapier(p=>!p)},papier?'Fermer la saisie papier':'✍️ Saisir un avis papier')),
         papier&&CE(FormulaireAvisPapier,{atelierId:atelier._id,onEnregistre:avis=>setEtat(e=>({...e,avis}))}),
         CE('div',{style:{textAlign:'left',background:'#f8fafc',borderRadius:10,padding:'10px 12px',fontSize:13}},
-          CE('div',{style:{fontWeight:700,marginBottom:4}},a.n?`${a.n} avis reçu${a.n>1?'s':''}`:'Aucun avis pour l\'instant'),
+          CE('div',{style:{fontWeight:700,marginBottom:4}},(a.n?`${a.n} avis reçu${a.n>1?'s':''}`:'Aucun avis pour l\'instant')+(etat.plafond?` — ${etat.plafond} au plus`:'')),
+          etat.plafond&&CE('div',{style:{fontSize:11,color:'#64748b',marginBottom:4}},'Un avis par présent (à défaut, par inscrit) : mettez à jour le nombre de présents si un stagiaire ne peut plus répondre.'),
           a.n>0&&CE('div',null,`Attentes : ${a.attentes??'—'}/5 · Clarté : ${a.clarte??'—'}/5`),
           a.n>0&&CE('div',null,`Plus à l'aise : ${a.aise_oui}/${a.n} · Autonomes : ${a.autonomie_oui}/${a.n}`),
           (a.remarques||[]).length>0&&CE('div',{style:{marginTop:6,color:'#475569'}},a.remarques.map((t,i)=>CE('div',{key:i,style:{fontStyle:'italic'}},'« '+t+' »')))),

@@ -473,6 +473,17 @@ verifier((appel(['action' => 'supprimerAvis'], $A + ['_id' => (string) $cible])[
     && count(appel(['action' => 'avisAtelier'], $A + ['_id' => 'av_1'])['avis']) === 1
     && $db->query("SELECT ref FROM journal WHERE action = 'supprimerAvis' ORDER BY id DESC LIMIT 1")->fetchColumn() === (string) $cible
     && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'avisAtelier'")->fetchColumn() === 0, 'Admin : avis supprimé, journalisé avec son seul numéro (lecture non journalisée)');
+// Plafond : un avis par présent (à défaut par inscrit), avis papier compris.
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_plaf', 'date' => $auj, 'thematique' => 'X', 'conseiller' => 'Nouveau Venu', 'inscrits' => 5, 'presents' => 2])]);
+$jp = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_plaf'])['jeton'];
+$r1 = appel(['action' => 'deposerAvis'], ['a' => $jp, 'attentes' => '4']);
+$r2 = appel(['action' => 'saisirAvisPapier'], $T + ['_id' => 'av_plaf', 'attentes' => '3']);
+$r3 = appel(['action' => 'deposerAvis'], ['a' => $jp, 'attentes' => '5']);
+verifier(($r1['ok'] ?? false) && ($r2['ok'] ?? false) && !($r3['ok'] ?? true) && str_contains($r3['error'] ?? '', 'un par participant'), 'plafond : autant d\'avis que de présents, avis papier compris');
+$db->exec("UPDATE ateliers SET presents = NULL WHERE id = 'av_plaf'");
+verifier((appel(['action' => 'deposerAvis'], ['a' => $jp, 'attentes' => '5'])['ok'] ?? false) === true, 'plafond : présents non saisis, un avis par inscrit');
+$db->exec("DELETE FROM avis WHERE atelier_id = 'av_plaf'");
+$db->exec("DELETE FROM ateliers WHERE id = 'av_plaf'");
 // Amendement A : corbeille → avis et jeton gardés ; restauration → rendus ; sortie de corbeille → effacés.
 appel(['action' => 'delete'], $T + ['_id' => 'av_1']);
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
