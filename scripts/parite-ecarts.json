@@ -16,13 +16,13 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN app.js:245",
-      "NextStep app.js:252",
+      "NEWGEN app.js:246",
+      "NextStep app.js:253",
       "NEWGEN admin_app.js:171",
       "NextStep admin_app.js:171"
     ],
-    "newgen": "29c4adcf56/dbb006553f",
-    "nextstep": "6ca5efb6a2/00dc701c50",
+    "newgen": "3cfaa7680b/dbb006553f",
+    "nextstep": "ae77a26ac9/00dc701c50",
     "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs."
   },
   "VueHistorique": {
@@ -30,8 +30,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2604",
-      "NextStep shared.js:2419"
+      "NEWGEN shared.js:2737",
+      "NextStep shared.js:2552"
     ],
     "newgen": "406d09c940/406d09c940",
     "nextstep": "fb8a1ed393/fb8a1ed393",
