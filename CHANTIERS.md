@@ -321,6 +321,8 @@ libre.
 
 ## Points à ne pas défaire
 
+- **Conflits de matériel à l'heure près** (AG-022, 04/10/2026, décision de l'utilisateur) : ordinateurs sur `[début, fin + 30 min)` d'un prêt d'un jour, Classe mobile à la demi-journée mais toutes celles que l'horaire touche ; ateliers sans horaire : leur demi-journée, sans marge. Verrouillé par `logic.test.js` (« conflits de matériel à l'heure près »).
+
 - Déjà dans `CLAUDE.md` §4-5 et verrouillés par les tests, non répétés ici :
   `_id` client gardé jusqu'au succès, écritures jamais doublées, plafonds,
   aucun appel superflu, `sw.js` de désinscription.
@@ -352,7 +354,6 @@ repropose pas sans fait nouveau.
 **Proposées, en attente**
 - 04/10/2026, fin du CR « option 1 » : **fiche bilan et avis dans le bilan mensuel** envoyé à la superviseure le 1er du mois (`api/lib/bilan.php`) — elle reçoit aujourd'hui l'activité seule ; les chiffres existent déjà (bilan trimestriel).
 - 04/10/2026 : **rappel du matin pour une fiche bilan vide** sur un atelier « Réalisé », comme le rappel existant des ateliers restés « Planifié » — le bilan trimestriel compte les ateliers « sans fiche », rien ne pousse à la remplir.
-- Conflits de matériel tenant compte de la durée : **retenue le 04/10** (option B, marge 30 min, Classe mobile à la demi-journée touchée), AG-022 ouvert, **au bac à sable** (`c09f7b0`), à tester ; puis production + port NextStep (`logic.js`, `shared.js`).
 
 **Écartées** (date — piste — raison)
 - 03/10/2026 — lien d'abonnement agenda pour les partenaires — « pour l'instant » (utilisateur).

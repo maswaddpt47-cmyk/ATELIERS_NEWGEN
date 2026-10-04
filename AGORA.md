@@ -85,36 +85,7 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-## AG-022 — Conflits d'ordinateurs à l'heure près (durée + 30 min) — ouvert le 04/10/2026
-**Auteur** : session A — lu sur `05cdb98`
-**Proposition** : pour un prêt d'un seul jour, le stock d'ordinateurs se compte
-sur le créneau réel `[début, début + durée + 30 min)` au lieu de la
-demi-journée du début ; conflit si, à un instant de la journée, la somme (au
-max par conseiller, `totalJourParConseiller`) dépasse le stock. Prêts de
-plusieurs jours : inchangés (journées entières). **Classe mobile (matériel
-unique)** : la demi-journée reste l'unité (choix de l'utilisateur), mais un
-atelier occupe **toutes les demi-journées que son horaire touche**, sans la
-marge (11:00–12:30 → matin et après-midi). Atelier sans horaire : journée
-entière, comme aujourd'hui.
-**Critère déclencheur** : 5 — contredit la note datée « Occupation à la
-DEMI-JOURNÉE (confirmé le 22/09/2026) » (`logic.js:160-166`).
-**Ce que ça engage** : le sens des alertes de « Gestion ordi », de l'encadré
-orange du volet et du Gantt ; la durée devient une donnée qui compte pour le
-matériel (obligatoire seulement depuis le 03/10 : avant, 1 h 30 par défaut).
-**Non vérifié par l'auteur** : (1) la marge de 30 min s'applique-t-elle aussi
-avant le début (prélèvement) ? je ne l'ajoute qu'après la fin ; (2) le Gantt
-de « Gestion ordi » garde ses totaux par demi-journée à l'affichage, sa
-coloration rouge suivrait la nouvelle liste de conflits — deux grains dans le
-même écran ; (3) un même conseiller dont deux ateliers se chevauchent n'est
-jamais en conflit avec lui-même (max par conseiller), même s'il demande 6 puis
-8 ordinateurs ; (4) mon interprétation de « garder la demi-journée pour la
-Classe mobile » (demi-journées touchées plutôt que demi-journée du début).
-**Si personne ne répond, je fais quoi ?** J'implémente au bac à sable tel
-quel ; l'utilisateur teste avant toute production.
-**Où regarder** : `logic.js:118-250` (`demiJourneeAtelier`,
-`occupeCreneauMateriel`, `findOrdinateursConflicts`, `findMobileClassConflicts`),
-`logic.js:254-290` (`getPretsMateriel`, totaux du Gantt), `utils.js:474`
-(`conflitsDeLEntree`, encadré du volet), `shared.js:3983-4110` (Gestion ordi).
+_(aucun)_
 
 ## Blocs tranchés — sortis de ce fichier
 
@@ -144,8 +115,9 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 | AG-019 | bac à sable (branche `sandbox`, API et pages chez Alwaysdata, fausses données) — amendé : configuration et dossier des copies propres au bac à sable, mails marqués ; pages hors GitHub Pages (même origine évitée) | 04/10/2026 |
 | AG-020 | fiche bilan d'atelier — amendé : colonne `fiche_bilan` (pas `bilan`, déjà le bilan mensuel), non recopiée à la duplication, fiche inchangée non revalidée, jamais effacée au changement de statut | 04/10/2026 |
 | AG-021 | avis des stagiaires par QR code — amendé : jeton dans le fragment `#`, date sans heure, avis gardés en corbeille, saisie papier par l'équipe (`source`), anti-doublon par onglet, « aucun nom » ; ouverture le jour de l'atelier (utilisateur) | 04/10/2026 |
+| AG-022 | conflits de matériel à l'heure près — sans réponse, réalisé après test de l'utilisateur au bac à sable : ordinateurs sur [début, fin + 30 min), Classe mobile sur les demi-journées touchées, ateliers sans horaire sans marge | 04/10/2026 |
 
-**Au 04/10/2026, sur 21 blocs (AG-001 à AG-021) : 17 amendés, 1 confirmé (AG-017), 0 contredit, 3 clos sans réponse** (AG-002, AG-010, AG-013). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
+**Au 04/10/2026, sur 22 blocs (AG-001 à AG-022) : 17 amendés, 1 confirmé (AG-017), 0 contredit, 4 clos sans réponse** (AG-002, AG-010, AG-013, AG-022). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
 Douze « amendé » d'affilée ne sont pas un bilan flatteur, c'est un signal — voir
 « Sincérité » plus haut. Tenir ce total à jour à chaque bloc qui sort.
 **Vérifié le 30/09/2026** sur l'historique git : les 12 « amendé » ont chacun
