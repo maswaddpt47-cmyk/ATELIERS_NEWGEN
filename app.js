@@ -683,14 +683,14 @@ function App(){
         view==='planning'&&visibility.planning&&CE(VuePlanning,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,accentColor,conseillers:conseillerActifs}),
         view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
         view==='dashboard'&&visibility.dashboard&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers,sansBilans:true}),
-        view==='bilans'&&CE(VueMesBilans,{entries}),
+        view==='bilans'&&visibility.bilans&&CE(VueMesBilans,{entries}),
         view==='carte'&&visibility.carte&&CE(VueCarte,{entries,active:view==='carte'}),
         view==='roadmap'&&visibility.roadmap&&CE(VueRoadmap,{entries,annee:anneeReference(annee),conseillers:lists.conseillers}),
         view==='gestion_ordi'&&visibility.gestion_ordi&&CE(VueGestionOrdi,{entries,onEdit:handleEdit}),
         view==='bingo'&&visibility.bingo&&CE(VueBingo,{entries}),
         view==='corbeille'&&visibility.corbeille&&CE(VueCorbeille,null),
         view==='nouveautes'&&CE(VueNouveautes,{onVu:marquerNouveautes}),
-        view==='signaler'&&CE(VueTickets,{admin:false,onVu:marquerTickets,ongletCourant:ongletAvantSignaler.current,onglets:Object.keys(VIEW_META_F).filter(k=>k!=='signaler'&&k!=='nouveautes'&&(visibility[k]||k==='saisie'||k==='bilans')).map(k=>VIEW_META_F[k].label)})
+        view==='signaler'&&CE(VueTickets,{admin:false,onVu:marquerTickets,ongletCourant:ongletAvantSignaler.current,onglets:Object.keys(VIEW_META_F).filter(k=>k!=='signaler'&&k!=='nouveautes'&&(visibility[k]||k==='saisie')).map(k=>VIEW_META_F[k].label)})
       )
     ),
 
@@ -724,10 +724,10 @@ function App(){
         navBtn('dashboard',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M3 3v18h18'}),CE('rect',{x:7,y:10,width:3,height:8,rx:1}),CE('rect',{x:13,y:6,width:3,height:12,rx:1})),
           'Stats', visibility.dashboard),
-        // Mes bilans (04/10/2026) : toujours visible, hors de Stats.
+        // Mes bilans (04/10/2026) : hors de Stats ; masquable par l'Admin.
         navBtn('bilans',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'}),CE('path',{d:'M14 2v6h6M8 13h8M8 17h5'})),
-          'Mes bilans'),
+          'Mes bilans', visibility.bilans),
         navBtn('bingo',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('circle',{cx:12,cy:12,r:10}),CE('circle',{cx:12,cy:12,r:6}),CE('circle',{cx:12,cy:12,r:2})),
           'Bingo', visibility.bingo),
