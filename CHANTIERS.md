@@ -126,13 +126,9 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
      le DPO n'a pas validé. **Reste : registre RGPD, traitement T6 (avis ;
      les remarques libres peuvent identifier)** dans `ateliers-backups`, hors
      de portée de cette session au 04/10.
-   - **(c) bilan trimestriel** : sous-onglet « 🗓️ Bilan trimestriel » du
-     Dashboard (deux pages), imprimable, **au bac à sable** (`fe0703e`), **à
-     tester par l'utilisateur**. Puis : fusion dans `main`, port NextStep
-     (`logic.js`, `shared.js`), Nouveautés.
-   - **(d) avis par atelier** (demande du 04/10) : sous-onglet « 💬 Avis par
-     atelier » du Dashboard, récapitulatif à tout moment, **au bac à sable**
-     (`3055379`), à tester ; part en production avec (c).
+   - **(c) bilan trimestriel et (d) avis par atelier** : validés au bac à
+     sable le 04/10, **en production le 04/10** (NEWGEN `6f5f449`, NextStep
+     port du même jour, Nouveautés 25-26 datées du 05/10).
    Écartés du CR : PWA (AG-012), nouveau modèle de données, PHPWord/TCPDF.
 
 0. **Demande du 03/10/2026, dans l'ordre** : (1) durée d'un atelier — livrée
