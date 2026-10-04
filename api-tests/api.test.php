@@ -385,6 +385,32 @@ appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'passwo
 verifier((int) $db->query("SELECT COUNT(*) FROM tickets")->fetchColumn() === 0, '[RGPD-19] tickets supprimés : clos depuis 36 mois, ou jamais clos depuis 24 mois');
 array_map('unlink', glob("$dossierMails/*.txt"));
 
+echo "API — avis des stagiaires (AG-021)\n";
+$auj = date('Y-m-d');
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_1', 'date' => $auj, 'horaire' => '10:00', 'thematique' => 'Smartphone', 'conseiller' => 'Conseiller Test', 'commune' => 'Nérac'])]);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_vieux', 'date' => date('Y-m-d', strtotime('-40 days')), 'thematique' => 'X', 'conseiller' => 'Conseiller Test'])]);
+verifier(appel(['action' => 'jetonAvis'], ['_id' => 'av_1'])['auth'] ?? false, 'jeton d\'avis : réservé à l\'équipe connectée');
+$j = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1']);
+$j2 = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1']);
+verifier(($j['ok'] ?? false) && preg_match('/^[0-9a-f]{32}$/', $j['jeton']) && $j2['jeton'] === $j['jeton'], 'jeton aléatoire, le même à chaque demande');
+$pub = appel(['action' => 'avisPublic'], ['a' => $j['jeton']]);
+verifier(($pub['ok'] ?? false) && $pub['atelier'] === ['date' => $auj, 'thematique' => 'Smartphone'], 'page publique : date et thème seulement (ni animateur, ni lieu)');
+$ok = appel(['action' => 'deposerAvis'], ['a' => $j['jeton'], 'attentes' => '5', 'rythme' => 'Adapté', 'clarte' => '4', 'aise' => 'Oui', 'autonomie' => 'Avec de l\'aide', 'sujet' => 'Autre', 'sujet_autre' => 'Tablette', 'remarque' => 'Merci']);
+verifier(($ok['ok'] ?? false) === true, 'avis déposé sans connexion');
+verifier(!(appel(['action' => 'deposerAvis'], ['a' => $j['jeton'], 'attentes' => '9'])['ok'] ?? true)
+    && !(appel(['action' => 'deposerAvis'], ['a' => $j['jeton'], 'rythme' => 'Bof'])['ok'] ?? true)
+    && !(appel(['action' => 'deposerAvis'], ['a' => $j['jeton']])['ok'] ?? true), 'réponse hors liste ou avis vide : refusés');
+verifier(!(appel(['action' => 'deposerAvis'], ['a' => str_repeat('0', 32), 'attentes' => '5'])['ok'] ?? true), 'jeton inconnu : refusé');
+$jv = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_vieux']);
+verifier(!(appel(['action' => 'avisPublic'], ['a' => $jv['jeton']])['ok'] ?? true), 'atelier passé depuis plus de 30 jours : questionnaire fermé');
+$col = $db->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'avis' AND column_name IN ('ip', 'adresse_ip', 'nom', 'prenom', 'age', 'tranche_age', 'contact', 'recontact', 'email', 'telephone')")->fetchColumn();
+verifier((int) $col === 0, '[RGPD-20] avis anonymes : aucune colonne IP, nom, âge ou contact');
+$res = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1'])['avis'];
+verifier($res['n'] === 1 && $res['attentes'] == 5 && $res['remarques'] === ['Merci'], 'résumé des avis pour la fiche : ' . json_encode($res));
+$db->exec("UPDATE avis SET cree_le = '" . date('Y-m-d H:i:s', strtotime('-25 months')) . "'");
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+verifier((int) $db->query('SELECT COUNT(*) FROM avis')->fetchColumn() === 0, '[RGPD-20] avis purgés à 24 mois');
+
 echo "API — mot de passe oublié\n";
 $mails = function () use ($dossierMails) { $f = glob("$dossierMails/*.txt"); sort($f); return array_map('file_get_contents', $f); };
 $RETOUR = 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/index.html?backend=php';

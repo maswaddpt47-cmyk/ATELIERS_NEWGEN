@@ -21,6 +21,7 @@
 require_once __DIR__ . '/base.php';
 require_once __DIR__ . '/ecriture.php';
 require_once __DIR__ . '/tickets.php';
+require_once __DIR__ . '/avis.php';
 
 const API_JETON_DUREE_S = 6 * 3600;          // comme TOKEN_TTL_SECONDS du GAS
 const API_ECHECS_MAX = 5;                    // 5 échecs → blocage 15 min
@@ -30,7 +31,7 @@ const API_ROLES_ADMIN = ['admin', 'superviseur'];
 // 24/09/2026. Purge à chaque connexion réussie (pas besoin de tâche planifiée).
 const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
-const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'getTickets'];
+const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'getTickets', 'jetonAvis'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
 const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket'];
 
@@ -72,6 +73,11 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
         case 'reinitMotDePasse':
             require_once __DIR__ . '/reinit.php';
             return action_reinit_mot_de_passe($db, $p);
+        // Avis des stagiaires (AG-021) : page publique, sans connexion.
+        case 'avisPublic':
+            return action_avis_public($db, $p);
+        case 'deposerAvis':
+            return action_deposer_avis($db, $p);
         case 'logLogin':
             // Journalisé par checkPassword ; gardé pour le client actuel.
             return ['ok' => true];
@@ -125,6 +131,7 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'usageOnglets':    return action_usage_onglets($db, $p);
         case 'getUsageOnglets': return action_get_usage_onglets($db);
         case 'creerTicket':     return action_creer_ticket($db, $p, $session);
+        case 'jetonAvis':       return action_jeton_avis($db, $p);
         case 'getTickets':      return action_get_tickets($db, $session);
         case 'repondreTicket':  return action_repondre_ticket($db, $p, $session);
         case 'supprimerTicket': return action_supprimer_ticket($db, $p);
@@ -188,7 +195,8 @@ function action_check_password(PDO $db, array $p): array
     // personne n'allait voir dans la corbeille (amendement AG-014).
     corbeille_schema($db);
     $db->exec('DELETE FROM ateliers_corbeille WHERE supprime_le < NOW() - INTERVAL ' . CORBEILLE_JOURS . ' DAY');
-    tickets_purger($db);   // RGPD : 12 mois après clôture, 24 mois si jamais clos (AG-016)
+    tickets_purger($db);
+    avis_purger($db);      // RGPD : avis des stagiaires, 24 mois (AG-021)   // RGPD : 12 mois après clôture, 24 mois si jamais clos (AG-016)
     $db->prepare('INSERT INTO sessions (jeton_hash, conseiller, role, expire) VALUES (?, ?, ?, ?)')
        ->execute([hash('sha256', $jeton), $nom, $compte['role'], date('Y-m-d H:i:s', time() + API_JETON_DUREE_S)]);
     // Journalisé ici (le GAS attendait un logLogin du client, falsifiable).

@@ -102,7 +102,7 @@ jobs:
         run: |
           SSH="ssh -o StrictHostKeyChecking=accept-new"
           rsync -az -e "$SSH" api/ "$COMPTE@ssh-$COMPTE.alwaysdata.net:www/api-sandbox/"
-          mkdir -p pages && cp -r index.html admin.html *.css utils.js logic.js shared.js app.js admin_app.js admin_config.js xlsxstyle.js icons vendor pages/
+          mkdir -p pages && cp -r index.html admin.html avis.html *.css utils.js logic.js shared.js app.js admin_app.js admin_config.js xlsxstyle.js icons vendor pages/
           rsync -az --delete -e "$SSH" pages/ "$COMPTE@ssh-$COMPTE.alwaysdata.net:www/sandbox/"
           $SSH "$COMPTE@ssh-$COMPTE.alwaysdata.net" 'php www/api-sandbox/lib/sandbox_seed.php'
 

@@ -2447,10 +2447,7 @@ function FicheBilan({valeur,onChange}){
   const LIB={niveau:'Niveau du groupe',objectif:'Objectif atteint',difficultes:'Difficultés',supports:'Supports utilisés',suite:'Suite à donner'};
   const basculer=(cle,x)=>{
     const n={...v};
-    if(BILAN_MULTIPLES.includes(cle)){const l=new Set(n[cle]||[]);l.has(x)?l.delete(x):l.add(x);n[cle]=[...l];if(!n[cle].length)delete n[cle];}
-    if(cle==='difficultes'&&!(n.difficultes||[]).includes('Autre'))delete n.difficultes_autre;
-    else if(n[cle]===x)delete n[cle];else n[cle]=x;
-    onChange(n);
+    onChange(basculerBilan(v,cle,x));
   };
   return CE('div',{style:{border:'1.5px solid #bbf7d0',background:'#f0fdf4',borderRadius:10,padding:'10px 12px',display:'flex',flexDirection:'column',gap:8}},
     CE('div',{style:{fontSize:13,fontWeight:700,color:'#166534'}},'📝 Bilan de l\'atelier'),
@@ -2479,6 +2476,7 @@ function PanneauAtelier({panel,onClose,entries,onEntryUpdated,onRefresh,onEdit,o
   const[panelRetour,setPanelRetour]=React.useState('');
   const[panelNote,setPanelNote]=React.useState('');
   const[panelBilan,setPanelBilan]=React.useState({});
+  const[qrAvis,setQrAvis]=React.useState(null);
   const[saving,setSaving]=React.useState(false);
   // Réinitialise les champs à chaque atelier ouvert (ce que faisait openPanel).
   React.useEffect(()=>{if(!panel)return;const e=panel;setPanelStatut(e.statut);setPanelInscrits(e.inscrits===undefined||e.inscrits===''?'':String(e.inscrits));setPanelPresents(e.presents===undefined||e.presents===''?'':String(e.presents));setPanelThematique(e.thematique||'');setPanelNote(e.remarques||'');setPanelDate(normalizeDate(e.date)||'');setPanelHoraire(normalizeHoraire(e.horaire)||'');setPanelDuree(parseInt(e.duree)||DUREE_DEFAUT);setPanelBilan(e.bilan&&typeof e.bilan==='object'?e.bilan:{});setPanelNbOrdi(e.nb_ordinateurs===undefined||e.nb_ordinateurs===''||e.nb_ordinateurs===null?'':String(e.nb_ordinateurs));setPanelPublic(e.public||'');setPanelMobile(matIncludes(e.materiel,'Classe mobile'));setPanelPrelev(normalizeDate(e.date_prelevement_materiel)||'');setPanelRetour(normalizeDate(e.date_retour_materiel)||'');},[panel]);
@@ -2592,11 +2590,59 @@ function PanneauAtelier({panel,onClose,entries,onEntryUpdated,onRefresh,onEdit,o
             canDelete&&onAskDelete&&CE('button',{className:'btn btn-danger btn-sm',onClick:()=>{onAskDelete(panel);closePanel();}},'Supprimer'),
             onDuplicate&&CE('button',{className:'btn btn-secondary btn-sm',style:{background:'#eff6ff',color:'#1d4ed8',border:'1px solid #bfdbfe'},onClick:()=>{onDuplicate(panel);closePanel();}},'📋 Dupliquer'),
             CE('button',{className:'btn btn-secondary btn-sm',style:{flex:1},onClick:()=>{onEdit(panel._id);closePanel();}},'Éditer complet')
-          )
+          ),
+          // Avis des stagiaires (AG-021, 04/10/2026) : QR code de l'atelier.
+          CE('button',{className:'btn btn-secondary btn-sm',style:{background:'#f0fdfa',color:'#0f766e',border:'1px solid #99f6e4'},onClick:()=>setQrAvis(panel)},'📱 QR code des avis stagiaires')
         )
       )
-    )
+    ),
+    qrAvis&&CE(ModaleAvisQR,{atelier:qrAvis,onClose:()=>setQrAvis(null)})
   );
+}
+
+// Fenêtre du QR code des avis (AG-021) : jeton demandé à l'ouverture
+// (jamais au démarrage), QR dessiné dans le navigateur, résumé des avis.
+function ModaleAvisQR({atelier,onClose}){
+  const[etat,setEtat]=React.useState(null);
+  const[qr,setQr]=React.useState('');
+  React.useEffect(()=>{let vivant=true;
+    (async()=>{try{
+      await window.chargerScriptUneFois('vendor/qrcode-generator-2.0.4/qrcode.js');
+      const r=await apiFetch('jetonAvis',{_id:atelier._id});
+      if(!vivant)return;
+      if(!r||!r.ok){setEtat({erreur:(r&&r.error)||'Erreur'});return;}
+      const url=urlAvisPour(location.origin,location.pathname,r.jeton);
+      const q=qrcode(0,'M');q.addData(url);q.make();
+      setQr(q.createSvgTag({cellSize:8,margin:2,scalable:true}));setEtat({url,avis:r.avis});
+    }catch(e){if(vivant)setEtat({erreur:e.message||'Erreur réseau'});}})();
+    return()=>{vivant=false;};},[atelier._id]);
+  const titre=`${atelier.thematique||'Atelier'} — ${fmtDate(atelier.date)}${atelier.commune?' — '+atelier.commune:''}`;
+  function imprimer(){
+    const w=window.open('','_blank');if(!w){showToast('Autorisez les fenêtres pour ce site',false);return;}
+    w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Votre avis</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:30px}h1{color:#0f6e7a}svg{width:70vmin;height:70vmin}p{font-size:18px}</style></head><body><h1>Votre avis nous intéresse</h1><p>${htmlEsc(titre)}</p>${qr}<p>Scannez ce code avec l'appareil photo de votre téléphone.<br>Une minute, anonyme.</p><script>window.print();<\/script></body></html>`);
+    w.document.close();
+  }
+  const a=etat&&etat.avis;
+  return CE('div',{onClick:onClose,style:{position:'fixed',inset:0,background:'rgba(15,23,42,.55)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',padding:16}},
+    CE('div',{onClick:e=>e.stopPropagation(),style:{background:'#fff',borderRadius:14,padding:18,width:'100%',maxWidth:420,maxHeight:'92vh',overflowY:'auto',textAlign:'center'}},
+      CE('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}},
+        CE('strong',{style:{fontSize:15,color:'#0f766e'}},'📱 Avis des stagiaires'),
+        CE('button',{type:'button',onClick:onClose,'aria-label':'Fermer',style:{border:'none',background:'none',fontSize:20,cursor:'pointer',color:'#64748b'}},'×')),
+      CE('div',{style:{fontSize:12,color:'#64748b',marginBottom:10}},titre),
+      !etat&&CE('div',{style:{padding:30,color:'#64748b'}},'Préparation du QR code…'),
+      etat&&etat.erreur&&CE('div',{style:{color:'#b91c1c',padding:20}},'❌ '+etat.erreur),
+      etat&&!etat.erreur&&CE(React.Fragment,null,
+        CE('div',{style:{width:'min(78vw,300px)',margin:'0 auto'},dangerouslySetInnerHTML:{__html:qr}}),
+        CE('div',{style:{fontSize:11,color:'#64748b',wordBreak:'break-all',margin:'6px 0 10px'}},etat.url),
+        CE('div',{style:{display:'flex',gap:6,justifyContent:'center',flexWrap:'wrap',marginBottom:12}},
+          CE('button',{type:'button',className:'btn btn-primary btn-sm',onClick:imprimer},'🖨️ Imprimer / projeter'),
+          CE('a',{href:etat.url,target:'_blank',rel:'noopener',className:'btn btn-secondary btn-sm',style:{textDecoration:'none'}},'✍️ Saisir un avis papier')),
+        CE('div',{style:{textAlign:'left',background:'#f8fafc',borderRadius:10,padding:'10px 12px',fontSize:13}},
+          CE('div',{style:{fontWeight:700,marginBottom:4}},a.n?`${a.n} avis reçu${a.n>1?'s':''}`:'Aucun avis pour l\'instant'),
+          a.n>0&&CE('div',null,`Attentes : ${a.attentes??'—'}/5 · Clarté : ${a.clarte??'—'}/5`),
+          a.n>0&&CE('div',null,`Plus à l'aise : ${a.aise_oui}/${a.n} · Autonomes : ${a.autonomie_oui}/${a.n}`),
+          (a.remarques||[]).length>0&&CE('div',{style:{marginTop:6,color:'#475569'}},a.remarques.map((t,i)=>CE('div',{key:i,style:{fontStyle:'italic'}},'« '+t+' »')))),
+        CE('div',{style:{fontSize:11,color:'#94a3b8',marginTop:8}},'Ouvert de la veille à 30 jours après l\'atelier. Avis anonymes.'))));
 }
 
 // ═══════════════════════════════════════════════════════════

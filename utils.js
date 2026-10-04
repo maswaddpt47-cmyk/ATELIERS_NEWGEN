@@ -543,6 +543,19 @@ const BILAN_CHOIX={
   suite:['Nouvel atelier','Orientation','Rien'],
 };
 const BILAN_MULTIPLES=['difficultes','supports'];
+// Un appui sur un choix de la fiche bilan : coche/décoche (choix multiples)
+// ou choisit/retire (choix unique). « Autre » décoché efface sa précision.
+// Rend une nouvelle fiche, sans toucher à l'ancienne.
+function basculerBilan(bilan,cle,x){
+  const n={...(bilan||{})};
+  if(BILAN_MULTIPLES.includes(cle)){
+    const l=new Set(Array.isArray(n[cle])?n[cle]:[]);
+    l.has(x)?l.delete(x):l.add(x);
+    n[cle]=[...l];if(!n[cle].length)delete n[cle];
+    if(cle==='difficultes'&&!(n.difficultes||[]).includes('Autre'))delete n.difficultes_autre;
+  }else if(n[cle]===x)delete n[cle];else n[cle]=x;
+  return n;
+}
 
 // Adresse de l'API (bac à sable, AG-019, 04/10/2026) : les pages servies
 // sous ateliers-numeriques.alwaysdata.net/sandbox/ parlent à l'API du bac à
@@ -551,6 +564,16 @@ const API_PROD_URL='https://ateliers-numeriques.alwaysdata.net/api/index.php';
 function urlApiPour(hote,chemin){
   return hote==='ateliers-numeriques.alwaysdata.net'&&/^\/sandbox(\/|$)/.test(String(chemin||''))
     ?'https://ateliers-numeriques.alwaysdata.net/api-sandbox/index.php':API_PROD_URL;
+}
+
+// Adresse du questionnaire d'avis d'un atelier (QR code, AG-021) : une seule
+// page publique, avis.html de NEWGEN, pour les deux applis ; celle du bac à
+// sable pour le bac à sable ; à côté de la page courante ailleurs (tests).
+function urlAvisPour(origine,chemin,jeton){
+  const q='avis.html?a='+encodeURIComponent(jeton);
+  if(/github\.io$/.test(String(origine)))return 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/'+q;
+  if(/^\/sandbox(\/|$)/.test(String(chemin||'')))return origine+'/sandbox/'+q;
+  return origine+String(chemin||'/').replace(/[^/]*$/,'')+q;
 }
 
 function visibiliteEffective(v){
@@ -817,7 +840,7 @@ if (typeof module !== 'undefined') {
     normCommune,normalizeCommune,stripAccents,htmlEsc,trunc,
     normalizeDate,normalizeHoraire,fmtDate,fmtCardDate,todayLocal,addJoursIso,
     escapeICS,foldICSLine,parseHoraireICS,parseDateICS,buildICS,
-    DUREE_DEFAUT,DUREES_ATELIER,dureeArrondie,fmtDuree,minutesHoraire,voiesPlanning,urlApiPour,BILAN_CHOIX,BILAN_MULTIPLES,
+    DUREE_DEFAUT,DUREES_ATELIER,dureeArrondie,fmtDuree,minutesHoraire,voiesPlanning,urlApiPour,urlAvisPour,BILAN_CHOIX,BILAN_MULTIPLES,basculerBilan,
     resumeLogsTexte,
     suppressionAboutie,
     anneesListe,

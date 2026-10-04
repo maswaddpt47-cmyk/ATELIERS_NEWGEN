@@ -898,3 +898,32 @@ describe('BILAN_CHOIX', () => {
     assert.deepEqual(api, BILAN_CHOIX);
   });
 });
+
+// ── Avis des stagiaires : adresse du QR code (AG-021) ──────────────────────
+describe('urlAvisPour', () => {
+  const { urlAvisPour } = require('./utils.js');
+  it('NEWGEN et NextStep → avis.html de NEWGEN ; bac à sable → le sien', () => {
+    const J = '0123456789abcdef0123456789abcdef';
+    assert.equal(urlAvisPour('https://maswaddpt47-cmyk.github.io', '/ateliers-cd47_NextStep/index.html', J), 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/avis.html?a=' + J);
+    assert.equal(urlAvisPour('https://maswaddpt47-cmyk.github.io', '/ATELIERS_NEWGEN/', J), 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/avis.html?a=' + J);
+    assert.equal(urlAvisPour('https://ateliers-numeriques.alwaysdata.net', '/sandbox/admin.html', J), 'https://ateliers-numeriques.alwaysdata.net/sandbox/avis.html?a=' + J);
+  });
+});
+
+// ── Fiche bilan : appuis successifs (bug du 04/10/2026 : « Autre » coché
+// remplaçait la liste par une chaîne, découpée ensuite en lettres) ──────────
+describe('basculerBilan', () => {
+  const { basculerBilan } = require('./utils.js');
+  it('choix multiples restent des listes, « Autre » compris', () => {
+    let b = basculerBilan({}, 'difficultes', 'Autre');
+    b = { ...b, difficultes_autre: 'A' };
+    b = basculerBilan(b, 'difficultes', 'Niveau hétérogène');
+    assert.deepEqual(b, { difficultes: ['Autre', 'Niveau hétérogène'], difficultes_autre: 'A' });
+    b = basculerBilan(b, 'difficultes', 'Autre');
+    assert.deepEqual(b, { difficultes: ['Niveau hétérogène'] });
+    assert.deepEqual(basculerBilan({}, 'supports', 'Vidéo'), { supports: ['Vidéo'] });
+  });
+  it('choix unique : un second appui retire', () => {
+    assert.deepEqual(basculerBilan(basculerBilan({}, 'niveau', 'Avancé'), 'niveau', 'Avancé'), {});
+  });
+});

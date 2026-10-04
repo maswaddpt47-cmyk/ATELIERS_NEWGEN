@@ -32,7 +32,7 @@ const FILE_MAP = {
   'xlsxstyle.js':    ['admin_app.js'],
   'admin.css':       ['admin.html'],
   'shared.js':       ['index.html', 'admin.html'],
-  'utils.js':        ['index.html', 'admin.html'],
+  'utils.js':        ['index.html', 'admin.html', 'avis.html'],
 };
 
 function sh(cmd) {
