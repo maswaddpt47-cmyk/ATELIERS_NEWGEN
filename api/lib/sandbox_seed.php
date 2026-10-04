@@ -86,12 +86,13 @@ seed_avis_et_fiches($db);
 // Avis de stagiaires et fiches bilan FICTIFS (demande du 04/10/2026, pour
 // tester « Avis par atelier », le bilan trimestriel et la suppression d'un
 // avis) : ateliers de démonstration « Réalisé » seulement (demo_…), jamais
-// ceux saisis par l'utilisateur ; une seule fois (aucun avis sur un atelier
-// de démonstration) ; au plus un avis par présent, comme le plafond réel.
+// ceux saisis par l'utilisateur ; une seule fois (repère « sandbox_avis_fictifs »
+// dans config : les avis déposés à la main ne comptent pas) ; avis déjà là
+// compris, au plus un avis par présent, comme le plafond réel.
 function seed_avis_et_fiches(PDO $db): void
 {
     avis_schema($db);
-    if ((int) $db->query("SELECT COUNT(*) FROM avis WHERE atelier_id LIKE 'demo\\_%'")->fetchColumn() > 0) {
+    if ($db->query("SELECT COUNT(*) FROM config WHERE cle = 'sandbox_avis_fictifs'")->fetchColumn() > 0) {
         echo "sandbox_seed : avis fictifs déjà là\n";
         return;
     }
@@ -99,13 +100,14 @@ function seed_avis_et_fiches(PDO $db): void
     $choix = fn(array $l) => $l[mt_rand(0, count($l) - 1)];
     $remarques = ['Très clair, merci !', 'Un peu rapide pour moi.', 'J\'aimerais un deuxième atelier.', 'Bonne ambiance.',
         'Les exercices étaient utiles.', 'Difficile de suivre sur le petit écran.', 'Merci pour la patience.', 'Trop court.', '', '', '', ''];
-    $ateliers = $db->query("SELECT id, date, presents, fiche_bilan FROM ateliers WHERE id LIKE 'demo\\_%' AND statut = 'Réalisé'")->fetchAll(PDO::FETCH_ASSOC);
+    $ateliers = $db->query("SELECT a.id, a.date, a.presents, a.fiche_bilan, (SELECT COUNT(*) FROM avis v WHERE v.atelier_id = a.id) deja
+                            FROM ateliers a WHERE a.id LIKE 'demo\\_%' AND a.statut = 'Réalisé'")->fetchAll(PDO::FETCH_ASSOC);
     $ins = $db->prepare('INSERT INTO avis (atelier_id, cree_le, attentes, rythme, clarte, aise, autonomie, sujet, sujet_autre, remarque, source)
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)');
     $fiche = $db->prepare('UPDATE ateliers SET fiche_bilan = ? WHERE id = ?');
     $nAvis = 0; $nFiches = 0;
     foreach ($ateliers as $a) {
-        $n = mt_rand(0, max(0, (int) $a['presents']));
+        $n = mt_rand(0, max(0, (int) $a['presents'] - (int) $a['deja']));
         for ($i = 0; $i < $n; $i++) {
             $ins->execute([$a['id'], $a['date'], mt_rand(3, 5), $choix(AVIS_CHOIX['rythme']), mt_rand(2, 5), $choix(AVIS_CHOIX['aise']),
                 $choix(AVIS_CHOIX['autonomie']), $choix(AVIS_CHOIX['sujet']), $choix($remarques), mt_rand(0, 4) ? 'qr' : 'papier']);
@@ -120,5 +122,6 @@ function seed_avis_et_fiches(PDO $db): void
             $nFiches++;
         }
     }
+    $db->exec("REPLACE INTO config (cle, valeur) VALUES ('sandbox_avis_fictifs', '1')");
     echo "sandbox_seed : $nAvis avis fictifs, $nFiches fiches bilan fictives\n";
 }
