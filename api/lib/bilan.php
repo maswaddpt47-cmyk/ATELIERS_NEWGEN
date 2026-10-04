@@ -11,8 +11,10 @@
 //
 // Destinataires : comptes « superviseur » actifs ayant une adresse dans
 // Listes → mails. Contenu : chiffres du mois comparés au mois précédent, par
-// conseiller, par partenaire, points d'attention. Que des effectifs : aucune
-// donnée sur les usagers n'existe dans la base.
+// conseiller, par partenaire, points d'attention ; depuis le 04/10/2026,
+// qualité des ateliers réalisés : fiches bilan et avis des stagiaires, en
+// chiffres seulement — jamais les remarques libres, qui ne partent pas par
+// mail. Ni par conseiller : la satisfaction n'est pas une évaluation d'agent.
 //
 // N'écrit sur la sortie qu'un décompte, jamais de nom ni d'adresse : la
 // sortie finit dans les journaux de tâches et les mails d'erreur.
@@ -97,8 +99,36 @@ $st = $db->prepare("SELECT COUNT(*) FROM ateliers WHERE statut = 'Planifié' AND
 $st->execute([$suivDebut, $suivFin]);
 $aVenir = (int) $st->fetchColumn();
 
+// Qualité des ateliers réalisés du mois (04/10/2026) : fiches bilan (champs à
+// choix seulement, pas la précision libre) et avis des stagiaires (notes et
+// réponses fermées, pas les remarques).
+function bilan_qualite(PDO $db, string $de, string $a): array
+{
+    $st = $db->prepare("SELECT fiche_bilan FROM ateliers WHERE statut = 'Réalisé' AND date BETWEEN ? AND ?");
+    $st->execute([$de, $a]);
+    $q = ['realises' => 0, 'fiches' => 0, 'objectif' => [], 'difficultes' => [], 'suite' => []];
+    foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $f) {
+        $q['realises']++;
+        $b = api_bilan_lu($f);
+        if (!is_array($b) || !$b) continue;
+        $q['fiches']++;
+        foreach (['objectif', 'suite'] as $k) if (is_string($b[$k] ?? null)) $q[$k][$b[$k]] = ($q[$k][$b[$k]] ?? 0) + 1;
+        foreach ((array) ($b['difficultes'] ?? []) as $d) if (is_string($d)) $q['difficultes'][$d] = ($q['difficultes'][$d] ?? 0) + 1;
+    }
+    avis_schema($db);
+    $st = $db->prepare("SELECT COUNT(*) n, COUNT(DISTINCT v.atelier_id) ateliers, AVG(v.attentes) attentes, AVG(v.clarte) clarte,
+                               SUM(v.aise = 'Oui') aise_oui, SUM(v.aise IS NOT NULL) aise_n,
+                               SUM(v.autonomie = 'Oui') autonomie_oui, SUM(v.autonomie IS NOT NULL) autonomie_n
+                        FROM avis v JOIN ateliers a ON a.id = v.atelier_id
+                        WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ?");
+    $st->execute([$de, $a]);
+    $q['avis'] = array_map(fn($v) => $v === null ? null : $v + 0, $st->fetch(PDO::FETCH_ASSOC));
+    return $q;
+}
+$qualite = bilan_qualite($db, $debut, $fin);
+
 // Mail : sujet, texte, HTML. Tout ce qui vient de la base est échappé.
-function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, array $parPartenaire, int $enRetard, int $aVenir, bool $test): array
+function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, array $parPartenaire, int $enRetard, int $aVenir, bool $test, array $qualite = []): array
 {
     $h = fn($x) => htmlspecialchars((string) $x, ENT_QUOTES, 'UTF-8');
     [$an, $mm] = explode('-', $mois);
@@ -128,6 +158,29 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
     foreach ($parConseiller as $nom => $c) $texte .= "- $nom : " . $s($c, 'Réalisé') . " réalisé(s) sur {$c['total']}, {$c['presents']} présent(s) / {$c['inscrits']} inscrit(s)\n";
     $texte .= "\nPar partenaire :\n";
     foreach ($parPartenaire as $nom => $c) $texte .= "- $nom : " . $s($c, 'Réalisé') . " réalisé(s) sur {$c['total']}\n";
+    // Qualité (fiches bilan, avis) : ordre des choix comme dans la fiche.
+    $q = $qualite + ['realises' => 0, 'fiches' => 0, 'objectif' => [], 'difficultes' => [], 'suite' => [], 'avis' => []];
+    $av = $q['avis'] + ['n' => 0, 'ateliers' => 0, 'attentes' => null, 'clarte' => null, 'aise_oui' => 0, 'aise_n' => 0, 'autonomie_oui' => 0, 'autonomie_n' => 0];
+    $repart = function (array $compte, string $cle): string {
+        $ordre = BILAN_CHOIX[$cle] ?? [];
+        $cles = array_merge(array_values(array_filter($ordre, fn($k) => isset($compte[$k]))), array_diff(array_keys($compte), $ordre));
+        return $cles ? implode(', ', array_map(fn($k) => "$k : {$compte[$k]}", $cles)) : '—';
+    };
+    $note = fn($v) => $v === null ? '—' : str_replace('.', ',', (string) round((float) $v, 1)) . '/5';
+    $part = fn($o, $n) => $n ? "$o sur $n" : '—';
+    $lignesQualite = [
+        ['Fiches bilan remplies', $q['fiches'] . ' sur ' . $q['realises'] . ' atelier(s) réalisé(s)'],
+        ['Objectif atteint', $repart($q['objectif'], 'objectif')],
+        ['Difficultés rencontrées', $repart($q['difficultes'], 'difficultes')],
+        ['Suite à donner', $repart($q['suite'], 'suite')],
+        ['Avis des stagiaires', $av['n'] . ' avis sur ' . $av['ateliers'] . ' atelier(s)'],
+        ['Réponse aux attentes', $note($av['attentes'])],
+        ['Clarté', $note($av['clarte'])],
+        ['Plus à l\'aise (« oui »)', $part((int) $av['aise_oui'], (int) $av['aise_n'])],
+        ['Pourra refaire seul(e) (« oui »)', $part((int) $av['autonomie_oui'], (int) $av['autonomie_n'])],
+    ];
+    $texte .= "\nQualité des ateliers réalisés :\n";
+    foreach ($lignesQualite as [$l, $v]) $texte .= "- $l : $v\n";
     $texte .= "\nPoints d'attention :\n- $enRetard atelier(s) de $libelle encore « Planifié » alors que leur date est passée\n- $aVenir atelier(s) planifié(s) en $libSuiv\n\nApplication : " . BILAN_URL_APPLI . "\n";
 
     $td = 'padding:6px 10px;border-bottom:1px solid #e2e8f0';
@@ -157,6 +210,8 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
           . $titre('Chiffres du mois') . $tableau(['', ucfirst($libelle), ucfirst($libPrec), 'Écart'], $chiffres)
           . $titre('Par conseiller') . ($cons ? $tableau(['Conseiller', 'Réalisés / total', 'Présents / inscrits', 'Taux'], $cons) : '<p style="color:#718096">Aucun atelier ce mois-ci.</p>')
           . $titre('Par partenaire') . ($part ? $tableau(['Partenaire', 'Réalisés', 'Total'], $part) : '<p style="color:#718096">Aucun atelier ce mois-ci.</p>')
+          . $titre('Qualité des ateliers réalisés') . $tableau(['', ucfirst($libelle)], $lignesQualite)
+          . '<p style="color:#718096;font-size:12px;margin-top:-10px">Avis anonymes des stagiaires ; les remarques libres ne sont pas reprises dans ce mail (Mes bilans / Dashboard de l\'application).</p>'
           . $titre('Points d\'attention')
           . '<ul style="color:#4a5568;font-size:13px;padding-left:18px">'
           . '<li><strong>' . $enRetard . '</strong> atelier(s) de ' . $h($libelle) . ' encore « Planifié » alors que leur date est passée</li>'
@@ -167,7 +222,7 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
     return [$sujet, $texte, $html];
 }
 
-[$sujet, $texte, $html] = bilan_mail($mois, $ce, $prec, $parConseiller, $parPartenaire, $enRetard, $aVenir, $test !== null);
+[$sujet, $texte, $html] = bilan_mail($mois, $ce, $prec, $parConseiller, $parPartenaire, $enRetard, $aVenir, $test !== null, $qualite);
 
 if ($test !== null) {
     $ok = mail_envoyer($test, $sujet, $texte, $html);
