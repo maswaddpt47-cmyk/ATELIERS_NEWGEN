@@ -17,9 +17,15 @@ on:
 permissions:
   contents: read
 
+# Un push plus récent remplace le contrôle en attente : une seule alerte.
+concurrency:
+  group: parite
+  cancel-in-progress: true
+
 jobs:
   parite:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -38,5 +44,20 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
+      # Sur un push, laisser le temps de porter le changement sur NextStep
+      # (04/10/2026 : quatre alertes le même jour, toutes levées quelques
+      # minutes plus tard par le portage) : deux nouveaux essais, 10 min
+      # d'écart, NextStep relu à chaque fois. L'alerte ne part que si l'écart
+      # dure plus de 20 min. Le contrôle quotidien, lui, échoue tout de suite.
       - name: Comparaison
-        run: node scripts/parite.js nextstep
+        env:
+          EVENEMENT: ${{ github.event_name }}
+        run: |
+          essais=1; [ "$EVENEMENT" = push ] && essais=3
+          for i in $(seq 1 $essais); do
+            if node scripts/parite.js nextstep; then exit 0; fi
+            [ "$i" = "$essais" ] && exit 1
+            echo "Écart constaté, nouvel essai dans 10 min (portage NextStep en cours ?)"
+            sleep 600
+            git -C nextstep fetch -q --depth=1 origin HEAD && git -C nextstep reset -q --hard FETCH_HEAD
+          done
