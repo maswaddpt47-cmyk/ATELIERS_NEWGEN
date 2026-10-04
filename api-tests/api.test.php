@@ -393,8 +393,8 @@ array_map('unlink', glob("$dossierMails/*.txt"));
 
 echo "API — avis des stagiaires (AG-021)\n";
 $auj = date('Y-m-d');
-appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_1', 'date' => $auj, 'horaire' => '10:00', 'thematique' => 'Smartphone', 'conseiller' => 'Conseiller Test', 'commune' => 'Nérac'])]);
-appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_vieux', 'date' => date('Y-m-d', strtotime('-40 days')), 'thematique' => 'X', 'conseiller' => 'Conseiller Test'])]);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_1', 'date' => $auj, 'horaire' => '10:00', 'thematique' => 'Smartphone', 'conseiller' => 'Nouveau Venu', 'commune' => 'Nérac'])]);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_vieux', 'date' => date('Y-m-d', strtotime('-40 days')), 'thematique' => 'X', 'conseiller' => 'Nouveau Venu'])]);
 verifier(appel(['action' => 'jetonAvis'], ['_id' => 'av_1'])['auth'] ?? false, 'jeton d\'avis : réservé à l\'équipe connectée');
 $j = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1']);
 $j2 = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1']);
@@ -410,7 +410,7 @@ verifier(!(appel(['action' => 'deposerAvis'], ['a' => str_repeat('0', 32), 'atte
 $jv = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_vieux']);
 $f = appel(['action' => 'avisPublic'], ['a' => $jv['jeton']]);
 verifier(!($f['ok'] ?? true) && str_contains($f['error'] ?? '', 'fermé depuis le'), 'atelier passé depuis plus de 30 jours : questionnaire fermé, avec la date');
-appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_futur', 'date' => date('Y-m-d', strtotime('+10 days')), 'thematique' => 'X', 'conseiller' => 'Conseiller Test'])]);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_futur', 'date' => date('Y-m-d', strtotime('+10 days')), 'thematique' => 'X', 'conseiller' => 'Nouveau Venu'])]);
 $jf = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_futur']);
 $f = appel(['action' => 'avisPublic'], ['a' => $jf['jeton']]);
 verifier(!($f['ok'] ?? true) && str_contains($f['error'] ?? '', 'ouvrira le ' . date('d/m/Y', strtotime('+10 days'))) && $jf['ouvert_du'] === date('Y-m-d', strtotime('+10 days')), 'atelier à venir : questionnaire ouvert le jour de l\'atelier seulement, dates données à la fenêtre du QR');
@@ -443,6 +443,24 @@ $rp = appel(['action' => 'avisParAtelier'], $T + ['du' => $debut, 'au' => $auj])
 $par = array_column($rp['ateliers'] ?? [], null, 'atelier_id');
 verifier(count($par) === 2 && $par['av_1']['n'] === 1 && $par['av_1']['attentes'] == 5 && $par['av_1']['aise_oui'] === 1 && $par['av_1']['remarques'] === ['Merci']
     && $par['av_vieux']['papier'] === 1 && $par['av_vieux']['remarques'] === [], 'récapitulatif des avis par atelier, tous statuts — ' . json_encode($rp));
+// Avis réservés à l'animateur et au co-animateur (04/10/2026) ; Admin : tout.
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_autre', 'date' => $auj, 'thematique' => 'X', 'conseiller' => 'Conseiller Test'])]);
+$ja = appel(['action' => 'jetonAvis'], $A + ['_id' => 'av_autre']);
+appel(['action' => 'deposerAvis'], ['a' => $ja['jeton'], 'attentes' => '2', 'remarque' => 'Autre animateur']);
+$refus = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_autre']);
+verifier(!($refus['ok'] ?? true) && str_contains($refus['error'] ?? '', 'réservés à son animateur')
+    && !(appel(['action' => 'saisirAvisPapier'], $T + ['_id' => 'av_autre', 'attentes' => '3'])['ok'] ?? true), 'avis de l\'atelier d\'un collègue : QR et saisie papier refusés');
+$idsT = array_column(appel(['action' => 'avisParAtelier'], $T + ['du' => $debut, 'au' => $auj])['ateliers'] ?? [], 'atelier_id');
+$idsA = array_column(appel(['action' => 'avisParAtelier'], $A + ['du' => $debut, 'au' => $auj])['ateliers'] ?? [], 'atelier_id');
+$idsAmoi = array_column(appel(['action' => 'avisParAtelier'], $A + ['du' => $debut, 'au' => $auj, 'moi' => '1'])['ateliers'] ?? [], 'atelier_id');
+verifier(in_array('av_autre', $idsAmoi, true) && !in_array('av_1', $idsAmoi, true), 'Admin, « Mes bilans » (moi=1) : ses seuls ateliers');
+$db->exec("UPDATE ateliers SET statut = 'Réalisé' WHERE id = 'av_autre'");
+$remT = appel(['action' => 'bilanAvis'], $T + ['du' => $debut, 'au' => $auj])['remarques'] ?? null;
+verifier(!in_array('av_autre', $idsT, true) && in_array('av_autre', $idsA, true) && is_array($remT) && !in_array('Autre animateur', $remT, true),
+    'récapitulatif et bilan : le conseiller ne voit que ses ateliers, l\'Admin voit tout');
+$db->exec("UPDATE ateliers SET co_animateur = 'Nouveau Venu' WHERE id = 'av_autre'");
+verifier((appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_autre'])['ok'] ?? false) === true, 'co-animateur : avis de l\'atelier accessibles');
+$db->exec("DELETE FROM ateliers WHERE id = 'av_autre'");
 // Amendement A : corbeille → avis et jeton gardés ; restauration → rendus ; sortie de corbeille → effacés.
 appel(['action' => 'delete'], $T + ['_id' => 'av_1']);
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
