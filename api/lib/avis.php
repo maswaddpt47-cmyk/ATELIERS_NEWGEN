@@ -111,7 +111,7 @@ function action_jeton_avis(PDO $db, array $p, array $session): array
     $d = $db->prepare('SELECT date FROM ateliers WHERE id = ?');
     $d->execute([$id]);
     [$debut, $fin] = avis_fenetre((string) $d->fetchColumn());
-    return ['ok' => true, 'jeton' => (string) $j->fetchColumn(), 'avis' => avis_resume($db, $id), 'ouvert_du' => $debut, 'ouvert_au' => $fin];
+    return ['ok' => true, 'jeton' => (string) $j->fetchColumn(), 'avis' => avis_resume($db, $id), 'plafond' => avis_plafond($db, $id), 'ouvert_du' => $debut, 'ouvert_au' => $fin];
 }
 
 // Dates d'ouverture du questionnaire d'un atelier : du jour de l'atelier
@@ -169,12 +169,26 @@ function action_saisir_avis_papier(PDO $db, array $p, array $session): array
     return $r;
 }
 
+// Plafond d'avis d'un atelier (décision de l'utilisateur, 04/10/2026) : un par
+// présent ; présents non saisis : un par inscrit ; ni l'un ni l'autre :
+// AVIS_MAX. Jamais au-delà d'AVIS_MAX. Avis papier compris.
+function avis_plafond(PDO $db, string $atelierId): int
+{
+    $s = $db->prepare('SELECT presents, inscrits FROM ateliers WHERE id = ?');
+    $s->execute([$atelierId]);
+    $a = $s->fetch(PDO::FETCH_ASSOC) ?: [];
+    foreach (['presents', 'inscrits'] as $c) {
+        if (isset($a[$c]) && (int) $a[$c] > 0) return min((int) $a[$c], AVIS_MAX);
+    }
+    return AVIS_MAX;
+}
+
 function avis_enregistrer(PDO $db, string $atelierId, array $p, string $source): array
 {
     $a = ['id' => $atelierId];
     $n = $db->prepare('SELECT COUNT(*) FROM avis WHERE atelier_id = ?');
     $n->execute([$a['id']]);
-    if ((int) $n->fetchColumn() >= AVIS_MAX) return ['ok' => false, 'error' => 'Nombre maximal d\'avis atteint pour cet atelier'];
+    if ((int) $n->fetchColumn() >= avis_plafond($db, $a['id'])) return ['ok' => false, 'error' => 'Tous les avis attendus pour cet atelier ont été reçus (un par participant). Merci !'];
     // Date seule, pas l'heure (amendement B) : avec des groupes de 3 à 6
     // personnes, l'heure d'un avis aiderait à reconnaître qui l'a donné.
     $l = ['atelier_id' => $a['id'], 'cree_le' => date('Y-m-d'), 'source' => $source];
@@ -259,4 +273,31 @@ function action_avis_par_atelier(PDO $db, array $p, array $session): array
         'autonomie_oui' => (int) $l['autonomie_oui'], 'autonomie_n' => (int) $l['autonomie_n'],
         'remarques' => $rem[$l['atelier_id']] ?? [],
     ], $s->fetchAll(PDO::FETCH_ASSOC))];
+}
+
+// Avis d'un atelier un par un, pour l'Admin (04/10/2026) : de quoi repérer
+// celui à supprimer (remarque qui cite une personne, faux avis).
+function action_avis_atelier(PDO $db, array $p): array
+{
+    avis_schema($db);
+    $s = $db->prepare('SELECT id, cree_le, source, attentes, clarte, rythme, aise, autonomie, sujet, sujet_autre, remarque
+                       FROM avis WHERE atelier_id = ? ORDER BY id');
+    $s->execute([(string) ($p['_id'] ?? '')]);
+    return ['ok' => true, 'avis' => array_map(function ($r) {
+        $r['id'] = (int) $r['id'];
+        $r['cree_le'] = substr((string) $r['cree_le'], 0, 10);
+        foreach (['attentes', 'clarte'] as $c) $r[$c] = $r[$c] !== null ? (int) $r[$c] : null;
+        return $r;
+    }, $s->fetchAll(PDO::FETCH_ASSOC))];
+}
+
+// Suppression d'un avis par l'Admin (écart 8 du registre RGPD v1.2) :
+// journalisée par api.php avec le seul numéro de l'avis, jamais son contenu.
+function action_supprimer_avis(PDO $db, array $p): array
+{
+    avis_schema($db);
+    $id = (string) ($p['_id'] ?? '');
+    if (!preg_match('/^\d+$/', $id)) return ['ok' => false, 'error' => 'Avis introuvable'];
+    $db->prepare('DELETE FROM avis WHERE id = ?')->execute([(int) $id]);
+    return ['ok' => true];
 }

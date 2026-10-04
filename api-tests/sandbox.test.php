@@ -36,6 +36,17 @@ $db->exec("UPDATE ateliers SET remarques = 'essai' WHERE id = 'demo_1'");
 [$code] = $lancer("$tmp/sbx.php");
 verifier($code === 0 && $db->query("SELECT remarques FROM ateliers WHERE id = 'demo_1'")->fetchColumn() === 'essai', 'redéploiement : les essais sont gardés');
 
+// Cas réel du 04/10/2026 : des avis déposés à la main n'empêchent pas les fictifs.
+$db->exec("DELETE FROM avis"); $db->exec("DELETE FROM config WHERE cle = 'sandbox_avis_fictifs'");
+$db->exec("INSERT INTO avis (atelier_id, cree_le, attentes, source) SELECT id, date, 5, 'qr' FROM ateliers WHERE statut = 'Réalisé' AND presents > 0 LIMIT 1");
+$lancer("$tmp/sbx.php");
+$nAvis = (int) $db->query('SELECT COUNT(*) FROM avis')->fetchColumn();
+$trop = (int) $db->query("SELECT COUNT(*) FROM (SELECT v.atelier_id, COUNT(*) n, MAX(a.presents) p FROM avis v JOIN ateliers a ON a.id = v.atelier_id GROUP BY v.atelier_id HAVING n > p) x")->fetchColumn();
+$horsReal = (int) $db->query("SELECT COUNT(*) FROM avis v JOIN ateliers a ON a.id = v.atelier_id WHERE a.statut <> 'Réalisé'")->fetchColumn();
+$fiches = (int) $db->query("SELECT COUNT(*) FROM ateliers WHERE fiche_bilan LIKE '{%'")->fetchColumn();
+verifier($nAvis > 10 && $trop === 0 && $horsReal === 0 && $fiches > 5, "avis fictifs ($nAvis) et fiches bilan fictives ($fiches) : ateliers réalisés seulement, jamais plus d'avis que de présents");
+[$code] = $lancer("$tmp/sbx.php");
+verifier($code === 0 && (int) $db->query('SELECT COUNT(*) FROM avis')->fetchColumn() === $nAvis, 'redéploiement : avis fictifs pas dupliqués');
 $dossier = fn(string $cfg) => trim((string) shell_exec('ATELIERS_API_CONFIG=' . escapeshellarg($cfg) . ' php -r ' . escapeshellarg('require "' . __DIR__ . '/../api/lib/copie.php"; echo sauvegarde_dossier();')));
 verifier(str_ends_with($dossier("$tmp/sbx.php"), '/sauvegardes-sandbox') && str_ends_with($dossier("$tmp/prod.php"), '/sauvegardes'), 'copies du bac à sable dans leur propre dossier, jamais celui de la production');
 

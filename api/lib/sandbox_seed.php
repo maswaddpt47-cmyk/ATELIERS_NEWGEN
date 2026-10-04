@@ -15,6 +15,8 @@ if (PHP_SAPI !== 'cli') { http_response_code(403); exit; }
 
 require_once __DIR__ . '/base.php';
 require_once __DIR__ . '/import.php';   // import_requetes_schema
+require_once __DIR__ . '/avis.php';     // avis_schema, AVIS_CHOIX
+require_once __DIR__ . '/ecriture.php'; // BILAN_CHOIX
 
 $cfg = api_config();
 if (($cfg['bac_a_sable'] ?? false) !== true) {
@@ -30,7 +32,8 @@ if (strlen($mdp) < 12) {
 $db = api_base();
 foreach (import_requetes_schema() as $sql) $db->exec($sql);
 if ((int) $db->query('SELECT COUNT(*) FROM ateliers')->fetchColumn() > 0) {
-    echo "sandbox_seed : base déjà remplie, rien à faire\n";
+    echo "sandbox_seed : ateliers déjà là, gardés\n";
+    seed_avis_et_fiches($db);
     exit(0);
 }
 
@@ -78,3 +81,47 @@ for ($j = -60; $j <= 60; $j++) {
     ]);
 }
 echo "sandbox_seed : $n ateliers fictifs, " . count($comptes) . " comptes de démonstration\n";
+seed_avis_et_fiches($db);
+
+// Avis de stagiaires et fiches bilan FICTIFS (demande du 04/10/2026, pour
+// tester « Avis par atelier », le bilan trimestriel et la suppression d'un
+// avis) : ateliers de démonstration « Réalisé » seulement (demo_…), jamais
+// ceux saisis par l'utilisateur ; une seule fois (repère « sandbox_avis_fictifs »
+// dans config : les avis déposés à la main ne comptent pas) ; avis déjà là
+// compris, au plus un avis par présent, comme le plafond réel.
+function seed_avis_et_fiches(PDO $db): void
+{
+    avis_schema($db);
+    if ($db->query("SELECT COUNT(*) FROM config WHERE cle = 'sandbox_avis_fictifs'")->fetchColumn() > 0) {
+        echo "sandbox_seed : avis fictifs déjà là\n";
+        return;
+    }
+    mt_srand(4747);
+    $choix = fn(array $l) => $l[mt_rand(0, count($l) - 1)];
+    $remarques = ['Très clair, merci !', 'Un peu rapide pour moi.', 'J\'aimerais un deuxième atelier.', 'Bonne ambiance.',
+        'Les exercices étaient utiles.', 'Difficile de suivre sur le petit écran.', 'Merci pour la patience.', 'Trop court.', '', '', '', ''];
+    $ateliers = $db->query("SELECT a.id, a.date, a.presents, a.fiche_bilan, (SELECT COUNT(*) FROM avis v WHERE v.atelier_id = a.id) deja
+                            FROM ateliers a WHERE a.id LIKE 'demo\\_%' AND a.statut = 'Réalisé'")->fetchAll(PDO::FETCH_ASSOC);
+    $ins = $db->prepare('INSERT INTO avis (atelier_id, cree_le, attentes, rythme, clarte, aise, autonomie, sujet, sujet_autre, remarque, source)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)');
+    $fiche = $db->prepare('UPDATE ateliers SET fiche_bilan = ? WHERE id = ?');
+    $nAvis = 0; $nFiches = 0;
+    foreach ($ateliers as $a) {
+        $n = mt_rand(0, max(0, (int) $a['presents'] - (int) $a['deja']));
+        for ($i = 0; $i < $n; $i++) {
+            $ins->execute([$a['id'], $a['date'], mt_rand(3, 5), $choix(AVIS_CHOIX['rythme']), mt_rand(2, 5), $choix(AVIS_CHOIX['aise']),
+                $choix(AVIS_CHOIX['autonomie']), $choix(AVIS_CHOIX['sujet']), $choix($remarques), mt_rand(0, 4) ? 'qr' : 'papier']);
+            $nAvis++;
+        }
+        if ((string) $a['fiche_bilan'] === '' && mt_rand(0, 3)) {
+            $b = ['niveau' => $choix(BILAN_CHOIX['niveau']), 'objectif' => $choix(BILAN_CHOIX['objectif']),
+                  'supports' => [$choix(BILAN_CHOIX['supports'])], 'suite' => $choix(BILAN_CHOIX['suite'])];
+            if (mt_rand(0, 1)) $b['difficultes'] = [$choix(BILAN_CHOIX['difficultes'])];
+            if (in_array('Autre', $b['difficultes'] ?? [], true)) $b['difficultes_autre'] = 'Salle trop petite';
+            $fiche->execute([json_encode($b, JSON_UNESCAPED_UNICODE), $a['id']]);
+            $nFiches++;
+        }
+    }
+    $db->exec("REPLACE INTO config (cle, valeur) VALUES ('sandbox_avis_fictifs', '1')");
+    echo "sandbox_seed : $nAvis avis fictifs, $nFiches fiches bilan fictives\n";
+}

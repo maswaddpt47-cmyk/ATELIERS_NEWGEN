@@ -56,7 +56,7 @@
     <button class="envoyer" id="envoyer" disabled>Envoyer mon avis</button>
     <p class="erreur" id="erreur"></p>
   </div>
-  <div id="merci" class="carte merci cache">🙏 Merci pour votre avis !<br><br><button type="button" id="autre" class="envoyer" style="font-size:15px;min-height:44px">Donner un autre avis (poste partagé)</button></div>
+  <div id="merci" class="carte merci cache">🙏 Merci pour votre avis !<br><br><span style="font-size:14px;font-weight:400">Un seul avis par personne et par atelier.</span></div>
 </main>
 <script src="utils.js?v=45"></script>
 <script>
@@ -72,13 +72,6 @@
       .then(function(r){return r.json();});
   }
   function merci(){$('formulaire').classList.add('cache');$('merci').classList.remove('cache');}
-  // Poste partagé (ordinateurs prêtés) : le stagiaire suivant peut répondre.
-  $('autre').addEventListener('click',function(){
-    try{sessionStorage.removeItem(cle);}catch(e){}
-    reponses={};document.querySelectorAll('[data-q] button').forEach(function(b){b.setAttribute('aria-pressed','false');});
-    $('sujet').value='';$('sujet_autre').value='';$('sujet_autre').classList.add('cache');$('remarque').value='';majBouton();
-    $('merci').classList.add('cache');$('formulaire').classList.remove('cache');window.scrollTo(0,0);
-  });
   function majBouton(){$('envoyer').disabled=!Object.keys(reponses).length&&!$('sujet').value&&!$('remarque').value.trim();}
   // Boutons de choix : un appui choisit, un second retire le choix.
   document.querySelectorAll('[data-q]').forEach(function(bloc){
@@ -105,13 +98,17 @@
     var d=Object.assign({a:jeton},reponses,{sujet:$('sujet').value,sujet_autre:$('sujet_autre').value,remarque:$('remarque').value});
     this.disabled=true;$('erreur').textContent='';
     appel('deposerAvis',d).then(function(r){
-      if(r&&r.ok){try{sessionStorage.setItem(cle,'1');}catch(e){}merci();}
+      if(r&&r.ok){try{localStorage.setItem(cle,'1');}catch(e){}merci();}
       else{$('erreur').textContent=(r&&r.error)||'Envoi impossible, réessayez.';majBouton();}
     }).catch(function(){$('erreur').textContent='Pas de connexion : réessayez dans un instant.';majBouton();});
   });
-  // Anti-doublon limité à l'onglet (amendement C) : un poste partagé n'est
-  // pas bloqué ; le plafond par atelier fait le reste côté serveur.
-  var dejaEnvoye=false;try{dejaEnvoye=!!sessionStorage.getItem(cle);}catch(e){}
+  // Un avis par appareil et par atelier (décision de l'utilisateur, 04/10/2026,
+  // qui remplace l'amendement C d'AG-021 : plus de « poste partagé », une
+  // personne sans smartphone remplit un avis papier). Marque durable sur
+  // l'appareil, sans donnée personnelle : seulement « déjà répondu » pour ce
+  // lien. Contournable (navigation privée, autre navigateur) : le plafond du
+  // serveur, au nombre de présents, fait le reste.
+  var dejaEnvoye=false;try{dejaEnvoye=!!localStorage.getItem(cle);}catch(e){}
   if(dejaEnvoye)merci();
   appel('avisPublic',{a:jeton}).then(function(r){
     if(!r||!r.ok){$('atelier').textContent=(r&&r.error)||'Lien invalide';return;}
