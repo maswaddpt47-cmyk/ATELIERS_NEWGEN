@@ -2683,7 +2683,7 @@ function ModaleAvisQR({atelier,onClose}){
         (()=>{const auj=todayLocal(),du=etat.ouvert_du,au=etat.ouvert_au;
           const ouvert=du&&au&&auj>=du&&auj<=au;
           return CE('div',{style:{fontSize:12,marginTop:8,padding:'6px 8px',borderRadius:8,background:ouvert?'#f0fdf4':'#fff7ed',color:ouvert?'#166534':'#9a3412'}},
-            (ouvert?'✅ Questionnaire ouvert':'⏳ Questionnaire fermé aujourd\'hui')+` — du ${fmtDate(du)} au ${fmtDate(au)} (veille de l'atelier à 30 jours après). Avis anonymes.`
+            (ouvert?'✅ Questionnaire ouvert':'⏳ Questionnaire fermé aujourd\'hui')+` — du ${fmtDate(du)} au ${fmtDate(au)} (du jour de l'atelier à 30 jours après). Avis anonymes.`
             +(ouvert?'':' La saisie papier reste possible.'));})())));
 }
 

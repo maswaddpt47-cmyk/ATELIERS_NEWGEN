@@ -407,7 +407,7 @@ verifier(!($f['ok'] ?? true) && str_contains($f['error'] ?? '', 'fermé depuis l
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_futur', 'date' => date('Y-m-d', strtotime('+10 days')), 'thematique' => 'X', 'conseiller' => 'Conseiller Test'])]);
 $jf = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_futur']);
 $f = appel(['action' => 'avisPublic'], ['a' => $jf['jeton']]);
-verifier(!($f['ok'] ?? true) && str_contains($f['error'] ?? '', 'ouvrira le ' . date('d/m/Y', strtotime('+9 days'))) && $jf['ouvert_du'] === date('Y-m-d', strtotime('+9 days')), 'atelier à venir : « ouvrira le » la veille, dates données à la fenêtre du QR');
+verifier(!($f['ok'] ?? true) && str_contains($f['error'] ?? '', 'ouvrira le ' . date('d/m/Y', strtotime('+10 days'))) && $jf['ouvert_du'] === date('Y-m-d', strtotime('+10 days')), 'atelier à venir : questionnaire ouvert le jour de l\'atelier seulement, dates données à la fenêtre du QR');
 $col = $db->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'avis' AND column_name IN ('ip', 'adresse_ip', 'nom', 'prenom', 'age', 'tranche_age', 'contact', 'recontact', 'email', 'telephone')")->fetchColumn();
 verifier((int) $col === 0, '[RGPD-20] avis anonymes : aucune colonne IP, nom, âge ou contact');
 $res = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1'])['avis'];

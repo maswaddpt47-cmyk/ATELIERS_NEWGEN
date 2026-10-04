@@ -6,7 +6,7 @@
 // - jetonAvis (conseiller) : jeton de l'atelier, créé à la demande, et résumé
 //   des avis reçus ;
 // - avisPublic, deposerAvis (SANS connexion) : la page avis.html, ouverte par
-//   le QR code. Acceptés de la veille à AVIS_JOURS_APRES jours après
+//   le QR code. Acceptés du jour de l'atelier à AVIS_JOURS_APRES jours après
 //   l'atelier, AVIS_MAX par atelier, réponses hors liste refusées.
 
 const AVIS_JOURS_APRES = 30;
@@ -92,11 +92,12 @@ function action_jeton_avis(PDO $db, array $p): array
     return ['ok' => true, 'jeton' => (string) $j->fetchColumn(), 'avis' => avis_resume($db, $id), 'ouvert_du' => $debut, 'ouvert_au' => $fin];
 }
 
-// Dates d'ouverture du questionnaire d'un atelier : de la veille à
+// Dates d'ouverture du questionnaire d'un atelier : du jour de l'atelier
+// (décision de l'utilisateur, 04/10/2026 ; la veille auparavant) à
 // AVIS_JOURS_APRES jours après (AAAA-MM-JJ inclus).
 function avis_fenetre(string $date): array
 {
-    return [date('Y-m-d', strtotime("$date -1 day")), date('Y-m-d', strtotime("$date +" . AVIS_JOURS_APRES . ' days'))];
+    return [date('Y-m-d', strtotime($date)), date('Y-m-d', strtotime("$date +" . AVIS_JOURS_APRES . ' days'))];
 }
 
 // Atelier d'un jeton, s'il accepte encore des avis ; sinon raison du refus.
@@ -113,7 +114,7 @@ function avis_atelier(PDO $db, string $jeton, ?string &$err): ?array
     // distinguent, avec la date, pour l'agent qui teste le QR à l'avance.
     $jour = date('Y-m-d');
     [$debut, $fin] = avis_fenetre($a['date']);
-    if ($jour < $debut) { $err = 'Ce questionnaire ouvrira le ' . date('d/m/Y', strtotime($debut)) . ', la veille de l\'atelier.'; return null; }
+    if ($jour < $debut) { $err = 'Ce questionnaire ouvrira le ' . date('d/m/Y', strtotime($debut)) . ', le jour de l\'atelier.'; return null; }
     if ($jour > $fin) { $err = 'Ce questionnaire est fermé depuis le ' . date('d/m/Y', strtotime($fin . ' +1 day')) . '.'; return null; }
     return $a;
 }
