@@ -78,7 +78,7 @@ pas à jour ou si NextStep a des commits non poussés.
 
 ## Reste ouvert
 
-**Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **30** ; jamais 12,
+**Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **33** (`admin: true` = annonce réservée à l'Admin, depuis le 04/10) ; jamais 12,
 16, 19, 24, 25, 26 ni 29 (publiés puis retirés). Les entrées des 03-04/10
 sont datées du 05/10 à la demande de l'utilisateur.
 
