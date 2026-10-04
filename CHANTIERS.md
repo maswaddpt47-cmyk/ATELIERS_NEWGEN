@@ -140,6 +140,12 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
      lecteur réseau (bloqué par les navigateurs, hypothèse à vérifier sur un
      poste CD47) ; il faudrait des liens SharePoint/OneDrive ou un dépôt chez
      Alwaysdata. Bloc AGORA au choix du stockage (critère 1).
+   - **Au bac à sable, à tester (04/10)** : suppression d'un avis par l'Admin
+     (`40000a4`) ; anti-doublon des avis (`103cd4d`) : un avis par appareil
+     (localStorage), plafond = présents (à défaut inscrits), bouton « poste
+     partagé » retiré (décision de l'utilisateur, remplace l'amendement C
+     d'AG-021). En production : NEWGEN + NextStep, puis registre RGPD v1.3
+     (écart 8 corrigé ; marque « déjà répondu » sur l'appareil à décrire en T6).
    Écartés du CR : PWA (AG-012), nouveau modèle de données, PHPWord/TCPDF.
 
 0. **Demande du 03/10/2026, dans l'ordre** : (1) durée d'un atelier — livrée
