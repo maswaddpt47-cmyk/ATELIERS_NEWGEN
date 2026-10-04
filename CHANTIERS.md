@@ -129,10 +129,8 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
    - **(c) bilan trimestriel et (d) avis par atelier** : validés au bac à
      sable le 04/10, **en production le 04/10** (NEWGEN `6f5f449`, NextStep
      port du même jour, Nouveautés 25-26 datées du 05/10).
-   - **(e) « Mes bilans »** (demande du 04/10) : côté conseillers, avis par
-     atelier, bilan mensuel et trimestriel sortent de Stats ; avis réservés à
-     l'animateur et au co-animateur (filtre API). **Au bac à sable**
-     (`f714dd9`), à tester ; puis production + port NextStep + Nouveauté.
+   - **(e) « Mes bilans »** : validé au bac à sable, **en production le
+     04/10** (NEWGEN `063e19a`, NextStep même jour, Nouveauté 27 du 05/10).
    Écartés du CR : PWA (AG-012), nouveau modèle de données, PHPWord/TCPDF.
 
 0. **Demande du 03/10/2026, dans l'ordre** : (1) durée d'un atelier — livrée
