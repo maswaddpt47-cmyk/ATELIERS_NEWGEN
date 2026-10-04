@@ -86,7 +86,17 @@ function action_jeton_avis(PDO $db, array $p): array
        ->execute([$id, bin2hex(random_bytes(16)), date('Y-m-d H:i:s')]);
     $j = $db->prepare('SELECT jeton FROM avis_jetons WHERE atelier_id = ?');
     $j->execute([$id]);
-    return ['ok' => true, 'jeton' => (string) $j->fetchColumn(), 'avis' => avis_resume($db, $id)];
+    $d = $db->prepare('SELECT date FROM ateliers WHERE id = ?');
+    $d->execute([$id]);
+    [$debut, $fin] = avis_fenetre((string) $d->fetchColumn());
+    return ['ok' => true, 'jeton' => (string) $j->fetchColumn(), 'avis' => avis_resume($db, $id), 'ouvert_du' => $debut, 'ouvert_au' => $fin];
+}
+
+// Dates d'ouverture du questionnaire d'un atelier : de la veille à
+// AVIS_JOURS_APRES jours après (AAAA-MM-JJ inclus).
+function avis_fenetre(string $date): array
+{
+    return [date('Y-m-d', strtotime("$date -1 day")), date('Y-m-d', strtotime("$date +" . AVIS_JOURS_APRES . ' days'))];
 }
 
 // Atelier d'un jeton, s'il accepte encore des avis ; sinon raison du refus.
@@ -99,10 +109,12 @@ function avis_atelier(PDO $db, string $jeton, ?string &$err): ?array
     $s->execute([$jeton]);
     $a = $s->fetch(PDO::FETCH_ASSOC);
     if (!$a) { $err = 'Lien invalide'; return null; }
+    // Message précis (04/10/2026) : « pas encore ouvert » et « fermé » se
+    // distinguent, avec la date, pour l'agent qui teste le QR à l'avance.
     $jour = date('Y-m-d');
-    if ($jour < date('Y-m-d', strtotime($a['date'] . ' -1 day')) || $jour > date('Y-m-d', strtotime($a['date'] . ' +' . AVIS_JOURS_APRES . ' days'))) {
-        $err = 'Ce questionnaire n\'est plus ouvert'; return null;
-    }
+    [$debut, $fin] = avis_fenetre($a['date']);
+    if ($jour < $debut) { $err = 'Ce questionnaire ouvrira le ' . date('d/m/Y', strtotime($debut)) . ', la veille de l\'atelier.'; return null; }
+    if ($jour > $fin) { $err = 'Ce questionnaire est fermé depuis le ' . date('d/m/Y', strtotime($fin . ' +1 day')) . '.'; return null; }
     return $a;
 }
 

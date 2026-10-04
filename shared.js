@@ -2680,7 +2680,11 @@ function ModaleAvisQR({atelier,onClose}){
           a.n>0&&CE('div',null,`Attentes : ${a.attentes??'—'}/5 · Clarté : ${a.clarte??'—'}/5`),
           a.n>0&&CE('div',null,`Plus à l'aise : ${a.aise_oui}/${a.n} · Autonomes : ${a.autonomie_oui}/${a.n}`),
           (a.remarques||[]).length>0&&CE('div',{style:{marginTop:6,color:'#475569'}},a.remarques.map((t,i)=>CE('div',{key:i,style:{fontStyle:'italic'}},'« '+t+' »')))),
-        CE('div',{style:{fontSize:11,color:'#94a3b8',marginTop:8}},'Ouvert de la veille à 30 jours après l\'atelier. Avis anonymes.'))));
+        (()=>{const auj=todayLocal(),du=etat.ouvert_du,au=etat.ouvert_au;
+          const ouvert=du&&au&&auj>=du&&auj<=au;
+          return CE('div',{style:{fontSize:12,marginTop:8,padding:'6px 8px',borderRadius:8,background:ouvert?'#f0fdf4':'#fff7ed',color:ouvert?'#166534':'#9a3412'}},
+            (ouvert?'✅ Questionnaire ouvert':'⏳ Questionnaire fermé aujourd\'hui')+` — du ${fmtDate(du)} au ${fmtDate(au)} (veille de l'atelier à 30 jours après). Avis anonymes.`
+            +(ouvert?'':' La saisie papier reste possible.'));})())));
 }
 
 // ═══════════════════════════════════════════════════════════
