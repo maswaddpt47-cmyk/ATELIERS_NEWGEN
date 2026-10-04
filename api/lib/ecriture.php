@@ -189,6 +189,10 @@ function api_bilan_valide(mixed $v, ?string &$err): ?string
     if ($v === null || $v === []) return null;
     if (!is_array($v)) { $err = 'bilan : format invalide'; return null; }
     $b = [];
+    // Précision libre quand « Autre » est coché dans les difficultés
+    // (demande de l'utilisateur, 04/10/2026), 200 caractères au plus.
+    $autre = trim((string) ($v['difficultes_autre'] ?? ''));
+    unset($v['difficultes_autre']);
     foreach ($v as $cle => $val) {
         if (!isset(BILAN_CHOIX[$cle])) { $err = "bilan : champ inconnu « $cle »"; return null; }
         if (in_array($cle, BILAN_MULTIPLES, true)) {
@@ -203,6 +207,7 @@ function api_bilan_valide(mixed $v, ?string &$err): ?string
             $b[$cle] = $val;
         }
     }
+    if ($autre !== '' && in_array('Autre', $b['difficultes'] ?? [], true)) $b['difficultes_autre'] = mb_substr($autre, 0, 200);
     return $b ? json_encode($b, JSON_UNESCAPED_UNICODE) : null;
 }
 

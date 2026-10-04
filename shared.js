@@ -2448,6 +2448,7 @@ function FicheBilan({valeur,onChange}){
   const basculer=(cle,x)=>{
     const n={...v};
     if(BILAN_MULTIPLES.includes(cle)){const l=new Set(n[cle]||[]);l.has(x)?l.delete(x):l.add(x);n[cle]=[...l];if(!n[cle].length)delete n[cle];}
+    if(cle==='difficultes'&&!(n.difficultes||[]).includes('Autre'))delete n.difficultes_autre;
     else if(n[cle]===x)delete n[cle];else n[cle]=x;
     onChange(n);
   };
@@ -2458,7 +2459,10 @@ function FicheBilan({valeur,onChange}){
       CE('div',{style:{display:'flex',flexWrap:'wrap',gap:5}},BILAN_CHOIX[cle].map(x=>{
         const actif=BILAN_MULTIPLES.includes(cle)?(v[cle]||[]).includes(x):v[cle]===x;
         return CE('button',{key:x,type:'button',onClick:()=>basculer(cle,x),'aria-pressed':actif,style:{padding:'5px 10px',borderRadius:16,fontSize:12,cursor:'pointer',
-          border:'1.5px solid '+(actif?'#16a34a':'#d1d5db'),background:actif?'#16a34a':'#fff',color:actif?'#fff':'#374151',fontWeight:actif?700:500}},(BILAN_MULTIPLES.includes(cle)?(actif?'☑ ':'☐ '):'')+x);})))));
+          border:'1.5px solid '+(actif?'#16a34a':'#d1d5db'),background:actif?'#16a34a':'#fff',color:actif?'#fff':'#374151',fontWeight:actif?700:500}},(BILAN_MULTIPLES.includes(cle)?(actif?'☑ ':'☐ '):'')+x);})),
+      // « Autre » coché : précision libre (04/10/2026).
+      cle==='difficultes'&&(v.difficultes||[]).includes('Autre')&&CE('input',{type:'text',maxLength:200,value:v.difficultes_autre||'',placeholder:'Précisez la difficulté…',
+        onChange:e=>onChange({...v,difficultes_autre:e.target.value}),style:{marginTop:6,width:'100%',boxSizing:'border-box',padding:'7px 9px',border:'1.5px solid #d1d5db',borderRadius:8,fontSize:13}}))));
 }
 
 function PanneauAtelier({panel,onClose,entries,onEntryUpdated,onRefresh,onEdit,onDuplicate,canDelete,onAskDelete}){
