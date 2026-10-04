@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **02/10/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **04/10/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
@@ -115,31 +115,22 @@ de bureau comprises (10 h-16 h), médiane 0,2 s, p90 0,5 s.
 
 **Pour Claude**
 
-0bis. **Fiches rattachées aux ateliers (CR « option 1 », 04/10/2026)**. Ordre :
-   (a) fiche bilan d'atelier, **option a choisie le 04/10** : les 5 champs du
-   CR (niveau, objectif atteint, difficultés en cases, support, suite à
-   donner), section « 📝 Bilan » du volet latéral une fois l'atelier
-   « Réalisé » ; support = **types**, choix multiple (Diaporama, Fiche
-   pas-à-pas, Vidéo, Démonstration, Exercices pratiques, Livret, Aucun —
-   décidé le 04/10 ; une bibliothèque de documents viendra plus tard si besoin) ; nouvelle table → bloc AGORA à l'implémentation, (b) avis des stagiaires par QR code —
-   **avant** le DPO, décision de l'utilisateur : rester anonyme, sans
-   « recontact » ni tranche d'âge tant que le DPO n'a pas validé ; nouveau
-   traitement au registre ; page publique à protéger (jeton, plafond, pas
-   d'IP), (c) bilan trimestriel imprimable. Écartés du CR : PWA (AG-012),
-   nouveau modèle de données, PHPWord/TCPDF. **Tout passe d'abord par le bac à
-   sable** (AG-019). Base et utilisateur créés par l'utilisateur le 04/10 ;
-   code prêt (`4dd32e9`, NextStep `a07254b`) : `deploy-sandbox.yml`, pages et
-   API chez Alwaysdata (`/sandbox/`, `/api-sandbox/`), fausses données
-   (`sandbox_seed.php`). **En ligne le 04/10** : secrets posés, branche
-   `sandbox` créée, premier déploiement réussi (contrôles du workflow : API
-   répond, `lib/` fermé, pages servies) — https://ateliers-numeriques.alwaysdata.net/sandbox/
-   (comptes « Démo … », mot de passe = `SANDBOX_MDP_DEMO`). Circuit : travail
-   sur `sandbox` → test par l'utilisateur → fusion dans `main` → production.
-   **Dans le bac à sable, à tester** (branche `sandbox`, `b4d5880`) : fiche
-   bilan (AG-020) avec précision « Autre » (bug « « A » n'est pas un choix »
-   corrigé, test `basculerBilan`) ; avis des stagiaires par QR code (AG-021,
-   `api/lib/avis.php`, `avis.html`, `vendor/qrcode-generator-2.0.4`). Avant la
-   production : NextStep (port du volet), registre RGPD (T6 avis), Nouveautés.
+0bis. **Fiches rattachées aux ateliers (CR « option 1 », 04/10/2026)**.
+   Bac à sable (AG-019) en ligne : https://ateliers-numeriques.alwaysdata.net/sandbox/
+   (comptes « Démo … », mot de passe = secret `SANDBOX_MDP_DEMO`). Circuit :
+   branche `sandbox` → test par l'utilisateur → fusion dans `main` → production.
+   - **(a) fiche bilan (AG-020) et (b) avis des stagiaires par QR (AG-021)** :
+     validés au bac à sable le 04/10, **en production le 04/10** (NEWGEN
+     `04dc378`, NextStep `1d43b34`, Nouveautés 23-24 datées du 05/10 à la
+     demande de l'utilisateur). Avis anonymes, sans âge ni recontact tant que
+     le DPO n'a pas validé. **Reste : registre RGPD, traitement T6 (avis ;
+     les remarques libres peuvent identifier)** dans `ateliers-backups`, hors
+     de portée de cette session au 04/10.
+   - **(c) bilan trimestriel** : sous-onglet « 🗓️ Bilan trimestriel » du
+     Dashboard (deux pages), imprimable, **au bac à sable** (`fe0703e`), **à
+     tester par l'utilisateur**. Puis : fusion dans `main`, port NextStep
+     (`logic.js`, `shared.js`), Nouveautés.
+   Écartés du CR : PWA (AG-012), nouveau modèle de données, PHPWord/TCPDF.
 
 0. **Demande du 03/10/2026, dans l'ordre** : (1) durée d'un atelier — livrée
    (NextStep `c57fb7a`, NEWGEN `6be6a0c`, AG-017 ouvert), **à tester** : liste
