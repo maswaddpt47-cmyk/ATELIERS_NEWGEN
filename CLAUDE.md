@@ -50,6 +50,7 @@ git checkout main && git merge <branche> --no-ff && git push origin main
 | ↳ `e2e/smoke.spec.js` | les deux pages s'ouvrent, chaque onglet répond, sans erreur JS |
 | ↳ `e2e/reseau.spec.js` | politique d'appel : plafonds, reprises, doublage |
 | ↳ `e2e/appels.spec.js` | nombre d'appels émis à l'ouverture et après écriture |
+| ↳ `e2e/avis-admin.spec.js` | Admin : avis un par un, suppression d'un avis |
 
 Les tests navigateur exigent `npm ci` et un Chromium (préinstallé en
 local, sinon `npx playwright install chromium`).

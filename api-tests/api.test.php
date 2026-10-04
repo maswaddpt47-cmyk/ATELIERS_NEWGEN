@@ -461,6 +461,18 @@ verifier(!in_array('av_autre', $idsT, true) && in_array('av_autre', $idsA, true)
 $db->exec("UPDATE ateliers SET co_animateur = 'Nouveau Venu' WHERE id = 'av_autre'");
 verifier((appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_autre'])['ok'] ?? false) === true, 'co-animateur : avis de l\'atelier accessibles');
 $db->exec("DELETE FROM ateliers WHERE id = 'av_autre'");
+// Suppression d'un avis isolé : Admin seulement, journalisée sans le contenu.
+$liste = appel(['action' => 'avisAtelier'], $A + ['_id' => 'av_1'])['avis'] ?? [];
+verifier(count($liste) === 1 && $liste[0]['remarque'] === 'Merci' && $liste[0]['cree_le'] === $auj, 'Admin : avis d\'un atelier un par un');
+verifier(!(appel(['action' => 'avisAtelier'], $T + ['_id' => 'av_1'])['ok'] ?? true)
+    && !(appel(['action' => 'supprimerAvis'], $T + ['_id' => (string) $liste[0]['id']])['ok'] ?? true), 'avis un par un et suppression : refusés à un conseiller');
+appel(['action' => 'saisirAvisPapier'], $T + ['_id' => 'av_1', 'attentes' => '1', 'remarque' => 'Cite quelqu\'un']);
+$liste = appel(['action' => 'avisAtelier'], $A + ['_id' => 'av_1'])['avis'];
+$cible = end($liste)['id'];
+verifier((appel(['action' => 'supprimerAvis'], $A + ['_id' => (string) $cible])['ok'] ?? false)
+    && count(appel(['action' => 'avisAtelier'], $A + ['_id' => 'av_1'])['avis']) === 1
+    && $db->query("SELECT ref FROM journal WHERE action = 'supprimerAvis' ORDER BY id DESC LIMIT 1")->fetchColumn() === (string) $cible
+    && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'avisAtelier'")->fetchColumn() === 0, 'Admin : avis supprimé, journalisé avec son seul numéro (lecture non journalisée)');
 // Amendement A : corbeille → avis et jeton gardés ; restauration → rendus ; sortie de corbeille → effacés.
 appel(['action' => 'delete'], $T + ['_id' => 'av_1']);
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
