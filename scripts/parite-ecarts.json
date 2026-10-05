@@ -33,8 +33,8 @@
       "NEWGEN shared.js:2741",
       "NextStep shared.js:2556"
     ],
-    "newgen": "119286b6c6/119286b6c6",
-    "nextstep": "ef1c5b6189/ef1c5b6189",
+    "newgen": "debdbdb9fb/debdbdb9fb",
+    "nextstep": "fffe36bd67/fffe36bd67",
     "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres)."
   },
   "shared.js:IIFE injectCSS": {

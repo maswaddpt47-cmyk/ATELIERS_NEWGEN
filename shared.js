@@ -3097,6 +3097,7 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
           CE('div',{className:'ac-v2-sub'},e.commune,(e.lieu?' · '+e.lieu:'')),
           // Pied : dot conseiller | lieu (court) | présences
           CE('div',{className:'ac-v2-foot'},
+            alerteOrdi(e),
             CE('span',{style:{display:'inline-flex',alignItems:'center',gap:6,fontSize:13,fontWeight:700,color:cColor}},
               CE('span',{style:{width:8,height:8,borderRadius:'50%',background:cColor,boxShadow:`0 0 0 3px ${hexToRgba(cColor,0.2)}`,display:'inline-block',flexShrink:0}}),
               e.conseiller
@@ -3105,9 +3106,7 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
             CE('div',{className:'ac-v2-presence'},
               CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2},
                 CE('path',{d:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'}),CE('circle',{cx:9,cy:7,r:4})),
-              CE('strong',null,e.presents||0),'/',(e.inscrits||0),
-              // Alerte au coin droit, après le compteur (05/10/2026).
-              alerteOrdi(e)&&CE('span',{style:{marginLeft:8}},alerteOrdi(e))
+              CE('strong',null,e.presents||0),'/',(e.inscrits||0)
             )
           )
         )
