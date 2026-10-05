@@ -2742,6 +2742,15 @@ function BarreSelection({actif,setActif,sel,setSel,filtered}){
 
 function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDuplicate,initConseiller,onResetConseiller,canDelete,onChangeConseiller}){
   const[search,setSearch]=React.useState('');
+  // Ateliers pris dans un conflit de matériel à venir (ordinateurs ou Classe
+  // mobile, comme les compteurs de Gestion ordi) : « ⚠️ ordi » sur la tuile
+  // (05/10/2026). Calculé sur tous les ateliers, pas seulement les filtrés.
+  const idsConflitOrdi=React.useMemo(()=>{
+    const auj=todayLocal(),ids=new Set();
+    try{findOrdinateursConflicts(entries||[]).concat(findMobileClassConflicts(entries||[])).filter(g=>!estConflitPasse(g,auj)).forEach(g=>(g.entries||[]).forEach(x=>{if(x&&x._id)ids.add(x._id);}));}catch(_){}
+    return ids;
+  },[entries]);
+  const alerteOrdi=e=>idsConflitOrdi.has(e._id)&&CE('span',{className:'nouv-blink',title:'Conflit de matériel : voir Gestion ordi',style:{display:'inline-block',color:'#dc2626',fontWeight:800,fontSize:11,whiteSpace:'nowrap',marginRight:6}},'⚠️ ordi');
   const[dSearch,setDSearch]=React.useState('');
   const[filtStatut,setFiltStatut]=React.useState('Planifié');
   const[filtMois,setFiltMois]=React.useState('Tous');
@@ -3096,6 +3105,7 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
             ),
             e.lieu&&CE('span',{className:'tag-v2',style:{maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},e.lieu),
             CE('div',{className:'ac-v2-presence'},
+              alerteOrdi(e),
               CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2},
                 CE('path',{d:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'}),CE('circle',{cx:9,cy:7,r:4})),
               CE('strong',null,e.presents||0),'/',(e.inscrits||0)
