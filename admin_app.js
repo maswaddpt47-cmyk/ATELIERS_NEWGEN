@@ -548,7 +548,7 @@ const LOGS_KEY = lsKey('adm_logs');
         view==='bingo'&&CE(VueBingo,{entries}),
         view==='nouveautes'&&CE(VueNouveautes,{onVu:marquerNouveautes}),
         view==='anomalies'&&CE(VueAnomalies,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');},communes:window.COMMUNES_47_CACHE||[],apiFetch,showToast,addLog}),
-        view==='gestion_ordi'&&CE(VueGestionOrdi,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');}}),
+        view==='gestion_ordi'&&CE(VueGestionOrdi,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true}),
         view==='admin'&&role==='admin'&&CE(VueAdmin,{entries,onRefresh:()=>loadData(),addLog,conseillersList:lists.conseillers,onSaveColors:(c)=>{applyColors(c);},annee:anneeReference(annee),adminConseiller,initialVisibility:cachedVisibility}),
         view==='logs_connexion'&&(role==='admin'||role==='superviseur')&&CE(React.Fragment,null,CE(VueUsageOnglets,null),CE(VueLogs,null)),
           view==='corbeille'&&(role==='admin'||role==='superviseur')&&CE(VueCorbeille,null),
