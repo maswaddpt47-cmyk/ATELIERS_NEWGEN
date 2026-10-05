@@ -246,6 +246,10 @@ function VueLoginIndex({conseillers,onSuccess}){
 function App(){
   const[authed,setAuthed]          = React.useState(()=>!!window.authToken.get());
   const[view,setView]              = React.useState('accueil');
+  // Date d'ouverture de Gestion ordi depuis l'alerte d'une tuile (05/10/2026),
+  // oubliée dès qu'on quitte l'onglet.
+  const[dateGestionOrdi,setDateGestionOrdi]=React.useState(null);
+  React.useEffect(()=>{if(view!=='gestion_ordi')setDateGestionOrdi(null);},[view]);
   const[nbNouveautes,marquerNouveautes]=useNouveautes();
   // Signaler (AG-016) : pastille si un de ses tickets a reçu une réponse ;
   // l'onglet d'où l'on vient pré-remplit « onglet concerné ».
@@ -678,7 +682,7 @@ function App(){
       ),
       !loading&&!error&&CE('div',{className:'view-anim',key:view+'_'+(filtreConseiller||'all')},
         view==='saisie'&&visibility.saisie&&CE(VueSaisie,{conseillerDefaut:(()=>{try{return sessionStorage.getItem('gs_conseiller')||'';}catch(_){return '';}})(),entries,onSaved:handleSaved,onNewEntry:e=>{if(anneeIncluse(annee,e.date))setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
-        view==='historique'&&visibility.historique&&CE(VueHistorique,{onOuvrirGestionOrdi:visibility.gestion_ordi?()=>setView('gestion_ordi'):null,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
+        view==='historique'&&visibility.historique&&CE(VueHistorique,{onOuvrirGestionOrdi:visibility.gestion_ordi?(d=>{setDateGestionOrdi(d||null);setView('gestion_ordi');}):null,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
         view==='agenda'&&visibility.agenda&&CE(VueAgendaSemaine,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:filtreConseiller,accentColor}),
         view==='planning'&&visibility.planning&&CE(VuePlanning,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,accentColor,conseillers:conseillerActifs}),
         view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
@@ -686,7 +690,7 @@ function App(){
         view==='bilans'&&visibility.bilans&&CE(VueMesBilans,{entries}),
         view==='carte'&&visibility.carte&&CE(VueCarte,{entries,active:view==='carte'}),
         view==='roadmap'&&visibility.roadmap&&CE(VueRoadmap,{entries,annee:anneeReference(annee),conseillers:lists.conseillers}),
-        view==='gestion_ordi'&&visibility.gestion_ordi&&CE(VueGestionOrdi,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true}),
+        view==='gestion_ordi'&&visibility.gestion_ordi&&CE(VueGestionOrdi,{key:'go_'+(dateGestionOrdi||''),dateInitiale:dateGestionOrdi,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true}),
         view==='bingo'&&visibility.bingo&&CE(VueBingo,{entries}),
         view==='corbeille'&&visibility.corbeille&&CE(VueCorbeille,null),
         view==='nouveautes'&&CE(VueNouveautes,{onVu:marquerNouveautes}),

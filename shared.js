@@ -2748,7 +2748,7 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
     try{findOrdinateursConflicts(entries||[]).filter(g=>!estConflitPasse(g,auj)).forEach(g=>(g.entries||[]).forEach(x=>{if(x&&x._id)ids.add(x._id);}));}catch(_){}
     return ids;
   },[entries]);
-  const alerteOrdi=e=>idsConflitOrdi.has(e._id)&&CE('span',{className:'nouv-blink',title:'Conflit de matériel : cliquer pour ouvrir Gestion ordi',role:onOuvrirGestionOrdi?'button':undefined,onClick:onOuvrirGestionOrdi?(ev=>{ev.stopPropagation();onOuvrirGestionOrdi();}):undefined,style:{display:'inline-block',color:'#dc2626',fontWeight:800,fontSize:11,whiteSpace:'nowrap',marginRight:6,cursor:onOuvrirGestionOrdi?'pointer':'default'}},'⚠️ ordi');
+  const alerteOrdi=e=>idsConflitOrdi.has(e._id)&&CE('span',{className:'nouv-blink',title:'Stock d\'ordinateurs dépassé : cliquer pour ouvrir Gestion ordi à cette date',role:onOuvrirGestionOrdi?'button':undefined,onClick:onOuvrirGestionOrdi?(ev=>{ev.stopPropagation();onOuvrirGestionOrdi(normalizeDate(e.date));}):undefined,style:{display:'inline-block',color:'#dc2626',fontWeight:800,fontSize:11,whiteSpace:'nowrap',marginRight:6,cursor:onOuvrirGestionOrdi?'pointer':'default'}},'⚠️ ordi');
   const[dSearch,setDSearch]=React.useState('');
   const[filtStatut,setFiltStatut]=React.useState('Planifié');
   const[filtMois,setFiltMois]=React.useState('Tous');
@@ -3103,10 +3103,11 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
             ),
             e.lieu&&CE('span',{className:'tag-v2',style:{maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},e.lieu),
             CE('div',{className:'ac-v2-presence'},
-              alerteOrdi(e),
               CE('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2},
                 CE('path',{d:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'}),CE('circle',{cx:9,cy:7,r:4})),
-              CE('strong',null,e.presents||0),'/',(e.inscrits||0)
+              CE('strong',null,e.presents||0),'/',(e.inscrits||0),
+              // Alerte au coin droit, après le compteur (05/10/2026).
+              alerteOrdi(e)&&CE('span',{style:{marginLeft:8}},alerteOrdi(e))
             )
           )
         )
@@ -4059,8 +4060,9 @@ function BlocConflits({groupes,vide,bg,border,titreColor,renderTitre,renderItem}
 // sautent aux yeux visuellement, plus besoin de lire chaque carte de
 // conflit une par une. Fenêtre de 28 jours navigable (± 1 semaine par clic).
 const FRISE_NB_JOURS=28;
-function FriseMateriel({entries,onEdit}){
-  const[offset,setOffset]=React.useState(0);
+function FriseMateriel({entries,onEdit,dateInitiale}){
+  // Ouverte depuis l'alerte d'une tuile (05/10/2026) : démarre au jour de l'atelier.
+  const[offset,setOffset]=React.useState(()=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(dateInitiale||''))return 0;const[y1,m1,j1]=todayLocal().split('-').map(Number),[y2,m2,j2]=dateInitiale.split('-').map(Number);return Math.round((Date.UTC(y2,m2-1,j2)-Date.UTC(y1,m1-1,j1))/86400000);});
   const[agrandi,setAgrandi]=React.useState(false);
   const[exportEnCours,setExportEnCours]=React.useState(false);
   const today=todayLocal();
@@ -4237,7 +4239,7 @@ function ChoixDate({value,onChange,titre}){
     onChange:e=>{const v=e.target.value;if(/^\d{4}-\d{2}-\d{2}$/.test(v))onChange(v);},
     style:{width:130,flex:'0 0 auto',padding:'3px 6px',border:'1px solid #e2e8f0',borderRadius:6,fontSize:12,background:'#fff',color:'#1a202c'}});
 }
-function VueGestionOrdi({entries,onEdit,onDelete,onDuplicate,canDelete}){
+function VueGestionOrdi({entries,onEdit,onDelete,onDuplicate,canDelete,dateInitiale}){
   // Un clic (frise ou « Ouvrir ») ouvre le volet latéral, comme le Planning
   // (05/10/2026) ; « Éditer complet » y mène au formulaire.
   const[selectedEntry,setSelectedEntry]=React.useState(null);
@@ -4251,7 +4253,7 @@ function VueGestionOrdi({entries,onEdit,onDelete,onDuplicate,canDelete}){
   const today=todayLocal();
   const nbActifsOrdi=conflitsOrdi.filter(g=>!estConflitPasse(g,today)).length;
   return CE(React.Fragment,null,
-    CE(FriseMateriel,{entries,onEdit:ouvrir}),
+    CE(FriseMateriel,{entries,onEdit:ouvrir,dateInitiale}),
     CE('div',{className:'card',style:{maxWidth:900,margin:'0 auto'}},
       CE('div',{style:{display:'flex',alignItems:'center',gap:12,marginBottom:16}},
         CE('span',{style:{fontSize:22}},'🖥️'),
