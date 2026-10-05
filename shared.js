@@ -3074,7 +3074,8 @@ function VueHistorique({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
             CE('div',{className:'ac-v2-time'},e.horaire),
             CE('div',{className:'ac-v2-day'},d.jour),
             // Durée sous le jour (05/10/2026)
-            fmtDuree(e.duree)&&CE('div',{className:'ac-v2-day',style:{marginTop:2,fontWeight:600}},'⏱ '+fmtDuree(e.duree))
+            // Durée vide (ateliers d'avant le 03/10) : 1 h 30, comme partout ailleurs.
+            CE('div',{className:'ac-v2-day',style:{marginTop:2,fontWeight:600}},'⏱ '+fmtDuree(parseInt(e.duree)||DUREE_DEFAUT))
           ),
           // Ligne 1 : badge statut + tag public (une seule ligne, pas d'orienteur)
           CE('div',{className:'ac-v2-top'},
