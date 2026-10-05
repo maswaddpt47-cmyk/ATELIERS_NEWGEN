@@ -30,11 +30,11 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2738",
-      "NextStep shared.js:2553"
+      "NEWGEN shared.js:2743",
+      "NextStep shared.js:2558"
     ],
-    "newgen": "406d09c940/406d09c940",
-    "nextstep": "fb8a1ed393/fb8a1ed393",
+    "newgen": "35a3bd62c2/35a3bd62c2",
+    "nextstep": "97119e2f64/97119e2f64",
     "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres)."
   },
   "shared.js:IIFE injectCSS": {
