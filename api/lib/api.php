@@ -276,6 +276,16 @@ function ateliers_colonne_duree(PDO $db): void
     if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'duree'")->fetch()) {
         $db->exec('ALTER TABLE ateliers ADD COLUMN duree SMALLINT NULL AFTER horaire');
     }
+    // Durée vide des ateliers d'avant le 03/10/2026 : remplie à 1 h 30 pour
+    // les seuls ateliers de l'utilisateur (sa demande du 05/10/2026), une fois
+    // (repère « migration_duree_utilisateur » dans config), journalisée avec
+    // le nombre de lignes. Ceux de l'équipe restent vides (1 h 30 à l'écran).
+    if ($db->query("SHOW TABLES LIKE 'config'")->fetch()
+        && !$db->query("SELECT COUNT(*) FROM config WHERE cle = 'migration_duree_utilisateur'")->fetchColumn()) {
+        $n = $db->exec("UPDATE ateliers SET duree = 90 WHERE duree IS NULL AND conseiller = 'Michel Aswad'");
+        $db->exec("REPLACE INTO config (cle, valeur) VALUES ('migration_duree_utilisateur', '" . date('Y-m-d') . " : " . (int) $n . " atelier(s)')");
+        if (function_exists('api_journal')) api_journal($db, 'migrationDuree', 'système', (string) (int) $n, '', 1, 0, '', 'api');
+    }
     // Fiche bilan (AG-020, 04/10/2026) : même procédé. Nommée fiche_bilan
     // (amendement D) : « bilan » est déjà le bilan mensuel (bilan.php). La
     // première version du bac à sable l'avait nommée bilan : renommée.

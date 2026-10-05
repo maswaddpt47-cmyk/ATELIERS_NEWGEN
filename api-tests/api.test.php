@@ -391,6 +391,21 @@ appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'passwo
 verifier((int) $db->query("SELECT COUNT(*) FROM tickets")->fetchColumn() === 0, '[RGPD-19] tickets supprimés : clos depuis 36 mois, ou jamais clos depuis 24 mois');
 array_map('unlink', glob("$dossierMails/*.txt"));
 
+echo "API — durée remplie pour l'utilisateur (05/10/2026)\n";
+$db->exec("DELETE FROM config WHERE cle = 'migration_duree_utilisateur'");
+$db->exec("INSERT INTO ateliers (id, statut, date, horaire, duree, orienteur, lieu, thematique, conseiller, co_animateur, residence, remarques) VALUES
+  ('mig_1', 'Réalisé', '2026-09-01', '09:00', NULL, '', '', 'T', 'Michel Aswad', '', '', ''),
+  ('mig_2', 'Réalisé', '2026-09-01', '09:00', 60, '', '', 'T', 'Michel Aswad', '', '', ''),
+  ('mig_3', 'Réalisé', '2026-09-01', '09:00', NULL, '', '', 'T', 'Autre Conseiller', '', '', '')");
+appel(['action' => 'getAll'], $T);
+$d = $db->query("SELECT id, duree FROM ateliers WHERE id LIKE 'mig\\_%' ORDER BY id")->fetchAll(PDO::FETCH_KEY_PAIR);
+verifier($d === ['mig_1' => 90, 'mig_2' => 60, 'mig_3' => null] && str_contains((string) $db->query("SELECT valeur FROM config WHERE cle = 'migration_duree_utilisateur'")->fetchColumn(), '1 atelier'),
+    'durée vide remplie à 1 h 30 pour les seuls ateliers de l\'utilisateur, une fois — ' . json_encode($d));
+$db->exec("UPDATE ateliers SET duree = NULL WHERE id = 'mig_1'");
+appel(['action' => 'getAll'], $T);
+verifier($db->query("SELECT duree FROM ateliers WHERE id = 'mig_1'")->fetchColumn() === null, 'remplissage fait une seule fois (repère dans config)');
+$db->exec("DELETE FROM ateliers WHERE id LIKE 'mig\\_%'");
+
 echo "API — avis des stagiaires (AG-021)\n";
 $auj = date('Y-m-d');
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_1', 'date' => $auj, 'horaire' => '10:00', 'thematique' => 'Smartphone', 'conseiller' => 'Nouveau Venu', 'commune' => 'Nérac'])]);
