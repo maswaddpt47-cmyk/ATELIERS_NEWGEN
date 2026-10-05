@@ -224,12 +224,14 @@ couche d'appel.
 - **`periodePretMateriel` retombe sur la date de l'atelier** quand les dates
   de prélèvement/retour ne sont pas saisies (confirmé par l'utilisateur le
   22/09 : matériel pris et rendu le jour même).
-- **Conflits de matériel à l'heure près** (AG-022, 04/10/2026, décision de
-  l'utilisateur, qui affine la demi-journée du 22/09) : ordinateurs d'un prêt
-  d'un jour sur `[début, fin + 30 min)` ; Classe mobile à la demi-journée,
-  mais toutes celles que l'horaire touche ; atelier sans horaire : sa
-  demi-journée sans marge, ou la journée entière s'il n'en a pas. Verrouillé
-  par `logic.test.js` (« conflits de matériel à l'heure près »).
+- **Conflits de matériel : seul le stock d'ordinateurs compte** (décision de
+  l'utilisateur du 05/10/2026, qui remplace la règle « Classe mobile unique » :
+  « Classe mobile » veut dire « j'emprunte des ordinateurs du stock »). Stock
+  compté à l'heure près (AG-022) : prêt d'un jour sur `[début, fin + 30 min)`,
+  atelier sans horaire sur sa demi-journée sans marge ou la journée entière ;
+  un conseiller compte une fois, au max de ses quantités. Verrouillé par
+  `logic.test.js`. `findMobileClassConflicts` reste dans `logic.js` (testé)
+  mais n'est plus appelé par les écrans.
 - **Prêt sur plusieurs jours : journées entières** (AG-002, 23/09), du
   prélèvement à la veille du retour (le retour se fait le matin). Les dates
   de prêt sont sans heure : on sur-réserve plutôt que de sous-réserver.
