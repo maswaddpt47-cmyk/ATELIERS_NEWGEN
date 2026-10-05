@@ -21,8 +21,8 @@
       "NEWGEN admin_app.js:171",
       "NextStep admin_app.js:171"
     ],
-    "newgen": "a85b603cdd/e9a4555407",
-    "nextstep": "36755c2fb4/09c70a5717",
+    "newgen": "8bd2f46dc5/7c372de394",
+    "nextstep": "54f8ac0f90/23f9291e05",
     "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs."
   },
   "VueHistorique": {
@@ -33,8 +33,8 @@
       "NEWGEN shared.js:2743",
       "NextStep shared.js:2558"
     ],
-    "newgen": "330692bf9d/330692bf9d",
-    "nextstep": "2b9a24d569/2b9a24d569",
+    "newgen": "43445e4f0a/43445e4f0a",
+    "nextstep": "62067f62cd/62067f62cd",
     "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres)."
   },
   "shared.js:IIFE injectCSS": {
