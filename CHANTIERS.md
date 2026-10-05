@@ -190,6 +190,14 @@ couche d'appel.
   (à défaut d'inscrits) ; plus de bouton « poste partagé » (remplace
   l'amendement C d'AG-021) ; avis d'un atelier réservés à son animateur et
   son co-animateur (filtre API) ; suppression d'un avis par l'Admin seulement.
+- **Gestion ordi et vues, 05/10 (en production directement, sans annonce)** :
+  frise à une ligne par conseiller, séances d'un même conseiller sur la même
+  période de prêt fondues en une barre ; clic = volet latéral ; sélecteur de
+  date compact (`ChoixDate`) dans la frise, Planning, Agenda, Calendrier ;
+  durée dans les tuiles de l'Historique (vide = 1 h 30) ; « ⚠️ ordi »
+  clignotant au coin gauche de la ligne du bas, clic = Gestion ordi au jour de
+  l'atelier ; statut actuel mis en avant dans le volet ; « PIX » dans les
+  supports de la fiche bilan.
 - **Côté conseillers (04/10)** : Stats = Synthèse et Analyse ; avis par
   atelier, bilans mensuel et trimestriel dans « Mes bilans », limité aux
   ateliers animés ou co-animés, masquable dans Admin → Visibilité. Pas de
