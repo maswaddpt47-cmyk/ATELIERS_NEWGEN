@@ -90,10 +90,9 @@ sont datées du 05/10 à la demande de l'utilisateur.
    fixée, mention d'information des agents, procédure de sortie ; **avis des
    stagiaires (T6) mis en service avant son avis** (qualification, base
    légale, remarques libres dans les bilans imprimés).
-2. **Contact du DPO à fournir** : il manque à la mention d'information du
-   questionnaire d'avis (`avis.html`), dernier écart ouvert de T6, avec les
-   droits des personnes. Nom connu (Sabine Brustolin, 06/10, porté au registre
-   RGPD) ; manque un moyen de contact (mail du DPO, de préférence générique).
+2. **Mention du questionnaire d'avis complétée le 06/10** (`e150c69`) :
+   contact `contact-dpd@lotetgaronne.fr` (DPO : Sabine Brustolin) et recours
+   CNIL. Reste à la faire valider par la DPO avec le reste de T6 (point 1).
 3. **À tester sur PC** : réimport Outlook (rendez-vous déplacé → « Mettre à
    jour », supprimé → « Annulé » proposé décoché ; export .ics impossible sur
    téléphone) et infobulle du Planning (survol souris).
