@@ -64,7 +64,9 @@ function action_demander_reinit(PDO $db, array $p): array
     $db->prepare('INSERT INTO reinitialisations (jeton_hash, conseiller, cree, expire) VALUES (?, ?, NOW(), NOW() + INTERVAL ' . REINIT_DUREE_MIN . ' MINUTE)')
        ->execute([hash('sha256', $jeton), $nom]);
 
-    $lien = $retour . (str_contains($retour, '?') ? '&' : '?') . 'reinit=' . $jeton;
+    // Après le # : le jeton n'est jamais envoyé à GitHub Pages, donc absent
+    // de ses journaux (audit Codex du 06/10/2026). $retour n'a pas de #.
+    $lien = $retour . '#reinit=' . $jeton;
     $h = fn($x) => htmlspecialchars($x, ENT_QUOTES, 'UTF-8');
     mail_envoyer($adresse, 'Réinitialisation de votre mot de passe — Ateliers numériques',
         "Bonjour $nom,\n\nUne réinitialisation de votre mot de passe a été demandée.\nPour choisir un nouveau mot de passe, ouvrez ce lien (valable 30 minutes, une seule fois) :\n$lien\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce mail : votre mot de passe actuel reste valable.",

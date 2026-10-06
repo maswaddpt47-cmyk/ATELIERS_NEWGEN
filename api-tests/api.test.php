@@ -542,9 +542,9 @@ $r3 = appel(['action' => 'demanderReinit'], ['conseiller' => 'Personne Inconnue'
 verifier($r1 === $r2 && $r2 === $r3 && $r1['ok'] === true, '[RGPD-10] réponse identique (adresse, sans adresse, inconnu) : rien ne se devine');
 $m = $mails();
 verifier(count($m) === 1 && str_contains($m[0], 'A: nouveau.venu@example.org'), 'un seul mail, à la bonne adresse');
-preg_match('/[?&]reinit=([0-9a-f]{64})/', $m[0] ?? '', $mm);
+preg_match('/#reinit=([0-9a-f]{64})/', $m[0] ?? '', $mm);
 $jetonReinit = $mm[1] ?? '';
-verifier($jetonReinit !== '' && str_contains($m[0], $RETOUR . '&reinit='), 'lien vers la page de départ, ?backend=php conservé');
+verifier($jetonReinit !== '' && str_contains($m[0], $RETOUR . '#reinit='), 'lien vers la page de départ, ?backend=php conservé, jeton après le # (hors journaux de GitHub Pages)');
 verifier((int) $db->query("SELECT COUNT(*) FROM reinitialisations WHERE jeton_hash = '$jetonReinit'")->fetchColumn() === 0, '[RGPD-06] jeton jamais stocké en clair');
 $avant = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'Un-Autre-Mdp-99', 'source' => 'index.html']);
 verifier(appel(['action' => 'reinitMotDePasse'], ['jeton' => $jetonReinit, 'password' => 'court'])['error'] === API_MDP_POLITIQUE, 'mot de passe trop faible refusé, lien pas consommé');
