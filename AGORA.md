@@ -85,7 +85,32 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-_(aucun)_
+## AG-023 — Changement de mot de passe : ancien exigé, provisoire imposé par l'API — ouvert le 06/10/2026
+**Auteur** : session A — lu sur `41b40c1`
+**Proposition** : (1) `selfSetPassword` refusé sauf si le compte a
+`doit_changer = 1` ou si `currentPwd` est juste ; (2) tant que
+`doit_changer = 1`, la session n'ouvre que `selfSetPassword` et `logout`
+(colonne `provisoire` dans `sessions`, posée à la connexion) ; (3) l'Admin des
+deux applis gère `doit_changer` comme Index (écran de changement imposé).
+**Critère déclencheur** : 1 — contrat entre l'API et les deux interfaces, et
+schéma (`sessions`).
+**Ce que ça engage** : un compte au mot de passe provisoire ne voit plus rien
+avant de l'avoir changé, Admin compris ; un client en cache (ancien Admin) qui
+ignore `doit_changer` recevrait des refus au lieu de l'écran.
+**Non vérifié par l'auteur** : (a) Index n'appelle `selfSetPassword` que dans
+le parcours imposé (`app.js:137-165`) — aucun autre écran trouvé, à
+recouper ; (b) le repli `pwd === defaultPwdIndex(conseiller)` (`app.js:139`)
+sur un compte importé avec `doit_changer = 0` serait refusé par (1) — combien
+de comptes en base sont dans ce cas ? (c) colonne dans `sessions` contre une
+relecture de `comptes.doit_changer` à chaque appel (une requête de plus par
+action) : je n'ai pas mesuré le coût ; (d) `checkPassword` côté Admin avec
+`doit_changer` : `admin_app.js` n'a aucun écran prévu.
+**Si personne ne répond, je fais quoi ?** — l'utilisateur choisit entre (1)
+seul (petit, serveur, sans changement d'interface) et (1)+(2)+(3).
+**Où regarder** : `api/lib/ecriture.php:486-520` (`action_set_password`,
+`action_self_set_password`), `api/lib/api.php:95-115` et `:205-212`,
+`app.js:128-170`, `admin_app.js:725-740` ; origine : audit Codex du
+06/10/2026, points 2 et 6 (`ateliers-backups/documents/sources/`).
 
 ## Blocs tranchés — sortis de ce fichier
 
