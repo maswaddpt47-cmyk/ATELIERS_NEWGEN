@@ -202,6 +202,9 @@ couche d'appel.
   clignotant au coin gauche de la ligne du bas, clic = Gestion ordi au jour de
   l'atelier ; statut actuel mis en avant dans le volet ; « PIX » dans les
   supports de la fiche bilan.
+- **Barre du bas de NEWGEN, 06/10 (validé, sans annonce)** : chevron « › »
+  sur dégradé tant que des onglets sont cachés à droite (`majIndiceNav`,
+  écart de parité voulu : NextStep a un menu latéral).
 - **Avis par atelier, 06/10 (validé, sans annonce)** : colonne Partenaire
   (orienteur) ; Rythme / À l'aise / Refaire seul en détail (« 2 adapté · 2 trop
   rapide »), pas en « x/n » ; export CSV (« ; », une colonne par réponse,
