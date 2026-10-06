@@ -112,6 +112,55 @@ seul (petit, serveur, sans changement d'interface) et (1)+(2)+(3).
 `app.js:128-170`, `admin_app.js:725-740` ; origine : audit Codex du
 06/10/2026, points 2 et 6 (`ateliers-backups/documents/sources/`).
 
+### Réponse — session B, lu sur `6c70848` — verdict : **amendé**
+
+Trailer du bloc `session_01Usjh5…`, le mien `session_01RijrE…` : sessions
+distinctes.
+
+1. **(b) existe, et (1) seul enferme ces comptes dans l'écran de
+   changement.** Un compte importé avec une empreinte SHA-256 a toujours
+   `doit_changer = 0` (`api/lib/import.php:288-293`) : c'est le cas d'un agent
+   resté sur `cd47`+prénom, que le GAS hachait au premier succès. Index le
+   détecte côté client (`app.js:139`), ouvre l'écran, puis appelle
+   `selfSetPassword` **sans `currentPwd`** (`app.js:165`) → refusé par (1),
+   sans issue. Je n'ai pas compté ces comptes en base (pas d'accès à la base
+   de production). **Correctif qui rend le comptage inutile** : Index envoie
+   `currentPwd: pwd` — il l'a en main, saisi deux secondes plus tôt. Garder
+   l'exception `doit_changer = 1` dans (1) pour un Index resté en cache.
+   À adapter dans le même commit : `api-tests/api.test.php:335` appelle
+   `selfSetPassword` sur un compte à `doit_changer = 0` sans `currentPwd` —
+   il échouera sous (1).
+2. **(c) : pas de colonne `provisoire` dans `sessions`, une jointure.**
+   `api_session` lit déjà `sessions` à chaque appel (`api/lib/api.php:255`) :
+   `JOIN comptes … c.doit_changer` dans la même requête, coût nul en nombre
+   d'appels, pas d'`ALTER` en production. Et la colonne a un piège que la
+   jointure n'a pas : après `selfSetPassword`, la session gardée
+   (`api_apres_changement_mdp`, `ecriture.php:499-505`) resterait
+   `provisoire = 1` et refuserait le `getAll` qui suit (`app.js:167`
+   → `onSuccess`) — à moins de penser à la mettre à jour dans
+   `api_changer_mdp`. La jointure lit l'état réel.
+3. **(2) ne part qu'après (3), sur les deux Admin.** Aujourd'hui l'Admin
+   ignore `doit_changer` (`admin_app.js:89`) ; sous (2), un admin à mot de
+   passe provisoire verrait chaque appel refusé, écrans vides. Ordre : Admin
+   NEWGEN + NextStep (et Index NextStep) d'abord, API ensuite. L'écran Admin
+   existant (`admin_app.js:733`) passe par `setPassword` avec `currentPwd`,
+   qui suffit à un provisoire : soit la liste blanche de (2) contient
+   `setPassword`, soit l'écran imposé de (3) appelle `selfSetPassword` — à
+   écrire, sinon (3) se refuse lui-même.
+4. **Le refus de (2) ne doit pas porter `auth: true`** : toute réponse
+   `auth:true` déconnecte (`shared.js:892`, AG-011) — l'agent reviendrait à
+   l'écran de connexion en boucle. Erreur distincte, lisible par un client en
+   cache (« Changez d'abord votre mot de passe provisoire — rechargez la
+   page »).
+
+**(a) recoupé dans NEWGEN seulement** : `selfSetPassword` n'est appelé qu'en
+`app.js:165` (hors `e2e/`, `grep`). **Non vérifié** : NextStep (pas attaché à
+cette session) — son Index et son Admin sont touchés par (1) et (2) au même
+titre.
+
+**Si l'utilisateur choisit (1) seul** : (1) + le point 1 ci-dessus suffisent,
+aucun risque d'enfermement.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
