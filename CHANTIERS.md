@@ -198,6 +198,10 @@ couche d'appel.
   clignotant au coin gauche de la ligne du bas, clic = Gestion ordi au jour de
   l'atelier ; statut actuel mis en avant dans le volet ; « PIX » dans les
   supports de la fiche bilan.
+- **Avis par atelier, 06/10 (validé, sans annonce)** : colonne Partenaire
+  (orienteur) ; Rythme / À l'aise / Refaire seul en détail (« 2 adapté · 2 trop
+  rapide »), pas en « x/n » ; export CSV (« ; », une colonne par réponse,
+  remarques comprises — ⚠️ le fichier sort de la purge à 24 mois).
 - **Côté conseillers (04/10)** : Stats = Synthèse et Analyse ; avis par
   atelier, bilans mensuel et trimestriel dans « Mes bilans », limité aux
   ateliers animés ou co-animés, masquable dans Admin → Visibilité. Pas de
@@ -265,6 +269,8 @@ repropose pas sans fait nouveau.
 
 **Proposées, en attente**
 - 04/10/2026 : **rappel du matin pour une fiche bilan vide** sur un atelier « Réalisé », comme le rappel existant des ateliers restés « Planifié » — le bilan trimestriel compte les ateliers « sans fiche », rien ne pousse à la remplir.
+
+- 06/10/2026 : **progression début → fin de cycle dans les avis** : mettre côte à côte « À l'aise » et « Refaire seul » de la séance diagnostic et de la dernière séance d'un même cycle — le 05/10 (Fumel, diagnostic) donne 1/5 sur les deux, point de départ que rien ne compare aujourd'hui.
 
 **Retenues et livrées**
 - 04/10/2026 — fiche bilan et avis dans le bilan mensuel de la superviseure — en production le 04/10 (`27a9b9c`), en chiffres seulement ; registres v1.4 (T4).
