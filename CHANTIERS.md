@@ -11,8 +11,10 @@ parité, livraisons des 01-06/10 (durée, AM/PM, Planning, réimport Outlook,
 fiche bilan, avis par QR, bilans, « Mes bilans », conflits à l'heure près,
 pistes livrées) et décisions déjà verrouillées par les tests retirés —
 `git log -p CHANTIERS.md`. Contradiction d'une proposition par une autre
-session : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
-06/10/2026**.
+session : `AGORA.md` (section 8 du `CLAUDE.md`) — **AG-023 ouvert** (mot de
+passe provisoire et ancien mot de passe, audit Codex n° 2 et 6) : réponse
+« amendé » de la session B le 06/10, **choix de l'utilisateur attendu** entre
+(1) seul et (1)+(2)+(3).
 
 ---
 
@@ -40,7 +42,9 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin.
   restauration complète (une session volée effacerait tout).
 - Sécurité : jeton exigé en lecture, dans le corps POST (AG-011), annulé à la
   déconnexion ; adresses mail rendues aux seuls admin/superviseur ; aucune
-  ressource externe (`vendor/`, RGPD-17 en CI) ; HTTPS forcé ; 2FA GitHub et
+  script ni feuille de style externe (`vendor/`,
+  RGPD-17 en CI) ; deux services appelés par le navigateur des agents, API Géo
+  de l'État et fonds de carte OSM France (registres V0.4, 06/10) ; HTTPS forcé ; 2FA GitHub et
   Alwaysdata ; journal 12 mois.
 - **Analyse automatique du code (depuis le 06/10/2026), NEWGEN et NextStep** :
   CodeQL (« Default »), `semgrep.yml` (non bloquant), Dependabot, secret
