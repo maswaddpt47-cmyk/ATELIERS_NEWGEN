@@ -88,6 +88,13 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 **Actions de l'utilisateur**
 
+0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
+   dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
+   remettre : note avant/après V0.1 et registres V0.2. Restent à faire
+   avant : mail de validation à la DPO (écart n° 7), premier jet du tableau
+   de gestion pour les Archives départementales (écart n° 9), vérifier les
+   deux « ⚠️ » du document (compte transférable, alerte d'intrusion).
+
 1. **Écarts RGPD à porter au DPO** (mail pas encore envoyé au 02/10) : compte
    Alwaysdata personnel sans DPA, durée de conservation des ateliers non
    fixée, mention d'information des agents, procédure de sortie ; **avis des
