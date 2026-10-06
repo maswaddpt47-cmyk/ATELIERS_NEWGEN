@@ -98,6 +98,9 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
     }
     $session = api_session($db, $jeton);
     if ($session === null) return ['ok' => false, 'error' => 'Non autorisé : jeton manquant ou expiré', 'auth' => true];
+    // Empreinte de la session en cours : un changement de mot de passe la
+    // garde ouverte et ferme les autres (api_apres_changement_mdp).
+    $session['jeton_hash'] = hash('sha256', $jeton);
     // Corbeille (02/10/2026) : ouverte aux conseillers quand l'Admin l'a rendue
     // visible sur Index (Admin → Visibilité) ; fermée sinon, comme avant.
     $corbeilleOuverte = in_array($action, ['getCorbeille', 'restaurerCorbeille'], true) && api_corbeille_ouverte($db);
