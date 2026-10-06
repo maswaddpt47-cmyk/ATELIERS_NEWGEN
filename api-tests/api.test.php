@@ -458,6 +458,9 @@ $rp = appel(['action' => 'avisParAtelier'], $T + ['du' => $debut, 'au' => $auj])
 $par = array_column($rp['ateliers'] ?? [], null, 'atelier_id');
 verifier(count($par) === 2 && $par['av_1']['n'] === 1 && $par['av_1']['attentes'] == 5 && $par['av_1']['aise_oui'] === 1 && $par['av_1']['remarques'] === ['Merci']
     && $par['av_vieux']['papier'] === 1 && $par['av_vieux']['remarques'] === [], 'récapitulatif des avis par atelier, tous statuts — ' . json_encode($rp));
+verifier(($par['av_1']['detail']['rythme'] ?? null) === ['Trop lent' => 0, 'Adapté' => 1, 'Trop rapide' => 0]
+    && $par['av_1']['detail']['autonomie']['Avec de l\'aide'] === 1 && array_sum($par['av_vieux']['detail']['aise']) === 0,
+    'récapitulatif par atelier : détail de chaque réponse à choix, non-réponses écartées');
 // Avis réservés à l'animateur et au co-animateur (04/10/2026) ; Admin : tout.
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_autre', 'date' => $auj, 'thematique' => 'X', 'conseiller' => 'Conseiller Test'])]);
 $ja = appel(['action' => 'jetonAvis'], $A + ['_id' => 'av_autre']);

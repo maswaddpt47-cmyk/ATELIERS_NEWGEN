@@ -264,6 +264,18 @@ function action_avis_par_atelier(PDO $db, array $p, array $session): array
     $r->execute(array_merge([$du, $au], $fp));
     $rem = [];
     foreach ($r->fetchAll(PDO::FETCH_ASSOC) as $l) $rem[$l['atelier_id']][] = $l['remarque'];
+    // Détail des réponses à choix (06/10/2026) : combien de « Trop lent »,
+    // « Un peu », « Avec de l'aide »… et pas seulement le nombre de « Oui ».
+    $d = $db->prepare("SELECT v.atelier_id, v.rythme, v.aise, v.autonomie FROM avis v JOIN ateliers a ON a.id = v.atelier_id
+                       WHERE a.date BETWEEN ? AND ?$f");
+    $d->execute(array_merge([$du, $au], $fp));
+    $rep = [];
+    foreach ($d->fetchAll(PDO::FETCH_ASSOC) as $l) {
+        foreach (['rythme', 'aise', 'autonomie'] as $q) {
+            $rep[$l['atelier_id']][$q] ??= array_fill_keys(AVIS_CHOIX[$q], 0);
+            if (isset($rep[$l['atelier_id']][$q][$l[$q] ?? ''])) $rep[$l['atelier_id']][$q][$l[$q]]++;
+        }
+    }
     $moy = fn($v) => $v !== null ? round((float) $v, 1) : null;
     return ['ok' => true, 'ateliers' => array_map(fn($l) => [
         'atelier_id' => $l['atelier_id'], 'n' => (int) $l['n'], 'papier' => (int) $l['papier'],
@@ -272,6 +284,7 @@ function action_avis_par_atelier(PDO $db, array $p, array $session): array
         'aise_oui' => (int) $l['aise_oui'], 'aise_n' => (int) $l['aise_n'],
         'autonomie_oui' => (int) $l['autonomie_oui'], 'autonomie_n' => (int) $l['autonomie_n'],
         'remarques' => $rem[$l['atelier_id']] ?? [],
+        'detail' => $rep[$l['atelier_id']] ?? [],
     ], $s->fetchAll(PDO::FETCH_ASSOC))];
 }
 
