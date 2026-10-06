@@ -236,6 +236,9 @@ function api_valider_atelier(array $d, ?string &$err): ?array
     $id = trim((string) ($d['_id'] ?? ''));
     if ($id === '') $id = 'entry_' . (int) (microtime(true) * 1000) . '_' . random_int(0, 9999);
     if (mb_strlen($id) > 64) { $err = '_id trop long'; return null; }
+    // Retour à la ligne refusé : l'_id devient l'UID de l'export agenda, un
+    // CR/LF y créerait un faux événement (audit Codex du 06/10/2026, n° 14).
+    if (preg_match('/[\x00-\x1F\x7F]/', $id)) { $err = '_id invalide'; return null; }
 
     $l = ['id' => $id];
     foreach (IMPORT_COLONNES_ATELIER as $cle => [$type, $max]) {
@@ -454,7 +457,7 @@ function action_reset_password(PDO $db, array $p): array
     $u = $db->prepare('UPDATE comptes SET hash = ?, doit_changer = 1 WHERE conseiller = ?');
     $u->execute([password_hash(hash('sha256', $mdp), PASSWORD_DEFAULT), $nom]);
     if ($u->rowCount() === 0) return ['ok' => false, 'error' => 'Conseiller introuvable'];
-    $db->prepare('DELETE FROM sessions WHERE conseiller = ?')->execute([$nom]);
+    api_apres_changement_mdp($db, $nom, null);
     $db->prepare('DELETE FROM tentatives WHERE conseiller = ?')->execute([$nom]);
     return ['ok' => true, 'newPassword' => $mdp];
 }
@@ -478,16 +481,49 @@ function action_set_password(PDO $db, array $p, array $session): array
         if ($hash !== false) api_echec_mdp($db, $nom, '', 'admin');
         return ['ok' => false, 'error' => 'Mot de passe actuel incorrect'];
     }
-    return api_changer_mdp($db, $nom, (string) ($p['password'] ?? ''));
+    $garder = $nom === ($session['conseiller'] ?? '') ? ($session['jeton_hash'] ?? null) : null;
+    return api_changer_mdp($db, $nom, (string) ($p['password'] ?? ''), $garder);
 }
 
-// Conseiller : change SON mot de passe — toujours celui du jeton.
+// Conseiller : change SON mot de passe — toujours celui du jeton. Le mot de
+// passe actuel est exigé, sauf pour quitter un mot de passe provisoire
+// (doit_changer = 1) : sans lui, une session restée ouverte suffisait à
+// prendre le compte (audit Codex du 06/10/2026, n° 2 ; AG-023, option 1).
+// Un échec compte comme une connexion ratée.
 function action_self_set_password(PDO $db, array $p, array $session): array
 {
-    return api_changer_mdp($db, $session['conseiller'], (string) ($p['password'] ?? ''));
+    $nom = (string) $session['conseiller'];
+    $s = $db->prepare('SELECT hash, doit_changer FROM comptes WHERE conseiller = ?');
+    $s->execute([$nom]);
+    $c = $s->fetch(PDO::FETCH_ASSOC);
+    if (!$c) return ['ok' => false, 'error' => 'Conseiller introuvable'];
+    if ((int) $c['doit_changer'] !== 1) {
+        $bloque = api_blocage($db, $nom);
+        if ($bloque !== null) return ['ok' => false, 'error' => $bloque];
+        $actuel = trim((string) ($p['currentPwd'] ?? ''));
+        if ($actuel === '') return ['ok' => false, 'error' => 'Mot de passe actuel requis'];
+        if ($c['hash'] === null || !password_verify(hash('sha256', $actuel), $c['hash'])) {
+            api_echec_mdp($db, $nom, '', '');
+            return ['ok' => false, 'error' => 'Mot de passe actuel incorrect'];
+        }
+    }
+    return api_changer_mdp($db, $session['conseiller'], (string) ($p['password'] ?? ''), $session['jeton_hash'] ?? null);
 }
 
-function api_changer_mdp(PDO $db, string $nom, string $mdp): array
+// Après tout changement de mot de passe (audit Codex du 06/10/2026, n° 3 et
+// 5) : les liens « mot de passe oublié » en cours tombent, et les autres
+// connexions du compte avec — sinon un jeton ou un lien copié survivait au
+// changement. $garder : empreinte de la session qui fait le changement, qui
+// reste ouverte (null : toutes tombent).
+function api_apres_changement_mdp(PDO $db, string $nom, ?string $garder): void
+{
+    require_once __DIR__ . '/reinit.php';
+    reinit_schema($db);
+    $db->prepare('UPDATE reinitialisations SET utilise = 1 WHERE conseiller = ?')->execute([$nom]);
+    $db->prepare('DELETE FROM sessions WHERE conseiller = ? AND jeton_hash <> ?')->execute([$nom, (string) $garder]);
+}
+
+function api_changer_mdp(PDO $db, string $nom, string $mdp, ?string $garder = null): array
 {
     $mdp = trim($mdp);
     if ($nom === '' || $mdp === '') return ['ok' => false, 'error' => 'Paramètres manquants'];
@@ -502,6 +538,7 @@ function api_changer_mdp(PDO $db, string $nom, string $mdp): array
         $s->execute([$nom]);
         if (!$s->fetchColumn()) return ['ok' => false, 'error' => 'Conseiller introuvable'];
     }
+    api_apres_changement_mdp($db, $nom, $garder);
     return ['ok' => true];
 }
 

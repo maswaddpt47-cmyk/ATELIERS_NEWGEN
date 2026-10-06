@@ -202,6 +202,8 @@ verifier($r === ['ok' => true, '_id' => 'entry_1'] && $nb() === $avant, 'mise à
 verifier($e['statut'] === 'Réalisé' && $e['presents'] === 5 && $e['_n'] === 2 && $e['materiel'] === ['Ordinateur', 'Tablette'], 'mise à jour : champs, numéro conservé, matériel remplacé');
 $r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'entry_x', 'date' => '24/09/2026'])]);
 verifier($r['ok'] === false && str_contains($r['error'], 'date') && $lire('entry_x') === null, 'date invalide : refusée, rien écrit');
+$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => "x\r\nEND:VEVENT", 'date' => '2026-11-02'])]);
+verifier($r === ['ok' => false, 'error' => '_id invalide'], '_id avec retour à la ligne : refusé (faux événement dans l\'export agenda)');
 
 $r = appel(['action' => 'saveMany'], $T + ['entries' => json_encode([['_id' => 'lot_1', 'date' => '2026-11-02'], ['_id' => 'lot_2', 'date' => 'demain']])]);
 verifier($r['ok'] === false && str_contains($r['error'], '"idx":1') && $lire('lot_1') !== null, 'saveMany : erreur rapportée par position, entrée valide écrite');
@@ -324,11 +326,29 @@ verifier(appel(['action' => 'selfSetPassword'], ['token' => $nr['token'], 'passw
 verifier(appel(['action' => 'selfSetPassword'], ['token' => $nr['token'], 'password' => 'Un-Mot-De-Passe-7'])['ok'] === true, 'selfSetPassword');
 $nr = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => 'Un-Mot-De-Passe-7']);
 verifier($nr['ok'] === true && !isset($nr['doit_changer']), 'nouveau mot de passe : plus de changement exigé');
+// Audit Codex du 06/10/2026 (n° 3 et 5) : changer de mot de passe ferme les
+// autres connexions et les liens « mot de passe oublié » en cours, pas la sienne.
+$nr2 = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => 'Un-Mot-De-Passe-7']);
+require_once __DIR__ . '/../api/lib/reinit.php';
+reinit_schema($db);
+$db->prepare('INSERT INTO reinitialisations (jeton_hash, conseiller, cree, expire) VALUES (?, ?, NOW(), NOW() + INTERVAL 30 MINUTE)')->execute([hash('sha256', 'lien-copie'), 'Nouvelle Recrue']);
+// AG-023 (option 1) : hors mot de passe provisoire, l'actuel est exigé.
+verifier(appel(['action' => 'selfSetPassword'], ['token' => $nr2['token'], 'password' => 'Un-Mot-De-Passe-7'])['error'] === 'Mot de passe actuel requis'
+    && appel(['action' => 'selfSetPassword'], ['token' => $nr2['token'], 'currentPwd' => 'Pas-Le-Bon-1', 'password' => 'Un-Mot-De-Passe-7'])['error'] === 'Mot de passe actuel incorrect',
+    'selfSetPassword hors provisoire : mot de passe actuel exigé, faux refusé');
+$db->exec("DELETE FROM tentatives");
+appel(['action' => 'selfSetPassword'], ['token' => $nr2['token'], 'currentPwd' => 'Un-Mot-De-Passe-7', 'password' => 'Un-Mot-De-Passe-7']);
+verifier((appel(['action' => 'getAll'], ['token' => $nr2['token']])['ok'] ?? false) === true
+    && (appel(['action' => 'getAll'], ['token' => $nr['token']])['auth'] ?? false) === true
+    && (int) $db->query("SELECT utilise FROM reinitialisations WHERE conseiller = 'Nouvelle Recrue'")->fetchColumn() === 1,
+    'changement de mot de passe : sa connexion reste, les autres et les liens en cours tombent');
 verifier(appel(['action' => 'setPassword'], $A + ['conseiller' => 'Nouvelle Recrue', 'password' => 'Autre-Mot-De-Passe-8'])['ok'] === false, 'setPassword sans mot de passe actuel : refusé');
 verifier(appel(['action' => 'setPassword'], $A + ['conseiller' => 'Nouvelle Recrue', 'currentPwd' => 'Pas-Le-Bon-1', 'password' => 'Autre-Mot-De-Passe-8'])['error'] === 'Mot de passe actuel incorrect', 'setPassword : mot de passe actuel faux refusé');
 verifier(appel(['action' => 'setPassword', 'currentPwd' => 'Un-Mot-De-Passe-7'], $A + ['conseiller' => 'Nouvelle Recrue', 'password' => 'Autre-Mot-De-Passe-8'])['ok'] === false, 'setPassword : mot de passe actuel dans l\'URL ignoré');
 verifier(appel(['action' => 'setPassword'], $A + ['conseiller' => 'Nouvelle Recrue', 'currentPwd' => 'Un-Mot-De-Passe-7', 'password' => 'Autre-Mot-De-Passe-8'])['ok'] === true, 'setPassword avec mot de passe actuel');
 $db->exec("DELETE FROM tentatives");
+// Nouvelle connexion : setPassword vient de fermer les précédentes.
+$nr = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => 'Autre-Mot-De-Passe-8']);
 appel(['action' => 'saveCompte'], $A + ['conseiller' => 'Nouvelle Recrue', 'actif' => 'NON']);
 verifier((appel(['action' => 'getAll'], ['token' => $nr['token']])['ok'] ?? false) === true, 'interrupteur désactivé : la connexion Index continue');
 appel(['action' => 'saveCompte'], $A + ['conseiller' => 'Nouvelle Recrue', 'role' => 'superviseur']);
@@ -527,9 +547,9 @@ $r3 = appel(['action' => 'demanderReinit'], ['conseiller' => 'Personne Inconnue'
 verifier($r1 === $r2 && $r2 === $r3 && $r1['ok'] === true, '[RGPD-10] réponse identique (adresse, sans adresse, inconnu) : rien ne se devine');
 $m = $mails();
 verifier(count($m) === 1 && str_contains($m[0], 'A: nouveau.venu@example.org'), 'un seul mail, à la bonne adresse');
-preg_match('/[?&]reinit=([0-9a-f]{64})/', $m[0] ?? '', $mm);
+preg_match('/#reinit=([0-9a-f]{64})/', $m[0] ?? '', $mm);
 $jetonReinit = $mm[1] ?? '';
-verifier($jetonReinit !== '' && str_contains($m[0], $RETOUR . '&reinit='), 'lien vers la page de départ, ?backend=php conservé');
+verifier($jetonReinit !== '' && str_contains($m[0], $RETOUR . '#reinit='), 'lien vers la page de départ, ?backend=php conservé, jeton après le # (hors journaux de GitHub Pages)');
 verifier((int) $db->query("SELECT COUNT(*) FROM reinitialisations WHERE jeton_hash = '$jetonReinit'")->fetchColumn() === 0, '[RGPD-06] jeton jamais stocké en clair');
 $avant = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'Un-Autre-Mdp-99', 'source' => 'index.html']);
 verifier(appel(['action' => 'reinitMotDePasse'], ['jeton' => $jetonReinit, 'password' => 'court'])['error'] === API_MDP_POLITIQUE, 'mot de passe trop faible refusé, lien pas consommé');

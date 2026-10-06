@@ -1197,7 +1197,9 @@ const COMMUNES_GPS = {
   'TOURNON D AGENAIS':{lat:44.3833,lng:0.9667},
   'VILLENEUVE SUR LOT':{lat:44.4089,lng:0.7053},
 };
-const CONSEILLERS_DEFAULT = ['Cynthia Pineau','Corentin Tual','Michel Aswad','Eva Capelle'];
+// Vide : la liste vient de l'API (getComptes, getAll). Plus de noms d'agents
+// dans le code public (audit Codex du 06/10/2026).
+const CONSEILLERS_DEFAULT = [];
 const STATUTS_DEFAULT = ['Planifié','Réalisé','Annulé','Non réalisé','Reporté'];
 const PUBLICS_DEFAULT = [
   'Tous publics',
@@ -1227,7 +1229,9 @@ let COMMUNES_47_CACHE = null;
 
 // ── Utilitaires ────────────────────────────────────────────
 const NAV_DEFAULT_COLOR = '#197d89';
-let CONSEILLER_COLORS = {'Cynthia Pineau':'#7C3AED','Corentin Tual':'#2563EB','Michel Aswad':'#059669','Eva Capelle':'#DB2777'};
+// Vide : les couleurs viennent de la configuration (Admin → Couleurs,
+// enregistrées le 06/10/2026). Plus de noms d'agents dans le code public.
+let CONSEILLER_COLORS = {};
 function conseillerColor(c){return(c&&CONSEILLER_COLORS[c])||'#6B7280';}
 function applyColors(colors){if(colors&&typeof colors==='object')Object.assign(CONSEILLER_COLORS,colors);}
 
@@ -1269,14 +1273,16 @@ function pwdPolicyOk(pwd){
 
 // ── Mot de passe oublié (AG-013, mode API seulement) ───────────────────────
 // Le conseiller demande un lien par mail ; le lien ramène sur cette même page
-// avec ?reinit=<jeton>, qui affiche le formulaire « nouveau mot de passe ».
+// avec #reinit=<jeton> (après le # : jamais envoyé à GitHub Pages ni dans ses
+// journaux ; ?reinit= encore lu pour les liens envoyés avant le 06/10/2026),
+// qui affiche le formulaire « nouveau mot de passe ».
 // Le jeton part ensuite dans le corps POST (requeteServeur), jamais dans l'URL
 // d'un appel, et il est retiré de la barre d'adresse une fois utilisé.
 window.jetonReinitUrl=function(){
-  try{const j=new URLSearchParams(window.location.search).get('reinit');return /^[0-9a-f]{64}$/.test(j||'')?j:null;}catch(_){return null;}
+  try{const j=new URLSearchParams(window.location.hash.slice(1)).get('reinit')||new URLSearchParams(window.location.search).get('reinit');return /^[0-9a-f]{64}$/.test(j||'')?j:null;}catch(_){return null;}
 };
 function oterReinitUrl(){
-  try{const u=new URL(window.location.href);u.searchParams.delete('reinit');window.history.replaceState(null,'',u.pathname+u.search+u.hash);}catch(_){}
+  try{const u=new URL(window.location.href);u.searchParams.delete('reinit');const h=new URLSearchParams(u.hash.slice(1));h.delete('reinit');const hs=h.toString();window.history.replaceState(null,'',u.pathname+u.search+(hs?'#'+hs:''));}catch(_){}
 }
 const REINIT_CHAMP={width:'100%',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:8,fontSize:14,outline:'none',boxSizing:'border-box',background:'var(--surface)',color:'var(--text)',marginBottom:10};
 const REINIT_BTN={width:'100%',padding:'11px',background:'#1e3a8a',color:'#fff',border:'none',borderRadius:8,fontSize:14,fontWeight:700,cursor:'pointer'};
@@ -1382,6 +1388,9 @@ window.authToken = {
       try{ fetch(`${API_PHP_URL}?action=logout`, {method:'POST', keepalive:true, headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'token='+encodeURIComponent(t)}).catch(()=>{}); }catch(_){}
     }
     sessionStorage.removeItem('gs_token'); sessionStorage.removeItem('gs_role'); sessionStorage.removeItem('gs_conseiller'); sessionStorage.removeItem('gs_moi');
+    // Données déjà chargées oubliées aussi : sinon elles restaient lisibles
+    // dans l'onglet après la déconnexion (audit Codex du 06/10/2026).
+    try{ window.invalidateFetchAll&&window.invalidateFetchAll(); window.dispatchEvent(new Event('ateliers:deconnexion')); }catch(_){}
   },
   getRole()   { return sessionStorage.getItem('gs_role') || 'user'; },
   setRole(r)  { sessionStorage.setItem('gs_role', r); },
@@ -6042,7 +6051,9 @@ function VueAvisAteliers({entries,moi}){
       .concat(...Object.keys(DETAIL).map(q=>DETAIL[q].map(([v])=>({rythme:'Rythme',aise:'À l\'aise',autonomie:'Refaire seul'})[q]+' : '+v)),['Remarques']);
     const ligne=l=>[fmtDate(l.e.date),l.e.thematique||'',l.e.commune||'',l.e.orienteur||'',l.e.conseiller||'',l.n,l.papier||0,nb(l.attentes),nb(l.clarte)]
       .concat(...Object.keys(DETAIL).map(q=>DETAIL[q].map(([v])=>(l.detail&&l.detail[q]&&l.detail[q][v])||0)),[l.remarques.join(' | ')]);
-    const champCsv=c=>{const t=String(c);return /[;"\n\r]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;};
+    // Une remarque anonyme qui commence par = + - @ serait lue comme une formule
+    // par le tableur : apostrophe devant (audit Codex du 06/10/2026, n° 11).
+    const champCsv=c=>{let t=String(c);if(/^[=+\-@\t\r]/.test(t))t="'"+t;return /[;"\n\r]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;};
     const csv='\ufeff'+[tete].concat(lignes.map(ligne)).map(r=>r.map(champCsv).join(';')).join('\r\n');
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
     a.download=`avis-par-atelier_${du}_${au}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);

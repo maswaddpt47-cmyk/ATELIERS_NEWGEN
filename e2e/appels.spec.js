@@ -321,7 +321,8 @@ test("index — déconnexion après 30 min d'inactivité, sauf en saisie", async
 });
 
 // 7. Mot de passe oublié (AG-013) : lien sur l'écran de connexion, puis
-//    formulaire ouvert par le lien reçu par mail (?reinit=…).
+//    formulaire ouvert par le lien reçu par mail (#reinit=…, après le # depuis
+//    le 06/10/2026 : hors des journaux de GitHub Pages).
 test('api — mot de passe oublié et lien reçu', async ({ browser, baseURL }) => {
     const p = await preparerApi(browser);
     await p.page.goto(`${baseURL}/index.html?backend=php`, { waitUntil:'networkidle', timeout:20000 });
@@ -339,7 +340,10 @@ test('api — mot de passe oublié et lien reçu', async ({ browser, baseURL }) 
     verifier('api — mot de passe oublié : message affiché',
       await p.page.getByText(/un lien vient d/).isVisible().catch(() => false));
     const jeton = 'c'.repeat(64);
-    await p.page.goto(`${baseURL}/index.html?backend=php&reinit=${jeton}`, { waitUntil:'networkidle', timeout:20000 });
+    // about:blank d'abord : un lien qui ne diffère que par le # ne recharge pas
+    // la page, alors qu'un lien ouvert depuis un mail la charge.
+    await p.page.goto('about:blank');
+    await p.page.goto(`${baseURL}/index.html?backend=php#reinit=${jeton}`, { waitUntil:'networkidle', timeout:20000 });
     await p.page.getByPlaceholder('Nouveau mot de passe').fill('Nouveau-Mdp-2026!');
     await p.page.getByPlaceholder('Confirmer').fill('Nouveau-Mdp-2026!');
     await p.page.getByRole('button', { name:/Valider/ }).click();

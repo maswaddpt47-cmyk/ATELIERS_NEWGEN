@@ -116,8 +116,9 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 | AG-020 | fiche bilan d'atelier — amendé : colonne `fiche_bilan` (pas `bilan`, déjà le bilan mensuel), non recopiée à la duplication, fiche inchangée non revalidée, jamais effacée au changement de statut | 04/10/2026 |
 | AG-021 | avis des stagiaires par QR code — amendé : jeton dans le fragment `#`, date sans heure, avis gardés en corbeille, saisie papier par l'équipe (`source`), anti-doublon par onglet, « aucun nom » ; ouverture le jour de l'atelier (utilisateur) | 04/10/2026 |
 | AG-022 | conflits de matériel à l'heure près — sans réponse, réalisé après test de l'utilisateur au bac à sable : ordinateurs sur [début, fin + 30 min), Classe mobile sur les demi-journées touchées, ateliers sans horaire sans marge | 04/10/2026 |
+| AG-023 | ancien mot de passe exigé, provisoire imposé par l'API — amendé (session B : Index envoie le mot de passe saisi, sinon un compte resté sur cd47+prénom était bloqué ; jointure plutôt que colonne ; Admin avant API ; refus sans `auth:true`) ; **option 1 seule** retenue par l'utilisateur (`132e717`), (2) et (3) non faits | 06/10/2026 |
 
-**Au 04/10/2026, sur 22 blocs (AG-001 à AG-022) : 17 amendés, 1 confirmé (AG-017), 0 contredit, 4 clos sans réponse** (AG-002, AG-010, AG-013, AG-022). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
+**Au 06/10/2026, sur 23 blocs (AG-001 à AG-023) : 18 amendés, 1 confirmé (AG-017), 0 contredit, 4 clos sans réponse** (AG-002, AG-010, AG-013, AG-022). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
 Douze « amendé » d'affilée ne sont pas un bilan flatteur, c'est un signal — voir
 « Sincérité » plus haut. Tenir ce total à jour à chaque bloc qui sort.
 **Vérifié le 30/09/2026** sur l'historique git : les 12 « amendé » ont chacun

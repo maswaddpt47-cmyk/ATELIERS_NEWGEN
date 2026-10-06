@@ -815,6 +815,7 @@ function ReinitialiserMotDePasseCollegue({conseillers}){
 
 // ── VueLogs : audit des connexions (admin seulement) ─────────
 let logsCache=null; // {data:[...], ts:number} — survit aux démontages du composant
+window.addEventListener('ateliers:deconnexion',()=>{ logsCache=null; });   // pas lisible après déconnexion
 const LOGS_COLONNES=[
   {label:'Horodatage',key:'timestamp'},
   {label:'Action',key:'action'},

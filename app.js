@@ -162,7 +162,9 @@ function VueLoginIndex({conseillers,onSuccess}){
     if(newPwd!==newPwd2){setNewPwdErr('Les mots de passe ne correspondent pas');return;}
     setChangingPwd(true);setNewPwdErr('');
     try{
-      const res2=await apiFetch('selfSetPassword',{password:newPwd,token:pendingRes.token});
+      // currentPwd : le mot de passe saisi à la connexion, exigé par l'API pour
+      // tout changement hors mot de passe provisoire (AG-023, 06/10/2026).
+      const res2=await apiFetch('selfSetPassword',{password:newPwd,currentPwd:pwd,token:pendingRes.token});
       if(res2&&res2.ok){
         onSuccess(conseiller,pendingRes);
       }else{
@@ -335,7 +337,9 @@ function App(){
       showToast('⏱️ Déconnecté après 30 min d’inactivité.',false);
       return true;
     };
-    toucher();
+    // Page rechargée : l'ancienne activité est regardée avant d'être
+    // renouvelée (audit Codex du 06/10/2026). La connexion la pose (onSuccess).
+    if(!expirer()) toucher();
     const minuteur=setInterval(expirer,60*1000);
     const auRetour=()=>{ if(!expirer()) toucher(); };
     const activite=()=>{ if(!expirer()) toucher(); };
@@ -549,7 +553,7 @@ function App(){
   if(!authed){
     return CE(VueLoginIndex,{
       conseillers:nomsConnexion.length?nomsConnexion:lists.conseillers,
-      onSuccess:(nom,res)=>{ window.onLoginSuccess(nom,res); setAuthed(true); handleChoixConseiller(nom, true); }
+      onSuccess:(nom,res)=>{ try{ localStorage.setItem(lsKey('idx_derniere_activite'),String(Date.now())); }catch(_){} window.onLoginSuccess(nom,res); setAuthed(true); handleChoixConseiller(nom, true); }
     });
   }
 

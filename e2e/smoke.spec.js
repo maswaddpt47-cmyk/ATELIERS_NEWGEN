@@ -21,7 +21,7 @@ const MOCK_RESPONSE = JSON.stringify({
   },
   config: {},
   role: 'admin',
-  comptes: [],
+  comptes: [{ conseiller: 'Alice Martin', role: 'admin', actif: 'OUI' }],   // plus de noms par défaut dans le code (06/10/2026)
   visibility: {
     saisie:true, historique:true, dashboard:true,
     carte:true,  bingo:true,      calendrier:true,
