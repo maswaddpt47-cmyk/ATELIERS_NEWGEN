@@ -485,9 +485,28 @@ function action_set_password(PDO $db, array $p, array $session): array
     return api_changer_mdp($db, $nom, (string) ($p['password'] ?? ''), $garder);
 }
 
-// Conseiller : change SON mot de passe — toujours celui du jeton.
+// Conseiller : change SON mot de passe — toujours celui du jeton. Le mot de
+// passe actuel est exigé, sauf pour quitter un mot de passe provisoire
+// (doit_changer = 1) : sans lui, une session restée ouverte suffisait à
+// prendre le compte (audit Codex du 06/10/2026, n° 2 ; AG-023, option 1).
+// Un échec compte comme une connexion ratée.
 function action_self_set_password(PDO $db, array $p, array $session): array
 {
+    $nom = (string) $session['conseiller'];
+    $s = $db->prepare('SELECT hash, doit_changer FROM comptes WHERE conseiller = ?');
+    $s->execute([$nom]);
+    $c = $s->fetch(PDO::FETCH_ASSOC);
+    if (!$c) return ['ok' => false, 'error' => 'Conseiller introuvable'];
+    if ((int) $c['doit_changer'] !== 1) {
+        $bloque = api_blocage($db, $nom);
+        if ($bloque !== null) return ['ok' => false, 'error' => $bloque];
+        $actuel = trim((string) ($p['currentPwd'] ?? ''));
+        if ($actuel === '') return ['ok' => false, 'error' => 'Mot de passe actuel requis'];
+        if ($c['hash'] === null || !password_verify(hash('sha256', $actuel), $c['hash'])) {
+            api_echec_mdp($db, $nom, '', '');
+            return ['ok' => false, 'error' => 'Mot de passe actuel incorrect'];
+        }
+    }
     return api_changer_mdp($db, $session['conseiller'], (string) ($p['password'] ?? ''), $session['jeton_hash'] ?? null);
 }
 

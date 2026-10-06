@@ -332,7 +332,12 @@ $nr2 = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 
 require_once __DIR__ . '/../api/lib/reinit.php';
 reinit_schema($db);
 $db->prepare('INSERT INTO reinitialisations (jeton_hash, conseiller, cree, expire) VALUES (?, ?, NOW(), NOW() + INTERVAL 30 MINUTE)')->execute([hash('sha256', 'lien-copie'), 'Nouvelle Recrue']);
-appel(['action' => 'selfSetPassword'], ['token' => $nr2['token'], 'password' => 'Un-Mot-De-Passe-7']);
+// AG-023 (option 1) : hors mot de passe provisoire, l'actuel est exigé.
+verifier(appel(['action' => 'selfSetPassword'], ['token' => $nr2['token'], 'password' => 'Un-Mot-De-Passe-7'])['error'] === 'Mot de passe actuel requis'
+    && appel(['action' => 'selfSetPassword'], ['token' => $nr2['token'], 'currentPwd' => 'Pas-Le-Bon-1', 'password' => 'Un-Mot-De-Passe-7'])['error'] === 'Mot de passe actuel incorrect',
+    'selfSetPassword hors provisoire : mot de passe actuel exigé, faux refusé');
+$db->exec("DELETE FROM tentatives");
+appel(['action' => 'selfSetPassword'], ['token' => $nr2['token'], 'currentPwd' => 'Un-Mot-De-Passe-7', 'password' => 'Un-Mot-De-Passe-7']);
 verifier((appel(['action' => 'getAll'], ['token' => $nr2['token']])['ok'] ?? false) === true
     && (appel(['action' => 'getAll'], ['token' => $nr['token']])['auth'] ?? false) === true
     && (int) $db->query("SELECT utilise FROM reinitialisations WHERE conseiller = 'Nouvelle Recrue'")->fetchColumn() === 1,
