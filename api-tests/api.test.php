@@ -202,6 +202,8 @@ verifier($r === ['ok' => true, '_id' => 'entry_1'] && $nb() === $avant, 'mise à
 verifier($e['statut'] === 'Réalisé' && $e['presents'] === 5 && $e['_n'] === 2 && $e['materiel'] === ['Ordinateur', 'Tablette'], 'mise à jour : champs, numéro conservé, matériel remplacé');
 $r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'entry_x', 'date' => '24/09/2026'])]);
 verifier($r['ok'] === false && str_contains($r['error'], 'date') && $lire('entry_x') === null, 'date invalide : refusée, rien écrit');
+$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => "x\r\nEND:VEVENT", 'date' => '2026-11-02'])]);
+verifier($r === ['ok' => false, 'error' => '_id invalide'], '_id avec retour à la ligne : refusé (faux événement dans l\'export agenda)');
 
 $r = appel(['action' => 'saveMany'], $T + ['entries' => json_encode([['_id' => 'lot_1', 'date' => '2026-11-02'], ['_id' => 'lot_2', 'date' => 'demain']])]);
 verifier($r['ok'] === false && str_contains($r['error'], '"idx":1') && $lire('lot_1') !== null, 'saveMany : erreur rapportée par position, entrée valide écrite');

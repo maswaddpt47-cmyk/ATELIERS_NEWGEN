@@ -236,6 +236,9 @@ function api_valider_atelier(array $d, ?string &$err): ?array
     $id = trim((string) ($d['_id'] ?? ''));
     if ($id === '') $id = 'entry_' . (int) (microtime(true) * 1000) . '_' . random_int(0, 9999);
     if (mb_strlen($id) > 64) { $err = '_id trop long'; return null; }
+    // Retour à la ligne refusé : l'_id devient l'UID de l'export agenda, un
+    // CR/LF y créerait un faux événement (audit Codex du 06/10/2026, n° 14).
+    if (preg_match('/[\x00-\x1F\x7F]/', $id)) { $err = '_id invalide'; return null; }
 
     $l = ['id' => $id];
     foreach (IMPORT_COLONNES_ATELIER as $cle => [$type, $max]) {
