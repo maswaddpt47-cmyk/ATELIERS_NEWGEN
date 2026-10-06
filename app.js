@@ -15,6 +15,14 @@ var VIEW_META_F = {
   signaler:   {ico:'💬',  label:'Contribuer',     group:'Info'},
 };
 
+
+// Indice de la barre du bas (06/10/2026) : « nav-suite » tant que des onglets
+// restent cachés à droite ; le chevron disparaît en bout de barre.
+function majIndiceNav(el){
+  if(!el||!el.parentNode)return;
+  el.parentNode.classList.toggle('nav-suite',el.scrollWidth-el.clientWidth-el.scrollLeft>4);
+}
+
 function MaintenanceScreen({msg}){
   return CE('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'var(--bg)',fontFamily:"'Segoe UI',sans-serif",textAlign:'center',gap:12}},
     CE('div',{style:{background:'var(--surface)',borderRadius:14,padding:'40px 48px',boxShadow:'var(--shadow-panel)',maxWidth:420,width:'90%'}},
@@ -246,6 +254,9 @@ function VueLoginIndex({conseillers,onSuccess}){
 function App(){
   const[authed,setAuthed]          = React.useState(()=>!!window.authToken.get());
   const[view,setView]              = React.useState('accueil');
+  const navScrollRef=React.useRef(null);
+  React.useEffect(()=>{majIndiceNav(navScrollRef.current);});
+  React.useEffect(()=>{const f=()=>majIndiceNav(navScrollRef.current);window.addEventListener('resize',f);return()=>window.removeEventListener('resize',f);},[]);
   // Date d'ouverture de Gestion ordi depuis l'alerte d'une tuile (05/10/2026),
   // oubliée dès qu'on quitte l'onglet.
   const[dateGestionOrdi,setDateGestionOrdi]=React.useState(null);
@@ -700,7 +711,7 @@ function App(){
 
     // ── Bottom nav scrollable ───────────────────────────────
     CE('nav',{className:'bottom-nav-v2','aria-label':'Navigation principale'},
-      CE('div',{className:'bottom-nav-scroll'},
+      CE('div',{className:'bottom-nav-scroll',ref:navScrollRef,onScroll:e=>majIndiceNav(e.currentTarget)},
         navBtn('saisie',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M12 5v14M5 12h14'})),
           'Nouveau', visibility.saisie),

@@ -493,3 +493,15 @@
   padding: 6px 10px;
   touch-action: manipulation;
 }
+
+/* Indice « la barre continue à droite » (06/10/2026) : chevron sur fond
+   dégradé, affiché tant que des onglets restent cachés à droite (classe
+   nav-suite posée par majIndiceNav). */
+.bottom-nav-v2::after {
+  content: '›'; position: absolute; top: 0; right: 0; bottom: 0; width: 34px;
+  display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;
+  font-size: 24px; font-weight: 700; color: #1e3a8a;
+  background: linear-gradient(to right, rgba(255,255,255,0), var(--nav-fond, #fff) 60%);
+  pointer-events: none; opacity: 0; transition: opacity .2s;
+}
+.bottom-nav-v2.nav-suite::after { opacity: 1; }

@@ -16,12 +16,12 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN app.js:246",
+      "NEWGEN app.js:254",
       "NextStep app.js:253",
-      "NEWGEN admin_app.js:171",
+      "NEWGEN admin_app.js:179",
       "NextStep admin_app.js:171"
     ],
-    "newgen": "fe6a438daa/0de9686baa",
+    "newgen": "d49b87251c/86021d0b43",
     "nextstep": "2154e919e3/4adf235763",
     "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs."
   },
@@ -36,6 +36,18 @@
     "newgen": "debdbdb9fb/debdbdb9fb",
     "nextstep": "fffe36bd67/fffe36bd67",
     "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres)."
+  },
+  "majIndiceNav": {
+    "statut": "voulu",
+    "nature": "absent de NextStep",
+    "pages": "index+admin",
+    "lieux": [
+      "NEWGEN app.js:21",
+      "NEWGEN admin_app.js:12"
+    ],
+    "newgen": "f441c4579f/f441c4579f",
+    "nextstep": "-/-",
+    "note": "Chevron de la barre du bas défilante (06/10/2026) : NextStep n'a pas de barre défilante (menu latéral)."
   },
   "shared.js:IIFE injectCSS": {
     "statut": "voulu",

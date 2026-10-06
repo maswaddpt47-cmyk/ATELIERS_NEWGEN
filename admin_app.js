@@ -6,6 +6,14 @@
 const SESSION_KEY        = lsKey('adm_last_activity');
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
 
+
+// Indice de la barre du bas (06/10/2026) : « nav-suite » tant que des onglets
+// restent cachés à droite ; le chevron disparaît en bout de barre.
+function majIndiceNav(el){
+  if(!el||!el.parentNode)return;
+  el.parentNode.classList.toggle('nav-suite',el.scrollWidth-el.clientWidth-el.scrollLeft>4);
+}
+
 function touchSession(){
   localStorage.setItem(SESSION_KEY, String(Date.now()));
 }
@@ -174,6 +182,9 @@ function App(){
   const[jetonReinit,setJetonReinit]= React.useState(()=>window.jetonReinitUrl());
   const[adminConseiller,setAdminConseiller]= React.useState(()=>localStorage.getItem(lsKey('adm_conseiller'))||'');
   const[view,setView]           = React.useState('historique');
+  const navScrollRef=React.useRef(null);
+  React.useEffect(()=>{majIndiceNav(navScrollRef.current);});
+  React.useEffect(()=>{const f=()=>majIndiceNav(navScrollRef.current);window.addEventListener('resize',f);return()=>window.removeEventListener('resize',f);},[]);
   // Date d'ouverture de Gestion ordi depuis l'alerte d'une tuile (05/10/2026),
   // oubliée dès qu'on quitte l'onglet.
   const[dateGestionOrdi,setDateGestionOrdi]=React.useState(null);
@@ -631,7 +642,7 @@ const LOGS_KEY = lsKey('adm_logs');
 
     // ── Bottom nav admin (scrollable gauche-droite) ───────
     CE('nav',{className:'bottom-nav-v2','aria-label':'Navigation admin'},
-      CE('div',{className:'bottom-nav-scroll'},
+      CE('div',{className:'bottom-nav-scroll',ref:navScrollRef,onScroll:e=>majIndiceNav(e.currentTarget)},
         navBtn('saisie',
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('path',{d:'M12 5v14M5 12h14'})),
           'Nouveau'),
