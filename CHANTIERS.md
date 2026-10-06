@@ -218,18 +218,12 @@ couche d'appel.
   (à défaut d'inscrits) ; plus de bouton « poste partagé » (remplace
   l'amendement C d'AG-021) ; avis d'un atelier réservés à son animateur et
   son co-animateur (filtre API) ; suppression d'un avis par l'Admin seulement.
-- **Gestion ordi et vues, 05/10 (sans annonce)** : frise à une ligne par
-  conseiller, séances d'une même période de prêt fondues en une barre ;
-  `ChoixDate` compact dans frise, Planning, Agenda, Calendrier ; « ⚠️ ordi »
-  clignotant (clic = Gestion ordi au jour de l'atelier) ; « PIX » dans les
-  supports de la fiche bilan.
-- **Barre du bas de NEWGEN, 06/10 (validé, sans annonce)** : chevron « › »
-  sur dégradé tant que des onglets sont cachés à droite (`majIndiceNav`,
-  écart de parité voulu : NextStep a un menu latéral).
-- **Avis par atelier, 06/10 (validé, sans annonce)** : colonne Partenaire
-  (orienteur) ; Rythme / À l'aise / Refaire seul en détail (« 2 adapté · 2 trop
-  rapide »), pas en « x/n » ; export CSV (« ; », une colonne par réponse,
-  remarques comprises — ⚠️ le fichier sort de la purge à 24 mois).
+- **Vues, 05-06/10 (sans annonce)** : frise à une ligne par conseiller ;
+  `ChoixDate` compact ; « ⚠️ ordi » clignotant ; « PIX » dans la fiche bilan ;
+  chevron « › » de la barre du bas de NEWGEN (`majIndiceNav`, écart voulu).
+- **Avis par atelier, 06/10** : colonne Partenaire ; réponses en détail
+  (« 2 adapté · 2 trop rapide ») ; export CSV, remarques comprises (⚠️ hors
+  purge à 24 mois ; formules neutralisées).
 - **Côté conseillers (04/10)** : Stats = Synthèse et Analyse ; avis par
   atelier, bilans mensuel et trimestriel dans « Mes bilans », limité aux
   ateliers animés ou co-animés, masquable dans Admin → Visibilité. Pas de
