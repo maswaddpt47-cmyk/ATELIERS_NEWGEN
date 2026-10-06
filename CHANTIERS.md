@@ -11,10 +11,8 @@ parité, livraisons des 01-06/10 (durée, AM/PM, Planning, réimport Outlook,
 fiche bilan, avis par QR, bilans, « Mes bilans », conflits à l'heure près,
 pistes livrées) et décisions déjà verrouillées par les tests retirés —
 `git log -p CHANTIERS.md`. Contradiction d'une proposition par une autre
-session : `AGORA.md` (section 8 du `CLAUDE.md`) — **AG-023 ouvert** (mot de
-passe provisoire et ancien mot de passe, audit Codex n° 2 et 6) : réponse
-« amendé » de la session B le 06/10, **choix de l'utilisateur attendu** entre
-(1) seul et (1)+(2)+(3).
+session : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
+06/10/2026** (AG-023 tranché ce jour).
 
 ---
 
@@ -187,6 +185,10 @@ couche d'appel.
   après 5 échecs par compte, sans compter l'IP ; SheetJS 0.18.5 gardé (ses
   failles ne jouent qu'à la lecture d'un fichier, l'appli ne fait qu'écrire —
   **rouvrir** si un import `.xlsx` apparaît côté navigateur).
+- **Mot de passe (AG-023, 06/10/2026) : option 1 seule.** L'actuel est exigé
+  pour changer le sien, sauf mot de passe provisoire ; Index l'envoie au
+  changement imposé. **Pas fait, choix de l'utilisateur** : mot de passe
+  provisoire imposé par l'API et écran dans les deux Admin (audit Codex n° 6).
 - **Interrupteur « login »** de Listes → Conseillers = accès à l'**Admin**
   seulement ; Index reste ouvert. Couper complètement un agent = supprimer
   son compte. Noms à accès Admin lisibles sans connexion : écart accepté (24/09).
