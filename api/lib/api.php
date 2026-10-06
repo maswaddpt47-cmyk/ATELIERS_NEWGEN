@@ -33,7 +33,7 @@ const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
 const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier', 'bilanAvis', 'avisParAtelier'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
-const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket', 'avisAtelier', 'supprimerAvis'];
+const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'envoyerLienReinit', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket', 'avisAtelier', 'supprimerAvis'];
 
 // Ordre des champs d'un atelier dans la réponse (contract.test.js:12-34).
 const API_CHAMPS_ATELIER = [
@@ -151,6 +151,9 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'saveEmails':      return action_set_json($db, 'emails', $p['emails'] ?? null);
         case 'saveCompte':      return action_save_compte($db, $p);
         case 'resetPassword':   return action_reset_password($db, $p);
+        case 'envoyerLienReinit':
+            require_once __DIR__ . '/reinit.php';
+            return action_envoyer_lien_reinit($db, $p);
         case 'setPassword':     return action_set_password($db, $p, $session);
         case 'getLogs':         return action_get_logs($db, $p);
         case 'getCorbeille':    return action_get_corbeille($db);

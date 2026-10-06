@@ -574,6 +574,15 @@ $db->exec("UPDATE reinitialisations SET cree = NOW() - INTERVAL 2 HOUR, expire =
 appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => $RETOUR]);
 $vieux = $db->query("SELECT COUNT(*) FROM reinitialisations WHERE expire < NOW()")->fetchColumn();
 verifier(count($mails()) === 4 && (int) $vieux >= 1, 'après une heure, nouvelle demande possible');
+// Admin (06/10/2026) : lien envoyé à un collègue, réponse explicite.
+$nv = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'Nouveau-Mdp-2026!', 'source' => 'index.html']);
+verifier(str_contains(appel(['action' => 'envoyerLienReinit'], ['token' => $nv['token'], 'conseiller' => 'Nouveau Venu', 'retour' => $RETOUR])['error'] ?? '', 'administrateurs'), 'envoi du lien par l\'Admin : refusé à un conseiller');
+$e = appel(['action' => 'envoyerLienReinit'], $A + ['conseiller' => 'Nouveau Venu', 'retour' => $RETOUR]);
+$m = $mails();
+verifier(($e['ok'] ?? false) && count($m) === 5 && str_contains(end($m), 'A: nouveau.venu@example.org') && str_contains(end($m), '#reinit=') && str_contains(end($m), "L'administrateur"),
+    'envoi du lien par l\'Admin : mail parti, lien après le #');
+$sans = appel(['action' => 'envoyerLienReinit'], $A + ['conseiller' => 'Conseiller Test', 'retour' => $RETOUR]);
+verifier(!($sans['ok'] ?? true) && str_contains($sans['error'] ?? '', 'Aucune adresse') && count($mails()) === 5, 'envoi du lien par l\'Admin : sans adresse, le dire (provisoire en secours)');
 array_map('unlink', glob("$dossierMails/*.txt")); @rmdir($dossierMails);
 
 $db->exec("UPDATE sessions SET expire = NOW() - INTERVAL 1 SECOND");
