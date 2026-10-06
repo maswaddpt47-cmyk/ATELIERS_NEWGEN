@@ -145,7 +145,9 @@ sans connecteur, prochaine exécution le 01/01/2027). Créée dans
 l'interface : **Claude ne peut pas la modifier**, seul le champ
 « Instructions » est modifiable, par l'utilisateur. Ses commits vont sur des
 branches `claude/…` : la consigne demande de les fusionner dans `main`, à
-vérifier au 01/01.
+vérifier au 01/01. **Rappel de l'audit Codex** (à lancer à la main) : routine
+`trig_012uCnnzo6MZhyWNYr6JAFqv`, le 01/01/2027 à 08:52, notification push et
+mail, une seule fois (programmer ensuite celle du 01/04/2027).
 
 Hors liste, choix assumé : les noms `GAS_*`/`gasAppel`/`__gasLog` (~120
 occurrences, verrouillées par les tests réseau) restent, ils désignent la
