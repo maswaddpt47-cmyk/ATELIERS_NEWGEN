@@ -41,23 +41,52 @@ function action_demander_reinit(PDO $db, array $p): array
     $nom = trim((string) ($p['conseiller'] ?? ''));
     $retour = trim((string) ($p['retour'] ?? ''));
     if ($nom === '') return ['ok' => false, 'error' => 'Choisissez votre nom.'];
-    if (!str_starts_with($retour, REINIT_ORIGINE) || str_contains($retour, '#')) {
-        return ['ok' => false, 'error' => 'Adresse de retour refusée.'];
-    }
-    reinit_schema($db);
-    $reponse = ['ok' => true, 'message' => REINIT_REPONSE];
+    if (!reinit_retour_valide($retour)) return ['ok' => false, 'error' => 'Adresse de retour refusée.'];
+    // Réponse identique quoi qu'il arrive : rien ne se devine (RGPD-10).
+    reinit_envoyer($db, $nom, $retour, (string) ($p['userAgent'] ?? ''), false);
+    return ['ok' => true, 'message' => REINIT_REPONSE];
+}
 
+// Admin (06/10/2026) : envoie le lien à un collègue, à la place d'un mot de
+// passe provisoire que l'administrateur devait lui transmettre — le collègue
+// choisit le sien, personne d'autre ne le connaît. Réponse explicite : c'est
+// l'administrateur qui demande, il doit savoir si le mail est parti.
+function action_envoyer_lien_reinit(PDO $db, array $p): array
+{
+    $nom = trim((string) ($p['conseiller'] ?? ''));
+    $retour = trim((string) ($p['retour'] ?? ''));
+    if ($nom === '') return ['ok' => false, 'error' => 'Choisissez un conseiller.'];
+    if (!reinit_retour_valide($retour)) return ['ok' => false, 'error' => 'Adresse de retour refusée.'];
+    return match (reinit_envoyer($db, $nom, $retour, '', true)) {
+        'envoye' => ['ok' => true, 'message' => "Lien envoyé par mail à $nom, valable 30 minutes."],
+        'sans_adresse' => ['ok' => false, 'error' => "Aucune adresse mail pour $nom (Listes → Conseillers) : donnez-lui un mot de passe provisoire."],
+        'quota' => ['ok' => false, 'error' => 'Déjà ' . REINIT_MAX_PAR_HEURE . " liens envoyés à $nom dans l'heure : réessayez plus tard."],
+        default => ['ok' => false, 'error' => 'Compte introuvable.'],
+    };
+}
+
+// Le lien ne peut viser que les pages publiées sur GitHub Pages (sinon un
+// tiers ferait envoyer par nous un lien vers son propre site).
+function reinit_retour_valide(string $retour): bool
+{
+    return str_starts_with($retour, REINIT_ORIGINE) && !str_contains($retour, '#');
+}
+
+// Envoie le lien si possible : 'envoye', 'inconnu', 'quota' ou 'sans_adresse'.
+function reinit_envoyer(PDO $db, string $nom, string $retour, string $ua, bool $parAdmin): string
+{
+    reinit_schema($db);
     $s = $db->prepare('SELECT 1 FROM comptes WHERE conseiller = ?');
     $s->execute([$nom]);
-    if (!$s->fetchColumn()) return $reponse;
+    if (!$s->fetchColumn()) return 'inconnu';
 
     $n = $db->prepare('SELECT COUNT(*) FROM reinitialisations WHERE conseiller = ? AND cree > NOW() - INTERVAL 1 HOUR');
     $n->execute([$nom]);
-    if ((int) $n->fetchColumn() >= REINIT_MAX_PAR_HEURE) return $reponse;
+    if ((int) $n->fetchColumn() >= REINIT_MAX_PAR_HEURE) return 'quota';
 
     $emails = api_json(api_config_base($db)['emails'] ?? '', []);
     $adresse = is_array($emails) ? trim((string) ($emails[$nom] ?? '')) : '';
-    if (!filter_var($adresse, FILTER_VALIDATE_EMAIL)) return $reponse;
+    if (!filter_var($adresse, FILTER_VALIDATE_EMAIL)) return 'sans_adresse';
 
     $jeton = bin2hex(random_bytes(32));
     $db->exec('DELETE FROM reinitialisations WHERE expire < NOW() - INTERVAL 1 DAY');
@@ -68,13 +97,19 @@ function action_demander_reinit(PDO $db, array $p): array
     // de ses journaux (audit Codex du 06/10/2026). $retour n'a pas de #.
     $lien = $retour . '#reinit=' . $jeton;
     $h = fn($x) => htmlspecialchars($x, ENT_QUOTES, 'UTF-8');
+    $intro = $parAdmin
+        ? "L'administrateur des Ateliers numériques vous envoie un lien pour choisir votre mot de passe."
+        : 'Une réinitialisation de votre mot de passe a été demandée.';
+    $fin = $parAdmin
+        ? "Votre mot de passe actuel reste valable tant que vous n'avez pas utilisé ce lien."
+        : "Si vous n'êtes pas à l'origine de cette demande, ignorez ce mail : votre mot de passe actuel reste valable.";
     mail_envoyer($adresse, 'Réinitialisation de votre mot de passe — Ateliers numériques',
-        "Bonjour $nom,\n\nUne réinitialisation de votre mot de passe a été demandée.\nPour choisir un nouveau mot de passe, ouvrez ce lien (valable 30 minutes, une seule fois) :\n$lien\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce mail : votre mot de passe actuel reste valable.",
-        '<p>Bonjour ' . $h($nom) . ',</p><p>Une réinitialisation de votre mot de passe a été demandée.</p>'
+        "Bonjour $nom,\n\n$intro\nPour choisir un nouveau mot de passe, ouvrez ce lien (valable 30 minutes, une seule fois) :\n$lien\n\n$fin",
+        '<p>Bonjour ' . $h($nom) . ',</p><p>' . $h($intro) . '</p>'
         . '<p><a href="' . $h($lien) . '" style="display:inline-block;background:#1e3a8a;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:700"><span style="color:#ffffff">Choisir un nouveau mot de passe</span></a></p>'
-        . '<p style="color:#718096;font-size:13px">Lien valable 30 minutes, utilisable une seule fois. Si vous n\'êtes pas à l\'origine de cette demande, ignorez ce mail : votre mot de passe actuel reste valable.</p>');
-    api_journal($db, 'reinitDemande', $nom, '', '', 1, 0, (string) ($p['userAgent'] ?? ''), '');
-    return $reponse;
+        . '<p style="color:#718096;font-size:13px">Lien valable 30 minutes, utilisable une seule fois. ' . $h($fin) . '</p>');
+    if (!$parAdmin) api_journal($db, 'reinitDemande', $nom, '', '', 1, 0, $ua, '');
+    return 'envoye';
 }
 
 function action_reinit_mot_de_passe(PDO $db, array $p): array

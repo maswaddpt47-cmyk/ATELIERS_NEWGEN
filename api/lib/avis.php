@@ -12,6 +12,11 @@
 const AVIS_JOURS_APRES = 30;
 const AVIS_MAX = 60;
 const AVIS_CONSERVATION_MOIS = 24;   // RGPD : purge à la connexion
+// En dessous, un conseiller ne voit ni notes ni remarques d'un atelier (ni de
+// son bilan) : avec 1 ou 2 avis, il reconnaîtrait qui a répondu quoi (audit
+// Codex du 06/10/2026, écart n° 10 du registre RGPD ; décision de
+// l'utilisateur). L'Admin voit tout, pour modérer.
+const AVIS_SEUIL = 3;
 const AVIS_CHOIX = [
     'rythme' => ['Trop lent', 'Adapté', 'Trop rapide'],
     'aise' => ['Non', 'Un peu', 'Oui'],
@@ -57,14 +62,18 @@ function avis_purger(PDO $db): void
     }
 }
 
-// Résumé des avis d'un atelier, pour la fiche (conseiller).
-function avis_resume(PDO $db, string $atelierId): array
+// Résumé des avis d'un atelier, pour la fiche (conseiller). $restreint :
+// appelant soumis au seuil (AVIS_SEUIL).
+function avis_resume(PDO $db, string $atelierId, bool $restreint = false): array
 {
     $s = $db->prepare('SELECT COUNT(*) n, AVG(attentes) attentes, AVG(clarte) clarte,
                               SUM(aise = \'Oui\') aise_oui, SUM(autonomie = \'Oui\') autonomie_oui
                        FROM avis WHERE atelier_id = ?');
     $s->execute([$atelierId]);
     $r = $s->fetch(PDO::FETCH_ASSOC);
+    if ($restreint && (int) $r['n'] < AVIS_SEUIL) {
+        return ['n' => (int) $r['n'], 'masque' => true, 'seuil' => AVIS_SEUIL, 'attentes' => null, 'clarte' => null, 'aise_oui' => 0, 'autonomie_oui' => 0, 'remarques' => []];
+    }
     $rem = $db->prepare("SELECT remarque FROM avis WHERE atelier_id = ? AND remarque <> '' ORDER BY id DESC LIMIT 20");
     $rem->execute([$atelierId]);
     return ['n' => (int) $r['n'],
@@ -111,7 +120,7 @@ function action_jeton_avis(PDO $db, array $p, array $session): array
     $d = $db->prepare('SELECT date FROM ateliers WHERE id = ?');
     $d->execute([$id]);
     [$debut, $fin] = avis_fenetre((string) $d->fetchColumn());
-    return ['ok' => true, 'jeton' => (string) $j->fetchColumn(), 'avis' => avis_resume($db, $id), 'plafond' => avis_plafond($db, $id), 'ouvert_du' => $debut, 'ouvert_au' => $fin];
+    return ['ok' => true, 'jeton' => (string) $j->fetchColumn(), 'avis' => avis_resume($db, $id, avis_filtre_conum($session)[0] !== ''), 'plafond' => avis_plafond($db, $id), 'ouvert_du' => $debut, 'ouvert_au' => $fin];
 }
 
 // Dates d'ouverture du questionnaire d'un atelier : du jour de l'atelier
@@ -236,7 +245,9 @@ function action_bilan_avis(PDO $db, array $p, array $session): array
     $r = $db->prepare("SELECT v.remarque FROM avis v JOIN ateliers a ON a.id = v.atelier_id
                        WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ?$f AND v.remarque <> '' ORDER BY v.id LIMIT 100");
     $r->execute(array_merge([$du, $au], $fp));
-    return ['ok' => true, 'avis' => $avis, 'remarques' => $r->fetchAll(PDO::FETCH_COLUMN)];
+    $remarques = $r->fetchAll(PDO::FETCH_COLUMN);
+    if ($f !== '' && count($avis) < AVIS_SEUIL) return ['ok' => true, 'avis' => [], 'remarques' => [], 'masque' => true, 'seuil' => AVIS_SEUIL];
+    return ['ok' => true, 'avis' => $avis, 'remarques' => $remarques];
 }
 
 // Récapitulatif des avis atelier par atelier (demande du 04/10/2026), à tout
@@ -277,7 +288,13 @@ function action_avis_par_atelier(PDO $db, array $p, array $session): array
         }
     }
     $moy = fn($v) => $v !== null ? round((float) $v, 1) : null;
-    return ['ok' => true, 'ateliers' => array_map(fn($l) => [
+    // Sous le seuil, pour un conseiller : le nombre d'avis seulement.
+    $masquer = fn($l) => $f !== '' && (int) $l['n'] < AVIS_SEUIL;
+    return ['ok' => true, 'seuil' => AVIS_SEUIL, 'ateliers' => array_map(fn($l) => $masquer($l) ? [
+        'atelier_id' => $l['atelier_id'], 'n' => (int) $l['n'], 'papier' => (int) $l['papier'], 'masque' => true,
+        'attentes' => null, 'clarte' => null, 'rythme_ok' => 0, 'rythme_n' => 0, 'aise_oui' => 0, 'aise_n' => 0,
+        'autonomie_oui' => 0, 'autonomie_n' => 0, 'remarques' => [], 'detail' => [],
+    ] : [
         'atelier_id' => $l['atelier_id'], 'n' => (int) $l['n'], 'papier' => (int) $l['papier'],
         'attentes' => $moy($l['attentes']), 'clarte' => $moy($l['clarte']),
         'rythme_ok' => (int) $l['rythme_ok'], 'rythme_n' => (int) $l['rythme_n'],

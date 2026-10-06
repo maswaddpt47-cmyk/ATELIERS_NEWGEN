@@ -451,8 +451,10 @@ $f = appel(['action' => 'avisPublic'], ['a' => $jf['jeton']]);
 verifier(!($f['ok'] ?? true) && str_contains($f['error'] ?? '', 'ouvrira le ' . date('d/m/Y', strtotime('+10 days'))) && $jf['ouvert_du'] === date('Y-m-d', strtotime('+10 days')), 'atelier à venir : questionnaire ouvert le jour de l\'atelier seulement, dates données à la fenêtre du QR');
 $col = $db->query("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'avis' AND column_name IN ('ip', 'adresse_ip', 'nom', 'prenom', 'age', 'tranche_age', 'contact', 'recontact', 'email', 'telephone')")->fetchColumn();
 verifier((int) $col === 0, '[RGPD-20] avis anonymes : aucune colonne IP, nom, âge ou contact');
+$res = appel(['action' => 'jetonAvis'], $A + ['_id' => 'av_1'])['avis'];
+verifier($res['n'] === 1 && $res['attentes'] == 5 && $res['remarques'] === ['Merci'], 'résumé des avis pour la fiche (Admin) : ' . json_encode($res));
 $res = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1'])['avis'];
-verifier($res['n'] === 1 && $res['attentes'] == 5 && $res['remarques'] === ['Merci'], 'résumé des avis pour la fiche : ' . json_encode($res));
+verifier($res['n'] === 1 && ($res['masque'] ?? false) && $res['attentes'] === null && $res['remarques'] === [], 'moins de 3 avis : le conseiller ne voit que leur nombre (écart n° 10)');
 verifier($db->query("SELECT cree_le FROM avis LIMIT 1")->fetchColumn() === $auj . ' 00:00:00', 'avis daté du jour seulement, sans l\'heure (amendement B)');
 // Amendement D : avis papier, par un conseiller connecté, sans fenêtre de dates.
 verifier(appel(['action' => 'saisirAvisPapier'], ['_id' => 'av_vieux', 'attentes' => '3'])['auth'] ?? false, 'avis papier : réservé à l\'équipe connectée');
@@ -464,17 +466,19 @@ $debut = date('Y-m-d', strtotime('-60 days'));
 verifier(appel(['action' => 'bilanAvis'], ['du' => $debut, 'au' => $auj])['auth'] ?? false, 'bilan des avis : réservé à l\'équipe connectée');
 verifier(!(appel(['action' => 'bilanAvis'], $T + ['du' => $auj, 'au' => $debut])['ok'] ?? true), 'bilan des avis : période à l\'envers refusée');
 $db->exec("UPDATE ateliers SET statut = 'Réalisé' WHERE id = 'av_vieux'");
-$b = appel(['action' => 'bilanAvis'], $T + ['du' => $debut, 'au' => $auj]);
+$b = appel(['action' => 'bilanAvis'], $A + ['du' => $debut, 'au' => $auj]);
 verifier(($b['ok'] ?? false) && count($b['avis']) === 1 && $b['avis'][0]['atelier_id'] === 'av_vieux' && $b['avis'][0]['attentes'] === 3 && $b['remarques'] === [],
     'bilan des avis : atelier non réalisé écarté — ' . json_encode($b));
 $db->exec("UPDATE ateliers SET statut = 'Réalisé' WHERE id = 'av_1'");
-$b = appel(['action' => 'bilanAvis'], $T + ['du' => $debut, 'au' => $auj]);
+$bT = appel(['action' => 'bilanAvis'], $T + ['du' => $debut, 'au' => $auj]);
+verifier(($bT['masque'] ?? false) && $bT['avis'] === [] && $bT['remarques'] === [], 'bilan de moins de 3 avis : rien de lisible pour le conseiller');
+$b = appel(['action' => 'bilanAvis'], $A + ['du' => $debut, 'au' => $auj]);
 verifier(count($b['avis'] ?? []) === 2 && $b['remarques'] === ['Merci'] && !array_key_exists('remarque', $b['avis'][0]) && !array_key_exists('cree_le', $b['avis'][0]),
     'bilan des avis : remarques à part, sans date ni lien avec l\'atelier');
 // Récapitulatif par atelier : tous statuts, remarques rattachées à l'atelier.
 $db->exec("UPDATE ateliers SET statut = 'Planifié' WHERE id = 'av_1'");
 verifier(appel(['action' => 'avisParAtelier'], ['du' => $debut, 'au' => $auj])['auth'] ?? false, 'récapitulatif des avis : réservé à l\'équipe connectée');
-$rp = appel(['action' => 'avisParAtelier'], $T + ['du' => $debut, 'au' => $auj]);
+$rp = appel(['action' => 'avisParAtelier'], $A + ['du' => $debut, 'au' => $auj]);
 $par = array_column($rp['ateliers'] ?? [], null, 'atelier_id');
 verifier(count($par) === 2 && $par['av_1']['n'] === 1 && $par['av_1']['attentes'] == 5 && $par['av_1']['aise_oui'] === 1 && $par['av_1']['remarques'] === ['Merci']
     && $par['av_vieux']['papier'] === 1 && $par['av_vieux']['remarques'] === [], 'récapitulatif des avis par atelier, tous statuts — ' . json_encode($rp));
@@ -498,6 +502,10 @@ verifier(!in_array('av_autre', $idsT, true) && in_array('av_autre', $idsA, true)
     'récapitulatif et bilan : le conseiller ne voit que ses ateliers, l\'Admin voit tout');
 $db->exec("UPDATE ateliers SET co_animateur = 'Nouveau Venu' WHERE id = 'av_autre'");
 verifier((appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_autre'])['ok'] ?? false) === true, 'co-animateur : avis de l\'atelier accessibles');
+appel(['action' => 'deposerAvis'], ['a' => $ja['jeton'], 'attentes' => '4']);
+appel(['action' => 'deposerAvis'], ['a' => $ja['jeton'], 'attentes' => '3']);
+$r3 = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_autre'])['avis'] ?? [];
+verifier($r3['n'] === 3 && !isset($r3['masque']) && $r3['attentes'] == 3 && in_array('Autre animateur', $r3['remarques'], true), 'à partir de 3 avis : résumé et remarques visibles du conseiller');
 $db->exec("DELETE FROM ateliers WHERE id = 'av_autre'");
 // Suppression d'un avis isolé : Admin seulement, journalisée sans le contenu.
 $liste = appel(['action' => 'avisAtelier'], $A + ['_id' => 'av_1'])['avis'] ?? [];
@@ -566,6 +574,15 @@ $db->exec("UPDATE reinitialisations SET cree = NOW() - INTERVAL 2 HOUR, expire =
 appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => $RETOUR]);
 $vieux = $db->query("SELECT COUNT(*) FROM reinitialisations WHERE expire < NOW()")->fetchColumn();
 verifier(count($mails()) === 4 && (int) $vieux >= 1, 'après une heure, nouvelle demande possible');
+// Admin (06/10/2026) : lien envoyé à un collègue, réponse explicite.
+$nv = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'Nouveau-Mdp-2026!', 'source' => 'index.html']);
+verifier(str_contains(appel(['action' => 'envoyerLienReinit'], ['token' => $nv['token'], 'conseiller' => 'Nouveau Venu', 'retour' => $RETOUR])['error'] ?? '', 'administrateurs'), 'envoi du lien par l\'Admin : refusé à un conseiller');
+$e = appel(['action' => 'envoyerLienReinit'], $A + ['conseiller' => 'Nouveau Venu', 'retour' => $RETOUR]);
+$m = $mails();
+verifier(($e['ok'] ?? false) && count($m) === 5 && str_contains(end($m), 'A: nouveau.venu@example.org') && str_contains(end($m), '#reinit=') && str_contains(end($m), "L'administrateur"),
+    'envoi du lien par l\'Admin : mail parti, lien après le #');
+$sans = appel(['action' => 'envoyerLienReinit'], $A + ['conseiller' => 'Conseiller Test', 'retour' => $RETOUR]);
+verifier(!($sans['ok'] ?? true) && str_contains($sans['error'] ?? '', 'Aucune adresse') && count($mails()) === 5, 'envoi du lien par l\'Admin : sans adresse, le dire (provisoire en secours)');
 array_map('unlink', glob("$dossierMails/*.txt")); @rmdir($dossierMails);
 
 $db->exec("UPDATE sessions SET expire = NOW() - INTERVAL 1 SECOND");
