@@ -114,10 +114,6 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 **Pour Claude**
 
-0. **Nouveautés du 06/10 à ajouter après test de l'utilisateur** (règle 18) :
-   seuil de 3 avis pour les conseillers ; bouton Admin « Envoyer un lien par
-   mail » (provisoire en secours). En production depuis `2652c5e` / `bc4da1a`.
-
 1. **Planning en essai** (depuis le 03/10, à côté de l'Agenda) : vers le
    **20/10**, relire les compteurs d'onglets (Admin → Connexions) avec
    l'utilisateur avant de retirer l'Agenda ; le mensuel (Calendrier gardé ou
@@ -213,6 +209,8 @@ couche d'appel.
   (écart n° 11). Envois simultanés (essais, plafond) : **acceptés**.
 - **Aide mot de passe, 06/10** : l'Admin envoie un lien par mail
   (`envoyerLienReinit`) ; le provisoire n'est qu'un secours.
+  Ni ceci ni le seuil de 3 avis ne sont annoncés dans les Nouveautés
+  (décision de l'utilisateur, 06/10).
 - **Avis des stagiaires (04/10)** : anonymes, sans âge ni recontact tant que
   le DPO n'a pas validé ; un avis par appareil et pas plus que de présents
   (à défaut d'inscrits) ; plus de bouton « poste partagé » (remplace
