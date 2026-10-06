@@ -91,9 +91,7 @@ function action_reinit_mot_de_passe(PDO $db, array $p): array
     $r = api_changer_mdp($db, (string) $nom, (string) ($p['password'] ?? ''));
     if (!$r['ok']) return $r;
 
-    // Tous les liens du compte tombent, et toutes ses connexions en cours.
-    $db->prepare('UPDATE reinitialisations SET utilise = 1 WHERE conseiller = ?')->execute([$nom]);
-    $db->prepare('DELETE FROM sessions WHERE conseiller = ?')->execute([$nom]);
+    // Liens et connexions du compte : tombés dans api_changer_mdp.
     $db->prepare('DELETE FROM tentatives WHERE conseiller = ?')->execute([$nom]);
     api_journal($db, 'reinitMotDePasse', (string) $nom, '', '', 1, 0, (string) ($p['userAgent'] ?? ''), '');
     return ['ok' => true, 'conseiller' => $nom];

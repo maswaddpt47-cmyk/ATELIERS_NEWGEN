@@ -324,11 +324,24 @@ verifier(appel(['action' => 'selfSetPassword'], ['token' => $nr['token'], 'passw
 verifier(appel(['action' => 'selfSetPassword'], ['token' => $nr['token'], 'password' => 'Un-Mot-De-Passe-7'])['ok'] === true, 'selfSetPassword');
 $nr = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => 'Un-Mot-De-Passe-7']);
 verifier($nr['ok'] === true && !isset($nr['doit_changer']), 'nouveau mot de passe : plus de changement exigé');
+// Audit Codex du 06/10/2026 (n° 3 et 5) : changer de mot de passe ferme les
+// autres connexions et les liens « mot de passe oublié » en cours, pas la sienne.
+$nr2 = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => 'Un-Mot-De-Passe-7']);
+require_once __DIR__ . '/../api/lib/reinit.php';
+reinit_schema($db);
+$db->prepare('INSERT INTO reinitialisations (jeton_hash, conseiller, cree, expire) VALUES (?, ?, NOW(), NOW() + INTERVAL 30 MINUTE)')->execute([hash('sha256', 'lien-copie'), 'Nouvelle Recrue']);
+appel(['action' => 'selfSetPassword'], ['token' => $nr2['token'], 'password' => 'Un-Mot-De-Passe-7']);
+verifier((appel(['action' => 'getAll'], ['token' => $nr2['token']])['ok'] ?? false) === true
+    && (appel(['action' => 'getAll'], ['token' => $nr['token']])['auth'] ?? false) === true
+    && (int) $db->query("SELECT utilise FROM reinitialisations WHERE conseiller = 'Nouvelle Recrue'")->fetchColumn() === 1,
+    'changement de mot de passe : sa connexion reste, les autres et les liens en cours tombent');
 verifier(appel(['action' => 'setPassword'], $A + ['conseiller' => 'Nouvelle Recrue', 'password' => 'Autre-Mot-De-Passe-8'])['ok'] === false, 'setPassword sans mot de passe actuel : refusé');
 verifier(appel(['action' => 'setPassword'], $A + ['conseiller' => 'Nouvelle Recrue', 'currentPwd' => 'Pas-Le-Bon-1', 'password' => 'Autre-Mot-De-Passe-8'])['error'] === 'Mot de passe actuel incorrect', 'setPassword : mot de passe actuel faux refusé');
 verifier(appel(['action' => 'setPassword', 'currentPwd' => 'Un-Mot-De-Passe-7'], $A + ['conseiller' => 'Nouvelle Recrue', 'password' => 'Autre-Mot-De-Passe-8'])['ok'] === false, 'setPassword : mot de passe actuel dans l\'URL ignoré');
 verifier(appel(['action' => 'setPassword'], $A + ['conseiller' => 'Nouvelle Recrue', 'currentPwd' => 'Un-Mot-De-Passe-7', 'password' => 'Autre-Mot-De-Passe-8'])['ok'] === true, 'setPassword avec mot de passe actuel');
 $db->exec("DELETE FROM tentatives");
+// Nouvelle connexion : setPassword vient de fermer les précédentes.
+$nr = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => 'Autre-Mot-De-Passe-8']);
 appel(['action' => 'saveCompte'], $A + ['conseiller' => 'Nouvelle Recrue', 'actif' => 'NON']);
 verifier((appel(['action' => 'getAll'], ['token' => $nr['token']])['ok'] ?? false) === true, 'interrupteur désactivé : la connexion Index continue');
 appel(['action' => 'saveCompte'], $A + ['conseiller' => 'Nouvelle Recrue', 'role' => 'superviseur']);
