@@ -114,6 +114,17 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 **Pour Claude**
 
+0. **Seuil de 3 avis (écart n° 10, décidé le 06/10)** : au **bac à sable**
+   seulement (`sandbox`, `c3a49a7`) ; NextStep : commit `faf4061` sur la
+   branche de session, pas sur `main`. Après le test de l'utilisateur :
+   fusion dans `main` des deux dépôts (NextStep d'abord), entrée
+   `NOUVEAUTES`, puis **registres V0.6** : écart n° 10 corrigé, écart n° 11
+   **gardé** (décision du 06/10), envois simultanés **acceptés** (06/10).
+   **Avec lui au bac à sable** : bouton Admin « Envoyer un lien par mail »
+   (`f908600` ; NextStep `b1894a0`, branche de session) — le provisoire reste
+   en secours. Registres V0.6 : risque du provisoire réduit au cas « sans
+   adresse ».
+
 1. **Planning en essai** (depuis le 03/10, à côté de l'Agenda) : vers le
    **20/10**, relire les compteurs d'onglets (Admin → Connexions) avec
    l'utilisateur avant de retirer l'Agenda ; le mensuel (Calendrier gardé ou
