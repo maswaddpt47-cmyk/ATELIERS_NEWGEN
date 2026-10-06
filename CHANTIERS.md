@@ -43,8 +43,11 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin.
   Alwaysdata ; journal 12 mois.
 - **Documents à diffusion restreinte**, dépôt privé
   `ateliers-backups/documents/` : registre de sécurité et registre RGPD
-  (art. 30) **v1** — numéro figé à « v1 » jusqu'à nouvelle instruction (06/10),
-  mis à jour en place (dernier : export CSV des avis, 06/10), procédure de
+  (art. 30) **V0.1** (06/10), règle du guide d'archivage du CD47 voulue par
+  l'utilisateur : V0.1, V0.2… tant que non validé, **V1 à la validation**
+  (DPO/DSI), puis V1.1… ; chaque mise à jour monte d'un cran. Aussi :
+  note DSI avant/après (PDF + Word), §11 rapatriement, écart n° 9 (purges sans
+  visa des Archives) ; procédure de
   restauration ; versions antérieures dans `documents/archives/`, rendu par
   `documents/sources/rendre.js`. Prochaine révision : audit du 01/01/2027
   (ACME Alwaysdata à vérifier auprès de l'hébergeur).
