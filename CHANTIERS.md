@@ -6,12 +6,13 @@ Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand t
 est soldé. Ce n'est pas de la documentation permanente (cf.
 `MD-LIB/hygiene-instructions.md`).
 
-**Ménages du 26/09, du 02/10 et du 04/10/2026** : époque GAS, récit de la
-parité, livraisons des 01-04/10 (durée, AM/PM, Planning, réimport Outlook,
-fiche bilan, avis par QR, bilans, « Mes bilans », conflits à l'heure près) et
-décisions déjà verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
-Contradiction d'une proposition par une autre session : `AGORA.md` (section 8
-du `CLAUDE.md`) — **aucun bloc ouvert au 04/10/2026** (AG-022 clos ce jour).
+**Ménages des 26/09, 02/10, 04/10 et 06/10/2026** : époque GAS, récit de la
+parité, livraisons des 01-06/10 (durée, AM/PM, Planning, réimport Outlook,
+fiche bilan, avis par QR, bilans, « Mes bilans », conflits à l'heure près,
+pistes livrées) et décisions déjà verrouillées par les tests retirés —
+`git log -p CHANTIERS.md`. Contradiction d'une proposition par une autre
+session : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
+06/10/2026**.
 
 ---
 
@@ -41,26 +42,18 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin.
   déconnexion ; adresses mail rendues aux seuls admin/superviseur ; aucune
   ressource externe (`vendor/`, RGPD-17 en CI) ; HTTPS forcé ; 2FA GitHub et
   Alwaysdata ; journal 12 mois.
-- **Analyse automatique du code (06/10/2026), NEWGEN et NextStep** : CodeQL
-  (réglage « Default », JS et workflows), `semgrep.yml` (PHP, JS, secrets ;
-  jamais bloquant), alertes Dependabot, secret scanning et push protection.
-  Résultats : Security → Code scanning. Premier passage : 3 alertes, toutes
-  fausses après lecture — `api/index.php:30` (réponse JSON, pas HTML) et
-  `dangerouslySetInnerHTML` du bilan trimestriel dans les deux `shared.js`
-  (tout texte passe par `htmlEsc`, jamais dans un attribut). CodeQL : jeton de
-  session en `sessionStorage` (`shared.js`, `authToken.set`) = choix d'AG-011,
-  « Won't fix » ; rôle en `sessionStorage` = « False positive » (l'API décide) ;
-  échappement de `check-cache-busting.js` corrigé. **Rejets à faire par
-  l'utilisateur** dans l'onglet. Dependabot ne voit pas `vendor/`.
+- **Analyse automatique du code (depuis le 06/10/2026), NEWGEN et NextStep** :
+  CodeQL (« Default »), `semgrep.yml` (non bloquant), Dependabot, secret
+  scanning, push protection ; résultats dans Security → Code scanning. Alertes
+  du 06/10 triées et rejetées avec motif dans l'onglet (jeton de session en
+  `sessionStorage` = « Won't fix », choix d'AG-011). Dependabot ne voit pas
+  `vendor/`.
 - **Documents à diffusion restreinte**, dépôt privé
   `ateliers-backups/documents/` : registre de sécurité et registre RGPD
-  (art. 30) **V0.1** (06/10), règle du guide d'archivage du CD47 voulue par
-  l'utilisateur : V0.1, V0.2… tant que non validé, **V1 à la validation**
-  (DPO/DSI), puis V1.1… ; chaque mise à jour monte d'un cran. Aussi :
-  note DSI avant/après (PDF + Word), §11 rapatriement, écart n° 9 (purges sans
-  visa des Archives) ; procédure de
-  restauration ; versions antérieures dans `documents/archives/`, rendu par
-  `documents/sources/rendre.js`. Prochaine révision : audit du 01/01/2027
+  (art. 30) **V0.1** (06/10) — V0.x tant que non validé, **V1 à la
+  validation** (DPO/DSI), puis V1.1… (guide d'archivage du CD47). Aussi : note
+  DSI avant/après (PDF + Word), procédure de restauration ; anciennes versions
+  dans `documents/archives/`, rendu par `documents/sources/rendre.js`. Prochaine révision : audit du 01/01/2027
   (ACME Alwaysdata à vérifier auprès de l'hébergeur).
 - Plus de PWA (AG-012) : `sw.js` de désinstallation publié sans date de fin.
 - **Bac à sable** (AG-019) : https://ateliers-numeriques.alwaysdata.net/sandbox/
@@ -106,18 +99,15 @@ sont datées du 05/10 à la demande de l'utilisateur.
    de gestion pour les Archives départementales (écart n° 9), vérifier les
    deux « ⚠️ » du document (compte transférable, alerte d'intrusion).
 
-1. **Écarts RGPD à porter au DPO** (mail pas encore envoyé au 02/10) : compte
-   Alwaysdata personnel sans DPA, durée de conservation des ateliers non
-   fixée, mention d'information des agents, procédure de sortie ; **avis des
-   stagiaires (T6) mis en service avant son avis** (qualification, base
-   légale, remarques libres dans les bilans imprimés).
-2. **Mention du questionnaire d'avis complétée le 06/10** (`e150c69`) :
-   contact `contact-dpd@lotetgaronne.fr` (DPO : Sabine Brustolin) et recours
-   CNIL. Reste à la faire valider par la DPO avec le reste de T6 (point 1).
-3. **À tester sur PC** : réimport Outlook (rendez-vous déplacé → « Mettre à
+1. **Écarts RGPD à porter à la DPO** (mail pas encore envoyé au 06/10) :
+   compte Alwaysdata personnel sans DPA, durée de conservation des ateliers
+   non fixée, mention d'information des agents, procédure de sortie ; **avis
+   des stagiaires (T6) mis en service avant son avis** (qualification, base
+   légale, remarques libres ; mention complétée le 06/10, `e150c69`).
+2. **À tester sur PC** : réimport Outlook (rendez-vous déplacé → « Mettre à
    jour », supprimé → « Annulé » proposé décoché ; export .ics impossible sur
    téléphone) et infobulle du Planning (survol souris).
-4. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
+3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
 
 **Pour Claude**
@@ -212,13 +202,10 @@ couche d'appel.
   (à défaut d'inscrits) ; plus de bouton « poste partagé » (remplace
   l'amendement C d'AG-021) ; avis d'un atelier réservés à son animateur et
   son co-animateur (filtre API) ; suppression d'un avis par l'Admin seulement.
-- **Gestion ordi et vues, 05/10 (en production directement, sans annonce)** :
-  frise à une ligne par conseiller, séances d'un même conseiller sur la même
-  période de prêt fondues en une barre ; clic = volet latéral ; sélecteur de
-  date compact (`ChoixDate`) dans la frise, Planning, Agenda, Calendrier ;
-  durée dans les tuiles de l'Historique (vide = 1 h 30) ; « ⚠️ ordi »
-  clignotant au coin gauche de la ligne du bas, clic = Gestion ordi au jour de
-  l'atelier ; statut actuel mis en avant dans le volet ; « PIX » dans les
+- **Gestion ordi et vues, 05/10 (sans annonce)** : frise à une ligne par
+  conseiller, séances d'une même période de prêt fondues en une barre ;
+  `ChoixDate` compact dans frise, Planning, Agenda, Calendrier ; « ⚠️ ordi »
+  clignotant (clic = Gestion ordi au jour de l'atelier) ; « PIX » dans les
   supports de la fiche bilan.
 - **Barre du bas de NEWGEN, 06/10 (validé, sans annonce)** : chevron « › »
   sur dégradé tant que des onglets sont cachés à droite (`majIndiceNav`,
@@ -294,12 +281,7 @@ repropose pas sans fait nouveau.
 
 **Proposées, en attente**
 - 04/10/2026 : **rappel du matin pour une fiche bilan vide** sur un atelier « Réalisé », comme le rappel existant des ateliers restés « Planifié » — le bilan trimestriel compte les ateliers « sans fiche », rien ne pousse à la remplir.
-
 - 06/10/2026 : **progression début → fin de cycle dans les avis** : mettre côte à côte « À l'aise » et « Refaire seul » de la séance diagnostic et de la dernière séance d'un même cycle — le 05/10 (Fumel, diagnostic) donne 1/5 sur les deux, point de départ que rien ne compare aujourd'hui.
-
-**Retenues et livrées**
-- 04/10/2026 — fiche bilan et avis dans le bilan mensuel de la superviseure — en production le 04/10 (`27a9b9c`), en chiffres seulement ; registres v1.4 (T4).
-- 04/10/2026 — conflits de matériel tenant compte de la durée (relevé par la session B, AG-018) — en production le 04/10 (AG-022).
 
 **Écartées** (date — piste — raison)
 - 03/10/2026 — lien d'abonnement agenda pour les partenaires — « pour l'instant » (utilisateur).
