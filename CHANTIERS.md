@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/10/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **06/10/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
@@ -41,6 +41,15 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin.
   déconnexion ; adresses mail rendues aux seuls admin/superviseur ; aucune
   ressource externe (`vendor/`, RGPD-17 en CI) ; HTTPS forcé ; 2FA GitHub et
   Alwaysdata ; journal 12 mois.
+- **Analyse automatique du code (06/10/2026), NEWGEN et NextStep** : CodeQL
+  (réglage « Default », JS et workflows), `semgrep.yml` (PHP, JS, secrets ;
+  jamais bloquant), alertes Dependabot, secret scanning et push protection.
+  Résultats : Security → Code scanning. Premier passage : 3 alertes, toutes
+  fausses après lecture — `api/index.php:30` (réponse JSON, pas HTML) et
+  `dangerouslySetInnerHTML` du bilan trimestriel dans les deux `shared.js`
+  (tout texte passe par `htmlEsc`, jamais dans un attribut). **À rejeter par
+  l'utilisateur** dans l'onglet (« False positive »). Dependabot ne voit pas
+  `vendor/`.
 - **Documents à diffusion restreinte**, dépôt privé
   `ateliers-backups/documents/` : registre de sécurité et registre RGPD
   (art. 30) **V0.1** (06/10), règle du guide d'archivage du CD47 voulue par
