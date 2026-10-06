@@ -176,6 +176,10 @@ le repo) est prévu tous les trois mois. C'est une routine planifiée
 (`create_trigger`, mode session neuve à chaque déclenchement — indépendante
 de toute session de travail), avec notification push/email. Voir
 `MD-LIB/rgpd-securite.md` pour le détail.
+**Audit Codex** (OpenAI, MD-LIB `agora.md` §12) : le même jour, et après tout
+changement structurant de sécurité (connexion, page publique, hébergement),
+avec `ateliers-backups/documents/sources/consigne-audit-codex.md` ; chaque
+point vérifié dans le code, rapport rangé dans `ateliers-backups`.
 
 ## 7. Règles de collaboration avec Claude
 
@@ -274,8 +278,6 @@ pas le contradicteur.
 **Une entrée « décision à trancher » dans `CHANTIERS.md` est par définition un
 candidat** : au moment de l'écrire, dire pourquoi on ouvre un bloc ou non.
 
-**Deux comptes Claude différents fonctionnent** : le canal est ce dépôt, pas
-le compte. `AGORA.md` et cette section suffisent pour agir, MD-LIB n'est pas
-requis. `git pull --rebase origin main` avant de pousser un bloc. Aucune
-notification ne passe d'un compte à l'autre : le relais par l'utilisateur est
-obligatoire.
+**Sécurité, mots de passe, données personnelles : contradicteur Codex**
+(OpenAI) au lieu de la session B (06/10/2026, mode d'emploi : `AGORA.md`).
+Sinon deux comptes Claude : canal = ce dépôt, relais par l'utilisateur.

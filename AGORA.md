@@ -20,6 +20,16 @@ justification de la règle : utile à lire, **non requis pour répondre**.)
    conclusion remonte dans `CHANTIERS.md` (« Points à ne pas défaire ») ou
    dans `CLAUDE.md` si elle devient une règle.
 
+**Blocs de sécurité, de mots de passe ou de données personnelles : le
+contradicteur est Codex (OpenAI)**, pas une session Claude (décision du
+06/10/2026 : 0 « contredit » sur 23 blocs entre Claude, quand Codex a trouvé
+en une passe ce que Claude avait manqué). L'utilisateur colle le bloc dans
+Codex (autorisations « Lecture seule », réflexion au plus haut) avec : « Réponds
+selon le gabarit de AGORA.md, avec fichier:ligne ; ne modifie rien. » La
+session qui a ouvert le bloc inscrit la réponse **telle quelle** sous
+`### Réponse — Codex — JJ/MM/AAAA`, sans la reformuler ni la juger ;
+l'utilisateur tranche. Codex ne modifie jamais le code.
+
 **Deux comptes Claude différents fonctionnent** — le canal est ce dépôt, pas
 le compte, comme pour `CHANTIERS.md`. Condition : que le second compte ait
 accès en écriture au dépôt GitHub. En revanche **aucune notification ne passe
