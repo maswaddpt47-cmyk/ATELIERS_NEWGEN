@@ -43,7 +43,8 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin.
   Alwaysdata ; journal 12 mois.
 - **Documents à diffusion restreinte**, dépôt privé
   `ateliers-backups/documents/` : registre de sécurité et registre RGPD
-  (art. 30) **v1.4** (04/10 : T6 avis des stagiaires, RGPD-20 ; T4 bilan mensuel), procédure de
+  (art. 30) **v1** — numéro figé à « v1 » jusqu'à nouvelle instruction (06/10),
+  mis à jour en place (dernier : export CSV des avis, 06/10), procédure de
   restauration ; versions antérieures dans `documents/archives/`, rendu par
   `documents/sources/rendre.js`. Prochaine révision : audit du 01/01/2027
   (ACME Alwaysdata à vérifier auprès de l'hébergeur).
