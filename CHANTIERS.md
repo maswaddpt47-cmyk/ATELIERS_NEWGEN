@@ -47,9 +47,11 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin.
   Résultats : Security → Code scanning. Premier passage : 3 alertes, toutes
   fausses après lecture — `api/index.php:30` (réponse JSON, pas HTML) et
   `dangerouslySetInnerHTML` du bilan trimestriel dans les deux `shared.js`
-  (tout texte passe par `htmlEsc`, jamais dans un attribut). **À rejeter par
-  l'utilisateur** dans l'onglet (« False positive »). Dependabot ne voit pas
-  `vendor/`.
+  (tout texte passe par `htmlEsc`, jamais dans un attribut). CodeQL : jeton de
+  session en `sessionStorage` (`shared.js`, `authToken.set`) = choix d'AG-011,
+  « Won't fix » ; rôle en `sessionStorage` = « False positive » (l'API décide) ;
+  échappement de `check-cache-busting.js` corrigé. **Rejets à faire par
+  l'utilisateur** dans l'onglet. Dependabot ne voit pas `vendor/`.
 - **Documents à diffusion restreinte**, dépôt privé
   `ateliers-backups/documents/` : registre de sécurité et registre RGPD
   (art. 30) **V0.1** (06/10), règle du guide d'archivage du CD47 voulue par
