@@ -1,0 +1,48 @@
+name: Semgrep
+
+# Analyse statique de l'API PHP et du JavaScript des pages (06/10/2026).
+# CodeQL (réglage « Default » du dépôt) ne lit pas le PHP : Semgrep le couvre.
+# Jamais bloquant : les résultats vont dans l'onglet Security → Code scanning,
+# à trier un par un (vraie faille, fausse alerte, risque accepté).
+# Hebdomadaire en plus du push : les règles évoluent sans que le code change.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: semgrep
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      # vendor/ : bibliothèques copiées, pas notre code. Tests et migration :
+      # faux mots de passe et données d'essai, du bruit garanti.
+      - name: Analyse
+        run: >
+          semgrep scan --metrics=off
+          --config p/php --config p/javascript --config p/secrets
+          --exclude vendor --exclude node_modules --exclude e2e
+          --exclude api-tests --exclude migration --exclude '*.test.js'
+          --sarif --output semgrep.sarif
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
