@@ -1,5 +1,6 @@
 -- Schéma de la base des ateliers (refonte GAS + Sheets → PHP + MySQL).
--- Spécification : migration/INVENTAIRE.md §1, bloc AGORA AG-010.
+-- Spécification : inventaire de la bascule §1 (git show d4602f5:migration/INVENTAIRE.md),
+-- bloc AGORA AG-010.
 --
 -- Rejouable : chaque table n'est créée que si elle n'existe pas encore.
 -- Appliqué par l'import (api/import.php, via lib/import.php) avant de charger les données.
