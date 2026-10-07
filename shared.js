@@ -508,6 +508,7 @@ tr:hover td{background:#f7fafc}
 .search-always:focus-within{border-color:#0f6e7a;box-shadow:0 1px 2px rgba(12,36,48,.07),0 3px 8px rgba(12,36,48,.07),0 0 0 3px rgba(15,110,122,.12)}
 .search-always input{border:none;background:none;font:inherit;font-size:15px;color:#13202a;width:100%;outline:none}
 .search-always input::placeholder{color:#7a8e98}
+.search-always input::-webkit-search-cancel-button{display:none}
 .filter-panel-v2{background:linear-gradient(180deg,#fff,#f3f7f9);border:1px solid #d4dfe6;border-radius:14px;box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(12,36,48,.06),0 10px 28px rgba(12,36,48,.11);overflow:hidden;margin-bottom:14px}
 .filter-head-v2{display:flex;align-items:center;gap:9px;padding:12px 14px;cursor:pointer;background:#fff;border-bottom:1px solid transparent;transition:border-color .22s;user-select:none}
 .filter-panel-v2.open .filter-head-v2{border-bottom-color:#d4dfe6}
@@ -2939,7 +2940,8 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
     CE('label',{className:'search-always'},
       CE('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
         CE('circle',{cx:11,cy:11,r:8}),CE('path',{d:'M21 21l-4.35-4.35'})),
-      CE('input',{type:'search',value:search,placeholder:'Titre, commune, remarque, orienteur…',onChange:e=>setSearch(e.target.value)})
+      CE('input',{type:'search',value:search,placeholder:'Titre, commune, remarque, orienteur…',onChange:e=>setSearch(e.target.value)}),
+      search&&CE('button',{type:'button','aria-label':'Effacer la recherche',title:'Effacer la recherche',onClick:e=>{e.preventDefault();setSearch('');},style:{border:'none',background:'#e2e8f0',color:'#475569',borderRadius:'50%',width:22,height:22,fontSize:12,lineHeight:'22px',padding:0,cursor:'pointer',flexShrink:0}},'✕')
     ),
     // ── Panneau filtres v2 ────────────────────────────────────
     CE('div',{className:'filter-panel-v2'+(filtresOpen?' open':'')},
