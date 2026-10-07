@@ -1,18 +1,16 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **06/10/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **07/10/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
 `MD-LIB/hygiene-instructions.md`).
 
-**Ménages des 26/09, 02/10, 04/10 et 06/10/2026** : époque GAS, récit de la
-parité, livraisons des 01-06/10 (durée, AM/PM, Planning, réimport Outlook,
-fiche bilan, avis par QR, bilans, « Mes bilans », conflits à l'heure près,
-pistes livrées) et décisions déjà verrouillées par les tests retirés —
-`git log -p CHANTIERS.md`. Contradiction d'une proposition par une autre
-session : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
-06/10/2026** (AG-023 tranché ce jour).
+**Ménages des 26/09, 02/10, 04/10, 06/10 et 07/10/2026** : époque GAS, récit
+de la parité, livraisons des 01-06/10, audit Codex et ses corrections, et
+décisions déjà verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
+Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
+07/10/2026**.
 
 ---
 
@@ -39,24 +37,22 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin.
   Corbeille et onglet Sauvegardes dans l'Admin (AG-014) ; **pas** de bouton de
   restauration complète (une session volée effacerait tout).
 - Sécurité : jeton exigé en lecture, dans le corps POST (AG-011), annulé à la
-  déconnexion ; adresses mail rendues aux seuls admin/superviseur ; aucune
-  script ni feuille de style externe (`vendor/`,
-  RGPD-17 en CI) ; deux services appelés par le navigateur des agents, API Géo
-  de l'État et fonds de carte OSM France (registres V0.4, 06/10) ; HTTPS forcé ; 2FA GitHub et
-  Alwaysdata ; journal 12 mois.
-- **Analyse automatique du code (depuis le 06/10/2026), NEWGEN et NextStep** :
-  CodeQL (« Default »), `semgrep.yml` (non bloquant), Dependabot, secret
-  scanning, push protection ; résultats dans Security → Code scanning. Alertes
-  du 06/10 triées et rejetées avec motif dans l'onglet (jeton de session en
-  `sessionStorage` = « Won't fix », choix d'AG-011). Dependabot ne voit pas
-  `vendor/`.
-- **Documents à diffusion restreinte**, dépôt privé
-  `ateliers-backups/documents/` : registre de sécurité et registre RGPD
-  (art. 30) **V0.1** (06/10) — V0.x tant que non validé, **V1 à la
-  validation** (DPO/DSI), puis V1.1… (guide d'archivage du CD47). Aussi : note
-  DSI avant/après (PDF + Word), procédure de restauration ; anciennes versions
-  dans `documents/archives/`, rendu par `documents/sources/rendre.js`. Prochaine révision : audit du 01/01/2027
-  (ACME Alwaysdata à vérifier auprès de l'hébergeur).
+  déconnexion ; adresses mail rendues aux seuls admin/superviseur ; aucun
+  script ni feuille de style externe (`vendor/`, RGPD-17 en CI) ; deux
+  services appelés par le navigateur des agents : API Géo de l'État et fonds
+  de carte OSM France ; HTTPS forcé ; 2FA GitHub et Alwaysdata ; journal 12 mois.
+- **Contrôles du code (depuis le 06/10/2026), NEWGEN et NextStep** : CodeQL
+  (« Default »), `semgrep.yml` (non bloquant), Dependabot (ne voit pas
+  `vendor/`), secret scanning, push protection ; alertes triées avec motif dans
+  Security → Code scanning. **Audit Codex** (OpenAI) le 06/10 : 14 + 3 points,
+  rapports vérifiés dans `ateliers-backups/documents/sources/` ; règles
+  MD-LIB `agora.md` §12 (blocs de sécurité → Codex, audit trimestriel).
+- **Documents à diffusion restreinte**, `ateliers-backups/documents/` :
+  registres de sécurité et RGPD **V0.6** (06/10) — V0.x tant que non validé,
+  **V1 à la validation** (DPO/DSI), chaque mise à jour monte d'un cran ;
+  note DSI avant/après, procédure de restauration ; anciennes versions dans
+  `documents/archives/`, rendu par `documents/sources/rendre.js`. Prochaine
+  révision : audit du 01/01/2027 (ACME Alwaysdata à vérifier).
 - Plus de PWA (AG-012) : `sw.js` de désinstallation publié sans date de fin.
 - **Bac à sable** (AG-019) : https://ateliers-numeriques.alwaysdata.net/sandbox/
   — comptes « Démo … », mot de passe = secret `SANDBOX_MDP_DEMO`, fausses
@@ -68,15 +64,14 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin.
 
 ## 🔧 Parité NEWGEN/NextStep (AG-015)
 
-**4 écarts, tous `voulu`** (`APP_NS`, `App`, `injectCSS`, `VueHistorique` —
-navigation et design propres à chaque appli). Outils : `node scripts/parite.js
+**5 écarts, tous `voulu`** (dont `APP_NS`, `App`, `injectCSS`,
+`VueHistorique` — navigation et design propres à chaque appli). Outils : `node scripts/parite.js
 ../ateliers-cd47_NextStep` (constat), `--maj` (réécrit
 `scripts/parite-ecarts.json` ; ce qui a bougé repasse en `à trancher`) ;
 workflow `parite.yml`, jamais bloquant. **Avant de pousser** un changement
 dans un écart `voulu` : `--maj`, puis remettre son statut à `voulu` à la main.
-**Ordre de push : NextStep d'abord, puis NEWGEN** — non respecté le 04/10
-(quatre mails d'échec) ; depuis `71797cc`, `parite.yml` refait l'essai 10 et
-20 min plus tard sur un push avant d'alerter. `scripts/githooks/pre-push`
+**Ordre de push : NextStep d'abord, puis NEWGEN** (`parite.yml` refait
+l'essai 10 et 20 min plus tard avant d'alerter). `scripts/githooks/pre-push`
 (installé par le hook de session) refuse un push de NEWGEN si la parité n'est
 pas à jour ou si NextStep a des commits non poussés.
 
@@ -96,7 +91,7 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
-   remettre : note avant/après V0.1 et registres V0.2. Restent à faire
+   remettre : note avant/après V0.1 et registres V0.6. Restent à faire
    avant : mail de validation à la DPO (écart n° 7), premier jet du tableau
    de gestion pour les Archives départementales (écart n° 9), vérifier les
    deux « ⚠️ » du document (compte transférable, alerte d'intrusion).
@@ -105,7 +100,7 @@ sont datées du 05/10 à la demande de l'utilisateur.
    compte Alwaysdata personnel sans DPA, durée de conservation des ateliers
    non fixée, mention d'information des agents, procédure de sortie ; **avis
    des stagiaires (T6) mis en service avant son avis** (qualification, base
-   légale, remarques libres ; mention complétée le 06/10, `e150c69`).
+   légale, remarques libres, seuil de 3 avis, écart n° 11).
 2. **À tester sur PC** : réimport Outlook (rendez-vous déplacé → « Mettre à
    jour », supprimé → « Annulé » proposé décoché ; export .ics impossible sur
    téléphone) et infobulle du Planning (survol souris).
@@ -141,13 +136,13 @@ sont datées du 05/10 à la demande de l'utilisateur.
    qu'elle n'est pas remplacée — à surveiller.
 
 **Audit trimestriel** : routine `trig_01J6ZMsLHKbgXAQsRYgQL16q` (6 dépôts,
-sans connecteur, prochaine exécution le 01/01/2027). Créée dans
-l'interface : **Claude ne peut pas la modifier**, seul le champ
-« Instructions » est modifiable, par l'utilisateur. Ses commits vont sur des
-branches `claude/…` : la consigne demande de les fusionner dans `main`, à
-vérifier au 01/01. **Rappels de l'audit Codex** (à lancer à la main), push et mail à 08:52 :
+prochaine le 01/01/2027), créée dans l'interface : **Claude ne peut pas la
+modifier** (champ « Instructions » seulement, par l'utilisateur) ; ses commits
+vont sur des branches `claude/…` à fusionner dans `main` — à vérifier au 01/01.
+**Rappels de l'audit Codex** (lancé à la main), push et mail à 08:52 :
 `trig_012uCnnzo6MZhyWNYr6JAFqv` le 2 janvier, `trig_01XC6RefYHqVbN2Wcjz3kkXo`
-le 1er avril, juillet et octobre.
+le 1er avril, juillet et octobre. Copilot écarté le 07/10 (abonnement payant
+requis) ; Gemini en réserve.
 
 Hors liste, choix assumé : les noms `GAS_*`/`gasAppel`/`__gasLog` (~120
 occurrences, verrouillées par les tests réseau) restent, ils désignent la
@@ -187,10 +182,11 @@ couche d'appel.
   après 5 échecs par compte, sans compter l'IP ; SheetJS 0.18.5 gardé (ses
   failles ne jouent qu'à la lecture d'un fichier, l'appli ne fait qu'écrire —
   **rouvrir** si un import `.xlsx` apparaît côté navigateur).
-- **Mot de passe (AG-023, 06/10/2026) : option 1 seule.** L'actuel est exigé
-  pour changer le sien, sauf mot de passe provisoire ; Index l'envoie au
-  changement imposé. **Pas fait, choix de l'utilisateur** : mot de passe
-  provisoire imposé par l'API et écran dans les deux Admin (audit Codex n° 6).
+- **Mots de passe (06/10/2026)** : l'actuel est exigé pour changer le sien,
+  sauf provisoire ; Index l'envoie au changement imposé (AG-023, option 1).
+  L'Admin envoie un lien par mail (`envoyerLienReinit`), le provisoire n'est
+  qu'un secours. **Pas fait, choix de l'utilisateur** : provisoire imposé par
+  l'API et dans les deux Admin (audit Codex n° 6).
 - **Interrupteur « login »** de Listes → Conseillers = accès à l'**Admin**
   seulement ; Index reste ouvert. Couper complètement un agent = supprimer
   son compte. Noms à accès Admin lisibles sans connexion : écart accepté (24/09).
@@ -208,11 +204,8 @@ couche d'appel.
 - **Avis, 06/10** : sous **3 avis**, un conseiller ne voit que leur nombre
   (QR, Avis par atelier, bilan) ; l'Admin voit tout (`AVIS_SEUIL`, testé).
   Un agent peut se déclarer co-animateur et voir les avis : **gardé**
-  (écart n° 11). Envois simultanés (essais, plafond) : **acceptés**.
-- **Aide mot de passe, 06/10** : l'Admin envoie un lien par mail
-  (`envoyerLienReinit`) ; le provisoire n'est qu'un secours.
-  Ni ceci ni le seuil de 3 avis ne sont annoncés dans les Nouveautés
-  (décision de l'utilisateur, 06/10).
+  (écart n° 11). Envois simultanés (essais, plafond) : **acceptés**. Ni le
+  seuil ni le lien Admin ne sont annoncés dans les Nouveautés (décision du 06/10).
 - **Avis des stagiaires (04/10)** : anonymes, sans âge ni recontact tant que
   le DPO n'a pas validé ; un avis par appareil et pas plus que de présents
   (à défaut d'inscrits) ; plus de bouton « poste partagé » (remplace
