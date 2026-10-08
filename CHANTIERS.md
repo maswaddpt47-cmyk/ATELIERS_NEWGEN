@@ -103,7 +103,8 @@ sont datées du 05/10 à la demande de l'utilisateur.
    légale, remarques libres, seuil de 3 avis, écart n° 11).
 2. **À tester sur PC** : réimport Outlook (rendez-vous déplacé → « Mettre à
    jour », supprimé → « Annulé » proposé décoché ; export .ics impossible sur
-   téléphone) et infobulle du Planning (survol souris).
+   téléphone) et infobulle du Planning (survol souris) ; bouton « 📥 Import
+   ICS » du Calendrier (08/10, ouvre l'import Outlook de la saisie par cycle).
 3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
 
