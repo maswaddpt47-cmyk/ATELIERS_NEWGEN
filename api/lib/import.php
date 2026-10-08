@@ -56,7 +56,8 @@ const IMPORT_CONFIG_UTILES = [
     'list_publics', 'list_statuts', 'lists', 'maintenance', 'maintenance_msg',
     'materiels_caches', 'rappels_actifs', 'stock_ordinateurs', 'visibility',
 ];
-// Même réglage, nom différent dans NextStep (INVENTAIRE.md §1).
+// Même réglage, nom différent dans NextStep (inventaire de la bascule, §1 :
+// git show d4602f5:migration/INVENTAIRE.md).
 const IMPORT_CONFIG_RENOMMEES = ['materiels_masques' => 'materiels_caches'];
 // Clés présentes dans le classeur réel du 23/09/2026 mais lues par aucun des
 // deux codes (vérifié par recherche dans les deux dépôts) : non importées.

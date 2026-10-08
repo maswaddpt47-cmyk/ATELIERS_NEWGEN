@@ -508,6 +508,7 @@ tr:hover td{background:#f7fafc}
 .search-always:focus-within{border-color:#0f6e7a;box-shadow:0 1px 2px rgba(12,36,48,.07),0 3px 8px rgba(12,36,48,.07),0 0 0 3px rgba(15,110,122,.12)}
 .search-always input{border:none;background:none;font:inherit;font-size:15px;color:#13202a;width:100%;outline:none}
 .search-always input::placeholder{color:#7a8e98}
+.search-always input::-webkit-search-cancel-button{display:none}
 .filter-panel-v2{background:linear-gradient(180deg,#fff,#f3f7f9);border:1px solid #d4dfe6;border-radius:14px;box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(12,36,48,.06),0 10px 28px rgba(12,36,48,.11);overflow:hidden;margin-bottom:14px}
 .filter-head-v2{display:flex;align-items:center;gap:9px;padding:12px 14px;cursor:pointer;background:#fff;border-bottom:1px solid transparent;transition:border-color .22s;user-select:none}
 .filter-panel-v2.open .filter-head-v2{border-bottom-color:#d4dfe6}
@@ -1948,6 +1949,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
 
   // ── états mode lot ──
   const[modeLot,setModeLot]     = React.useState(false);
+  const[importOuvert,setImportOuvert]=React.useState(false);
   const[lotForm,setLotForm]     = React.useState({orienteur:'',commune:'',lieu:'',conseiller:consDef,co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:''});
   const[lotRows,setLotRows]     = React.useState([emptyRow(),emptyRow()]);
   const[lotErrors,setLotErrors] = React.useState({});
@@ -1977,6 +1979,17 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   React.useEffect(()=>{
     if(!prefillData)return;
     idNouveauRef.current=null;
+    // Depuis le Calendrier ou l'Agenda (08/10/2026) : import ICS → saisie par
+    // cycle, import ouvert ; clic sur une case → atelier unique à cette date.
+    if(prefillData._importICS){
+      setEditId(null);setIsDup(false);setImportOuvert(true);setModeLot(true);
+      window.scrollTo(0,0);if(onClearPrefill)onClearPrefill();return;
+    }
+    if(prefillData._creneau){
+      setForm({...empty,date:prefillData._creneau,statut:'Planifié'});
+      setEditId(null);setIsDup(false);setModeLot(false);setErrors({});
+      window.scrollTo(0,0);if(onClearPrefill)onClearPrefill();return;
+    }
     setForm({...empty,...prefillData,_id:'',_n:'',date:'',horaire:'',ampm:'',inscrits:4,presents:'',remarques:'',statut:'Planifié',fiche_bilan:''});
     setEditId(null);setIsDup(true);setModeLot(false);setErrors({});
     window.scrollTo(0,0);if(onClearPrefill)onClearPrefill();
@@ -2381,7 +2394,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       // Tableau des dates
       CE('div',{style:secStyle},
         CE('div',{style:{fontSize:13,fontWeight:700,color:ac,marginBottom:12}},'📅 Dates du cycle'),
-        CE(ImportOutlook,{entries,ac,acLight,onImporter:importerOutlook}),
+        CE(ImportOutlook,{entries,ac,acLight,onImporter:importerOutlook,ouvertInit:importOuvert}),
         CE(PeriodiciteCycle,{entries,ac,acLight,onGenerer:genererLignes}),
         lotRows.map((row)=>{
           const rErr=lotRowErrors[row.id]||{};
@@ -2939,7 +2952,8 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
     CE('label',{className:'search-always'},
       CE('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
         CE('circle',{cx:11,cy:11,r:8}),CE('path',{d:'M21 21l-4.35-4.35'})),
-      CE('input',{type:'search',value:search,placeholder:'Titre, commune, remarque, orienteur…',onChange:e=>setSearch(e.target.value)})
+      CE('input',{type:'search',value:search,placeholder:'Titre, commune, remarque, orienteur…',onChange:e=>setSearch(e.target.value)}),
+      search&&CE('button',{type:'button','aria-label':'Effacer la recherche',title:'Effacer la recherche',onClick:e=>{e.preventDefault();setSearch('');},style:{border:'none',background:'#e2e8f0',color:'#475569',borderRadius:'50%',width:22,height:22,fontSize:12,lineHeight:'22px',padding:0,cursor:'pointer',flexShrink:0}},'✕')
     ),
     // ── Panneau filtres v2 ────────────────────────────────────
     CE('div',{className:'filter-panel-v2'+(filtresOpen?' open':'')},
@@ -3149,11 +3163,13 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
 // ═══════════════════════════════════════════════════════════
 // VUE CALENDRIER — v9.2
 // ═══════════════════════════════════════════════════════════
-function VueCalendrier({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDuplicate,initConseiller,onResetConseiller,canDelete,onChangeConseiller}){
+function VueCalendrier({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDuplicate,initConseiller,onResetConseiller,canDelete,onChangeConseiller,onNouveau,onImportICS}){
   const today=new Date();
   const todayStr=today.toISOString().slice(0,10);
   const[calDate,setCalDate]=React.useState(new Date(today.getFullYear(),today.getMonth(),1));
-  const[filtConseiller,setFiltConseiller]=React.useState(initConseiller||'Tous');
+  // « Tous » par défaut (demande du 07/10/2026) : le conseiller connecté ne
+  // filtre plus d'office le Calendrier ; initConseiller n'est plus lu ici.
+  const[filtConseiller,setFiltConseiller]=React.useState('Tous');
   const[filtPublic,setFiltPublic]=React.useState('Tous');
   const[filtresOpen,setFiltresOpen]=React.useState(false);
   const[panel,setPanel]=React.useState(null);
@@ -3167,7 +3183,6 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
   const[suppressionEnCours,setSuppressionEnCours]=React.useState(false);
   const[expandDay,setExpandDay]=React.useState(null);
 
-  React.useEffect(()=>{if(initConseiller)setFiltConseiller(initConseiller);},[initConseiller]);
 
   const yr=calDate.getFullYear();
   const mo=calDate.getMonth();
@@ -3212,6 +3227,16 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
   function nextMonth(){setCalDate(d=>new Date(d.getFullYear(),d.getMonth()+1,1));setExpandDay(null);}
   function goToday(){setCalDate(new Date(today.getFullYear(),today.getMonth(),1));setExpandDay(null);}
 
+  // Export du mois affiché, filtres compris (08/10/2026).
+  function exportICSMois(){
+    const evts=monthEntries.filter(e=>e.date).sort((a,b)=>String(a.date+(a.horaire||'')).localeCompare(String(b.date+(b.horaire||''))));
+    if(!evts.length){showToast('Aucun atelier à exporter ce mois-ci',false);return;}
+    const url=URL.createObjectURL(new Blob([buildICS(evts)],{type:'text/calendar;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download=`ateliers_${monthStr}.ics`;document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('✅ Calendrier téléchargé ('+evts.length+' atelier'+(evts.length>1?'s':'')+')');
+  }
+
   // Panel
   function openPanel(e){setPanel(e);}
   function closePanel(){setPanel(null);}
@@ -3240,13 +3265,16 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
           CE('button',{className:'btn btn-secondary btn-sm',style:{marginLeft:4,fontSize:12},onClick:goToday},'Aujourd\'hui'),
           CE(ChoixDate,{titre:'Aller au mois de cette date',value:`${yr}-${String(mo+1).padStart(2,'0')}-01`,onChange:v=>{const[y,m]=v.split('-').map(Number);setCalDate(new Date(y,m-1,1));setExpandDay(null);}})
         ),
+        CE('div',{style:{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}},
+        CE('button',{className:'btn btn-secondary btn-sm',style:{fontSize:12},title:'Télécharger les ateliers du mois affiché (filtres compris) au format agenda .ics',onClick:exportICSMois},'📤 Export ICS'),
+        onImportICS&&CE('button',{className:'btn btn-secondary btn-sm',style:{fontSize:12},title:'Importer un fichier .ics (Outlook) dans la saisie par cycle',onClick:onImportICS},'📥 Import ICS'),
         CE('button',{
           onClick:()=>setFiltresOpen(o=>!o),
           style:{display:'flex',alignItems:'center',gap:5,background:'none',border:'1.5px solid var(--border)',borderRadius:6,padding:'4px 10px',cursor:'pointer',fontSize:12,color:'var(--text-3)',fontWeight:600}
         },
           '🔍 Filtres',
           CE('span',{style:{fontSize:11,transition:'transform .2s',transform:filtresOpen?'rotate(180deg)':'rotate(0deg)'}},'▾')
-        )
+        ))
       ),
       // Chips conseillers + KPIs — collapsibles via CSS
       CE('div',{style:{borderTop:filtresOpen?'1px solid #f0f4f8':'none',maxHeight:filtresOpen?'500px':'0',overflow:'hidden',transition:'max-height .3s cubic-bezier(.4,0,.2,1)',padding:filtresOpen?'10px 14px':'0 14px'}},
@@ -3277,15 +3305,17 @@ function VueCalendrier({entries,onEdit,onDelete,onRefresh,onEntryUpdated,onDupli
           if(day===null)return CE('div',{key:'e'+idx,className:'cal-cell cal-cell-empty'});
           const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
           const isToday=ds===todayStr;
+          const ferie=joursFeries(yr)[ds];
           const dayAteliers=dayMap[day]||[];
           const MAX_VISIBLE=3;
           const hidden=dayAteliers.length-MAX_VISIBLE;
           const expanded=expandDay===day;
           const visible=expanded?dayAteliers:dayAteliers.slice(0,MAX_VISIBLE);
-          return CE('div',{key:day,className:'cal-cell'+(isToday?' cal-today':'')},
+          return CE('div',{key:day,className:'cal-cell'+(isToday?' cal-today':''),style:{...(ferie&&!isToday?{background:'#fef2f2'}:{}),...(onNouveau?{cursor:'pointer'}:{})},title:[ferie,onNouveau&&'Cliquer pour saisir un atelier le '+fmtDate(ds)].filter(Boolean).join(' — ')||undefined,onClick:onNouveau?()=>onNouveau(ds):undefined},
             CE('div',{className:'cal-day-num'},
               isToday?CE('span',{className:'cal-today-num'},day):day
             ),
+            ferie&&CE('div',{style:{fontSize:9,fontWeight:700,color:'#b91c1c',lineHeight:1.2,marginBottom:2}},ferie),
             visible.map(e=>{
               const sc=conseillerColor(e.conseiller);
               const retard=isRetard(e);
@@ -4181,7 +4211,7 @@ function FriseMateriel({entries,onEdit,dateInitiale}){
       )
     );
   }
-  const legende=CE('div',{style:{fontSize:10,color:'#94a3b8',marginBottom:8}},'▼ = jour de l\'atelier (entre le prélèvement et le retour de la barre) · le jour du retour ne réserve plus le stock (retour le matin) · un prêt d\'une seule journée réserve les ordinateurs de l\'heure de début à la fin + 30 min ; la case montre le plus grand nombre demandé au même moment');
+  const legende=CE('div',{style:{fontSize:10,color:'#94a3b8',marginBottom:8}},'▼ = jour de l\'atelier');
   return CE(React.Fragment,null,
     CE('div',{className:'card',style:{maxWidth:'100%',margin:'0 auto 16px',overflowX:'auto'}},
       CE('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4,flexWrap:'wrap',gap:8}},
@@ -4969,9 +4999,10 @@ function ConfirmModal({item,onConfirm,onCancel}){
 // ════════════════════════════════════════════════════════════
 // ── VueAgendaSemaine — Planning hebdo AM/PM ─────────────────
 // ════════════════════════════════════════════════════════════
-function VueAgendaSemaine({entries,onEdit,onDelete,onDuplicate,canDelete,initConseiller,accentColor}){
+function VueAgendaSemaine({entries,onEdit,onDelete,onDuplicate,canDelete,initConseiller,accentColor,onNouveau}){
   const[weekOffset,setWeekOffset]=React.useState(0);
-  const[filterConseiller,setFilterConseiller]=React.useState(initConseiller||'Tous');
+  // « Tous » par défaut (demande du 07/10/2026), comme le Calendrier.
+  const[filterConseiller,setFilterConseiller]=React.useState('Tous');
   const[selectedEntry,setSelectedEntry]=React.useState(null);
   const[confirmDel,setConfirmDel]=React.useState(null);
 
@@ -5027,7 +5058,7 @@ function VueAgendaSemaine({entries,onEdit,onDelete,onDuplicate,canDelete,initCon
     const retard=isRetard(e);
     return CE('div',{
       key:e._id,
-      onClick:()=>setSelectedEntry(e),
+      onClick:ev=>{ev.stopPropagation();setSelectedEntry(e);},
       style:{
         background:'var(--surface)',borderRadius:8,borderLeft:`4px solid ${color}`,
         padding:'6px 8px',marginBottom:4,cursor:'pointer',
@@ -5099,16 +5130,18 @@ function VueAgendaSemaine({entries,onEdit,onDelete,onDuplicate,canDelete,initCon
               CE('th',{style:{width:36,border:'none',background:'transparent'}}),
               weekDays.map(d=>{
                 const dkey=dk(d);const isToday=dkey===todayStr;
+                const ferie=joursFeries(d.getFullYear())[dkey];
                 const count=(slots[dkey]?slots[dkey].AM.length+slots[dkey].PM.length:0);
                 const acc=isToday?accentColor:'#6b7280';
                 return CE('th',{key:dkey,style:{
                   padding:'10px 6px 8px',textAlign:'center',border:'none',
-                  background:isToday?accentColor+'15':'#f8fafc',
+                  background:isToday?accentColor+'15':ferie?'#fef2f2':'#f8fafc',
                   borderRadius:'12px 12px 0 0',fontWeight:400
                 }},
                   CE('div',{style:{fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'.08em',color:acc}},JOURS[d.getDay()]),
                   CE('div',{style:{fontSize:26,fontWeight:800,lineHeight:1.1,color:isToday?accentColor:'#1a202c',margin:'2px 0'}},d.getDate()),
                   CE('div',{style:{fontSize:10,color:'#9ca3af',marginBottom:4}},MOIS[d.getMonth()]),
+                  ferie&&CE('div',{style:{fontSize:10,fontWeight:700,color:'#b91c1c',marginBottom:4}},ferie),
                   count>0&&CE('span',{style:{
                     display:'inline-block',background:isToday?accentColor:'#e2e8f0',
                     color:isToday?'#fff':'#4a5568',borderRadius:20,
@@ -5129,11 +5162,12 @@ function VueAgendaSemaine({entries,onEdit,onDelete,onDuplicate,canDelete,initCon
               weekDays.map(d=>{
                 const dkey=dk(d);const isToday=dkey===todayStr;
                 const items=slots[dkey]?slots[dkey][slot]:[];
-                return CE('td',{key:dkey+slot,style:{
+                const ferie=joursFeries(d.getFullYear())[dkey];
+                return CE('td',{key:dkey+slot,onClick:onNouveau?()=>onNouveau(dkey):undefined,title:onNouveau?'Cliquer pour saisir un atelier le '+fmtDate(dkey):undefined,style:{cursor:onNouveau?'pointer':undefined,
                   verticalAlign:'top',padding:4,
                   background:isToday
                     ?(slot==='AM'?accentColor+'12':accentColor+'08')
-                    :(slot==='AM'?'#f8fafc':'#fafafa'),
+                    :ferie?'#fef2f2':(slot==='AM'?'#f8fafc':'#fafafa'),
                   borderBottom:si===0?`1px dashed ${isToday?accentColor+'40':'#e2e8f0'}`:'none',
                   borderRadius:si===1?'0 0 10px 10px':'0',
                   border:isToday&&si===1?`1px solid ${accentColor}30`:'',
@@ -5193,8 +5227,10 @@ function VuePlanning({entries,onEdit,onDelete,onDuplicate,canDelete,accentColor,
     if(debut==null){sansHoraire.push(e);return;}
     items.push({e,jour:normalizeDate(e.date),nom:e.conseiller||'—',debut,fin:debut+(parseInt(e.duree)>0?parseInt(e.duree):DUREE_DEFAUT)});
   });
-  // Toute l'équipe active, même sans atelier : on voit qui est disponible.
-  const noms=[...new Set([...(conseillers||[]),...items.map(x=>x.nom)])].filter(Boolean);
+  // L'équipe active, même sans atelier cette semaine (on voit qui est
+  // disponible) ; un conseiller qui n'a encore aucun atelier n'apparaît pas.
+  const ontAtelier=new Set((entries||[]).map(e=>e.conseiller).filter(Boolean));
+  const noms=[...new Set([...(conseillers||[]).filter(c=>ontAtelier.has(c)),...items.map(x=>x.nom)])].filter(Boolean);
   // Plage horaire : 8 h – 18 h, élargie si un atelier en sort.
   const hMin=Math.min(480,...items.map(x=>Math.floor(x.debut/60)*60));
   const hMax=Math.max(1080,...items.map(x=>Math.ceil(x.fin/60)*60));
@@ -5214,11 +5250,11 @@ function VuePlanning({entries,onEdit,onDelete,onDuplicate,canDelete,accentColor,
     const montrer=ev=>setSurvol({x:ev.clientX,y:ev.clientY,e,debut:x.debut,fin:x.fin});
     return CE('div',{key:e._id,onClick:()=>{setSurvol(null);setSelectedEntry(e);},onMouseEnter:montrer,onMouseMove:montrer,onMouseLeave:()=>setSurvol(null),style:{
       position:'absolute',left:pos(x.debut)+1,width:Math.max(8,pos(x.fin)-pos(x.debut)-2),top:4+x.voie*VOIE,height:VOIE-4,
-      background:e.statut==='Réalisé'?c:c+'cc',color:'#fff',borderRadius:6,padding:'2px 5px',boxSizing:'border-box',
-      fontSize:10,lineHeight:'11px',overflow:'hidden',cursor:'pointer',boxShadow:'0 1px 3px rgba(0,0,0,.18)',
-      outline:retard?'2px solid #dc2626':'none',...(STYLE_STATUT[e.statut]||{})}},
-      CE('div',{style:{fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},e.horaire+' '+(e.thematique||'—')),
-      CE('div',{style:{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',opacity:.9}},e.commune||''));
+      background:e.statut==='Réalisé'?c:c+'cc',borderRadius:6,boxSizing:'border-box',cursor:'pointer',boxShadow:'0 1px 3px rgba(0,0,0,.18)',
+      outline:retard?'2px solid #dc2626':'none',...(STYLE_STATUT[e.statut]||{})},
+      // Pas de texte : une barre d'1 h 30 fait ~22 px (LJ fixe), tout libellé y
+      // était tronqué. Détails au survol (infobulle) ou au clic.
+      'aria-label':(e.horaire||'')+' '+(e.thematique||'')+' — '+(e.commune||'')});
   }
 
   return CE('div',null,
@@ -6254,9 +6290,9 @@ const NOUVEAUTES=[
 // Thématique toujours « TBD » (02/10/2026, demande de l'utilisateur) : le
 // titre sert à filtrer (mot-clé), pas à décrire l'atelier.
 // ═══════════════════════════════════════════════════════════
-function ImportOutlook({entries,ac,acLight,onImporter}){
+function ImportOutlook({entries,ac,acLight,onImporter,ouvertInit}){
   const lireMc=()=>{try{return localStorage.getItem(lsKey('outlook_motcle'))||'ATELIER';}catch(_){return 'ATELIER';}};
-  const[ouvert,setOuvert]=React.useState(false);
+  const[ouvert,setOuvert]=React.useState(!!ouvertInit);
   const[texte,setTexte]=React.useState('');
   const[nomFichier,setNomFichier]=React.useState('');
   const[motCle,setMotCle]=React.useState(lireMc);

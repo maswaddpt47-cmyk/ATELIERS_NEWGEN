@@ -495,6 +495,9 @@ function App(){
     if(nom) sessionStorage.setItem('gs_conseiller', nom);
   }
   function handleEdit(id){setEditingId(id);setPrefillData(null);setView('saisie');}
+  // Calendrier / Agenda (08/10/2026) : clic sur une case, import ICS.
+  function handleNouveauLe(date){setEditingId(null);setPrefillData({_creneau:date});setView('saisie');}
+  function handleImportICS(){setEditingId(null);setPrefillData({_importICS:true});setView('saisie');}
   // ── Application locale d'une écriture déjà confirmée par GAS ───────────
   // Une modification ou une suppression déclenchait jusqu'ici un loadData()
   // complet : deux allers-retours au lieu d'un, le second étant le plus lent
@@ -698,9 +701,9 @@ function App(){
       !loading&&!error&&CE('div',{className:'view-anim',key:view+'_'+(filtreConseiller||'all')},
         view==='saisie'&&visibility.saisie&&CE(VueSaisie,{conseillerDefaut:(()=>{try{return sessionStorage.getItem('gs_conseiller')||'';}catch(_){return '';}})(),entries,onSaved:handleSaved,onNewEntry:e=>{if(anneeIncluse(annee,e.date))setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
         view==='historique'&&visibility.historique&&CE(VueHistorique,{onOuvrirGestionOrdi:visibility.gestion_ordi?(d=>{setDateGestionOrdi(d||null);setView('gestion_ordi');}):null,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
-        view==='agenda'&&visibility.agenda&&CE(VueAgendaSemaine,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:filtreConseiller,accentColor}),
+        view==='agenda'&&visibility.agenda&&CE(VueAgendaSemaine,{onNouveau:visibility.saisie?handleNouveauLe:undefined,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:filtreConseiller,accentColor}),
         view==='planning'&&visibility.planning&&CE(VuePlanning,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,accentColor,conseillers:conseillerActifs}),
-        view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
+        view==='calendrier'&&visibility.calendrier&&CE(VueCalendrier,{onNouveau:visibility.saisie?handleNouveauLe:undefined,onImportICS:visibility.saisie?handleImportICS:undefined,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
         view==='dashboard'&&visibility.dashboard&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers,sansBilans:true}),
         view==='bilans'&&visibility.bilans&&CE(VueMesBilans,{entries}),
         view==='carte'&&visibility.carte&&CE(VueCarte,{entries,active:view==='carte'}),

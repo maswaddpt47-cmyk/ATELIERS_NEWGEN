@@ -453,6 +453,9 @@ const LOGS_KEY = lsKey('adm_logs');
   }
 
   function handleEdit(id){setEditingId(id);setPrefillData(null);setView('saisie');}
+  // Calendrier / Agenda (08/10/2026) : clic sur une case, import ICS.
+  function handleNouveauLe(date){setEditingId(null);setPrefillData({_creneau:date});setView('saisie');}
+  function handleImportICS(){setEditingId(null);setPrefillData({_importICS:true});setView('saisie');}
   // isNewEntry=true : déjà inséré dans `entries` via onNewEntry, inutile
   // d'attendre un aller-retour GAS complet pour afficher Historique — voir
   // le même commentaire côté Index (app.js).
@@ -554,9 +557,9 @@ const LOGS_KEY = lsKey('adm_logs');
       !loading&&!error&&CE('div',{key:view,className:'view-anim'},
         view==='saisie'&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{if(anneeIncluse(annee,e.date))setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(adminConseiller)}),
         view==='historique'&&CE(VueHistorique,{key:'hist_'+adminConseiller,onOuvrirGestionOrdi:d=>{setDateGestionOrdi(d||null);setView('gestion_ordi');},entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem(lsKey('adm_conseiller'),nom);setAdminConseiller(nom);}}),
-        view==='agenda'&&CE(VueAgendaSemaine,{key:'agenda_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,accentColor}),
+        view==='agenda'&&CE(VueAgendaSemaine,{onNouveau:handleNouveauLe,key:'agenda_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,accentColor}),
         view==='planning'&&CE(VuePlanning,{entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,accentColor,conseillers:lists.conseillers}),
-        view==='calendrier'&&CE(VueCalendrier,{key:'cal_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem(lsKey('adm_conseiller'),nom);setAdminConseiller(nom);}}),
+        view==='calendrier'&&CE(VueCalendrier,{onNouveau:handleNouveauLe,onImportICS:handleImportICS,key:'cal_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem(lsKey('adm_conseiller'),nom);setAdminConseiller(nom);}}),
         view==='dashboard'&&CE(VueDashboardTabs,{entries,conseillers:lists.conseillers}),
         view==='carte'&&CE(VueCarte,{entries,active:view==='carte'}),
         view==='roadmap'&&CE(VueRoadmap,{entries,annee:anneeReference(annee),conseillers:lists.conseillers}),
@@ -974,7 +977,7 @@ function VueLogs(){
             CE('tbody',null,filtered.map((l,i)=>CE('tr',{key:i,style:{background:l.success?(i%2===0?'#f0fdf4':'#fff'):(i%2===0?'#fff5f5':'#fff')}},
               CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',whiteSpace:'nowrap',color:'#4a5568'}},formatTs(l.timestamp)),
               CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:600,background:'#f1f5f9',color:'#475569',fontFamily:'monospace'}},l.action||'—')),
-              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',fontWeight:600}},l.conseiller||'—'),
+              CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0',fontWeight:600}},l.conseiller?(c=>CE('span',{style:{display:'inline-flex',alignItems:'center',gap:6,padding:'2px 9px',borderRadius:10,background:/^#[0-9a-f]{6}$/i.test(c)?c+'22':'#f1f5f9',border:'1px solid '+c,color:'#1f2937',whiteSpace:'nowrap'}},CE('span',{style:{width:8,height:8,borderRadius:'50%',background:c,flexShrink:0}}),l.conseiller))(conseillerColor(l.conseiller)):'—'),
               CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:700,background:l.role==='admin'?'#ede9fe':l.role==='superviseur'?'#fef3c7':l.role?'#dbeafe':'#f3f4f6',color:l.role==='admin'?'#6d28d9':l.role==='superviseur'?'#92400e':l.role?'#1d4ed8':'#9ca3af'}},({admin:'Admin',superviseur:'Superviseur',user:'Conseiller'})[l.role]||l.role||'—')),
               CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:600,background:l.source==='admin.html'?'#fef3c7':l.source?'#dbeafe':'#f1f5f9',color:l.source==='admin.html'?'#92400e':l.source?'#1d4ed8':'#94a3b8'}},l.source||'—')),
               CE('td',{style:{padding:'6px 10px',borderBottom:'1px solid #f0f0f0'}},CE('span',{style:{display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:600,background:l.site==='nextstep'?'#e0f2fe':l.site==='newgen'?'#f3e8ff':'#f1f5f9',color:l.site==='nextstep'?'#0369a1':l.site==='newgen'?'#7e22ce':'#94a3b8'}},({nextstep:'NextStep',newgen:'NEWGEN'})[l.site]||'—')),

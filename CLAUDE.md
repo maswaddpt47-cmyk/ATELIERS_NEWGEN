@@ -176,6 +176,10 @@ le repo) est prévu tous les trois mois. C'est une routine planifiée
 (`create_trigger`, mode session neuve à chaque déclenchement — indépendante
 de toute session de travail), avec notification push/email. Voir
 `MD-LIB/rgpd-securite.md` pour le détail.
+**Audit Codex** (OpenAI, MD-LIB `agora.md` §12) : le même jour, et après tout
+changement structurant de sécurité (connexion, page publique, hébergement),
+avec `ateliers-backups/documents/sources/consigne-audit-codex.md` ; chaque
+point vérifié dans le code, rapport rangé dans `ateliers-backups`.
 
 ## 7. Règles de collaboration avec Claude
 
@@ -202,7 +206,7 @@ Extrait du guide de collaboration multi-projets, adapté pour ce dépôt.
 
 17. **Le rendu se vérifie à ton œil, pas par un test.** Un changement de rendu pur (couleur, libellé, position, CSS, mise en page) ne justifie ni test ni capture : dire quoi regarder et laisser l'utilisateur confirmer coûte moins cher et voit mieux. La ligne de partage est **rendu / calcul**, pas visible / invisible — un calcul, un filtre ou un format de données garde son test ciblé, parce que l'œil ne contrôle que le cas affiché ce jour-là : une régression sur une combinaison de valeurs rare passera inaperçue. les tests Playwright ne se lancent que si le changement touche ce qu'ils couvrent vraiment (section 2) ; pour le reste la CI au push suffit. Capture avant/après à la demande, pas par défaut.
 
-18. **Toute modification des interfaces se fait sur NEWGEN *et* NextStep** (demande de l'utilisateur, 26/09/2026) : les deux applis partagent la même API et la même base depuis la bascule du 25/09/2026. Un changement fait sur une seule est l'exception, annoncée comme telle au moment du choix. En fin de livraison, dire en une ligne ce qui est en ligne sur chacune (commit, `?v=`) pour que l'utilisateur sache quoi recharger. Un changement qui modifie la façon de travailler de l'équipe (bouton, écran, comportement) ajoute aussi une entrée à `NOUVEAUTES` (`shared.js`), rédigée pour l'équipe, avec un `id` suivant : la rubrique Nouveautés remplace les mails d'annonce (demande du 01/10/2026). **Seulement après que l'utilisateur a testé et validé le changement** (demande du 02/10/2026) : jamais au moment du push. Pas les correctifs invisibles. Les écarts restants sont listés et surveillés par `scripts/parite.js` (workflow `parite.yml`) : un écart voulu s'inscrit dans `scripts/parite-ecarts.json`, pas dans ce fichier.
+18. **Toute modification des interfaces se fait sur NEWGEN *et* NextStep** (demande de l'utilisateur, 26/09/2026) : les deux applis partagent la même API et la même base depuis la bascule du 25/09/2026. Un changement fait sur une seule est l'exception, annoncée comme telle au moment du choix. En fin de livraison, dire en une ligne ce qui est en ligne sur chacune (commit, `?v=`) pour que l'utilisateur sache quoi recharger. Un changement qui modifie la façon de travailler de l'équipe (bouton, écran, comportement) ajoute aussi une entrée à `NOUVEAUTES` (`shared.js`), rédigée pour l'équipe, avec un `id` suivant : la rubrique Nouveautés remplace les mails d'annonce (demande du 01/10/2026). **Seulement après que l'utilisateur a testé et validé le changement** (demande du 02/10/2026) : jamais au moment du push. **Annonce réservée à l'Admin (`admin: true`) : toujours demander d'abord s'il faut l'intégrer** (demande du 07/10/2026), texte proposé — jamais d'office. Les annonces déjà publiées (30 à 32) restent. Pas les correctifs invisibles. Les écarts restants sont listés et surveillés par `scripts/parite.js` (workflow `parite.yml`) : un écart voulu s'inscrit dans `scripts/parite-ecarts.json`, pas dans ce fichier.
 
 19. **Pas de compliment, un constat.** Ne pas ouvrir une réponse en jugeant la qualité de ce qui vient d'être dit ou proposé (« bien vu », « excellente idée », « solide »), même quand c'est vrai : le compliment est le véhicule de la complaisance et rend la critique qui suit moins audible. Ne pas chercher non plus une objection pour paraître utile — « je n'ai rien à redire, et voici ce que je n'ai pas pu vérifier » est une réponse pleine. Vaut avec l'utilisateur comme entre deux sessions dans `AGORA.md` (sa section « Sincérité », établie le 27/09/2026 après 12 verdicts « amendé » d'affilée sans un seul « confirmé » ni « contredit »).
 
@@ -274,8 +278,6 @@ pas le contradicteur.
 **Une entrée « décision à trancher » dans `CHANTIERS.md` est par définition un
 candidat** : au moment de l'écrire, dire pourquoi on ouvre un bloc ou non.
 
-**Deux comptes Claude différents fonctionnent** : le canal est ce dépôt, pas
-le compte. `AGORA.md` et cette section suffisent pour agir, MD-LIB n'est pas
-requis. `git pull --rebase origin main` avant de pousser un bloc. Aucune
-notification ne passe d'un compte à l'autre : le relais par l'utilisateur est
-obligatoire.
+**Sécurité, mots de passe, données personnelles : contradicteur Codex**
+(OpenAI) au lieu de la session B (06/10/2026, mode d'emploi : `AGORA.md`).
+Sinon deux comptes Claude : canal = ce dépôt, relais par l'utilisateur.
