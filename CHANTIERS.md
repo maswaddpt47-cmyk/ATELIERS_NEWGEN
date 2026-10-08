@@ -55,9 +55,9 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin.
   révision : audit du 01/01/2027 (ACME Alwaysdata à vérifier).
 - Plus de PWA (AG-012) : `sw.js` de désinstallation publié sans date de fin.
 - **Bac à sable** (AG-019) : https://ateliers-numeriques.alwaysdata.net/sandbox/
-  — comptes « Démo … » ; mot de passe changé par l'utilisateur depuis l'Admin
-  du bac à sable le 08/10 (le secret `SANDBOX_MDP_DEMO` ne sert qu'au premier
-  remplissage, il n'est plus à jour), fausses
+  — comptes « Démo … » ; « Démo Admin » garde le mot de passe du secret
+  `SANDBOX_MDP_DEMO`, les autres comptes ont été changés depuis l'Admin du bac
+  à sable le 08/10 (le secret ne sert qu'au premier remplissage), fausses
   données seulement (`sandbox_seed.php` : ateliers, avis et fiches fictifs,
   quatre ateliers de test des conflits des 05-06/10). **Gardé pour les
   essais** (utilisateur, 04/10). Circuit de toute nouveauté : branche
