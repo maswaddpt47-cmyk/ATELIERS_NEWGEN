@@ -17,7 +17,7 @@
 // rappels_actifs === 'false' en bloc et ignorait l'interrupteur individuel.
 //
 // Fiche bilan (09/10/2026) : le même mail liste aussi les ateliers « Réalisé »
-// dont la fiche bilan est vide, depuis sa mise en service (RAPPELS_FICHE_DEPUIS)
+// dont la fiche bilan est vide, à partir de RAPPELS_FICHE_DEPUIS
 // — le bilan trimestriel compte les ateliers sans fiche, rien ne poussait à la
 // remplir. Pas de mail en plus : une seule lettre par conseiller et par matin.
 //
@@ -31,7 +31,9 @@ require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/api.php';   // api_config_base, api_json, api_journal
 
 const RAPPELS_URL_APPLI = 'https://maswaddpt47-cmyk.github.io/ateliers-cd47_NextStep/';
-const RAPPELS_FICHE_DEPUIS = '2026-10-04';   // fiche bilan en service (AG-020)
+// Rappel des fiches lancé au 01/11/2026 (demande du 10/10 : l'équipe doit
+// être prévenue avant) ; seuls les ateliers réalisés depuis cette date comptent.
+define('RAPPELS_FICHE_DEPUIS', getenv('ATELIERS_RAPPELS_FICHE_DEPUIS') ?: '2026-11-01');   // variable : tests seulement
 
 $test = null;
 foreach (array_slice($argv, 1) as $arg) {
