@@ -28,8 +28,12 @@ $ins->execute(['a2', 'Réalisé', $hier, 'Déjà fait', 'Alice']);            //
 $ins->execute(['a3', 'Planifié', $demain, 'À venir', 'Alice']);           // futur : non
 $ins->execute(['b1', 'Planifié', $hier, 'Tablette', 'Bruno']);            // rappel coupé
 $ins->execute(['c1', 'Planifié', $hier, 'Smartphone', 'Chloé']);          // sans adresse
+$ins->execute(['a4', 'Réalisé', $hier, 'Sans fiche', 'Alice']);           // fiche bilan vide : rappelée
+$ins->execute(['a5', 'Réalisé', '2026-09-30', 'Trop ancien', 'Alice']);  // avant la fiche bilan : non
+$ins->execute(['d1', 'Réalisé', $hier, 'Fiche seule', 'Denis']);          // seulement une fiche : un mail
+$db->exec("UPDATE ateliers SET fiche_bilan = '{\"objectif\":\"oui\"}' WHERE id = 'a2'");   // fiche remplie : non
 $cfg = $db->prepare('INSERT INTO config (cle, valeur) VALUES (?, ?)');
-$cfg->execute(['emails', json_encode(['Alice' => 'alice@example.org', 'Bruno' => 'bruno@example.org'])]);
+$cfg->execute(['emails', json_encode(['Alice' => 'alice@example.org', 'Bruno' => 'bruno@example.org', 'Denis' => 'denis@example.org'])]);
 $cfg->execute(['rappels_actifs', json_encode(['Bruno' => false])]);
 
 $tmp = sys_get_temp_dir() . '/rappels-test-' . getmypid();
@@ -45,8 +49,12 @@ $mails = fn() => array_map('file_get_contents', glob("$tmp/mails/*.txt") ?: []);
 echo "Rappels\n";
 [$code, $sortie] = $lancer();
 $m = $mails();
-verifier($code === 0 && count($m) === 1 && str_contains($m[0], 'A: alice@example.org'), "un seul mail, au conseiller concerné : $sortie");
-verifier(str_contains($m[0] ?? '', 'Mails <b>gras</b>') && !str_contains($m[0] ?? '', 'Déjà fait') && !str_contains($m[0] ?? '', 'À venir'), 'seuls les ateliers « Planifié » à date passée');
+$alice = implode('', array_filter($m, fn($x) => str_contains($x, 'A: alice@example.org')));
+$denis = implode('', array_filter($m, fn($x) => str_contains($x, 'A: denis@example.org')));
+verifier($code === 0 && count($m) === 2 && $alice !== '' && $denis !== '', "un mail par conseiller concerné, pas plus : $sortie");
+verifier(str_contains($alice, 'Mails <b>gras</b>') && !str_contains($alice, 'Déjà fait') && !str_contains($alice, 'À venir'), 'seuls les ateliers « Planifié » à date passée, ou « Réalisé » sans fiche');
+verifier(str_contains($alice, 'Sans fiche') && !str_contains($alice, 'Trop ancien') && str_contains($alice, 'fiche bilan est vide'), 'fiche bilan vide rappelée dans le même mail, pas avant sa mise en service');
+verifier(str_contains($denis, 'Fiche seule') && !str_contains($denis, 'Planifié » mais'), 'conseiller sans retard mais avec une fiche vide : mail réduit à la fiche');
 verifier(str_contains($sortie, '1 rappel(s) coupé(s)') && str_contains($sortie, '1 conseiller(s) sans adresse'), 'interrupteur de rappel individuel respecté, absence d\'adresse comptée');
 verifier(!preg_match('/Alice|Bruno|Chloé|example\.org/', $sortie), 'compte rendu sans nom ni adresse');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'alertesRetard' AND conseiller = 'Alice'")->fetchColumn() === 1, 'envoi journalisé');
