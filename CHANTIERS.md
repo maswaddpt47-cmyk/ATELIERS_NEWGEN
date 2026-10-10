@@ -109,6 +109,10 @@ sont datées du 05/10 à la demande de l'utilisateur.
    ICS » du Calendrier (08/10, ouvre l'import Outlook de la saisie par cycle).
 3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
+4. **Avant le 01/11/2026 : prévenir l'équipe** que le rappel du matin listera
+   aussi les fiches bilan vides (ateliers « Réalisé » à partir du 01/11,
+   `RAPPELS_FICHE_DEPUIS` dans `api/lib/rappels.php`) ; annonce Nouveautés à
+   proposer à l'utilisateur à ce moment-là.
 
 **Pour Claude**
 
