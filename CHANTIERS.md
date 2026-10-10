@@ -55,7 +55,9 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin.
   révision : audit du 01/01/2027 (ACME Alwaysdata à vérifier).
 - Plus de PWA (AG-012) : `sw.js` de désinstallation publié sans date de fin.
 - **Bac à sable** (AG-019) : https://ateliers-numeriques.alwaysdata.net/sandbox/
-  — comptes « Démo … », mot de passe = secret `SANDBOX_MDP_DEMO`, fausses
+  — comptes « Démo … » ; « Démo Admin » garde le mot de passe du secret
+  `SANDBOX_MDP_DEMO`, les autres comptes ont été changés depuis l'Admin du bac
+  à sable le 08/10 (le secret ne sert qu'au premier remplissage), fausses
   données seulement (`sandbox_seed.php` : ateliers, avis et fiches fictifs,
   quatre ateliers de test des conflits des 05-06/10). **Gardé pour les
   essais** (utilisateur, 04/10). Circuit de toute nouveauté : branche
@@ -112,8 +114,9 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 1. **Planning en essai** (depuis le 03/10, à côté de l'Agenda) : vers le
    **20/10**, relire les compteurs d'onglets (Admin → Connexions) avec
-   l'utilisateur avant de retirer l'Agenda ; le mensuel (Calendrier gardé ou
-   carte de charge) se tranche ensuite. Fait remonté le 07/10 : sur
+   l'utilisateur avant de retirer l'Agenda ; vue Mois ajoutée au Planning le 09/10
+   (bascule Semaine / Mois, à tester) : reste à trancher si le Calendrier
+   garde sa place à côté. Fait remonté le 07/10 : sur
    téléphone, seuls lundi et mardi tiennent à l'écran, le reste de la
    semaine se trouve en faisant défiler — l'utilisateur a cru un atelier
    absent. Barres sans texte et conseillers sans aucun atelier masqués
