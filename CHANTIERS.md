@@ -290,11 +290,11 @@ Règle 22 de MD-LIB `collaboration.md` : au plus 3 pistes, à la fin d'une
 fonctionnalité validée ou sur demande de revue. Une piste écartée ne se
 repropose pas sans fait nouveau.
 
-**Proposées, en attente**
-- 04/10/2026 : **rappel du matin pour une fiche bilan vide** sur un atelier « Réalisé », comme le rappel existant des ateliers restés « Planifié » — le bilan trimestriel compte les ateliers « sans fiche », rien ne pousse à la remplir.
-- 06/10/2026 : **progression début → fin de cycle dans les avis** : mettre côte à côte « À l'aise » et « Refaire seul » de la séance diagnostic et de la dernière séance d'un même cycle — le 05/10 (Fumel, diagnostic) donne 1/5 sur les deux, point de départ que rien ne compare aujourd'hui.
+**Proposées, en attente** : aucune (10/10/2026).
 
 **Écartées** (date — piste — raison)
 - 03/10/2026 — lien d'abonnement agenda pour les partenaires — « pour l'instant » (utilisateur).
 - 03/10/2026 — tri des onglets d'après les compteurs d'usage — « pour l'instant ».
 - 03/10/2026 — aide « Premiers pas » pour un nouvel arrivant — « pour l'instant ».
+- 10/10/2026 — heure pré-remplie au clic sur un créneau de l'Agenda — une heure par défaut risque d'être gardée sans correction (horaires variés).
+- 10/10/2026 — progression début → fin de cycle dans les avis — « pour l'instant » : un seul diagnostic avec avis (05/10) ; à reprendre quand un cycle sera bouclé.
