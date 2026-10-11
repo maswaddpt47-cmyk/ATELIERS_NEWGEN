@@ -29,7 +29,7 @@ $ins->execute(['a3', 'Planifié', $demain, 'À venir', 'Alice']);           // f
 $ins->execute(['b1', 'Planifié', $hier, 'Tablette', 'Bruno']);            // rappel coupé
 $ins->execute(['c1', 'Planifié', $hier, 'Smartphone', 'Chloé']);          // sans adresse
 $ins->execute(['a4', 'Réalisé', $hier, 'Sans fiche', 'Alice']);           // fiche bilan vide : rappelée
-$ins->execute(['a5', 'Réalisé', '2026-09-30', 'Trop ancien', 'Alice']);  // avant la fiche bilan : non
+$ins->execute(['a5', 'Réalisé', date('Y-m-d', strtotime('-10 days')), 'Trop ancien', 'Alice']);  // avant le début des rappels de fiche : non
 $ins->execute(['d1', 'Réalisé', $hier, 'Fiche seule', 'Denis']);          // seulement une fiche : un mail
 $db->exec("UPDATE ateliers SET fiche_bilan = '{\"objectif\":\"oui\"}' WHERE id = 'a2'");   // fiche remplie : non
 $cfg = $db->prepare('INSERT INTO config (cle, valeur) VALUES (?, ?)');
@@ -40,7 +40,8 @@ $tmp = sys_get_temp_dir() . '/rappels-test-' . getmypid();
 @mkdir("$tmp/mails", 0700, true);
 file_put_contents("$tmp/config.php", '<?php return ' . var_export(['db_hote' => $hote, 'db_nom' => 'ateliers_test_rappels', 'db_utilisateur' => $util, 'db_mot_de_passe' => $mdp], true) . ';');
 $lancer = function (string $args = '') use ($tmp): array {
-    $env = 'ATELIERS_API_CONFIG=' . escapeshellarg("$tmp/config.php") . ' ATELIERS_MAIL_TEST_DIR=' . escapeshellarg("$tmp/mails");
+    $env = 'ATELIERS_API_CONFIG=' . escapeshellarg("$tmp/config.php") . ' ATELIERS_MAIL_TEST_DIR=' . escapeshellarg("$tmp/mails")
+         . ' ATELIERS_RAPPELS_FICHE_DEPUIS=' . date('Y-m-d', strtotime('-5 days'));
     exec("$env php " . escapeshellarg(__DIR__ . '/../api/lib/rappels.php') . " $args 2>&1", $sortie, $code);
     return [$code, implode("\n", $sortie)];
 };
