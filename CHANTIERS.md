@@ -299,3 +299,4 @@ repropose pas sans fait nouveau.
 - 10/10/2026 — heure pré-remplie au clic sur un créneau de l'Agenda — une heure par défaut risque d'être gardée sans correction (horaires variés).
 - 10/10/2026 — progression début → fin de cycle dans les avis — « pour l'instant » : un seul diagnostic avec avis (05/10) ; à reprendre quand un cycle sera bouclé.
 - 12/10/2026 — synchroniser l'import Outlook entre PC et téléphone (à la façon de la sauvegarde SpeedDial) — « trop compliqué » (utilisateur) : la voie propre passe par le serveur, donc nouvelle donnée personnelle (registres, DPO, purge à viser) et bloc AGORA ; le .ics se réimporte déjà sur le téléphone.
+- 12/10/2026 — envoi du .ics par mail à chaque import (serveur) ou bouton de partage (menu de l'appareil) — « reste manuel » (utilisateur) : gain d'une seule étape, le téléphone doit toujours importer le fichier.
