@@ -141,9 +141,6 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 **Sans urgence**
 
-6. **Import des disponibilités Outlook** (« Disponibilité uniquement ») pour
-   griser les créneaux occupés dans l'Agenda, lu dans le navigateur
-   seulement — à proposer si l'import des ateliers ne suffit pas.
 7. **Thématique « TBD »** : visible telle quelle dans les statistiques tant
    qu'elle n'est pas remplacée — à surveiller.
 
