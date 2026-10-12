@@ -265,7 +265,8 @@ describe('buildICS', () => {
   });
   it('contient le bon SUMMARY', () => {
     const ics = buildICS([evt]);
-    assert.ok(ics.includes('SUMMARY:Initiation smartphone | AGEN'));
+    assert.ok(ics.includes('SUMMARY:Atelier CCAS Agen'));
+    assert.ok(ics.includes('Thématique : Initiation smartphone'));
   });
   it('contient le bon UID', () => {
     const ics = buildICS([evt]);
