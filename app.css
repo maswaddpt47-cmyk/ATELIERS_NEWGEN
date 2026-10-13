@@ -505,3 +505,12 @@
   pointer-events: none; opacity: 0; transition: opacity .2s;
 }
 .bottom-nav-v2.nav-suite::after { opacity: 1; }
+
+/* Barre du haut sur téléphone (13/10/2026) : le titre passait sous l'heure de
+   synchro et les boutons de droite (vu dans le bac à sable), qui prennent
+   presque toute la largeur. Le titre est masqué (son icône reste, et la barre
+   du bas surligne l'onglet ouvert) ; l'heure de synchro aussi. */
+@media (max-width: 640px) {
+  .app-topbar-v2-title, .app-topbar-v2-sub { display: none; }
+  .app-topbar-v2 .topbar-sync-info { display: none; }
+}
