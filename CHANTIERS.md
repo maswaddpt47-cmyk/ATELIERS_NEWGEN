@@ -121,7 +121,9 @@ sont datées du 05/10 à la demande de l'utilisateur.
    l'utilisateur avant de retirer l'Agenda (bilan reporté au 20/10 par
    l'utilisateur le 13/10) ; vue Mois ajoutée le 09/10, validée, affichée par
    défaut : reste à trancher si le Calendrier garde sa place à côté. Ajouts
-   pendant l'essai : Disponibilités, clic pour créer, jours fériés. Fait remonté le 07/10 : sur
+   pendant l'essai : Disponibilités, clic pour créer, jours fériés.
+   Calendrier coupé matin / après-midi le 13/10 (comme l'Agenda) : l'utilisateur
+   veut retirer l'Agenda, décision le 20/10 avec les compteurs. Fait remonté le 07/10 : sur
    téléphone, seuls lundi et mardi tiennent à l'écran, le reste de la
    semaine se trouve en faisant défiler — l'utilisateur a cru un atelier
    absent. Barres sans texte et conseillers sans aucun atelier masqués
