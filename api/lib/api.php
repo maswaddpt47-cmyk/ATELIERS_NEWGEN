@@ -111,7 +111,8 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
     $r = api_action_protegee($db, $action, $p, $session);
     // Traçabilité : toute action d'administration réussie est journalisée au
     // nom de la personne CONNECTÉE (audit du 24/09/2026), avec sa cible.
-    if (($r['ok'] ?? false) === true && (in_array($action, API_ACTIONS_ADMIN, true) || $action === 'selfSetPassword') && !in_array($action, ['getLogs', 'getCorbeille', 'etatSauvegardes', 'avisAtelier'], true)) {
+    // purgerCorbeille journalise elle-même, un atelier par ligne (AG-024).
+    if (($r['ok'] ?? false) === true && (in_array($action, API_ACTIONS_ADMIN, true) || $action === 'selfSetPassword') && !in_array($action, ['getLogs', 'getCorbeille', 'etatSauvegardes', 'avisAtelier', 'purgerCorbeille'], true)) {
         $cible = (string) ($p['conseiller'] ?? $p['key'] ?? $p['_id'] ?? '');
         if ($action === 'setConfig' && in_array($cible, ['maintenance', 'stock_ordinateurs'], true)) $cible .= '=' . (string) ($p['value'] ?? '');
         api_journal($db, $action, $session['conseiller'], $cible, $session['role'], 1, 0, '', 'admin');
@@ -160,7 +161,7 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'etatSauvegardes': return action_etat_sauvegardes();
         case 'copieMaintenant': return action_copie_maintenant();
         case 'restaurerCorbeille': return action_restaurer_corbeille($db, $p, $session['conseiller']);
-        case 'purgerCorbeille': return action_purger_corbeille($db, $p);
+        case 'purgerCorbeille': return action_purger_corbeille($db, $p, $session);
     }
     return ['ok' => false, 'error' => 'action inconnue: ' . $action];
 }
