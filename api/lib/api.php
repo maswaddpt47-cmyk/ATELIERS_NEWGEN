@@ -33,7 +33,7 @@ const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
 const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier', 'bilanAvis', 'avisParAtelier'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
-const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'envoyerLienReinit', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket', 'avisAtelier', 'supprimerAvis'];
+const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'purgerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'envoyerLienReinit', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket', 'avisAtelier', 'supprimerAvis'];
 
 // Ordre des champs d'un atelier dans la réponse (contract.test.js:12-34).
 const API_CHAMPS_ATELIER = [
@@ -160,6 +160,7 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'etatSauvegardes': return action_etat_sauvegardes();
         case 'copieMaintenant': return action_copie_maintenant();
         case 'restaurerCorbeille': return action_restaurer_corbeille($db, $p, $session['conseiller']);
+        case 'purgerCorbeille': return action_purger_corbeille($db, $p);
     }
     return ['ok' => false, 'error' => 'action inconnue: ' . $action];
 }
