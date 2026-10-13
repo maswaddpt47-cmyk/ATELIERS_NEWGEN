@@ -103,6 +103,9 @@ sont datées du 05/10 à la demande de l'utilisateur.
    non fixée, mention d'information des agents, procédure de sortie ; **avis
    des stagiaires (T6) mis en service avant son avis** (qualification, base
    légale, remarques libres, seuil de 3 avis, écart n° 11).
+   **Élimination** (AG-024, Codex, 13/10) : faire confirmer par les Archives et
+   la DPO les catégories éliminables sans formalité — purge automatique de la
+   corbeille (30 jours) comme suppression définitive manuelle.
 2. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
 3. **Avant le 01/11/2026 : prévenir l'équipe** que le rappel du matin listera
