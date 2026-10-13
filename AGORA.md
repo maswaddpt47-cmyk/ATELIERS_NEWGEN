@@ -95,7 +95,14 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-_(aucun)_
+## AG-020 — Corbeille : suppression définitive avant les 30 jours — ouvert le 13/10/2026
+**Auteur** : session A (Claude) — lu sur `b4fa61d`
+**Proposition** : dans la Corbeille, cases à cocher + bouton « Supprimer définitivement (N) » avec confirmation. Nouvelle action d'API `purgerCorbeille` (liste d'`_id`), **réservée admin/superviseur** même quand la Corbeille est ouverte aux conseillers sur Index ; bouton absent côté Index. Action journalisée au nom de la personne connectée, avec les `_id`.
+**Critère déclencheur** : 6 — coût irréversible (perte de données) ; données personnelles → contradicteur Codex.
+**Ce que ça engage** : un atelier purgé ne se restaure plus depuis l'outil ; il ne reste que les sauvegardes quotidiennes de la base (durée : `SAUVEGARDE_JOURS`).
+**Non vérifié par l'auteur** : (1) qu'aucun autre chemin n'ouvre `purgerCorbeille` à un conseiller (la porte `corbeilleOuverte` de `api/lib/api.php:106` ne doit lister que `getCorbeille`/`restaurerCorbeille`) ; (2) la liste d'`_id` : taille bornée, requête préparée ; (3) si le guide d'archivage du CD47 (visa des Archives pour toute élimination, `MD-LIB/archivage-cd47.md`) s'applique à des saisies supprimées par erreur, comme il pourrait s'appliquer à la purge automatique des 30 jours déjà en place.
+**Si personne ne répond, je fais quoi ?** — je livre sur le bac à sable, l'utilisateur teste ; publication en production après sa validation et la réponse de Codex si elle arrive avant.
+**Où regarder** : `api/lib/api.php:29-36,100-118`, `api/lib/ecriture.php:599-650`, `shared.js` (`function VueCorbeille`)
 
 ## Blocs tranchés — sortis de ce fichier
 
