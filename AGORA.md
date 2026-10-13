@@ -95,14 +95,7 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-## AG-024 — Corbeille : suppression définitive avant les 30 jours — ouvert le 13/10/2026
-**Auteur** : session A (Claude) — lu sur `b4fa61d`
-**Proposition** : dans la Corbeille, cases à cocher + bouton « Supprimer définitivement (N) » avec confirmation. Nouvelle action d'API `purgerCorbeille` (liste d'`_id`), **réservée admin/superviseur** même quand la Corbeille est ouverte aux conseillers sur Index ; bouton absent côté Index. Action journalisée au nom de la personne connectée, avec les `_id`.
-**Critère déclencheur** : 6 — coût irréversible (perte de données) ; données personnelles → contradicteur Codex.
-**Ce que ça engage** : un atelier purgé ne se restaure plus depuis l'outil ; il ne reste que les sauvegardes quotidiennes de la base (durée : `SAUVEGARDE_JOURS`).
-**Non vérifié par l'auteur** : (1) qu'aucun autre chemin n'ouvre `purgerCorbeille` à un conseiller (la porte `corbeilleOuverte` de `api/lib/api.php:106` ne doit lister que `getCorbeille`/`restaurerCorbeille`) ; (2) la liste d'`_id` : taille bornée, requête préparée ; (3) si le guide d'archivage du CD47 (visa des Archives pour toute élimination, `MD-LIB/archivage-cd47.md`) s'applique à des saisies supprimées par erreur, comme il pourrait s'appliquer à la purge automatique des 30 jours déjà en place.
-**Si personne ne répond, je fais quoi ?** — je livre sur le bac à sable, l'utilisateur teste ; publication en production après sa validation et la réponse de Codex si elle arrive avant.
-**Où regarder** : `api/lib/api.php:29-36,100-118`, `api/lib/ecriture.php:599-650`, `shared.js` (`function VueCorbeille`)
+_(aucun)_
 
 ## Blocs tranchés — sortis de ce fichier
 
@@ -134,6 +127,7 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 | AG-021 | avis des stagiaires par QR code — amendé : jeton dans le fragment `#`, date sans heure, avis gardés en corbeille, saisie papier par l'équipe (`source`), anti-doublon par onglet, « aucun nom » ; ouverture le jour de l'atelier (utilisateur) | 04/10/2026 |
 | AG-022 | conflits de matériel à l'heure près — sans réponse, réalisé après test de l'utilisateur au bac à sable : ordinateurs sur [début, fin + 30 min), Classe mobile sur les demi-journées touchées, ateliers sans horaire sans marge | 04/10/2026 |
 | AG-023 | ancien mot de passe exigé, provisoire imposé par l'API — amendé (session B : Index envoie le mot de passe saisi, sinon un compte resté sur cd47+prénom était bloqué ; jointure plutôt que colonne ; Admin avant API ; refus sans `auth:true`) ; **option 1 seule** retenue par l'utilisateur (`132e717`), (2) et (3) non faits | 06/10/2026 |
+| AG-024 | suppression définitive dans la Corbeille avant les 30 jours — sans réponse (Codex non sollicité), tranché par l'utilisateur après test au bac à sable : réservée admin/superviseur, journalisée, 200 au plus par envoi | 13/10/2026 |
 
 **Au 06/10/2026, sur 23 blocs (AG-001 à AG-023) : 18 amendés, 1 confirmé (AG-017), 0 contredit, 4 clos sans réponse** (AG-002, AG-010, AG-013, AG-022). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
 Douze « amendé » d'affilée ne sont pas un bilan flatteur, c'est un signal — voir
