@@ -314,19 +314,33 @@ verifier((appel(['action' => 'getCorbeille'], $T)['ok'] ?? false) === true, 'cor
 verifier(str_contains(appel(['action' => 'saveVisibility'], $T + ['visibility' => '{}'])['error'] ?? '', 'administrateurs'), 'corbeille ouverte : les autres actions admin restent fermées');
 appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'carte' => false])]);
 verifier(str_contains(appel(['action' => 'restaurerCorbeille'], $T + ['_id' => 'x'])['error'] ?? '', 'administrateurs'), 'corbeille masquée sur Index : refermée aux conseillers');
-// Suppression définitive (13/10/2026, AG-024) : admin seulement, même corbeille ouverte.
-appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'pur_a', 'date' => '2026-12-04'])]);
-appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'pur_b', 'date' => '2026-12-05'])]);
-appel(['action' => 'delete'], $T + ['_id' => 'pur_a']);
-appel(['action' => 'delete'], $T + ['_id' => 'pur_b']);
+// Suppression définitive (13/10/2026, AG-024 amendé par Codex) : admin seulement,
+// même corbeille ouverte ; liste JSON ; un atelier par ligne de journal ;
+// avis et jeton QR partent avec l'atelier.
+$idsLongs = ['atelier_1760000000001_abcde', 'atelier_1760000000002_abcde', 'atelier_1760000000003_abcde', 'atelier_1760000000004_abcde', 'pur,virgule'];
+foreach ($idsLongs as $i => $id) {
+    appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => $id, 'date' => '2026-12-0' . ($i + 4)])]);
+    if ($i === 0) appel(['action' => 'jetonAvis'], $T + ['_id' => $id]);   // crée les tables des avis
+    appel(['action' => 'delete'], $T + ['_id' => $id]);
+}
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'pur', 'date' => '2026-12-10'])]);
+appel(['action' => 'delete'], $T + ['_id' => 'pur']);
+$db->prepare("INSERT INTO avis (atelier_id, cree_le, attentes) VALUES (?, NOW(), 4)")->execute([$idsLongs[0]]);
+$db->prepare("REPLACE INTO avis_jetons (atelier_id, jeton, cree_le) VALUES (?, ?, NOW())")->execute([$idsLongs[0], str_repeat('b', 32)]);
 appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'corbeille' => true])]);
-verifier(str_contains(appel(['action' => 'purgerCorbeille'], $T + ['_id' => 'pur_a'])['error'] ?? '', 'administrateurs'), 'suppression définitive refusée à un conseiller, même corbeille ouverte');
+verifier(str_contains(appel(['action' => 'purgerCorbeille'], $T + ['ids' => json_encode([$idsLongs[0]])])['error'] ?? '', 'administrateurs'), 'suppression définitive refusée à un conseiller, même corbeille ouverte');
 appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'carte' => false])]);
-$r = appel(['action' => 'purgerCorbeille'], $A + ['_id' => 'pur_a, pur_b,pur_a']);
-$reste = $db->query("SELECT COUNT(*) FROM ateliers_corbeille WHERE id IN ('pur_a', 'pur_b')")->fetchColumn();
-verifier(($r['ok'] ?? false) && $r['supprimes'] === 2 && (int) $reste === 0, 'suppression définitive : les ateliers cochés quittent la corbeille');
-verifier($db->query("SELECT ref FROM journal WHERE action = 'purgerCorbeille' ORDER BY id DESC LIMIT 1")->fetchColumn() === 'pur_a, pur_b,pur_a', 'suppression définitive journalisée avec les ateliers visés');
-verifier((appel(['action' => 'purgerCorbeille'], $A + ['_id' => implode(',', range(1, 201))])['ok'] ?? true) === false, 'suppression définitive : 200 ateliers au plus par envoi');
+$r = appel(['action' => 'purgerCorbeille'], $A + ['ids' => json_encode(array_merge($idsLongs, [$idsLongs[0]]))]);
+$reste = (int) $db->query("SELECT COUNT(*) FROM ateliers_corbeille WHERE id IN ('" . implode("','", $idsLongs) . "')")->fetchColumn();
+verifier(($r['ok'] ?? false) && $r['supprimes'] === 5 && $reste === 0, 'suppression définitive : les ateliers cochés quittent la corbeille');
+verifier($db->query("SELECT COUNT(*) FROM ateliers_corbeille WHERE id = 'pur'")->fetchColumn() == 1, 'suppression définitive : « pur,virgule » ne vise pas « pur » (liste JSON, pas de séparateur)');
+$journal = $db->query("SELECT ref FROM journal WHERE action = 'purgerCorbeille' ORDER BY id DESC LIMIT 5")->fetchAll(PDO::FETCH_COLUMN);
+sort($journal); $attendu = $idsLongs; sort($attendu);
+verifier($journal === $attendu, 'suppression définitive : une ligne de journal par atelier, identifiant complet');
+verifier($db->query("SELECT COUNT(*) FROM avis WHERE atelier_id = '{$idsLongs[0]}'")->fetchColumn() == 0 && $db->query("SELECT COUNT(*) FROM avis_jetons WHERE atelier_id = '{$idsLongs[0]}'")->fetchColumn() == 0, 'suppression définitive : avis et jeton QR effacés avec l\'atelier');
+verifier((appel(['action' => 'purgerCorbeille'], $A + ['ids' => json_encode(array_map('strval', range(1, 201)))])['ok'] ?? true) === false, 'suppression définitive : 200 ateliers au plus par envoi');
+verifier((appel(['action' => 'purgerCorbeille'], $A + ['_id' => 'pur'])['ok'] ?? true) === false, 'suppression définitive : l\'ancien format « _id » séparé par des virgules est refusé');
+$db->exec("DELETE FROM ateliers_corbeille WHERE id = 'pur'");
 appel(['action' => 'saveLists'], $A + ['lists' => json_encode(['statuts' => ['Planifié'], 'conseillers' => ['Conseiller Test', 'Nouvelle Recrue'], 'publics' => [], 'materiels' => ['Ordinateur']])]);
 verifier(appel(['action' => 'getAll'], $A)['lists']['conseillers'] === ['Conseiller Test', 'Nouvelle Recrue'], 'saveLists relu');
 verifier($db->query("SELECT hash IS NULL FROM comptes WHERE conseiller = 'Nouvelle Recrue'")->fetchColumn() == 1, 'compte créé par saveLists, sans mot de passe');
