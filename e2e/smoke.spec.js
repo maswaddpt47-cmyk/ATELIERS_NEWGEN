@@ -136,7 +136,10 @@ window.L = {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ ...JSON.parse(MOCK_RESPONSE), token: 'a'.repeat(64) }),
+      // years : comme l'API quand plusieurs années sont demandées (N et N+1
+      // par défaut depuis le 13/10/2026) ; sans lui, l'appli affiche le toast
+      // « Serveur pas encore à jour », qui masque la barre d'onglets.
+      body: JSON.stringify({ ...JSON.parse(MOCK_RESPONSE), token: 'a'.repeat(64), years: [String(new Date().getFullYear()), String(new Date().getFullYear() + 1)] }),
     });
   });
   // Intercepter les appels GAS → réponse mock
