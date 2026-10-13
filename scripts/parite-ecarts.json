@@ -30,8 +30,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2858",
-      "NextStep shared.js:2672"
+      "NEWGEN shared.js:2860",
+      "NextStep shared.js:2674"
     ],
     "newgen": "786dbdf624/786dbdf624",
     "nextstep": "1727df7655/1727df7655",
@@ -57,8 +57,8 @@
       "NEWGEN shared.js:7",
       "NextStep shared.js:7"
     ],
-    "newgen": "60e66aa4a6/60e66aa4a6",
-    "nextstep": "c3b9b7053c/c3b9b7053c",
+    "newgen": "cbc7e45266/cbc7e45266",
+    "nextstep": "dc8145ad7e/dc8145ad7e",
     "note": "Styles propres à chaque design (v2 NEWGEN, menu latéral NextStep) — navigation « touche pas », 26/09/2026."
   }
 }
