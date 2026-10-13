@@ -314,6 +314,19 @@ verifier((appel(['action' => 'getCorbeille'], $T)['ok'] ?? false) === true, 'cor
 verifier(str_contains(appel(['action' => 'saveVisibility'], $T + ['visibility' => '{}'])['error'] ?? '', 'administrateurs'), 'corbeille ouverte : les autres actions admin restent fermées');
 appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'carte' => false])]);
 verifier(str_contains(appel(['action' => 'restaurerCorbeille'], $T + ['_id' => 'x'])['error'] ?? '', 'administrateurs'), 'corbeille masquée sur Index : refermée aux conseillers');
+// Suppression définitive (13/10/2026, AG-024) : admin seulement, même corbeille ouverte.
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'pur_a', 'date' => '2026-12-04'])]);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'pur_b', 'date' => '2026-12-05'])]);
+appel(['action' => 'delete'], $T + ['_id' => 'pur_a']);
+appel(['action' => 'delete'], $T + ['_id' => 'pur_b']);
+appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'corbeille' => true])]);
+verifier(str_contains(appel(['action' => 'purgerCorbeille'], $T + ['_id' => 'pur_a'])['error'] ?? '', 'administrateurs'), 'suppression définitive refusée à un conseiller, même corbeille ouverte');
+appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'carte' => false])]);
+$r = appel(['action' => 'purgerCorbeille'], $A + ['_id' => 'pur_a, pur_b,pur_a']);
+$reste = $db->query("SELECT COUNT(*) FROM ateliers_corbeille WHERE id IN ('pur_a', 'pur_b')")->fetchColumn();
+verifier(($r['ok'] ?? false) && $r['supprimes'] === 2 && (int) $reste === 0, 'suppression définitive : les ateliers cochés quittent la corbeille');
+verifier($db->query("SELECT ref FROM journal WHERE action = 'purgerCorbeille' ORDER BY id DESC LIMIT 1")->fetchColumn() === 'pur_a, pur_b,pur_a', 'suppression définitive journalisée avec les ateliers visés');
+verifier((appel(['action' => 'purgerCorbeille'], $A + ['_id' => implode(',', range(1, 201))])['ok'] ?? true) === false, 'suppression définitive : 200 ateliers au plus par envoi');
 appel(['action' => 'saveLists'], $A + ['lists' => json_encode(['statuts' => ['Planifié'], 'conseillers' => ['Conseiller Test', 'Nouvelle Recrue'], 'publics' => [], 'materiels' => ['Ordinateur']])]);
 verifier(appel(['action' => 'getAll'], $A)['lists']['conseillers'] === ['Conseiller Test', 'Nouvelle Recrue'], 'saveLists relu');
 verifier($db->query("SELECT hash IS NULL FROM comptes WHERE conseiller = 'Nouvelle Recrue'")->fetchColumn() == 1, 'compte créé par saveLists, sans mot de passe');

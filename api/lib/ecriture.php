@@ -645,6 +645,22 @@ function action_restaurer_corbeille(PDO $db, array $p, string $acteur): array
     return ['ok' => true, 'entry' => api_atelier_par_id($db, $id)];
 }
 
+// Suppression définitive avant les 30 jours (13/10/2026, AG-024). Réservée
+// admin/superviseur, même quand la Corbeille est ouverte aux conseillers
+// (api.php ne l'ajoute pas à la porte « corbeille ouverte »). `_id` : liste
+// séparée par des virgules, bornée ; il ne reste ensuite que les sauvegardes.
+const CORBEILLE_PURGE_MAX = 200;
+function action_purger_corbeille(PDO $db, array $p): array
+{
+    $ids = array_values(array_unique(array_filter(array_map('trim', explode(',', (string) ($p['_id'] ?? ''))), fn($x) => $x !== '')));
+    if (!$ids) return ['ok' => false, 'error' => 'ID manquant'];
+    if (count($ids) > CORBEILLE_PURGE_MAX) return ['ok' => false, 'error' => 'Trop d\'ateliers d\'un coup (' . CORBEILLE_PURGE_MAX . ' au plus)'];
+    corbeille_schema($db);
+    $s = $db->prepare('DELETE FROM ateliers_corbeille WHERE id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')');
+    $s->execute($ids);
+    return ['ok' => true, 'supprimes' => $s->rowCount()];
+}
+
 // ── Sauvegardes (AG-014) : état en lecture seule, copie à la demande ─────
 
 function action_etat_sauvegardes(): array
