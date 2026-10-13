@@ -28,6 +28,8 @@
    Message : `type: description courte`, avec `feat`, `fix`, `refactor`,
    `style`, `docs` ou `chore`.
 4. Pousser sur `main` : `git push origin main`.
+5. **Avant d'écrire « en ligne »** : `scripts/attendre-deploiement.sh` (hook
+   automatique après un push, sinon à lancer à la main) doit avoir dit ✅.
 
 **Branche imposée par la plateforme.** Claude Code sur le web impose parfois
 une branche dédiée (`claude/…`). Dans ce cas, merger dans `main` et pousser à
