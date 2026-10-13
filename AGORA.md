@@ -95,7 +95,7 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-## AG-020 — Corbeille : suppression définitive avant les 30 jours — ouvert le 13/10/2026
+## AG-024 — Corbeille : suppression définitive avant les 30 jours — ouvert le 13/10/2026
 **Auteur** : session A (Claude) — lu sur `b4fa61d`
 **Proposition** : dans la Corbeille, cases à cocher + bouton « Supprimer définitivement (N) » avec confirmation. Nouvelle action d'API `purgerCorbeille` (liste d'`_id`), **réservée admin/superviseur** même quand la Corbeille est ouverte aux conseillers sur Index ; bouton absent côté Index. Action journalisée au nom de la personne connectée, avec les `_id`.
 **Critère déclencheur** : 6 — coût irréversible (perte de données) ; données personnelles → contradicteur Codex.
