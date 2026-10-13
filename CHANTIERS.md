@@ -260,6 +260,10 @@ couche d'appel.
 - Déjà dans `CLAUDE.md` §4-5 et verrouillés par les tests, non répétés ici :
   `_id` client gardé jusqu'au succès, écritures jamais doublées, plafonds,
   aucun appel superflu, `sw.js` de désinscription.
+- **Suppression définitive dans la Corbeille réservée admin/superviseur**
+  (AG-024, 13/10/2026) : `purgerCorbeille` ne doit jamais rejoindre la porte
+  « corbeille ouverte » des conseillers (`api/lib/api.php`) ; verrouillé par
+  `api-tests/api.test.php`.
 - **`periodePretMateriel` retombe sur la date de l'atelier** quand les dates
   de prélèvement/retour ne sont pas saisies (confirmé par l'utilisateur le
   22/09 : matériel pris et rendu le jour même).
