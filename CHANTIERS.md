@@ -103,12 +103,9 @@ sont datées du 05/10 à la demande de l'utilisateur.
    non fixée, mention d'information des agents, procédure de sortie ; **avis
    des stagiaires (T6) mis en service avant son avis** (qualification, base
    légale, remarques libres, seuil de 3 avis, écart n° 11).
-2. **À tester sur PC** : réimport Outlook (rendez-vous déplacé → « Mettre à
-   jour », supprimé → « Annulé » proposé décoché ; export .ics impossible sur
-   téléphone).
-3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
+2. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
-4. **Avant le 01/11/2026 : prévenir l'équipe** que le rappel du matin listera
+3. **Avant le 01/11/2026 : prévenir l'équipe** que le rappel du matin listera
    aussi les fiches bilan vides (ateliers « Réalisé » à partir du 01/11,
    `RAPPELS_FICHE_DEPUIS` dans `api/lib/rappels.php`) ; annonce Nouveautés à
    proposer à l'utilisateur à ce moment-là.
