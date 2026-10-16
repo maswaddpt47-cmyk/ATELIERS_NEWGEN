@@ -34,7 +34,7 @@
       "NextStep shared.js:2676"
     ],
     "newgen": "786dbdf624/786dbdf624",
-    "nextstep": "1727df7655/1727df7655",
+    "nextstep": "cbaaac25f4/cbaaac25f4",
     "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres)."
   },
   "majIndiceNav": {
