@@ -93,14 +93,10 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
-   remettre : note avant/après V0.1 et registres V0.6. Restent à faire
-   avant : premier jet du tableau
-   de gestion pour les Archives départementales (écart n° 9), vérifier les
-   deux « ⚠️ » du document (compte transférable, alerte d'intrusion).
+   remettre : note avant/après V0.1 et registres V0.6. Reste à faire avant :
+   vérifier les deux « ⚠️ » du document (compte transférable, alerte
+   d'intrusion).
 
-1. **Élimination** (AG-024, Codex, 13/10) : faire confirmer par les Archives
-   départementales les catégories éliminables sans formalité — purge
-   automatique de la corbeille (30 jours) comme suppression définitive manuelle.
 2. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
 3. **Avant le 01/11/2026 : prévenir l'équipe** que le rappel du matin listera
@@ -178,10 +174,11 @@ requis) ; Gemini en réserve.
 
 ## Décisions de l'utilisateur à ne pas « corriger »
 
-- **Plus de mail à la DPD (16/10/2026)** : ne pas le proposer ni le
-  rédiger. Les écarts du registre RGPD V0.6 (n° 1, 2, 3, 5, 6, 7, 9 à 11)
-  restent ouverts dans le registre ; s'ils doivent avancer, ce sera par une
-  autre voie choisie par l'utilisateur.
+- **Plus de démarche auprès de la DPD ni des Archives départementales
+  (16/10/2026)** : ne proposer ni mail, ni tableau de gestion, ni visa
+  d'élimination. Les écarts du registre RGPD V0.6 (n° 1, 2, 3, 5, 6, 7, 9 à
+  11) restent ouverts dans le registre ; s'ils doivent avancer, ce sera par
+  une autre voie choisie par l'utilisateur.
 - **Risques acceptés, audit du 01/10 (décidé le 02/10/2026)** :
   `StrictHostKeyChecking=accept-new` dans les workflows ; blocage de 15 min
   après 5 échecs par compte, sans compter l'IP ; SheetJS 0.18.5 gardé (ses
