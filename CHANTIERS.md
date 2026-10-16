@@ -1,16 +1,16 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **07/10/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **16/10/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
 `MD-LIB/hygiene-instructions.md`).
 
-**Ménages des 26/09, 02/10, 04/10, 06/10 et 07/10/2026** : époque GAS, récit
-de la parité, livraisons des 01-06/10, audit Codex et ses corrections, et
-décisions déjà verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
+**Ménages des 26/09, 02/10, 04/10, 06/10, 07/10 et 16/10/2026** : époque GAS,
+récit de la parité, livraisons, audit Codex et ses corrections, et décisions
+déjà verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
 Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
-07/10/2026**.
+16/10/2026**.
 
 ---
 
@@ -119,18 +119,13 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 **Pour Claude**
 
-1. **Planning en essai** (depuis le 03/10, à côté de l'Agenda) : vers le
-   **20/10**, relire les compteurs d'onglets (Admin → Connexions) avec
-   l'utilisateur avant de retirer l'Agenda (bilan reporté au 20/10 par
-   l'utilisateur le 13/10) ; vue Mois ajoutée le 09/10, validée, affichée par
-   défaut : reste à trancher si le Calendrier garde sa place à côté. Ajouts
-   pendant l'essai : Disponibilités, clic pour créer, jours fériés.
-   Calendrier coupé matin / après-midi le 13/10 (comme l'Agenda) : l'utilisateur
-   veut retirer l'Agenda, décision le 20/10 avec les compteurs. Fait remonté le 07/10 : sur
-   téléphone, seuls lundi et mardi tiennent à l'écran, le reste de la
-   semaine se trouve en faisant défiler — l'utilisateur a cru un atelier
-   absent. Barres sans texte et conseillers sans aucun atelier masqués
-   depuis le 07/10 (testés).
+1. **Planning en essai** (depuis le 03/10, à côté de l'Agenda) : **le 20/10**,
+   relire avec l'utilisateur les compteurs d'onglets (Admin → Connexions) ;
+   il veut retirer l'Agenda (le Calendrier est coupé matin / après-midi comme
+   lui depuis le 13/10). Reste aussi à trancher si le Calendrier garde sa
+   place à côté de la vue Mois (affichée par défaut). Fait remonté le 07/10 :
+   sur téléphone, seuls lundi et mardi tiennent à l'écran, le reste se trouve
+   en faisant défiler — l'utilisateur a cru un atelier absent.
 2. **Mention d'information RGPD des agents** : texte proposé le 03/10, **mis
    en pause par l'utilisateur** — ne pas relancer sans sa demande.
 3. **Supports par atelier (pptx, docx…) — mis de côté le 04/10** : les
@@ -158,10 +153,6 @@ vont sur des branches `claude/…` à fusionner dans `main` — à vérifier au 
 `trig_012uCnnzo6MZhyWNYr6JAFqv` le 2 janvier, `trig_01XC6RefYHqVbN2Wcjz3kkXo`
 le 1er avril, juillet et octobre. Copilot écarté le 07/10 (abonnement payant
 requis) ; Gemini en réserve.
-
-Hors liste, choix assumé : les noms `GAS_*`/`gasAppel`/`__gasLog` (~120
-occurrences, verrouillées par les tests réseau) restent, ils désignent la
-couche d'appel.
 
 ## À ne pas réapprendre — Alwaysdata et déploiement
 
@@ -253,10 +244,6 @@ couche d'appel.
 - **Plafond d'avis = présents, à défaut inscrits** : le formulaire propose 4
   inscrits par défaut ; sans mise à jour des présents, le 5ᵉ stagiaire est
   refusé (rappelé dans la fenêtre du QR et la Nouveauté 28).
-- **Constantes `const` d'`utils.js` dans `logic.js`** : un `var` du même nom
-  fait échouer le chargement de `logic.js` dans les pages (redéclaration),
-  sans que les suites Node le voient — passer par `LOGIC_UTILS` (cas
-  `BILAN_CHOIX`, attrapé par `e2e/sandbox.spec.js` le 04/10).
 
 ## Points à ne pas défaire
 
@@ -289,11 +276,6 @@ couche d'appel.
   chemin.
 - **Couche réseau client gardée** : avec l'API elle ne sert que sur une
   vraie coupure (4G terrain).
-- **Un nom de composant ou de fonction n'est déclaré qu'une fois** entre
-  `shared.js`, `app.js` et `admin_app.js` : sinon le dernier chargé remplace
-  l'autre en silence. `scripts/parite.js` le signale (« définition écrasée »).
-- **NEWGEN charge `logic.js`** dans ses pages (lot 0 d'AG-015) : ce qui est
-  testé est ce qui tourne.
 
 ## Pistes d'amélioration
 
