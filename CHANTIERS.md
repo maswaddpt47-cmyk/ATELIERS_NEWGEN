@@ -91,6 +91,12 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 **Actions de l'utilisateur**
 
+00. **À tester (20/10/2026, NEWGEN `c159b23`, NextStep `5c8452f`)** :
+   Disponibilités — alerte orange si l'export Outlook ne couvre pas la
+   période (en-tête `X-CLIPSTART`/`X-CLIPEND` ; un import antérieur au 20/10
+   n'a pas cette période, il faut le recharger) ; demi-journée prise
+   affichée « 🔒 Après-midi : <orienteur> » (« Outlook » si seul l'agenda la
+   bloque). **Pas de dépêche** (demande de l'utilisateur, 20/10).
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
    remettre : note avant/après V0.1 et registres V0.6. Reste à faire avant :
