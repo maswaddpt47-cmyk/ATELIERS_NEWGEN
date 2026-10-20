@@ -30,11 +30,11 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2862",
-      "NextStep shared.js:2676"
+      "NEWGEN shared.js:2860",
+      "NextStep shared.js:2674"
     ],
-    "newgen": "786dbdf624/786dbdf624",
-    "nextstep": "cbaaac25f4/cbaaac25f4",
+    "newgen": "baef7e677a/baef7e677a",
+    "nextstep": "ca0c9b7a3b/ca0c9b7a3b",
     "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres)."
   },
   "majIndiceNav": {

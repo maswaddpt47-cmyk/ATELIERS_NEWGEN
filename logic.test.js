@@ -733,16 +733,27 @@ describe('même population : kpiHistorique et bilanTrimestriel', () => {
     assert.equal(Object.values(b.activite.statuts).reduce((x, y) => x + y, 0), k.total);
   });
 
-  // ÉCART CONNU, À TRANCHER PAR L'UTILISATEUR (20/10/2026). Un atelier réalisé
-  // dont les présents ne sont pas saisis : kpiHistorique() et le mail mensuel
-  // (bilan.php) le comptent à 0 présent et l'incluent dans les inscrits (taux
-  // 50 %) ; bilanTrimestriel() l'écarte du taux (75 %). Le même mot, « taux de
-  // présence », donne deux nombres selon l'écran. Ce test fige l'état actuel
-  // pour que l'écart se voie : quand la règle sera arrêtée, le modifier avec
-  // elle (et aligner bilan.php, qui ne se teste que sur MySQL).
-  it('ÉCART CONNU : présents non saisis — 50 % à l\'Historique, 75 % au bilan trimestriel', () => {
+  // Règle arrêtée par l'utilisateur le 20/10/2026 : le taux porte sur les seuls
+  // ateliers réalisés dont les présents sont saisis (75 %, pas 50 %). Le même
+  // nombre sort de l'Historique, du bilan trimestriel et du mail mensuel
+  // (api/lib/bilan.php, testé sur MySQL par api-tests/bilan.test.php).
+  it('présents non saisis : 75 % partout, jamais 50 %', () => {
     const E = [atelier('a', '2026-07-02', 'Réalisé', 8, 6), atelier('b', '2026-08-10', 'Réalisé', 4, '')];
-    assert.equal(kpiHistorique(E).tx, 50);
+    assert.equal(kpiHistorique(E).tx, 75);
     assert.equal(bilanTrimestriel(E, PERIODE[0], PERIODE[1], []).activite.tauxPresence, 75);
+  });
+  it('0 présent saisi compte ; présents absents (null, vide) sortent du taux', () => {
+    const E = [atelier('a', '2026-07-02', 'Réalisé', 10, 0), atelier('b', '2026-08-10', 'Réalisé', 10, null), atelier('c', '2026-08-11', 'Réalisé', 10, undefined)];
+    assert.equal(kpiHistorique(E).tx, 0);
+    assert.equal(bilanTrimestriel(E, PERIODE[0], PERIODE[1], []).activite.tauxPresence, 0);
+  });
+  it('un atelier sans inscrits n\'entre pas dans le taux', () => {
+    const E = [atelier('a', '2026-07-02', 'Réalisé', 0, 5), atelier('b', '2026-08-10', 'Réalisé', 10, 5)];
+    assert.equal(kpiHistorique(E).tx, 50);
+    assert.equal(bilanTrimestriel(E, PERIODE[0], PERIODE[1], []).activite.tauxPresence, 50);
+  });
+  it('seuls les ateliers réalisés comptent', () => {
+    const E = [atelier('a', '2026-07-02', 'Annulé', 10, 0), atelier('b', '2026-08-10', 'Réalisé', 10, 10)];
+    assert.equal(kpiHistorique(E).tx, 100);
   });
 });

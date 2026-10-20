@@ -3028,7 +3028,7 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
       CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--ok)'}},CE('b',null,kpi.realises),CE('span',null,'Réalisés'),kpi.total?CE('small',null,kpi.pct.realises+'%'):null),
       CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--err)'}},CE('b',null,kpi.annules),CE('span',null,'Annulés'),kpi.total?CE('small',null,kpi.pct.annules+'%'):null),
       CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--text-3)'},title:'Reportés et non réalisés'},CE('b',null,kpi.autres),CE('span',null,'Autres'),kpi.total?CE('small',null,kpi.pct.autres+'%'):null),
-      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--warn)'},title:'Présents / inscrits des ateliers réalisés'},CE('b',null,kpi.presents+'/'+kpi.inscrits),CE('span',null,'Présents'),kpi.inscrits?CE('small',null,kpi.tx+'%'):null)
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--warn)'},title:'Présents / inscrits des ateliers réalisés. Taux : ateliers dont les présents sont saisis ('+kpi.presentsTaux+'/'+kpi.inscritsTaux+')'},CE('b',null,kpi.presents+'/'+kpi.inscrits),CE('span',null,'Présents'),kpi.inscritsTaux?CE('small',null,kpi.tx+'%'):null)
     ),
     // Alerte retards v2
     nRetard>0&&CE('div',{className:'alerte-retard-v2'},
@@ -3644,20 +3644,20 @@ function ConseillerBarChart({entries}){
     const cs=[e.conseiller||'?'];
     if(e.co_animateur)cs.push(e.co_animateur);
     cs.forEach(c=>{
-      if(!cons[c])cons[c]={realises:0,planifies:0,annules:0,inscrits:0,presents:0};
-      if(e.statut==='Réalisé'){cons[c].realises++;cons[c].inscrits+=(parseInt(e.inscrits)||0);cons[c].presents+=(parseInt(e.presents)||0);}
+      if(!cons[c])cons[c]={realises:0,planifies:0,annules:0,inscrits:0,presents:0,liste:[]};
+      if(e.statut==='Réalisé'){cons[c].liste.push(e);cons[c].realises++;cons[c].inscrits+=(parseInt(e.inscrits)||0);cons[c].presents+=(parseInt(e.presents)||0);}
       else if(e.statut==='Planifié')cons[c].planifies++;
       else if(e.statut==='Annulé')cons[c].annules++;
     });
   });
   const data=Object.entries(cons).sort((a,b)=>b[1].realises-a[1].realises)
-    .map(([name,d])=>({name:trunc(name,14),...d,tx:d.inscrits>0?Math.round(d.presents/d.inscrits*100):0}));
+    .map(([name,d])=>{const tp=tauxPresence(d.liste);return{name:trunc(name,14),...d,tx:tp.tx,presentsTx:tp.presents,inscritsTx:tp.inscrits};});
   if(!data.length)return CE(NoData,null);
   const h=Math.max(180,100+data.length*34);
   const option={
     backgroundColor:'transparent',grid:{top:8,right:60,bottom:30,left:8,containLabel:true},
     tooltip:{trigger:'axis',...EC_TT,...EC_APN,
-      formatter:params=>{const d=data[params[0].dataIndex];return`<b style="color:#60a5fa">${htmlEsc(d.name)}</b><br/><span style="color:#22c55e">✅ Réalisés : ${d.realises}</span><br/><span style="color:#3b82f6">📅 Planifiés : ${d.planifies}</span><br/><span style="color:#ef4444">❌ Annulés : ${d.annules}</span><br/><span style="color:#a78bfa;font-weight:700">👥 Présents : ${d.presents}/${d.inscrits} — ${d.tx}%</span>`;}},
+      formatter:params=>{const d=data[params[0].dataIndex];return`<b style="color:#60a5fa">${htmlEsc(d.name)}</b><br/><span style="color:#22c55e">✅ Réalisés : ${d.realises}</span><br/><span style="color:#3b82f6">📅 Planifiés : ${d.planifies}</span><br/><span style="color:#ef4444">❌ Annulés : ${d.annules}</span><br/><span style="color:#a78bfa;font-weight:700">👥 Présents : ${d.presents}/${d.inscrits} — taux ${d.tx}% (${d.presentsTx}/${d.inscritsTx} saisis)</span>`;}},
     legend:{data:['Réalisés','Planifiés','Annulés'],textStyle:{color:'#94a3b8',fontSize:10},bottom:0,icon:'roundRect',itemWidth:10,itemHeight:8},
     xAxis:{...EC_AXIS_BASE},
     yAxis:{type:'category',data:data.map(d=>d.name),axisLabel:{...EC_AXIS_LABEL,fontSize:11},axisLine:{show:false},axisTick:{show:false},splitLine:{show:false}},
@@ -3731,7 +3731,7 @@ function VueGraphiques({entries}){
   const total=passes.length;
   const totalInscrits=passes.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);
   const totalPresents=passes.reduce((s,e)=>s+(parseInt(e.presents)||0),0);
-  const txPresence=totalInscrits>0?Math.round(totalPresents/totalInscrits*100):0;
+  const txPresence=tauxPresence(passes).tx;
   const annules=filtered.filter(e=>e.statut==='Annulé').length;
   const todayYM=new Date().toISOString().slice(0,7);
   const fmtML=ym=>ym==='?'?'?':`${ym.slice(5,7)}-${ym.slice(0,4)}`;
@@ -4617,7 +4617,7 @@ function TableCommunesDashboard({fd}){
     const rl=r.filter(d=>d.statut==='Réalisé').length;
     const ins=kpiHistorique(r).inscrits;
     const pre=kpiHistorique(r).presents;
-    const tp=ins?Math.round(pre/ins*100):0;
+    const tp=kpiHistorique(r).tx;
     return{name:c,ateliers:r.length,realises:rl,inscrits:ins,presents:pre,presence:tp};
   }).sort((a,b)=>sortDir*(a[sortKey]>b[sortKey]?1:a[sortKey]<b[sortKey]?-1:0));
 
@@ -4734,7 +4734,7 @@ function VuePowerBI({entries, conseillers: conseillersList}){
   const tReal=total?Math.round(real/total*100):0;
   const totPre=kpiHistorique(fd).presents;
   const totIns=kpiHistorique(fd).inscrits;
-  const tPres=totIns?Math.round(totPre/totIns*100):0;
+  const tPres=kpiHistorique(fd).tx;
 
   // Par mois
   const pMois=MOIS_PBI.map((l,i)=>{
@@ -6128,7 +6128,7 @@ function VueDashboard({entries}){
   const planifies=filtered.filter(e=>e.statut==='Planifié'&&e.date>=todayStr);
   const presents=realises.reduce((s,e)=>s+(parseInt(e.presents)||0),0);
   const inscrits=realises.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);
-  const txPresence=inscrits>0?Math.round(presents/inscrits*100):0;
+  const txPresence=tauxPresence(realises).tx;
   const txAnnul=filtered.length>0?Math.round(annules.length/filtered.length*100):0;
   const prevR=prevFiltered.filter(e=>e.statut==='Réalisé');
   const prevPresents=prevR.reduce((s,e)=>s+(parseInt(e.presents)||0),0);
