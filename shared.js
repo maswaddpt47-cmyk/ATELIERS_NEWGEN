@@ -5514,7 +5514,8 @@ function VuePlanning({annees,entries,onEdit,onDelete,onDuplicate,canDelete,accen
   const hMin=Math.min(480,...items.map(x=>Math.floor(x.debut/60)*60));
   const hMax=Math.max(1080,...items.map(x=>Math.ceil(x.fin/60)*60));
   const span=hMax-hMin;
-  const LJ=150,NOM=104,VOIE=30;
+  // NOM : 130 depuis le 20/10/2026 (104 coupait « Cynthia Pineau »).
+  const LJ=150,NOM=130,VOIE=30;
   const parCase={};
   items.forEach(x=>{const k=x.nom+'|'+x.jour;(parCase[k]=parCase[k]||[]).push(x);});
   const nbVoies={};
