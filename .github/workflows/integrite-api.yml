@@ -1,95 +1,202 @@
-# Contrôle d'intégrité du serveur Alwaysdata, lancé à la main (Actions → Run
-# workflow). Né le 21/10/2026 (faille PHP « PHP2Shell » : API restée en 8.4.26
-# jusqu'au redémarrage du site). Cherche ce qu'un attaquant aurait laissé :
-# code de l'API différent du dépôt, fichier PHP inconnu, fichier récent,
-# clé SSH ajoutée, requêtes inhabituelles. Lecture seule sur le serveur.
-# N'affiche jamais ~/config-api*.php ni le contenu des clés ; adresses IP
-# masquées dans les journaux.
+# Contrôle d'intégrité du serveur Alwaysdata (21/10/2026, faille PHP
+# « PHP2Shell » : API restée en 8.4.26 jusqu'au redémarrage du site).
+# Réécrit le 21/10/2026 selon les amendements de Codex (AGORA AG-025) :
+# - deux issues distinctes, toutes deux en échec rouge : « ALERTE » (anomalie
+#   trouvée) et « IMPOSSIBLE » (une vérification n'a pas pu se faire) ; un
+#   succès vert veut dire « tout a été contrôlé, rien trouvé », jamais
+#   « rien n'a pu être lu » ;
+# - chaque dossier comparé au commit effectivement déployé (dernier
+#   déploiement réussi), pas au dépôt courant ;
+# - rapport sans secret ni donnée personnelle : chemins sans paramètres,
+#   nom des processus sans arguments, comptes et journal en nombres seulement,
+#   jamais d'adresse IP ni de nom ;
+# - « test_alerte » provoque un échec pour vérifier que l'alerte arrive.
+# Lecture seule sur le serveur. Ne détecte qu'après coup, et ni une intrusion
+# sans fichier persistant ni une modification des données métier : ce n'est
+# pas une garantie, c'est un filet.
 name: Intégrité API Alwaysdata
 
 permissions:
   contents: read
+  actions: read
 
-# Routine (21/10/2026, demande de l'utilisateur) : toutes les heures. Le job
-# échoue (rouge) sur toute anomalie : GitHub envoie alors un mail d'échec.
+# Toutes les heures (demande de l'utilisateur, 21/10/2026). Un échec rouge
+# déclenche le mail d'échec de GitHub, si les notifications Actions du compte
+# sont actives : à vérifier une fois avec « test_alerte ».
 on:
   schedule:
     - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
       depuis:
-        description: "Date de début (AAAA-MM-JJ) : fichiers et journaux depuis ce jour"
-        default: "2026-10-19"
+        description: "Date de début (AAAA-MM-JJ). Vide = les 2 derniers jours"
+        default: ""
+      test_alerte:
+        description: "Provoquer une fausse alerte pour vérifier la réception du mail"
+        type: boolean
+        default: false
 
 jobs:
   integrite:
     runs-on: ubuntu-latest
     steps:
-      # Lancement planifié : pas d'entrée, on regarde les 2 derniers jours.
-      - name: Période
-        run: echo "DEPUIS=${{ inputs.depuis }}" | sed "s/=$/=$(date -u -d '2 days ago' +%F)/" >> "$GITHUB_ENV"
+      - name: Alerte de test
+        if: ${{ inputs.test_alerte }}
+        run: |
+          echo "::error::ALERTE (TEST) : fausse alerte provoquée à la main, aucune anomalie réelle"
+          exit 1
+
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Période
+        run: |
+          d="${{ inputs.depuis }}"
+          [ -n "$d" ] || d=$(date -u -d '2 days ago' +%F)
+          [[ "$d" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "::error::Date invalide : $d"; exit 1; }
+          echo "DEPUIS=$d" >> "$GITHUB_ENV"
 
       - name: Préparer l'accès SSH
         env:
           CLE: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
         run: |
+          [ -n "$CLE" ] && [ -n "$COMPTE" ] || { echo "::error::IMPOSSIBLE : secret ALWAYSDATA_SSH_KEY ou ALWAYSDATA_COMPTE absent"; exit 1; }
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          if [ -z "$CLE" ]; then echo "::error::Secret ALWAYSDATA_SSH_KEY absent"; exit 1; fi
           printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
+          echo "HOTE=$COMPTE@ssh-$COMPTE.alwaysdata.net" >> "$GITHUB_ENV"
+          ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 "$COMPTE@ssh-$COMPTE.alwaysdata.net" true \
+            || { echo "::error::IMPOSSIBLE : connexion SSH au serveur refusée ou injoignable"; exit 1; }
 
-      - name: Code de l'API identique au dépôt ?
+      # Référence = commit du dernier déploiement réussi de chaque dossier :
+      # un commit poussé mais pas encore déployé n'est pas une anomalie.
+      - name: Code de l'API identique à ce qui a été déployé ?
         env:
-          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          hote="$COMPTE@ssh-$COMPTE.alwaysdata.net"
-          ( cd api && find . -type f | sort | xargs sha256sum ) > depot.sha
-          ok=1
-          for d in api api-sandbox; do
-            ssh -o StrictHostKeyChecking=accept-new "$hote" "cd www/$d 2>/dev/null && find . -type f | sort | xargs -r sha256sum" > "serveur-$d.sha" || true
-            [ -s "serveur-$d.sha" ] || { echo "== www/$d absent du serveur : ignoré"; continue; }
-            echo "== www/$d : fichiers différents du dépôt ou en plus (« > » = seulement sur le serveur)"
-            if diff depot.sha "serveur-$d.sha" | grep '^[<>]'; then ok=0; else echo "identique au dépôt"; fi
+          set -o pipefail
+          echec=0
+          ref() { gh api "repos/${{ github.repository }}/actions/workflows/$1/runs?status=success&per_page=1" --jq '.workflow_runs[0].head_sha // ""'; }
+          for couple in "api:deploy-api.yml" "api-sandbox:deploy-sandbox.yml"; do
+            d=${couple%%:*}; wf=${couple#*:}
+            sha=$(ref "$wf") || { echo "::error::IMPOSSIBLE : référence de déploiement illisible ($wf)"; echec=1; continue; }
+            [ -n "$sha" ] || { echo "::error::IMPOSSIBLE : aucun déploiement réussi trouvé ($wf)"; echec=1; continue; }
+            rm -rf ref && mkdir ref && git archive "$sha" api | tar -x -C ref \
+              || { echo "::error::IMPOSSIBLE : commit $sha introuvable"; echec=1; continue; }
+            ( cd ref/api && find . -type f | LC_ALL=C sort | xargs sha256sum ) > attendu.sha
+            if ! ssh -o ConnectTimeout=20 "$HOTE" "test -d www/$d && cd www/$d && find . -type f | LC_ALL=C sort | xargs -r sha256sum" > serveur.sha; then
+              echo "::error::ALERTE ou IMPOSSIBLE : www/$d absent ou illisible sur le serveur"; echec=1; continue
+            fi
+            [ -s serveur.sha ] || { echo "::error::ALERTE : www/$d vide sur le serveur"; echec=1; continue; }
+            echo "== www/$d comparé au déploiement ${sha:0:7} (« > » = seulement sur le serveur, « < » = manquant ou différent)"
+            if diff attendu.sha serveur.sha | grep '^[<>]' | sed -E 's/^([<>]) [0-9a-f]+ /\1 /'; then
+              echo "::error::ALERTE : www/$d diffère du déploiement ${sha:0:7}"; echec=1
+            else
+              echo "identique"
+            fi
           done
-          # Un écart peut être légitime (déploiement de l'API en échec ou en
-          # retard) : il se vérifie quand même, d'où l'échec rouge.
-          [ $ok = 1 ] || { echo "::error::ALERTE : code de l'API différent du dépôt (fichier déposé, ou déploiement en retard)"; exit 1; }
+          exit $echec
 
-      - name: Fichiers, clés et journaux
-        env:
-          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+      - name: Fichiers, configuration, accès, comptes et journaux
         run: |
-          ssh -o StrictHostKeyChecking=accept-new "$COMPTE@ssh-$COMPTE.alwaysdata.net" DEPUIS="$DEPUIS" 'bash -s' <<'FIN' | tee rapport.txt
+          set -o pipefail
+          ssh -o ConnectTimeout=20 "$HOTE" DEPUIS="$DEPUIS" 'bash -s' <<'FIN' > rapport.txt 2>&1 || echo "IMPOSSIBLE : le script distant s'est arrêté (code $?)" >> rapport.txt
+          set -u
           alerte(){ echo "ALERTE : $*"; }
-          echo "== fichiers PHP dans ~/www hors api/, api-sandbox/, sandbox/"
-          x=$(find ~/www -name "*.php*" -not -path "*/www/api/*" -not -path "*/www/api-sandbox/*" -not -path "*/www/sandbox/*" 2>/dev/null)
-          echo "$x"; [ -n "$x" ] && alerte "fichier PHP inconnu dans ~/www"
-          echo "== fichiers .htaccess / .user.ini (redirections, auto_prepend)"
-          find ~/www ~ -maxdepth 4 \( -name ".htaccess" -o -name ".user.ini" -o -name "php.ini" \) -not -path "*/admin/*" 2>/dev/null
-          echo "== fichiers modifiés depuis $DEPUIS (hors sauvegardes et journaux)"
-          find ~ -type f -newermt "$DEPUIS" -not -path "*/sauvegardes/*" -not -path "*/admin/logs/*" -not -path "*/admin/backup/*" -not -path "*/.cache/*" -printf "%TY-%Tm-%Td %TH:%TM  %8s  %p\n" 2>/dev/null | sort | tail -60
-          echo "== clés SSH autorisées (nombre, date — jamais le contenu)"
-          ls -l --time-style=+%F_%T ~/.ssh/authorized_keys 2>&1 | awk "{print \$6, \$7}"
-          grep -c . ~/.ssh/authorized_keys 2>/dev/null
-          find ~/.ssh -newermt "$DEPUIS" -type f 2>/dev/null | grep -q . && alerte "~/.ssh modifié depuis $DEPUIS (clé ajoutée ?)"
-          echo "== tâches cron utilisateur"
-          crontab -l 2>&1 | head -10
-          echo "== processus de ce compte (hors cette session)"
-          ps -u "$(id -u)" -o pid,etime,args 2>/dev/null | grep -v -E "ps -u|bash -s|sshd|grep" | head -20
-          echo "== journaux HTTP depuis $DEPUIS : chemins appelés hors index.php (nombre, code)"
-          f=$(find ~/admin/logs -type f -name "*http*" -newermt "$DEPUIS" 2>/dev/null)
-          [ -n "$f" ] && cat $f | grep -oE "\"[A-Z]+ [^ ]+ [^\"]+\" [0-9]{3}" | sed -E 's/\?.*( HTTP)/\1/' \
-            | grep -v -E '"(GET|POST|OPTIONS) /api/index\.php|"(GET|POST|OPTIONS) /api-sandbox/index\.php|"GET /sandbox/' \
-            | sort | uniq -c | sort -rn | head -40
-          echo "== réponses 200 à des fichiers PHP autres que index.php"
-          # /api/v.php : relevé de version fait à la main le 21/10/2026, supprimé aussitôt.
-          x=$([ -n "$f" ] && cat $f | grep -oE "\"[A-Z]+ [^ ?\"]+\.php[^ ]* [^\"]+\" 200" | grep -v -E "/index\.php|/api/v\.php" | sort | uniq -c | head -20)
-          echo "$x"; [ -n "$x" ] && alerte "réponse 200 d'un fichier PHP autre que index.php"
-          echo "== motifs d'exploitation connus (cgi, %ad, -d allow_url_include, php://input)"
-          n=$([ -n "$f" ] && cat $f | grep -ciE "allow_url_include|auto_prepend|php://input|%ad|\-d\+|/cgi-bin/" || echo 0)
-          echo "$n"; [ "${n:-0}" -gt 0 ] && alerte "$n requête(s) avec un motif d'exploitation connu"
+          impossible(){ echo "IMPOSSIBLE : $*"; }
+          [ -d ~/www ] || impossible "dossier ~/www introuvable"
+
+          echo "== fichiers PHP hors des dossiers comparés (www/api, www/api-sandbox)"
+          if x=$(find ~/www -name "*.php*" -not -path "$HOME/www/api/*" -not -path "$HOME/www/api-sandbox/*" 2>&1); then
+            if [ -n "$x" ]; then echo "$x" | sed "s#^$HOME/##"; alerte "fichier PHP inconnu dans ~/www"; else echo "aucun"; fi
+          else impossible "recherche des fichiers PHP"; fi
+
+          echo "== configuration PHP et Apache (.htaccess, .user.ini, php.ini)"
+          # Attendus : lib/.htaccess de chaque API (comparés plus haut) et, en
+          # cas de coupure d'urgence, ~/www/.htaccess contenant exactement
+          # « Require all denied ».
+          if x=$(find ~/www ~ -maxdepth 5 \( -name ".htaccess" -o -name ".user.ini" -o -name "php.ini" \) -not -path "$HOME/admin/*" 2>&1); then
+            echo "$x" | sort -u | while read -r f; do
+              [ -z "$f" ] && continue
+              case "$f" in
+                "$HOME/www/api/lib/.htaccess"|"$HOME/www/api-sandbox/lib/.htaccess") echo "attendu : ${f#$HOME/}";;
+                "$HOME/www/.htaccess")
+                  if [ "$(cat "$f")" = "Require all denied" ]; then echo "coupure d'urgence en place : www/.htaccess"
+                  else alerte "www/.htaccess au contenu inattendu"; fi;;
+                *) alerte "fichier de configuration inattendu : ${f#$HOME/}";;
+              esac
+            done
+          else impossible "recherche des fichiers de configuration"; fi
+
+          echo "== fichiers modifiés depuis $DEPUIS (hors copies, journaux, sauvegardes Alwaysdata)"
+          if r=$(find ~ -type f -newermt "$DEPUIS" -not -path "$HOME/sauvegardes/*" -not -path "$HOME/admin/*" -not -path "$HOME/.cache/*" \
+            -printf "%TY-%Tm-%Td %TH:%TM  %8s  %P\n" 2>/dev/null); then echo "$r" | sort | tail -60
+          else impossible "liste des fichiers récents"; fi
+
+          echo "== clés SSH autorisées (empreintes publiques, date)"
+          if [ -f ~/.ssh/authorized_keys ]; then
+            if k=$(ssh-keygen -lf ~/.ssh/authorized_keys 2>/dev/null); then echo "$k" | awk '{print $1, $2, $4}'
+            else impossible "lecture des empreintes des clés"; fi
+            stat -c "modifié le %y" ~/.ssh/authorized_keys
+            find ~/.ssh -type f -newermt "$DEPUIS" 2>/dev/null | grep -q . && alerte "~/.ssh modifié depuis $DEPUIS (clé ajoutée ?)"
+          else impossible "~/.ssh/authorized_keys introuvable (le contrôle passe pourtant par une clé)"; fi
+
+          echo "== tâches cron de l'utilisateur (attendu : aucune ; les tâches planifiées Alwaysdata sont ailleurs)"
+          if ! command -v crontab >/dev/null; then echo "commande crontab absente du serveur : aucune tâche cron possible"; c=""; s=1
+          else c=$(crontab -l 2>&1); s=$?; fi
+          if ! command -v crontab >/dev/null; then :
+          elif [ $s -eq 0 ]; then
+            if echo "$c" | grep -vE '^\s*(#|$)' | grep -q .; then alerte "tâche cron inattendue"; echo "$c" | grep -vE '^\s*(#|$)' | awk '{print $1,$2,$3,$4,$5, "(commande masquée)"}'; else echo "aucune"; fi
+          elif echo "$c" | grep -qiE "no crontab|not allowed|permission"; then echo "aucune (ou crontab non disponible)"
+          else impossible "lecture de la crontab"; fi
+
+          echo "== processus du compte (noms seuls, sans arguments)"
+          if p=$(ps -u "$(id -u)" -o comm= 2>/dev/null); then echo "$p" | grep -vxE "bash|ps|sshd|sort|uniq|grep|sed|awk" | sort | uniq -c
+          else impossible "liste des processus"; fi
+
+          echo "== comptes et journal de l'application (nombres seulement)"
+          if b=$(cd ~/www/api/lib && DEPUIS="$DEPUIS" php -r '
+            require "base.php";
+            $db = api_base();
+            foreach ($db->query("SELECT role, actif, COUNT(*) n FROM comptes GROUP BY role, actif ORDER BY role, actif") as $l)
+              echo "comptes  role=", $l["role"], "  actif=", $l["actif"], "  ", $l["n"], "\n";
+            $s = $db->prepare("SELECT action, succes, COUNT(*) n FROM journal WHERE horodatage >= ? AND action IN (\"saveCompte\",\"resetPassword\",\"setPassword\",\"selfSetPassword\",\"saveLists\",\"checkPassword\",\"restaurerCorbeille\",\"setConfig\") GROUP BY action, succes ORDER BY action, succes");
+            $s->execute([getenv("DEPUIS")]);
+            foreach ($s as $l) echo "journal  ", $l["action"], "  succes=", $l["succes"], "  ", $l["n"], "\n";
+          ' 2>/dev/null); then echo "$b"
+          else impossible "lecture des comptes et du journal (base)"; fi
+
+          echo "== journaux HTTP depuis $DEPUIS"
+          fichiers=$(find ~/admin/logs -type f -name "*http*" -newermt "$DEPUIS" 2>/dev/null)
+          if [ -z "$fichiers" ]; then
+            impossible "aucun journal HTTP trouvé depuis $DEPUIS"
+          else
+            echo "$(echo "$fichiers" | wc -l) fichier(s)"
+            # Méthode, chemin SANS paramètres, code : jamais d'IP ni de requête complète.
+            req() { cat $fichiers | grep -oE '"[A-Z]+ [^ "]+ HTTP/[0-9.]+" [0-9]{3}' | sed -E 's/^"([A-Z]+) ([^ ?"]*)[^ "]* HTTP\/[0-9.]+" ([0-9]{3})$/\1 \2 \3/'; }
+            echo "-- chemins appelés hors pages connues (nombre, méthode, chemin, code)"
+            req | grep -vE '^(GET|POST|OPTIONS|HEAD) /(api|api-sandbox)/index\.php [0-9]+$|^(GET|HEAD) /sandbox/' | sort | uniq -c | sort -rn | head -40
+            echo "-- fichiers PHP autres que index.php ayant répondu 200"
+            # /api/v.php : relevé de version fait à la main le 21/10/2026
+            # (fichier supprimé aussitôt) ; toléré ce jour-là seulement.
+            for f in $fichiers; do
+              cat "$f" | grep -oE '"[A-Z]+ [^ "]+ HTTP/[0-9.]+" 200' | sed -E 's/^"([A-Z]+) ([^ ?"]*).*/\2/' | grep -E '\.php$' \
+                | grep -vxE '/(api|api-sandbox)/index\.php' | { case "$f" in *2026-10-21*) grep -vx '/api/v.php';; *) cat;; esac; }
+            done | sort | uniq -c > php200.txt
+            if [ -s php200.txt ]; then cat php200.txt; alerte "fichier PHP autre que index.php a répondu 200"; else echo "aucun"; fi
+            echo "-- motifs d'exploitation connus (allow_url_include, auto_prepend, php://, %ad, /cgi-bin/)"
+            n=$(cat $fichiers | grep -ciE 'allow_url_include|auto_prepend|php://|%ad|/cgi-bin/' || true)
+            n=${n:-0}; echo "$n requête(s)"
+            [ "$n" -gt 0 ] && alerte "$n requête(s) avec un motif d'exploitation connu"
+          fi
           echo "== heure du serveur"; date
+          echo "FIN_DU_RAPPORT"
           FIN
-          if grep -q '^ALERTE' rapport.txt; then grep '^ALERTE' rapport.txt | sed 's/^/::error::/'; exit 1; fi
-          echo "Aucune anomalie."
+          cat rapport.txt
+          grep -q '^FIN_DU_RAPPORT$' rapport.txt || echo "IMPOSSIBLE : rapport incomplet (script interrompu)" >> rapport.txt
+          if grep -q '^IMPOSSIBLE' rapport.txt; then grep '^IMPOSSIBLE' rapport.txt | sed 's/^/::error::/'; fi
+          if grep -q '^ALERTE' rapport.txt; then grep '^ALERTE' rapport.txt | sed 's/^/::error::/'; fi
+          if grep -qE '^(ALERTE|IMPOSSIBLE)' rapport.txt; then exit 1; fi
+          echo "Tout a été contrôlé : aucune anomalie."
