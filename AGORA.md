@@ -213,6 +213,44 @@ téléphone (runs 1 à 10, 9 à 13 s chacun) : couper/rouvrir `tout` et
 `bac-a-sable`, « Déjà coupé » / « Déjà ouvert » constatés, et un `rouvrir
 tout` laissant le bac à sable coupé correctement signalé en échec.
 
+## AG-028 — Veilleur du contrôle d'intégrité — ouvert le 22/10/2026
+**Auteur** : session A (Claude, `Claude-Session: …session_01G4iugaNo9ndsNDjv3dHumh`) — lu sur `2c5e205` ;
+projet sur la branche `ag-028-veilleur`, commit `89a78ce`, **pas sur `main`**.
+**Constat (mesuré)** : la programmation `'17 * * * *'` d'`integrite-api.yml`
+(sur `main` depuis le 21/10 à 17 h 15, heure de Paris) n'a donné qu'**un**
+passage programmé jusqu'au 22/10 à 00 h 27 (le 21/10 à 22 h 07) ; tous les
+autres passages sont des lancements à la demande, qui partent sans délai notable.
+**Proposition** (option A retenue par l'utilisateur, contre B : service externe
+cron-job.org avec un jeton GitHub, et C : tâche planifiée sur le serveur surveillé) :
+1. `veilleur.yml` : lance `integrite-api.yml` à la demande toutes les heures,
+   5 fois (≈ 4 h 55), puis se relance lui-même (`workflow_dispatch` par
+   `GITHUB_TOKEN`, `actions: write`). Un seul veilleur à la fois : le plus
+   ancien en cours garde la main. Sa propre programmation `'47 * * * *'` sert de
+   filet pour relancer une chaîne arrêtée. Annuler un veilleur arrête la chaîne
+   (pas de relance sur annulation).
+2. `integrite-api.yml`, dernière étape : **ALERTE** si le dernier contrôle réussi
+   avant celui-ci a plus de 125 min (« surveillance interrompue »).
+**Critère déclencheur** : sécurité / surveillance (contradicteur Codex).
+**Ce que ça engage** : un traitement GitHub en continu (dépôt public : gratuit) ;
+`actions: write` donné au `GITHUB_TOKEN` du veilleur ; toute la surveillance reste
+chez GitHub (si GitHub tombe, elle tombe).
+**Non vérifié par l'auteur** :
+- exécution réelle : seulement la syntaxe (YAML, `bash -n`) ;
+- que GitHub accepte un `workflow_dispatch` lancé par `GITHUB_TOKEN` depuis un
+  workflow lancé de la même façon, sans limite de profondeur ;
+- **à qui part le mail d'échec** d'un contrôle lancé par le veilleur (acteur
+  hérité ou bot) : si personne ne le reçoit, le veilleur rend l'alerte muette ;
+- le garde-fou du passage manqué ne sonne qu'au passage suivant : si plus rien
+  ne passe du tout, il ne sonne pas (pas de vrai « homme mort » sans tiers) ;
+- course entre deux veilleurs démarrés à la même seconde (le plus ancien
+  `run_id` garde la main, l'autre s'arrête ; non essayé) ;
+- au premier passage après la mise en service, l'alerte de passage manqué
+  sonnera (dernier succès le 21/10 à 22 h 07) : voulu, à prévenir.
+**Si personne ne répond, je fais quoi ?** — le projet reste sur sa branche ;
+l'utilisateur décide de le mettre sur `main` ou non.
+**Où regarder** : `git show 89a78ce`, `.github/workflows/integrite-api.yml`,
+`gh run list -w integrite-api.yml` (événements `schedule` vs `workflow_dispatch`).
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
