@@ -23,12 +23,17 @@ justification de la règle : utile à lire, **non requis pour répondre**.)
 **Blocs de sécurité, de mots de passe ou de données personnelles : le
 contradicteur est Codex (OpenAI)**, pas une session Claude (décision du
 06/10/2026 : 0 « contredit » sur 23 blocs entre Claude, quand Codex a trouvé
-en une passe ce que Claude avait manqué). L'utilisateur colle le bloc dans
-Codex (autorisations « Lecture seule », réflexion au plus haut) avec : « Réponds
-selon le gabarit de AGORA.md, avec fichier:ligne ; ne modifie rien. » La
-session qui a ouvert le bloc inscrit la réponse **telle quelle** sous
-`### Réponse — Codex — JJ/MM/AAAA`, sans la reformuler ni la juger ;
-l'utilisateur tranche. Codex ne modifie jamais le code.
+en une passe ce que Claude avait manqué). **Depuis le 21/10/2026 (décision de
+l'utilisateur), Codex inscrit lui-même sa réponse** : l'utilisateur ouvre Codex
+avec l'accès en écriture, réflexion au plus haut, et colle : « pull, lis
+AGORA.md, réponds à AG-0NN selon le gabarit, avec fichier:ligne. Ajoute ta
+réponse sous le bloc, dans AGORA.md seulement, sous `### Réponse — Codex —
+JJ/MM/AAAA` ; commit et push sur main. Ne modifie aucun autre fichier. »
+L'accès en écriture vaut pour tout le dépôt : la session qui a ouvert le bloc
+vérifie, au pull suivant, que le commit de Codex ne touche qu'`AGORA.md`
+(`git show --stat`) et le signale sinon. Codex ne modifie jamais le code ;
+l'utilisateur tranche. (Avant le 21/10/2026 : lecture seule, réponse recopiée
+par la session.)
 
 **Deux comptes Claude différents fonctionnent** — le canal est ce dépôt, pas
 le compte, comme pour `CHANTIERS.md`. Condition : que le second compte ait
