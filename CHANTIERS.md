@@ -107,7 +107,8 @@ sont datées du 05/10 à la demande de l'utilisateur.
       Essai réel du 21/10 (runs 2 à 8) : `tout` coupé puis rouvert (3 URL
       vérifiées), « Déjà ouvert » et « Déjà coupé » constatés ; `rouvrir tout`
       lancé sur le bac à sable coupé a bien échoué (2 URL encore en 403).
-      **Bac à sable resté coupé** : reste `rouvrir` / `bac-a-sable` ×2 ;
+      Bac à sable rouvert puis « Déjà ouvert » (runs 9-10) : **essai réel
+      terminé**, tout est ouvert ;
    4. WoocLight : même examen, à part (autre compte, pas couvert ici) ;
    5. en parler au directeur (registres et changement de configuration pas
       encore présentés).

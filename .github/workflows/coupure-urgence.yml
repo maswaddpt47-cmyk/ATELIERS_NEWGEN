@@ -19,6 +19,8 @@
 # integrite-api.yml reconnaît ces fichiers comme des coupures voulues.
 # Jamais déclenché automatiquement : une alerte prévient, l'humain décide.
 name: Coupure d'urgence
+# Visible dans la liste des runs, y compris dans l'appli GitHub du téléphone.
+run-name: "Coupure d'urgence : ${{ inputs.action }} — ${{ inputs.cible }}"
 
 permissions:
   contents: read
@@ -150,6 +152,8 @@ jobs:
             sed 's/^/- /' serveur.txt
             [ "$st" = 0 ] || echo "- arrêt avec le code $st"
           } >> "$GITHUB_STEP_SUMMARY"
+          # Annotations : affichées en tête du run, hors du journal.
+          while IFS= read -r l; do echo "::notice::$l"; done < serveur.txt
           exit $st
 
       # Vérification depuis l'extérieur, comme un usager.
@@ -192,7 +196,7 @@ jobs:
               elif [ "$ok" = oui ]; then l="blocage retiré, service opérationnel (HTTP 200)"
               else l="blocage retiré, SERVICE NON OPÉRATIONNEL (HTTP $code)"; echec=1; fi
             fi
-            echo "/$chemin : $l"; resume="$resume"$'\n'"- \`/$chemin\` : $l"
+            echo "::notice::/$chemin : $l"; resume="$resume"$'\n'"- \`/$chemin\` : $l"
           done
           {
             echo "### $ACTION — $CIBLE — $(TZ=Europe/Paris date '+%d/%m/%Y %H:%M') (heure de Paris)"

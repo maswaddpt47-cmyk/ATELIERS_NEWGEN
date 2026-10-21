@@ -208,9 +208,10 @@ opérationnel » ; chaque URL couverte vérifiée (api, api-sandbox, sandbox) ;
 temporaire unique + lien dur (jamais d'écrasement), retrait par renommage puis
 vérification, liens symboliques refusés, tout vérifié avant d'agir, verrou
 `flock` ; cible `bac-a-sable` pour les essais. Essayé en local seulement
-(faux `~/www`, faux serveur HTTP). **Reste** : l'essai réel (couper,
-re-couper, rouvrir, re-rouvrir, depuis le téléphone, délai), par
-l'utilisateur, en rouvrant la production avec le bouton puis sur le bac à sable.
+(faux `~/www`, faux serveur HTTP). **Essai réel fait le 21/10** depuis le
+téléphone (runs 1 à 10, 9 à 13 s chacun) : couper/rouvrir `tout` et
+`bac-a-sable`, « Déjà coupé » / « Déjà ouvert » constatés, et un `rouvrir
+tout` laissant le bac à sable coupé correctement signalé en échec.
 
 ## Blocs tranchés — sortis de ce fichier
 
