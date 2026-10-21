@@ -152,9 +152,11 @@ requis) ; Gemini en réserve.
   tournait encore en 8.4.26. Web → Sites → Redémarrer a suffi. Contrôle de la
   version servie : `diagnostic-api.yml` (section « php (web) »). Blocage
   d'urgence : `echo 'Require all denied' > www/.htaccess` (403), `rm` pour
-  rouvrir. **Connexion SSH par mot de passe encore active** sur le compte
-  (constat de l'utilisateur, 21/10) : garder un mot de passe fort ou passer en
-  clé seule, à trancher.
+  rouvrir. **SSH par clé seule depuis le 21/10/2026** (mot de passe
+  désactivé par l'utilisateur, déclaré) : les workflows (`deploy-api`,
+  `deploy-sandbox`, `diagnostic-api`, `copie.yml` d'ateliers-backups) passent
+  par clé. Pour une intervention à la main : réactiver le mot de passe, puis le
+  désactiver (procédure de restauration V0.3, section 3).
 - Un secret GitHub ne part au serveur qu'au **déploiement suivant** : après
   toute modification de secret, relancer « Déploiement API Alwaysdata ».
 - L'utilisateur MySQL est **sensible à la casse** (`…_michel`, pas
