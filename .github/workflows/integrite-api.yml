@@ -11,7 +11,7 @@
 #   nom des processus sans arguments, comptes et journal en nombres seulement,
 #   jamais d'adresse IP ni de nom ;
 # - « test_alerte » provoque un échec pour vérifier que l'alerte arrive.
-# Lecture seule sur le serveur. Ne détecte qu'après coup, et ni une intrusion
+# Lecture seule sur le serveur (une exception, notée dans le script). Ne détecte qu'après coup, et ni une intrusion
 # sans fichier persistant ni une modification des données métier : ce n'est
 # pas une garantie, c'est un filet.
 name: Intégrité API Alwaysdata
@@ -104,6 +104,9 @@ jobs:
           set -o pipefail
           ssh -o ConnectTimeout=20 "$HOTE" DEPUIS="$DEPUIS" 'bash -s' <<'FIN' > rapport.txt 2>&1 || echo "IMPOSSIBLE : le script distant s'est arrêté (code $?)" >> rapport.txt
           set -u
+          # Seule écriture du script : retirer php200.txt, laissé dans ~ par la
+          # version du 21/10/2026 de ce contrôle (le rapport reste en mémoire).
+          rm -f "$HOME/php200.txt"
           alerte(){ echo "ALERTE : $*"; }
           impossible(){ echo "IMPOSSIBLE : $*"; }
           [ -d ~/www ] || impossible "dossier ~/www introuvable"
@@ -162,7 +165,7 @@ jobs:
             $db = api_base();
             foreach ($db->query("SELECT role, actif, COUNT(*) n FROM comptes GROUP BY role, actif ORDER BY role, actif") as $l)
               echo "comptes  role=", $l["role"], "  actif=", $l["actif"], "  ", $l["n"], "\n";
-            $s = $db->prepare("SELECT action, succes, COUNT(*) n FROM journal WHERE horodatage >= ? AND action IN (\"saveCompte\",\"resetPassword\",\"setPassword\",\"selfSetPassword\",\"saveLists\",\"checkPassword\",\"restaurerCorbeille\",\"setConfig\") GROUP BY action, succes ORDER BY action, succes");
+            $s = $db->prepare("SELECT action, succes, COUNT(*) n FROM journal WHERE horodatage >= ? AND action IN (\"login\",\"loginFail\",\"reinitDemande\",\"reinitMotDePasse\",\"saveCompte\",\"resetPassword\",\"setPassword\",\"selfSetPassword\",\"saveLists\",\"restaurerCorbeille\",\"setConfig\") GROUP BY action, succes ORDER BY action, succes");
             $s->execute([getenv("DEPUIS")]);
             foreach ($s as $l) echo "journal  ", $l["action"], "  succes=", $l["succes"], "  ", $l["n"], "\n";
           ' 2>/dev/null); then echo "$b"
@@ -185,12 +188,12 @@ jobs:
             # haut comme PHP inconnu) et, le 21/10/2026 seulement, les relevés
             # faits ce jour-là (/api/v.php à la main, /api/v<16 hexa>.php par
             # l'ancienne version du diagnostic).
-            for f in $fichiers; do
+            php200=$(for f in $fichiers; do
               zcat -f "$f" | grep -aoE '"[A-Z]+ [^ "]+ HTTP/[0-9.]+" 200' | sed -E 's/^"([A-Z]+) ([^ ?"]*).*/\2/' | grep -E '\.php$' \
                 | grep -vxE '/(api|api-sandbox)/index\.php|/api/diagnostic-version-[0-9a-f]{16}\.php' \
                 | { case "$f" in *2026-10-21*) grep -vxE '/api/v\.php|/api/v[0-9a-f]{16}\.php';; *) cat;; esac; }
-            done | sort | uniq -c > php200.txt
-            if [ -s php200.txt ]; then cat php200.txt; alerte "fichier PHP autre que index.php a répondu 200"; else echo "aucun"; fi
+            done | sort | uniq -c)
+            if [ -n "$php200" ]; then echo "$php200"; alerte "fichier PHP autre que index.php a répondu 200"; else echo "aucun"; fi
             echo "-- motifs d'exploitation connus (allow_url_include, auto_prepend, php://, %ad, /cgi-bin/)"
             n=$(zcat -f $fichiers | grep -aciE 'allow_url_include|auto_prepend|php://|%ad|/cgi-bin/' || true)
             n=${n:-0}; echo "$n requête(s)"
