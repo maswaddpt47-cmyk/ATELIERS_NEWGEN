@@ -85,8 +85,10 @@ jobs:
             [ -n "$sha" ] || { echo "::error::IMPOSSIBLE : aucun déploiement réussi trouvé ($wf)"; echec=1; continue; }
             rm -rf ref && mkdir ref && git archive "$sha" api | tar -x -C ref \
               || { echo "::error::IMPOSSIBLE : commit $sha introuvable"; echec=1; continue; }
+            # www/$d/.htaccess (coupure d'urgence du bac à sable, AG-027) est
+            # hors comparaison : son contenu est jugé à l'étape suivante.
             ( cd ref/api && find . -type f | LC_ALL=C sort | xargs sha256sum ) > attendu.sha
-            if ! ssh -o ConnectTimeout=20 "$HOTE" "test -d www/$d && cd www/$d && find . -type f | LC_ALL=C sort | xargs -r sha256sum" > serveur.sha; then
+            if ! ssh -o ConnectTimeout=20 "$HOTE" "test -d www/$d && cd www/$d && find . -type f -not -path ./.htaccess | LC_ALL=C sort | xargs -r sha256sum" > serveur.sha; then
               echo "::error::ALERTE ou IMPOSSIBLE : www/$d absent ou illisible sur le serveur"; echec=1; continue
             fi
             [ -s serveur.sha ] || { echo "::error::ALERTE : www/$d vide sur le serveur"; echec=1; continue; }
@@ -119,16 +121,17 @@ jobs:
 
           echo "== configuration PHP et Apache (.htaccess, .user.ini, php.ini)"
           # Attendus : lib/.htaccess de chaque API (comparés plus haut) et, en
-          # cas de coupure d'urgence, ~/www/.htaccess contenant exactement
-          # « Require all denied ».
+          # cas de coupure d'urgence (coupure-urgence.yml), www/.htaccess,
+          # www/api-sandbox/.htaccess ou www/sandbox/.htaccess contenant
+          # exactement « Require all denied ».
           if x=$(find ~/www ~ -maxdepth 5 \( -name ".htaccess" -o -name ".user.ini" -o -name "php.ini" \) -not -path "$HOME/admin/*" 2>&1); then
             echo "$x" | sort -u | while read -r f; do
               [ -z "$f" ] && continue
               case "$f" in
                 "$HOME/www/api/lib/.htaccess"|"$HOME/www/api-sandbox/lib/.htaccess") echo "attendu : ${f#$HOME/}";;
-                "$HOME/www/.htaccess")
-                  if [ "$(cat "$f")" = "Require all denied" ]; then echo "coupure d'urgence en place : www/.htaccess"
-                  else alerte "www/.htaccess au contenu inattendu"; fi;;
+                "$HOME/www/.htaccess"|"$HOME/www/api-sandbox/.htaccess"|"$HOME/www/sandbox/.htaccess")
+                  if [ ! -L "$f" ] && [ "$(cat "$f")" = "Require all denied" ]; then echo "coupure d'urgence en place : ${f#$HOME/}"
+                  else alerte "${f#$HOME/} au contenu inattendu"; fi;;
                 *) alerte "fichier de configuration inattendu : ${f#$HOME/}";;
               esac
             done

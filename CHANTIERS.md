@@ -102,7 +102,11 @@ sont datées du 05/10 à la demande de l'utilisateur.
    2. test d'alerte lancé le 21/10 à 17 h 50 : **l'utilisateur confirme-t-il
       avoir reçu le mail d'échec de GitHub ?** ; enregistrer la variable de
       dépôt `COMPTES_EMPREINTE` (valeur donnée dans le rapport du 21/10) ;
-   3. rouvrir si Alwaysdata confirme et si le rapport est vert ;
+   3. rouvrir si Alwaysdata confirme et si le rapport est vert — **essai réel
+      du bouton** (AG-027, sur `main` le 21/10) : Actions → Coupure d'urgence →
+      `rouvrir` / `tout` (confirmation « rouvrir ») ; puis sur le bac à sable :
+      `couper` ×2, `rouvrir` ×2, noter le délai. Si le bouton échoue :
+      procédure SSH (`rm www/.htaccess`) ;
    4. WoocLight : même examen, à part (autre compte, pas couvert ici) ;
    5. en parler au directeur (registres et changement de configuration pas
       encore présentés).

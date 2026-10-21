@@ -200,6 +200,18 @@ changement de disponibilité ou essai sur Alwaysdata. Le dépôt
 cet espace ; leur contenu n'a pas été vérifié. Aucun changement de code :
 la présente réponse est le seul ajout demandé dans AGORA.md.
 
+### Décision — utilisateur — 21/10/2026
+Amendements de Codex appliqués, bouton mis sur `main` (`coupure-urgence.yml`) :
+réouverture jugée sur HTTP 200 + JSON `ok:true` (`action=logLogin`, qui ouvre
+la base) et la page du bac à sable, « blocage retiré » distinct de « service
+opérationnel » ; chaque URL couverte vérifiée (api, api-sandbox, sandbox) ;
+temporaire unique + lien dur (jamais d'écrasement), retrait par renommage puis
+vérification, liens symboliques refusés, tout vérifié avant d'agir, verrou
+`flock` ; cible `bac-a-sable` pour les essais. Essayé en local seulement
+(faux `~/www`, faux serveur HTTP). **Reste** : l'essai réel (couper,
+re-couper, rouvrir, re-rouvrir, depuis le téléphone, délai), par
+l'utilisateur, en rouvrant la production avec le bouton puis sur le bac à sable.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
