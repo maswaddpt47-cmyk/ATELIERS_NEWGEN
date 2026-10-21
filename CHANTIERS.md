@@ -147,6 +147,14 @@ requis) ; Gemini en réserve.
 
 ## À ne pas réapprendre — Alwaysdata et déploiement
 
+- **Correctif PHP d'Alwaysdata : redémarrer le site** (21/10/2026, faille
+  « PHP2Shell ») : `php -v` en SSH donnait 8.4.27 (corrigée) alors que l'API
+  tournait encore en 8.4.26. Web → Sites → Redémarrer a suffi. Contrôle de la
+  version servie : `diagnostic-api.yml` (section « php (web) »). Blocage
+  d'urgence : `echo 'Require all denied' > www/.htaccess` (403), `rm` pour
+  rouvrir. **Connexion SSH par mot de passe encore active** sur le compte
+  (constat de l'utilisateur, 21/10) : garder un mot de passe fort ou passer en
+  clé seule, à trancher.
 - Un secret GitHub ne part au serveur qu'au **déploiement suivant** : après
   toute modification de secret, relancer « Déploiement API Alwaysdata ».
 - L'utilisateur MySQL est **sensible à la casse** (`…_michel`, pas
