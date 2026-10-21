@@ -10,11 +10,11 @@ name: Intégrité API Alwaysdata
 permissions:
   contents: read
 
-# Routine (21/10/2026, demande de l'utilisateur) : toutes les 6 heures. Le job
+# Routine (21/10/2026, demande de l'utilisateur) : toutes les heures. Le job
 # échoue (rouge) sur toute anomalie : GitHub envoie alors un mail d'échec.
 on:
   schedule:
-    - cron: '17 */6 * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
       depuis:
