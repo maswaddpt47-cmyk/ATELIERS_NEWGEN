@@ -131,6 +131,75 @@ l'utilisateur décide de le mettre sur `main` ou non.
 `.github/workflows/integrite-api.yml` (reconnaissance de la coupure),
 `ateliers-backups/documents/sources/procedure-restauration.html` (secours SSH).
 
+
+### Réponse — Codex — 21/10/2026
+**Auteur** : Codex (OpenAI), distinct de la session A — lu sur `d63b65c` ;
+workflow proposé examiné au commit `9ddb586` (les lignes de
+`coupure-urgence.yml` citées ci-dessous sont celles de ce commit).
+**Verdict** : amendé.
+**Constat** :
+
+1. Le déclenchement est manuel, la confirmation passe par des variables
+   d'environnement, les exécutions de ce workflow sont sérialisées et un
+   `.htaccess` au contenu différent est refusé
+   (`.github/workflows/coupure-urgence.yml:19`, `:30`, `:40`, `:66`, `:74`).
+   La reconnaissance du contenu de coupure est cohérente avec le contrôle
+   d'intégrité actuel (`.github/workflows/integrite-api.yml:129`). Cela ne
+   fournit pas une validation de la configuration Apache réellement servie.
+
+2. La réouverture peut être annoncée à tort comme réussie. Le test accepte
+   toute réponse autre que 403 et 000, donc aussi 301, 404, 500 et 503
+   (`.github/workflows/coupure-urgence.yml:88`, `:90`, `:98`). Reproduit
+   localement avec ces codes fictifs, tous acceptés. En outre, le point
+   d'entrée PHP peut retourner une erreur JSON sans changer le statut HTTP
+   (`api/index.php:25`, `:28`, `:30`) : exiger seulement HTTP 200 ne suffit
+   pas à établir que l'API fonctionne.
+
+3. La portée annoncée dépasse la vérification : le commentaire promet la
+   fermeture de tout `www`, mais seule `/api/index.php` sur le domaine du
+   compte est interrogée (`.github/workflows/coupure-urgence.yml:5`, `:56`,
+   `:88`). Une réponse 403 sur cette URL ne démontre pas la coupure de
+   `/api-sandbox/index.php`, des pages du bac à sable, ni des autres domaines
+   éventuels. Le comportement d'héritage des autorisations doit être vérifié
+   sur l'hébergement, pas déduit du contenu du fichier. Un `.htaccess~` vide
+   n'est pas le fichier `.htaccess` lu par la configuration Apache standard ;
+   son existence ne valide ni n'invalide la coupure.
+
+4. Le temporaire fixe `.htaccess.tmp` n'est pas protégé : la redirection `>`
+   l'écrase s'il existe et suit un éventuel lien symbolique, avant le `mv`
+   (`.github/workflows/coupure-urgence.yml:70`). Le refus d'écraser le fichier
+   final ne protège donc pas les autres fichiers. Le contrôle du fichier final
+   et son remplacement ne sont pas non plus atomiques vis-à-vis d'une autre
+   session SSH ; le groupe de concurrence ne sérialise que ce workflow
+   (`:30`, `:66`, `:70`).
+
+**Amendement** :
+- Conserver le principe du bouton manuel et le secours SSH. Distinguer dans
+  le résultat « blocage retiré » de « service opérationnel ». Pour annoncer
+  ce dernier, vérifier HTTP 200 et une réponse JSON attendue avec `ok:true`
+  sur une lecture publique représentative, sans imprimer les noms retournés.
+  Refuser comme succès fonctionnel les redirections, erreurs et réponses
+  non conformes ; conserver le statut de sortie de curl.
+- Définir les URL réellement couvertes et vérifier la coupure de chacune
+  (production et bac à sable au minimum), lors d'un essai contrôlé autorisé.
+  Ne pas annoncer « tout www coupé » sur la seule preuve d'une URL en 403.
+- Créer un temporaire unique de manière sûre dans le même dossier, avec
+  nettoyage garanti ; refuser les liens symboliques et fichiers inattendus.
+  Prévenir les interventions concurrentes et revérifier l'état avant de
+  remplacer ou supprimer la coupure ; ne pas écraser un fichier apparu
+  entre la vérification et la pose.
+- Avant usage comme secours opérationnel, vérifier les personnes autorisées
+  à déclencher, l'accès depuis le téléphone, le délai réel et le comportement
+  couper/re-couper/rouvrir/re-rouvrir sur l'hébergement. Cela ne transforme
+  pas ce bouton en moyen de nettoyer un serveur compromis.
+
+**Limites** : lecture du workflow et contrôle syntaxique du script distant,
+reproduction locale du critère HTTP ; aucun déclenchement Actions, accès SSH,
+changement de disponibilité ou essai sur Alwaysdata. Le dépôt
+`ateliers-backups` et sa procédure de restauration ne sont pas présents dans
+cet espace ; leur contenu n'a pas été vérifié. Aucun changement de code :
+la présente réponse est le seul ajout demandé dans AGORA.md.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
