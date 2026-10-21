@@ -42,7 +42,7 @@ jobs:
             # différer de la ligne de commande. Fichier au nom aléatoire, lu par le
             # serveur lui-même puis supprimé aussitôt.
             echo "== php (web, celui qui exécute l API)"
-            n="v$(head -c8 /dev/urandom | od -An -tx1 | tr -d " \n").php"
+            n="diagnostic-version-$(head -c8 /dev/urandom | od -An -tx1 | tr -d " \n").php"   # nom toléré par integrite-api.yml
             printf "<?php echo PHP_VERSION, \" \", PHP_SAPI;" > ~/www/api/$n
             curl -sS -m 15 "https://ateliers-numeriques.alwaysdata.net/api/$n"; echo
             rm -f ~/www/api/$n

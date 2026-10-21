@@ -175,19 +175,24 @@ jobs:
           else
             echo "$(echo "$fichiers" | wc -l) fichier(s)"
             # Méthode, chemin SANS paramètres, code : jamais d'IP ni de requête complète.
-            req() { cat $fichiers | grep -oE '"[A-Z]+ [^ "]+ HTTP/[0-9.]+" [0-9]{3}' | sed -E 's/^"([A-Z]+) ([^ ?"]*)[^ "]* HTTP\/[0-9.]+" ([0-9]{3})$/\1 \2 \3/'; }
+            req() { zcat -f $fichiers | grep -aoE '"[A-Z]+ [^ "]+ HTTP/[0-9.]+" [0-9]{3}' | sed -E 's/^"([A-Z]+) ([^ ?"]*)[^ "]* HTTP\/[0-9.]+" ([0-9]{3})$/\1 \2 \3/'; }
             echo "-- chemins appelés hors pages connues (nombre, méthode, chemin, code)"
             req | grep -vE '^(GET|POST|OPTIONS|HEAD) /(api|api-sandbox)/index\.php [0-9]+$|^(GET|HEAD) /sandbox/' | sort | uniq -c | sort -rn | head -40
             echo "-- fichiers PHP autres que index.php ayant répondu 200"
-            # /api/v.php : relevé de version fait à la main le 21/10/2026
-            # (fichier supprimé aussitôt) ; toléré ce jour-là seulement.
+            # Tolérés : le relevé de version de diagnostic-api.yml
+            # (/api/diagnostic-version-<16 hexa>.php, créé puis supprimé dans la
+            # même seconde ; un tel fichier resté en place serait signalé plus
+            # haut comme PHP inconnu) et, le 21/10/2026 seulement, les relevés
+            # faits ce jour-là (/api/v.php à la main, /api/v<16 hexa>.php par
+            # l'ancienne version du diagnostic).
             for f in $fichiers; do
-              cat "$f" | grep -oE '"[A-Z]+ [^ "]+ HTTP/[0-9.]+" 200' | sed -E 's/^"([A-Z]+) ([^ ?"]*).*/\2/' | grep -E '\.php$' \
-                | grep -vxE '/(api|api-sandbox)/index\.php' | { case "$f" in *2026-10-21*) grep -vx '/api/v.php';; *) cat;; esac; }
+              zcat -f "$f" | grep -aoE '"[A-Z]+ [^ "]+ HTTP/[0-9.]+" 200' | sed -E 's/^"([A-Z]+) ([^ ?"]*).*/\2/' | grep -E '\.php$' \
+                | grep -vxE '/(api|api-sandbox)/index\.php|/api/diagnostic-version-[0-9a-f]{16}\.php' \
+                | { case "$f" in *2026-10-21*) grep -vxE '/api/v\.php|/api/v[0-9a-f]{16}\.php';; *) cat;; esac; }
             done | sort | uniq -c > php200.txt
             if [ -s php200.txt ]; then cat php200.txt; alerte "fichier PHP autre que index.php a répondu 200"; else echo "aucun"; fi
             echo "-- motifs d'exploitation connus (allow_url_include, auto_prepend, php://, %ad, /cgi-bin/)"
-            n=$(cat $fichiers | grep -ciE 'allow_url_include|auto_prepend|php://|%ad|/cgi-bin/' || true)
+            n=$(zcat -f $fichiers | grep -aciE 'allow_url_include|auto_prepend|php://|%ad|/cgi-bin/' || true)
             n=${n:-0}; echo "$n requête(s)"
             [ "$n" -gt 0 ] && alerte "$n requête(s) avec un motif d'exploitation connu"
           fi
