@@ -104,7 +104,10 @@ sont datées du 05/10 à la demande de l'utilisateur.
       dépôt `COMPTES_EMPREINTE` (valeur donnée dans le rapport du 21/10) ;
    3. ~~rouvrir~~ **rouvert le 21/10 à 21 h 05 avec le bouton** (AG-027,
       run 1, vert en 11 s ; l'utilisateur confirme que le site remarche).
-      Reste l'essai sur le bac à sable : `couper` ×2, `rouvrir` ×2 ;
+      Essai réel du 21/10 (runs 2 à 8) : `tout` coupé puis rouvert (3 URL
+      vérifiées), « Déjà ouvert » et « Déjà coupé » constatés ; `rouvrir tout`
+      lancé sur le bac à sable coupé a bien échoué (2 URL encore en 403).
+      **Bac à sable resté coupé** : reste `rouvrir` / `bac-a-sable` ×2 ;
    4. WoocLight : même examen, à part (autre compte, pas couvert ici) ;
    5. en parler au directeur (registres et changement de configuration pas
       encore présentés).

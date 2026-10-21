@@ -78,8 +78,12 @@ jobs:
         env:
           ACTION: ${{ inputs.action }}
           CIBLE: ${{ inputs.cible }}
+        # Les messages du serveur (« Déjà coupé », « REFUS »…) vont aussi dans
+        # le résumé du run : le journal seul est peu lisible sur téléphone.
         run: |
-          ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 "$HOTE" ACTION="$ACTION" CIBLE="$CIBLE" 'bash -s' <<'FIN'
+          set -o pipefail
+          st=0
+          ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 "$HOTE" ACTION="$ACTION" CIBLE="$CIBLE" 'bash -s' <<'FIN' | tee serveur.txt || st=$?
           set -eu
           attendu="Require all denied"
           # Verrou : une seule intervention de ce script à la fois sur le
@@ -141,6 +145,12 @@ jobs:
             fi
           done
           FIN
+          {
+            echo "### Sur le serveur ($ACTION, $CIBLE)"
+            sed 's/^/- /' serveur.txt
+            [ "$st" = 0 ] || echo "- arrêt avec le code $st"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $st
 
       # Vérification depuis l'extérieur, comme un usager.
       # - couper : 403 sur chaque URL ;
