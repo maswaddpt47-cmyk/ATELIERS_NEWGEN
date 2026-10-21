@@ -95,10 +95,13 @@ sont datées du 05/10 à la demande de l'utilisateur.
    réponse d'Alwaysdata (question posée au support : 8.4.27 corrige-t-il bien
    CVE-2026-109618/109619 sur nos comptes ?). Le NEWS officiel de PHP l'affirme
    (Codex, AG-025). À faire, dans l'ordre :
-   1. lancer `integrite-api.yml` avec `depuis = 2026-10-19` (examen de la
-      période d'exposition) — Claude lit le rapport ; GitHub Actions saturé le
-      21/10, le workflow n'était pas encore enregistré ;
-   2. le relancer avec `test_alerte` coché : le mail d'échec doit arriver ;
+   1. ~~examen de la période~~ fait le 21/10 à 17 h 51 (contrôle corrigé
+      après AG-025 et AG-026) : vert, chaque jour du 19 au 21/10 journalisé.
+      Conclusion : aucun indice identifié, sans pouvoir exclure une
+      compromission (AG-026) ;
+   2. test d'alerte lancé le 21/10 à 17 h 50 : **l'utilisateur confirme-t-il
+      avoir reçu le mail d'échec de GitHub ?** ; enregistrer la variable de
+      dépôt `COMPTES_EMPREINTE` (valeur donnée dans le rapport du 21/10) ;
    3. rouvrir si Alwaysdata confirme et si le rapport est vert ;
    4. WoocLight : même examen, à part (autre compte, pas couvert ici) ;
    5. en parler au directeur (registres et changement de configuration pas
