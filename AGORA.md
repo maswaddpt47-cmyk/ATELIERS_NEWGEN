@@ -95,7 +95,39 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-_(aucun)_
+## AG-025 — Faille PHP « PHP2Shell » : API ouverte en 8.4.27 et contrôle d'intégrité horaire — ouvert le 21/10/2026
+**Auteur** : session A (Claude, `Claude-Session: …session_01G4iugaNo9ndsNDjv3dHumh`) — lu sur `4f889ba`
+**Proposition** : (1) garder l'API Alwaysdata ouverte : la version servie au web,
+mesurée le 21/10 vers 16 h 40 (heure de Paris), est **8.4.27** après redémarrage du site
+(elle était 8.4.26 avant). (2) Surveiller par `integrite-api.yml`, toutes les heures :
+code de `www/api` comparé au dépôt, PHP inconnu, `~/.ssh` modifié, requêtes
+suspectes ; échec rouge = mail GitHub. SSH par mot de passe désactivé le 21/10.
+Option écartée par l'auteur, conseillée par Codex le 21/10 : couper l'API jusqu'à
+confirmation d'Alwaysdata.
+**Critère déclencheur** : sécurité et données personnelles (contradicteur Codex) ;
+critère 2 (deux options, couper ou laisser ouvert, une seule écrite).
+**Ce que ça engage** : comptes des conseillers (mots de passe hachés), ateliers,
+journal. Si 8.4.27 ne corrige pas, ou si l'API a été compromise avant le
+correctif, laisser ouvert prolonge l'exposition ; couper prive l'équipe de l'outil.
+**Non vérifié par l'auteur** :
+- que 8.4.27 corrige les deux failles : vu dans la presse seulement, bulletin
+  php.net et avis CERT-EU 2026-018 non lus (réseau bloqué) ; format des CVE
+  (CVE-2026-109618/109619) inhabituel ;
+- l'absence d'exploitation entre la fuite (20/10) et le redémarrage (21/10,
+  ~16 h 40) : `integrite-api.yml` n'a encore jamais tourné (pas encore enregistré
+  par GitHub au moment du bloc) ;
+- la qualité du contrôle : exclusions peut-être trop larges (`/api/v.php`,
+  dossiers `sandbox`), motifs d'exploitation cherchés par `grep` naïf, rien
+  sur la base MySQL (comptes ajoutés, rôles modifiés), détection après coup
+  seulement ; WoocLight (autre compte) non couvert ;
+- que les mails d'échec de GitHub Actions arrivent bien à l'utilisateur ;
+- l'état réel au moment du bloc : l'utilisateur a peut-être coupé l'API après
+  l'avis de Codex (non confirmé à l'auteur).
+**Si personne ne répond, je fais quoi ?** — l'API reste ouverte et la routine
+tourne ; l'utilisateur coupe sur son seul jugement s'il le décide.
+**Où regarder** : `.github/workflows/integrite-api.yml` (en entier),
+`.github/workflows/diagnostic-api.yml:36-46`, `.github/workflows/deploy-api.yml:70-90`,
+`api/index.php`, `api/lib/.htaccess`, `CHANTIERS.md` (« À ne pas réapprendre »).
 
 ## Blocs tranchés — sortis de ce fichier
 
