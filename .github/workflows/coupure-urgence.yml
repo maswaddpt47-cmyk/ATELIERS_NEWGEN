@@ -1,0 +1,100 @@
+# Coupure d'urgence de l'API Alwaysdata (proposé le 21/10/2026, AGORA AG-027).
+# Né de la faille PHP « PHP2Shell » : couper a demandé un ordinateur, le mot
+# de passe SSH réactivé et des commandes tapées à la main. Ici, depuis le
+# téléphone : Actions → Coupure d'urgence → Run workflow.
+# - couper : pose ~/www/.htaccess = « Require all denied » (tout ~/www répond
+#   403 : API, bac à sable, pages du bac à sable) ; les pages GitHub ne sont
+#   pas touchées (elles ne contiennent pas de données) ;
+# - rouvrir : retire ce fichier, seulement s'il contient exactement cette ligne.
+# Un ~/www/.htaccess au contenu inconnu n'est jamais écrasé ni supprimé : le
+# workflow s'arrête et le signale. Les tâches planifiées (rappels, copie de
+# nuit) continuent : elles ne passent pas par le web.
+# integrite-api.yml reconnaît ce fichier comme une coupure voulue.
+# Jamais déclenché automatiquement : une alerte prévient, l'humain décide.
+name: Coupure d'urgence
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "couper ou rouvrir l'API"
+        type: choice
+        options: [couper, rouvrir]
+      confirmation:
+        description: "Retaper le mot de l'action (couper / rouvrir), contre un appui par erreur"
+        required: true
+
+concurrency:
+  group: coupure-urgence
+  cancel-in-progress: false
+
+jobs:
+  coupure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirmation
+        env:
+          ACTION: ${{ inputs.action }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          c=$(printf '%s' "$CONFIRMATION" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
+          [ "$c" = "$ACTION" ] || { echo "::error::Confirmation « $CONFIRMATION » différente de « $ACTION » : rien n'est fait"; exit 1; }
+
+      - name: Préparer l'accès SSH
+        env:
+          CLE: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+        run: |
+          [ -n "$CLE" ] && [ -n "$COMPTE" ] || { echo "::error::Secret ALWAYSDATA_SSH_KEY ou ALWAYSDATA_COMPTE absent"; exit 1; }
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "HOTE=$COMPTE@ssh-$COMPTE.alwaysdata.net" >> "$GITHUB_ENV"
+          echo "URL=https://$COMPTE.alwaysdata.net/api/index.php" >> "$GITHUB_ENV"
+
+      - name: Appliquer
+        env:
+          ACTION: ${{ inputs.action }}
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 "$HOTE" ACTION="$ACTION" 'bash -s' <<'FIN'
+          set -eu
+          f="$HOME/www/.htaccess"; attendu="Require all denied"
+          if [ "$ACTION" = couper ]; then
+            if [ -e "$f" ]; then
+              if [ "$(cat "$f")" = "$attendu" ]; then echo "Déjà coupé."; exit 0; fi
+              echo "REFUS : www/.htaccess existe avec un autre contenu ; rien n'est écrasé."; exit 3
+            fi
+            printf '%s\n' "$attendu" > "$f.tmp" && mv "$f.tmp" "$f"
+            echo "Coupure posée."
+          else
+            [ -e "$f" ] || { echo "Déjà ouvert (aucun www/.htaccess)."; exit 0; }
+            if [ "$(cat "$f")" != "$attendu" ]; then echo "REFUS : www/.htaccess n'est pas la coupure d'urgence ; rien n'est supprimé."; exit 3; fi
+            rm -f "$f"
+            echo "Coupure retirée."
+          fi
+          FIN
+
+      # Vérification depuis l'extérieur, comme un usager : 403 attendu après
+      # « couper », tout sauf 403 après « rouvrir ».
+      - name: Vérifier depuis Internet
+        env:
+          ACTION: ${{ inputs.action }}
+        run: |
+          code=000
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -m 15 "$URL" || true)
+            if [ "$ACTION" = couper ] && [ "$code" = 403 ]; then break; fi
+            if [ "$ACTION" = rouvrir ] && [ "$code" != 403 ] && [ "$code" != 000 ]; then break; fi
+            sleep 5
+          done
+          echo "Réponse de l'API : HTTP $code"
+          if [ "$ACTION" = couper ]; then
+            [ "$code" = 403 ] || { echo "::error::Coupure non constatée (HTTP $code) : couper par SSH (procédure de restauration, section 3)"; exit 1; }
+            echo "### API coupée (HTTP 403) — $(TZ=Europe/Paris date '+%d/%m/%Y %H:%M')" >> "$GITHUB_STEP_SUMMARY"
+          else
+            [ "$code" != 403 ] && [ "$code" != 000 ] || { echo "::error::Réouverture non constatée (HTTP $code)"; exit 1; }
+            echo "### API rouverte (HTTP $code) — $(TZ=Europe/Paris date '+%d/%m/%Y %H:%M')" >> "$GITHUB_STEP_SUMMARY"
+          fi
