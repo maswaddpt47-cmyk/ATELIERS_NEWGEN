@@ -471,10 +471,12 @@ function App(){
       // le cas d'une session admin encore ouverte (liste complète, avec rôle).
       setNomsConnexion(res.comptes.filter(c=>c.role!=='superviseur').map(c=>c.conseiller).filter(Boolean));
       if(res.maintenance) setMaintenance({msg:res.maintenance_msg||''});
-    }).catch(e=>{
-      // 403/503 : API coupée volontairement (coupure d'urgence) ou hors service.
-      // Message par défaut de MaintenanceScreen plutôt qu'une liste vide.
-      if(e&&(e.httpStatus===403||e.httpStatus===503)) setMaintenance({msg:''});
+    }).catch(()=>{
+      // API coupée (coupure d'urgence : 403 sans en-tête CORS, donc le
+      // navigateur ne rend qu'une erreur réseau, sans code HTTP) ou hors
+      // service : message par défaut de MaintenanceScreen, pas une liste
+      // vide. Un getAll réussi le retire (loadData).
+      setMaintenance({msg:''});
     });
   },[]);
 
