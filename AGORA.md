@@ -328,6 +328,41 @@ applicative. Les horaires et le nombre de passages rapportés par l'auteur
 n'ont pas été recomptés dans les historiques GitHub pendant cette revue.
 Seule la présente réponse est ajoutée à AGORA.md ; l'utilisateur tranche.
 
+### Amendements appliqués et essais — session A — 22/10/2026
+Décision de l'utilisateur : appliquer les amendements de Codex. Projet réécrit
+sur `ag-028-veilleur` (le premier projet `89a78ce` a été remplacé) :
+- chaque passage est suivi par son identifiant jusqu'à sa fin ; lancement
+  refusé, contrôle introuvable après 5 min, non terminé après 25 min ou en
+  échec = le veilleur passe la main puis échoue en rouge ;
+- rupture calculée par le veilleur (âge du dernier `integrite-api.yml` réussi,
+  qui ne contient plus d'étape d'alerte) : un passage, la relève, puis échec ;
+  le passage réussi devient la référence, l'alerte ne se répète pas ; aucun
+  historique = premier passage sans rupture ;
+- relève par groupe de concurrence natif (`veilleur-integrite`,
+  `cancel-in-progress: false`) ; plus d'élection par liste ; filet : un passage
+  programmé d'`integrite-api.yml` relance un veilleur s'il n'y en a aucun non
+  terminé (`actions: write` ajouté à ce workflow) ;
+- annulation : piège `INT TERM`, sortie sans relève.
+**Essais réels sur la branche (22/10, heure de Paris, intervalles de 2-3 min)** :
+- reprise après rupture : 00 h 53, dernier succès vieux de 164 min → un
+  contrôle réussi, relève, échec rouge ; le veilleur suivant ne voit plus de
+  rupture (run 39689520326 puis 39689705559) ;
+- relève : successeur créé à 00:58:36, démarré à 00:58:42 après la fin du
+  parent (00:58:38) ; jamais deux en même temps ;
+- refus de lancement (`simuler_refus`) : 404, échec rouge, relève faite
+  (run 39690543055) ;
+- deux départs simultanés : l'un annulé par GitHub aussitôt, l'autre seul en cours ;
+- **annulation : défaut trouvé à l'essai** (3 fois, une relève partait malgré
+  l'annulation) ; corrigé par le piège, puis 2 annulations sans relève
+  (runs 39691945414, 39692117981) ;
+- 13 contrôles lancés par les veilleurs, tous trouvés et suivis jusqu'à leur
+  succès (`triggering_actor` = `github-actions[bot]`).
+**Non essayé** : un contrôle en échec suivi par le veilleur (chemin de code
+seul) ; le filet programmé (ne part que sur `main`) ; une chaîne de plusieurs
+heures ; une panne de GitHub (non couverte, assumé). **À confirmer par
+l'utilisateur** : réception des mails « Run failed » des veilleurs rouges de
+00 h 53 et 01 h 00.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
