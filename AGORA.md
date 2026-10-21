@@ -129,6 +129,26 @@ tourne ; l'utilisateur coupe sur son seul jugement s'il le décide.
 `.github/workflows/diagnostic-api.yml:36-46`, `.github/workflows/deploy-api.yml:70-90`,
 `api/index.php`, `api/lib/.htaccess`, `CHANTIERS.md` (« À ne pas réapprendre »).
 
+### Réponse — Codex — 21/10/2026
+Auteur : Codex (OpenAI), contradicteur distinct de l’auteur du bloc — lu sur `18eface`.
+Verdict : amendé.
+Constat :
+
+1. La correction dans PHP 8.4.27 est documentée officiellement. Le [fichier NEWS du projet PHP](https://github.com/php/php-src/blob/PHP-8.4/NEWS) indique explicitement les correctifs des CVE-2026-109618 et CVE-2026-109619 dans cette version. Cela lève l’incertitude bibliographique d’`AGORA.md:113`. Les captures fournies montrent 8.4.27 côté web après redémarrage. Elles ne prouvent toutefois ni le contenu exact de la compilation Alwaysdata, ni l’absence d’exploitation antérieure. Le diagnostic distingue correctement CLI et web (`.github/workflows/diagnostic-api.yml:40`, `:46`).
+2. Le contrôle d’intégrité peut réussir sans avoir contrôlé l’API. Les erreurs SSH sont neutralisées par `|| true`, puis une sortie vide est ignorée comme un dossier absent (`.github/workflows/integrite-api.yml:50`, `:51`). Une connexion refusée ou un dossier de production supprimé peut donc laisser `ok=1`. Reproduit localement avec une commande simulant un échec de lecture. La production absente ou illisible doit faire échouer le contrôle.
+3. Des vérifications incomplètes peuvent aboutir à « Aucune anomalie ». Le script distant ne demande pas l’arrêt sur erreur ; plusieurs erreurs de lecture sont masquées, puis `date` peut fournir un statut final réussi (`.github/workflows/integrite-api.yml:63`, `:66`, `:81`, `:92`). Aucun journal trouvé ne déclenche d’alerte. De plus, `grep -ci … || echo 0` produit deux zéros sur deux lignes sans correspondance : la comparaison numérique échoue. Reproduit localement (`:90`, `:91`). Il faut distinguer « contrôlé sans anomalie » et « contrôle impossible ».
+4. La couverture laisse des angles morts. Le dossier `www/sandbox` est entièrement exclu de la recherche de PHP inconnus (`.github/workflows/integrite-api.yml:66`). Le filtre des réponses HTTP exclut également tout chemin contenant `/index.php` ou `/api/v.php`, sans correspondance exacte (`:87`). Les configurations PHP, tâches cron et processus sont affichés mais ne sont pas comparés à une référence attendue (`:69`, `:77`, `:79`). Les empreintes ne couvrent ni les modifications MySQL, ni une intrusion sans fichier persistant.
+5. Le rapport risque de divulguer des informations. La section des réponses PHP imprime les URL avec leurs paramètres : reproduit avec un paramètre fictif, conservé dans la sortie (`.github/workflows/integrite-api.yml:87`, `:88`). Les arguments complets des processus sont aussi publiés (`:79`). Ces sorties peuvent contenir des secrets ou des données personnelles ; elles doivent être filtrées avant leur transfert dans les logs Actions.
+6. Une planification et un échec rouge ne garantissent pas une alerte reçue. Le fichier configure un cron, mais aucun envoi explicite de notification (`.github/workflows/integrite-api.yml:13`, `:17`, `:94`). La réception dépend des réglages GitHub et reste à éprouver. Le bloc indique lui-même qu’aucune première exécution n’était vérifiée (`AGORA.md:117`). Une comparaison au dépôt courant peut aussi signaler un simple décalage de déploiement : chaque environnement doit être comparé à sa référence effectivement déployée.
+
+Amendement :
+
+* Ne pas présenter cette routine comme une garantie permettant de laisser ouvert. Corriger les faux succès, protéger les rapports, puis vérifier une exécution complète et la réception d’une alerte provoquée sans toucher aux données.
+* Confirmer le correctif effectivement utilisé côté web et effectuer un premier examen de la période d’exposition : fichiers, configurations, accès SSH, comptes et rôles MySQL, journaux disponibles. Traiter WoocLight séparément.
+* Je nuance mon conseil précédent : l’attente d’un mail d’Alwaysdata ne justifie pas, à elle seule, une coupure systématique puisque le correctif est documenté officiellement. Si la version corrigée est confirmée et qu’aucun indice suspect n’est relevé, maintenir ouvert peut être raisonnable. Si cette vérification reste impossible, ou si un indice de compromission apparaît, privilégier une suspension temporaire et l’investigation avec Alwaysdata.
+
+Limites : revue du code et reproductions locales ; aucune exécution du workflow distant, consultation des journaux réels ou vérification MySQL. Aucun fichier édité, aucun commit ni push ; seuls les `pull` demandés ont actualisé les dépôts.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
