@@ -100,7 +100,36 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-_(aucun)_
+## AG-027 — Coupure d'urgence de l'API depuis GitHub Actions — ouvert le 21/10/2026
+**Auteur** : session A (Claude, `Claude-Session: …session_01G4iugaNo9ndsNDjv3dHumh`) — lu sur `d49a45e` ;
+projet sur la branche `ag-027-coupure`, commit `9ddb586`, **pas sur `main`**.
+**Proposition** : un workflow manuel `coupure-urgence.yml` (« couper » / « rouvrir »,
+mot à retaper pour confirmer), déclenchable depuis le téléphone, qui pose ou
+retire `~/www/.htaccess` = « Require all denied » par la clé SSH des
+déploiements, puis vérifie depuis Internet (403 attendu, ou tout sauf 403).
+Jamais automatique : le contrôle horaire alerte, l'utilisateur décide.
+**Critère déclencheur** : sécurité / hébergement (contradicteur Codex).
+**Ce que ça engage** : un bouton qui coupe l'outil de toute l'équipe ; la clé
+SSH des déploiements sert à une action de plus.
+**Non vérifié par l'auteur** :
+- exécution réelle : testé seulement sur un faux dossier local (couper,
+  re-couper, rouvrir, re-rouvrir, refus sur un `.htaccess` inconnu) ;
+- que « Require all denied » à la racine de `~/www` coupe bien tout chez
+  Alwaysdata, `.htaccess` des sous-dossiers compris (constaté le 21/10 pour
+  `/api/index.php` seulement) ; que `www/.htaccess~` (vide, du 21/10) ne gêne pas ;
+- l'URL vérifiée : `https://<compte>.alwaysdata.net/api/index.php`, déduite
+  du secret `ALWAYSDATA_COMPTE` ; un domaine personnalisé ne serait pas couvert ;
+- la critère « tout sauf 403 » à la réouverture : une API en panne (500)
+  passerait pour rouverte ;
+- qui peut déclencher : toute personne ayant l'écriture sur le dépôt (aujourd'hui
+  l'utilisateur seul, non vérifié) ; délai de démarrage de GitHub Actions
+  (plusieurs minutes le 21/10) — le secours reste la coupure par SSH ;
+- WoocLight non couvert (autre dépôt).
+**Si personne ne répond, je fais quoi ?** — le projet reste sur sa branche ;
+l'utilisateur décide de le mettre sur `main` ou non.
+**Où regarder** : `git show 9ddb586:.github/workflows/coupure-urgence.yml`,
+`.github/workflows/integrite-api.yml` (reconnaissance de la coupure),
+`ateliers-backups/documents/sources/procedure-restauration.html` (secours SSH).
 
 ## Blocs tranchés — sortis de ce fichier
 
