@@ -18,12 +18,12 @@
     "lieux": [
       "NEWGEN app.js:256",
       "NextStep app.js:255",
-      "NEWGEN admin_app.js:179",
-      "NextStep admin_app.js:171"
+      "NEWGEN admin_app.js:180",
+      "NextStep admin_app.js:172"
     ],
-    "newgen": "ee5f4ab2ab/325c8efcba",
-    "nextstep": "27a2251b76/e25d3ece5e",
-    "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs."
+    "newgen": "f00974e497/e1b8ecfbcc",
+    "nextstep": "b5f4466887/265e75a660",
+    "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs. Revérifié le 21/10/2026 après le message de maintenance (#36/#37 et NextStep #24/#25) : changement identique dans les deux, seule la navigation diffère."
   },
   "VueHistorique": {
     "statut": "voulu",
