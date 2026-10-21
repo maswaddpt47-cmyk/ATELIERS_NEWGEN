@@ -91,26 +91,14 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 **Actions de l'utilisateur**
 
-00. **Faille PHP2Shell (21/10/2026)** — API **coupée par l'utilisateur** jusqu'à la
-   réponse d'Alwaysdata (question posée au support : 8.4.27 corrige-t-il bien
-   CVE-2026-109618/109619 sur nos comptes ?). Le NEWS officiel de PHP l'affirme
-   (Codex, AG-025). À faire, dans l'ordre :
-   1. ~~examen de la période~~ fait le 21/10 à 17 h 51 (contrôle corrigé
-      après AG-025 et AG-026) : vert, chaque jour du 19 au 21/10 journalisé.
-      Conclusion : aucun indice identifié, sans pouvoir exclure une
-      compromission (AG-026) ;
-   2. test d'alerte lancé le 21/10 à 17 h 50 : **l'utilisateur confirme-t-il
-      avoir reçu le mail d'échec de GitHub ?** ; enregistrer la variable de
-      dépôt `COMPTES_EMPREINTE` (valeur donnée dans le rapport du 21/10) ;
-   3. ~~rouvrir~~ **rouvert le 21/10 à 21 h 05 avec le bouton** (AG-027,
-      run 1, vert en 11 s ; l'utilisateur confirme que le site remarche).
-      Essai réel du 21/10 (runs 2 à 8) : `tout` coupé puis rouvert (3 URL
-      vérifiées), « Déjà ouvert » et « Déjà coupé » constatés ; `rouvrir tout`
-      lancé sur le bac à sable coupé a bien échoué (2 URL encore en 403).
-      Bac à sable rouvert puis « Déjà ouvert » (runs 9-10) : **essai réel
-      terminé**, tout est ouvert ;
-   4. WoocLight : même examen, à part (autre compte, pas couvert ici) ;
-   5. en parler au directeur (registres et changement de configuration pas
+00. **Faille PHP2Shell (21/10/2026)** — API coupée puis **rouverte le 21/10 à
+   21 h 05** avec le bouton de coupure (AG-027, essai réel complet : runs 1 à
+   10). Examen de la période : aucun indice identifié, sans pouvoir exclure une
+   compromission (AG-026). Mails d'échec du contrôle horaire reçus ;
+   `COMPTES_EMPREINTE` enregistrée ; équipe avertie de la réouverture
+   (déclaré par l'utilisateur, 21/10). Reste :
+   1. WoocLight : même examen, à part (autre compte, pas couvert ici) ;
+   2. en parler au directeur (registres et changement de configuration pas
       encore présentés).
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
