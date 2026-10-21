@@ -1,0 +1,95 @@
+# Contrôle d'intégrité du serveur Alwaysdata, lancé à la main (Actions → Run
+# workflow). Né le 21/10/2026 (faille PHP « PHP2Shell » : API restée en 8.4.26
+# jusqu'au redémarrage du site). Cherche ce qu'un attaquant aurait laissé :
+# code de l'API différent du dépôt, fichier PHP inconnu, fichier récent,
+# clé SSH ajoutée, requêtes inhabituelles. Lecture seule sur le serveur.
+# N'affiche jamais ~/config-api*.php ni le contenu des clés ; adresses IP
+# masquées dans les journaux.
+name: Intégrité API Alwaysdata
+
+permissions:
+  contents: read
+
+# Routine (21/10/2026, demande de l'utilisateur) : toutes les 6 heures. Le job
+# échoue (rouge) sur toute anomalie : GitHub envoie alors un mail d'échec.
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      depuis:
+        description: "Date de début (AAAA-MM-JJ) : fichiers et journaux depuis ce jour"
+        default: "2026-10-19"
+
+jobs:
+  integrite:
+    runs-on: ubuntu-latest
+    steps:
+      # Lancement planifié : pas d'entrée, on regarde les 2 derniers jours.
+      - name: Période
+        run: echo "DEPUIS=${{ inputs.depuis }}" | sed "s/=$/=$(date -u -d '2 days ago' +%F)/" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+
+      - name: Préparer l'accès SSH
+        env:
+          CLE: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          if [ -z "$CLE" ]; then echo "::error::Secret ALWAYSDATA_SSH_KEY absent"; exit 1; fi
+          printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: Code de l'API identique au dépôt ?
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+        run: |
+          hote="$COMPTE@ssh-$COMPTE.alwaysdata.net"
+          ( cd api && find . -type f | sort | xargs sha256sum ) > depot.sha
+          ok=1
+          for d in api api-sandbox; do
+            ssh -o StrictHostKeyChecking=accept-new "$hote" "cd www/$d 2>/dev/null && find . -type f | sort | xargs -r sha256sum" > "serveur-$d.sha" || true
+            [ -s "serveur-$d.sha" ] || { echo "== www/$d absent du serveur : ignoré"; continue; }
+            echo "== www/$d : fichiers différents du dépôt ou en plus (« > » = seulement sur le serveur)"
+            if diff depot.sha "serveur-$d.sha" | grep '^[<>]'; then ok=0; else echo "identique au dépôt"; fi
+          done
+          # Un écart peut être légitime (déploiement de l'API en échec ou en
+          # retard) : il se vérifie quand même, d'où l'échec rouge.
+          [ $ok = 1 ] || { echo "::error::ALERTE : code de l'API différent du dépôt (fichier déposé, ou déploiement en retard)"; exit 1; }
+
+      - name: Fichiers, clés et journaux
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new "$COMPTE@ssh-$COMPTE.alwaysdata.net" DEPUIS="$DEPUIS" 'bash -s' <<'FIN' | tee rapport.txt
+          alerte(){ echo "ALERTE : $*"; }
+          echo "== fichiers PHP dans ~/www hors api/, api-sandbox/, sandbox/"
+          x=$(find ~/www -name "*.php*" -not -path "*/www/api/*" -not -path "*/www/api-sandbox/*" -not -path "*/www/sandbox/*" 2>/dev/null)
+          echo "$x"; [ -n "$x" ] && alerte "fichier PHP inconnu dans ~/www"
+          echo "== fichiers .htaccess / .user.ini (redirections, auto_prepend)"
+          find ~/www ~ -maxdepth 4 \( -name ".htaccess" -o -name ".user.ini" -o -name "php.ini" \) -not -path "*/admin/*" 2>/dev/null
+          echo "== fichiers modifiés depuis $DEPUIS (hors sauvegardes et journaux)"
+          find ~ -type f -newermt "$DEPUIS" -not -path "*/sauvegardes/*" -not -path "*/admin/logs/*" -not -path "*/admin/backup/*" -not -path "*/.cache/*" -printf "%TY-%Tm-%Td %TH:%TM  %8s  %p\n" 2>/dev/null | sort | tail -60
+          echo "== clés SSH autorisées (nombre, date — jamais le contenu)"
+          ls -l --time-style=+%F_%T ~/.ssh/authorized_keys 2>&1 | awk "{print \$6, \$7}"
+          grep -c . ~/.ssh/authorized_keys 2>/dev/null
+          find ~/.ssh -newermt "$DEPUIS" -type f 2>/dev/null | grep -q . && alerte "~/.ssh modifié depuis $DEPUIS (clé ajoutée ?)"
+          echo "== tâches cron utilisateur"
+          crontab -l 2>&1 | head -10
+          echo "== processus de ce compte (hors cette session)"
+          ps -u "$(id -u)" -o pid,etime,args 2>/dev/null | grep -v -E "ps -u|bash -s|sshd|grep" | head -20
+          echo "== journaux HTTP depuis $DEPUIS : chemins appelés hors index.php (nombre, code)"
+          f=$(find ~/admin/logs -type f -name "*http*" -newermt "$DEPUIS" 2>/dev/null)
+          [ -n "$f" ] && cat $f | grep -oE "\"[A-Z]+ [^ ]+ [^\"]+\" [0-9]{3}" | sed -E 's/\?.*( HTTP)/\1/' \
+            | grep -v -E '"(GET|POST|OPTIONS) /api/index\.php|"(GET|POST|OPTIONS) /api-sandbox/index\.php|"GET /sandbox/' \
+            | sort | uniq -c | sort -rn | head -40
+          echo "== réponses 200 à des fichiers PHP autres que index.php"
+          # /api/v.php : relevé de version fait à la main le 21/10/2026, supprimé aussitôt.
+          x=$([ -n "$f" ] && cat $f | grep -oE "\"[A-Z]+ [^ ?\"]+\.php[^ ]* [^\"]+\" 200" | grep -v -E "/index\.php|/api/v\.php" | sort | uniq -c | head -20)
+          echo "$x"; [ -n "$x" ] && alerte "réponse 200 d'un fichier PHP autre que index.php"
+          echo "== motifs d'exploitation connus (cgi, %ad, -d allow_url_include, php://input)"
+          n=$([ -n "$f" ] && cat $f | grep -ciE "allow_url_include|auto_prepend|php://input|%ad|\-d\+|/cgi-bin/" || echo 0)
+          echo "$n"; [ "${n:-0}" -gt 0 ] && alerte "$n requête(s) avec un motif d'exploitation connu"
+          echo "== heure du serveur"; date
+          FIN
+          if grep -q '^ALERTE' rapport.txt; then grep '^ALERTE' rapport.txt | sed 's/^/::error::/'; exit 1; fi
+          echo "Aucune anomalie."
