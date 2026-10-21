@@ -66,6 +66,10 @@ jobs:
       - name: Veille
         run: |
           set -u
+          # Annulation (signal de GitHub) : sortir aussitôt, sans relève.
+          # Sans ce piège, une commande interrompue (gh, sleep) laissait la
+          # boucle continuer jusqu'à la relève (essai du 22/10/2026).
+          trap 'echo "veilleur annulé : pas de relève"; exit 130' INT TERM
           heure(){ TZ=Europe/Paris date -d "@$1" '+%d/%m %H:%M'; }
           for v in "$PASSAGES" "$INTERVALLE" "$SEUIL"; do
             case "$v" in ''|*[!0-9]*) echo "::error::Paramètre non numérique : $v"; exit 1;; esac
