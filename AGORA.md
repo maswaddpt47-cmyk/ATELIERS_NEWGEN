@@ -95,7 +95,57 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-_(aucun)_
+## AG-026 — Contrôle d'intégrité amendé : trois passages réels et ce qu'ils disent de la période d'exposition — ouvert le 21/10/2026
+**Auteur** : session A (Claude, `Claude-Session: …session_01G4iugaNo9ndsNDjv3dHumh`) — lu sur `6e8bdab`
+**Proposition** : (1) tenir `integrite-api.yml` (amendé selon AG-025, puis corrigé
+deux fois après exécution réelle) pour fiable comme filet horaire ; (2) conclure
+de ses passages que rien n'indique une compromission entre le 19/10 et le
+21/10 ; (3) rouvrir l'API dès la confirmation d'Alwaysdata.
+**Critère déclencheur** : sécurité (contradicteur Codex).
+**Ce que ça engage** : rouvrir sur la foi de ce rapport ; un faux « vert »
+laisserait une intrusion en place.
+**Ce qui a été exécuté (21/10/2026, heure de Paris)** :
+- passage 1 (17 h 35, `39e0fa8`) : rouge — fausse alerte sur
+  `/api/v75b3cb15a802a50c.php` (relevé de version de `diagnostic-api.yml`,
+  16 h 28) ; et `grep` a vu les journaux comme binaires (« binary file
+  matches ») : la liste des chemins appelés était vide sans le dire.
+  Corrigé dans `9b695c7` (`zcat -f`, `grep -a`, nom `diagnostic-version-…`
+  toléré) ;
+- passage 2 (17 h 39, `9b695c7`) : vert, mais il **écrivait `~/php200.txt`
+  sur le serveur** et le journal ne comptait aucune connexion (l'API écrit
+  `login`, pas `checkPassword`). Corrigé dans `6e8bdab` ;
+- passage 3 (17 h 41, `6e8bdab`) : vert, `~/php200.txt` retiré.
+**Ce que montre le passage 3** (depuis le 19/10) :
+- `www/api` et `www/api-sandbox` identiques aux déploiements `1a3da35` et
+  `1c3b934` (empreintes sha256) ; aucun PHP hors de ces dossiers ;
+- configuration : les deux `lib/.htaccess` attendus et la coupure d'urgence
+  `www/.htaccess` (« Require all denied ») ; un `www/.htaccess~` vide (16 h 34),
+  pas couvert par la recherche ;
+- fichiers récents : ceux du déploiement du 20/10 à 07 h 42, `config-api.php`
+  compris, `www/.htaccess`, `.bash_history` (sessions de l'utilisateur) ;
+- `~/.ssh/authorized_keys` inchangé depuis le 29/09, **la même clé y figure
+  deux fois** ;
+- comptes : 1 admin, 1 superviseur, 3 « user » à `actif=0` (hypothèse :
+  `actif` ne règle que l'accès à l'Admin, `api/lib/api.php:187`) ; journal :
+  7 connexions réussies, aucun échec, aucune action d'administration ;
+- journaux HTTP (5 fichiers) : hors `index.php`, seulement les relevés du
+  21/10, `/`, `/favicon.ico` (403) et les vérifications de `deploy-api.yml`
+  (`ping.php`, `import.php`, `mailtest.php` en 404, `lib/schema.sql` en 403) ;
+  aucun motif d'exploitation.
+**Non vérifié par l'auteur** :
+- que les 5 fichiers de journaux couvrent toute la période (aucune requête de
+  robot en trois jours semble peu) ; leur format et leur rotation chez
+  Alwaysdata ;
+- la base au-delà des nombres : contenu des comptes, données des ateliers ;
+- l'alerte par mail : `test_alerte` pas encore lancé ;
+- que le script reste en lecture seule (il retire désormais `~/php200.txt`) ;
+- les journaux d'erreurs PHP et les accès SSH, non examinés ;
+- WoocLight, toujours hors périmètre.
+**Si personne ne répond, je fais quoi ?** — le contrôle horaire continue,
+l'utilisateur rouvre sur la réponse d'Alwaysdata et ce rapport.
+**Où regarder** : `.github/workflows/integrite-api.yml` (en entier),
+`.github/workflows/diagnostic-api.yml:44-48`, `api/lib/api.php:180-190`,
+journaux des passages 39627071559, 39627641933, 39628006649 (onglet Actions).
 
 ## Blocs tranchés — sortis de ce fichier
 
