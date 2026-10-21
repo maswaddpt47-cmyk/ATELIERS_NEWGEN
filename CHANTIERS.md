@@ -91,6 +91,18 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 **Actions de l'utilisateur**
 
+00. **Faille PHP2Shell (21/10/2026)** — API **coupée par l'utilisateur** jusqu'à la
+   réponse d'Alwaysdata (question posée au support : 8.4.27 corrige-t-il bien
+   CVE-2026-109618/109619 sur nos comptes ?). Le NEWS officiel de PHP l'affirme
+   (Codex, AG-025). À faire, dans l'ordre :
+   1. lancer `integrite-api.yml` avec `depuis = 2026-10-19` (examen de la
+      période d'exposition) — Claude lit le rapport ; GitHub Actions saturé le
+      21/10, le workflow n'était pas encore enregistré ;
+   2. le relancer avec `test_alerte` coché : le mail d'échec doit arriver ;
+   3. rouvrir si Alwaysdata confirme et si le rapport est vert ;
+   4. WoocLight : même examen, à part (autre compte, pas couvert ici) ;
+   5. en parler au directeur (registres et changement de configuration pas
+      encore présentés).
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
    remettre : note avant/après V0.1 et registres V0.6. Reste à faire avant :
