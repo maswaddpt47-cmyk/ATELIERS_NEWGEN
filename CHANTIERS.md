@@ -97,7 +97,8 @@ sont datées du 05/10 à la demande de l'utilisateur.
    compromission (AG-026). Mails d'échec du contrôle horaire reçus ;
    `COMPTES_EMPREINTE` enregistrée ; équipe avertie de la réouverture
    (déclaré par l'utilisateur, 21/10). Reste :
-   1. WoocLight : même examen, à part (autre compte, pas couvert ici) ;
+   1. ~~WoocLight~~ examiné le 22/10 à 00 h 11 (`PAPPERBOARD/integrite.yml`) :
+      vert, voir le `CHANTIERS.md` de PAPPERBOARD ;
    2. en parler au directeur (registres et changement de configuration pas
       encore présentés).
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
