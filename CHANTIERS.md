@@ -100,7 +100,7 @@ sont datées du 05/10 à la demande de l'utilisateur.
    1. ~~WoocLight~~ examiné le 22/10 à 00 h 11 (`PAPPERBOARD/integrite.yml`) :
       vert, voir le `CHANTIERS.md` de PAPPERBOARD ;
    2. en parler au directeur : remettre le registre de sécurité V0.7 et
-      l'annexe A V0.2 (`ateliers-backups/documents/`, 22/10) ;
+      l'annexe A V0.3 (`ateliers-backups/documents/`, 22/10) ;
    3. **AG-028, veilleur du contrôle d'intégrité** : la programmation horaire
       d'`integrite-api.yml` est irrégulière (1 passage programmé du 21/10
       17 h 15 au 22/10 00 h 27, mesuré). Veilleur amendé selon Codex et essayé
@@ -115,22 +115,14 @@ sont datées du 05/10 à la demande de l'utilisateur.
       Essais réels sur `main` : défaut, vert (run 24) ; `depuis` = aujourd'hui,
       vert avec « présence quotidienne non évaluée » (run 25). Reste : la
       requête-témoin pour une vraie fraîcheur des journaux, évolution à arbitrer.
-   5. **Annexe A et registre V0.7 : échange avec Codex du 22/10, à trancher.**
-      *Annexe* : Codex juge les 8 pages trop longues pour la direction et la
-      DSI (trop de place aux échanges entre IA) et propose 2 à 3 pages (objet,
-      jalons, vérifications et limites, mesures conservées, points à suivre),
-      V0.3. V0.2 (8 pages) deviendrait le dossier de preuves, non diffusé.
-      Remarques de Codex déjà appliquées à V0.2 (`f67cd85`, `b0c41fe`).
-      Réserves de Claude sur la V0.3 proposée : y remettre le constat du 16:29
-      et la désactivation du mot de passe SSH à 16:54 (resté ouvert depuis le
-      30/09), les ≈ 2 min de réouverture en 8.4.26, la durée d'exposition non
-      établie, l'état à jour du 22/10 (AG-029 appliqué, AG-028 non en
-      service), et la limite « aucune relecture humaine du code ».
-      *Registre V0.7* relu en entier : ligne du 21-22/10 remise dans le
-      tableau (`e2b1503`) ; les six points de fond corrigés le 22/10
-      (`ateliers-backups`, SSH, « 11 défauts », « 12 min », exposition,
-      « toute décision », contrôle d'intégrité). Restent deux lacunes à
-      décider : rubrique détection et réponse en §6, audits du 21-22/10 en §8.5.
+   5. **Annexe A et registre V0.7 (22/10)** : annexe courte **V0.3** rédigée
+      (3 pages, `ateliers-backups`, `docs: annexe A V0.3`) sur proposition de
+      Codex corrigée par Claude ; V0.2 (8 pages) archivée et gardée comme
+      dossier de preuves. Les six corrections du registre V0.7 sont faites.
+      **À valider par l'utilisateur** : la V0.3 (place laissée aux IA, ligne
+      « relecture humaine du code à proposer à la direction »). **À décider** :
+      deux lacunes du registre (rubrique détection et réponse en §6, audits du
+      21-22/10 en §8.5).
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
    remettre : note avant/après V0.1 et registres V0.6. Reste à faire avant :
