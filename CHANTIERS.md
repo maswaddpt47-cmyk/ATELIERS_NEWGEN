@@ -110,6 +110,11 @@ sont datées du 05/10 à la demande de l'utilisateur.
       retirer le déclencheur `push` d'essai et la condition `if` du job, passer
       sur `main`, lancer un veilleur à la main (`passages` 5, `intervalle` 60).
       Le workflow est actif sur GitHub (réactivé après les essais).
+   4. **AG-029 appliqué le 22/10** (`ecb6544`) : le contrôle ne compte plus le
+      jour en cours (cause du mail rouge de 3 h 33, run 39706363950).
+      Essais réels sur `main` : défaut, vert (run 24) ; `depuis` = aujourd'hui,
+      vert avec « présence quotidienne non évaluée » (run 25). Reste : la
+      requête-témoin pour une vraie fraîcheur des journaux, évolution à arbitrer.
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
    remettre : note avant/après V0.1 et registres V0.6. Reste à faire avant :
