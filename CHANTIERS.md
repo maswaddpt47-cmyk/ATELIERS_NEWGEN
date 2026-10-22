@@ -127,11 +127,10 @@ sont datées du 05/10 à la demande de l'utilisateur.
       établie, l'état à jour du 22/10 (AG-029 appliqué, AG-028 non en
       service), et la limite « aucune relecture humaine du code ».
       *Registre V0.7* relu en entier : ligne du 21-22/10 remise dans le
-      tableau (`e2b1503`) ; restent à décider six points de fond (SSH « par clé
-      seule depuis le 30/09 » faux côté serveur, « 11 défauts », « 12 min après
-      l'alerte », « pendant l'exposition », « toute décision structurante »,
-      ligne du contrôle d'intégrité) et deux lacunes (rubrique détection et
-      réponse en §6, audits du 21-22/10 en §8.5).
+      tableau (`e2b1503`) ; les six points de fond corrigés le 22/10
+      (`ateliers-backups`, SSH, « 11 défauts », « 12 min », exposition,
+      « toute décision », contrôle d'intégrité). Restent deux lacunes à
+      décider : rubrique détection et réponse en §6, audits du 21-22/10 en §8.5.
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
    remettre : note avant/après V0.1 et registres V0.6. Reste à faire avant :
