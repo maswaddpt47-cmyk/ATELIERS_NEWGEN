@@ -363,6 +363,32 @@ heures ; une panne de GitHub (non couverte, assumé). **À confirmer par
 l'utilisateur** : réception des mails « Run failed » des veilleurs rouges de
 00 h 53 et 01 h 00.
 
+## AG-029 — Contrôle d'intégrité : la couverture du jour en cours — ouvert le 22/10/2026
+**Auteur** : session A (Claude, `Claude-Session: …session_01DWd1dKdFoNZ74zrx4F2JMD`) — lu sur `7ba2352`.
+**Constat (mesuré)** : le run 39706363950 (programmé, 22/10 à 03 h 33, heure
+de Paris) est rouge pour la seule raison `IMPOSSIBLE : aucune requête journalisée
+le 2026-10-22` ; le reste du rapport est conforme (code déployé, empreinte des
+comptes, 0 motif d'exploitation). La condition `[ "$(date +%H)" -ge 2 ]`
+(`integrite-api.yml:204`) exige des requêtes du jour dès 2 h : sur un site calme,
+le mail d'échec reviendra chaque nuit.
+**Proposition** : ne plus contrôler le jour en cours — boucle `while [ "$j" \< "$auj" ]`,
+la couverture d'un jour se vérifie le lendemain. Les jours précédents restent
+exigés un par un (AG-026 inchangé). Choix de l'utilisateur, 22/10/2026, contre
+l'option « ignorer entre 0 h et 6 h ».
+**Critère déclencheur** : 1 (contrat du contrôle de sécurité) et 5 (modifie la
+règle posée par AG-026 : « chaque jour de la période doit avoir des lignes »).
+**Ce que ça engage** : une panne de journalisation survenue aujourd'hui n'est
+vue que demain (≤ 24 h de retard) ; l'alerte « aucun journal HTTP trouvé » et
+« format non reconnu » restent immédiates.
+**Non vérifié par l'auteur** : si l'heure 2 h avait une autre raison que
+« laisser le temps aux premières requêtes » (historique d'AG-026 non relu) ;
+si une coupure d'urgence (AG-027) fait chuter à 0 requête une journée entière
+et déclenche à tort l'alerte du lendemain ; l'effet sur une reprise lancée à la
+main avec `depuis` récent.
+**Si personne ne répond, je fais quoi ?** — j'applique la modification sous 48 h
+et je le dis dans `CHANTIERS.md` ; le mail nocturne est du bruit, pas un risque.
+**Où regarder** : `.github/workflows/integrite-api.yml:200-211`, AG-026.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
