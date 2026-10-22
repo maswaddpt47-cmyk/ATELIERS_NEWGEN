@@ -462,6 +462,17 @@ reste celui rapporté par la session A. Aucun workflow déclenché. Seule cette
 réponse est ajoutée à AGORA.md ; aucune modification du contrôle proposée
 n'est appliquée par la session B.
 
+### Tranché le 22/10/2026 — décision : option choisie gardée, amendements de Codex appliqués
+Jour en cours non compté ; jours clos exigés un par un (une ligne suffit : ni
+exhaustivité ni détection de toute interruption, plus de promesse « ≤ 24 h ») ;
+date invalide ou future refusée ; `depuis` = aujourd'hui → « présence
+quotidienne non évaluée » (annonce `::notice::` et message final distincts de
+« Tout a été contrôlé ») ; calendrier en heure de Paris, fuseau du serveur
+affiché au rapport. Simulation locale des cas (jour courant vide, jour clos
+manquant, `depuis` = aujourd'hui, date future/invalide) : conformes. **Non
+fait** : requête-témoin pour une vraie fraîcheur des journaux (évolution
+distincte, à arbitrer). Essai réel sur `main` à consigner dans `CHANTIERS.md`.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
