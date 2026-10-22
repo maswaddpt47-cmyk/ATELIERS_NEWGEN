@@ -115,6 +115,23 @@ sont datées du 05/10 à la demande de l'utilisateur.
       Essais réels sur `main` : défaut, vert (run 24) ; `depuis` = aujourd'hui,
       vert avec « présence quotidienne non évaluée » (run 25). Reste : la
       requête-témoin pour une vraie fraîcheur des journaux, évolution à arbitrer.
+   5. **Annexe A et registre V0.7 : échange avec Codex du 22/10, à trancher.**
+      *Annexe* : Codex juge les 8 pages trop longues pour la direction et la
+      DSI (trop de place aux échanges entre IA) et propose 2 à 3 pages (objet,
+      jalons, vérifications et limites, mesures conservées, points à suivre),
+      V0.3. V0.2 (8 pages) deviendrait le dossier de preuves, non diffusé.
+      Remarques de Codex déjà appliquées à V0.2 (`f67cd85`, `b0c41fe`).
+      Réserves de Claude sur la V0.3 proposée : y remettre le constat du 16:29
+      et la désactivation du mot de passe SSH à 16:54 (resté ouvert depuis le
+      30/09), les ≈ 2 min de réouverture en 8.4.26, la durée d'exposition non
+      établie, l'état à jour du 22/10 (AG-029 appliqué, AG-028 non en
+      service), et la limite « aucune relecture humaine du code ».
+      *Registre V0.7* relu en entier : ligne du 21-22/10 remise dans le
+      tableau (`e2b1503`) ; restent à décider six points de fond (SSH « par clé
+      seule depuis le 30/09 » faux côté serveur, « 11 défauts », « 12 min après
+      l'alerte », « pendant l'exposition », « toute décision structurante »,
+      ligne du contrôle d'intégrité) et deux lacunes (rubrique détection et
+      réponse en §6, audits du 21-22/10 en §8.5).
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
    remettre : note avant/après V0.1 et registres V0.6. Reste à faire avant :
