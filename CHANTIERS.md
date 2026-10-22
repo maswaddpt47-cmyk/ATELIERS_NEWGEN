@@ -99,8 +99,17 @@ sont datées du 05/10 à la demande de l'utilisateur.
    (déclaré par l'utilisateur, 21/10). Reste :
    1. ~~WoocLight~~ examiné le 22/10 à 00 h 11 (`PAPPERBOARD/integrite.yml`) :
       vert, voir le `CHANTIERS.md` de PAPPERBOARD ;
-   2. en parler au directeur (registres et changement de configuration pas
-      encore présentés).
+   2. en parler au directeur : remettre le registre de sécurité V0.7 et
+      l'annexe A V0.2 (`ateliers-backups/documents/`, 22/10) ;
+   3. **AG-028, veilleur du contrôle d'intégrité** : la programmation horaire
+      d'`integrite-api.yml` est irrégulière (1 passage programmé du 21/10
+      17 h 15 au 22/10 00 h 27, mesuré). Veilleur amendé selon Codex et essayé
+      sur la branche `ag-028-veilleur` (`c078aee`), **pas sur `main`**. Avant
+      la mise en service : l'utilisateur confirme-t-il les mails « Run failed:
+      Veilleur intégrité » du 22/10 vers 00 h 53 et 01 h 00 ? Mise en service :
+      retirer le déclencheur `push` d'essai et la condition `if` du job, passer
+      sur `main`, lancer un veilleur à la main (`passages` 5, `intervalle` 60).
+      Le workflow est actif sur GitHub (réactivé après les essais).
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
    remettre : note avant/après V0.1 et registres V0.6. Reste à faire avant :
