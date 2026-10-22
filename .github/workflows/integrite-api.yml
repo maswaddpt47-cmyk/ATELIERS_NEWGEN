@@ -53,8 +53,11 @@ jobs:
       - name: Période
         run: |
           d="${{ inputs.depuis }}"
-          [ -n "$d" ] || d=$(date -u -d '2 days ago' +%F)
-          [[ "$d" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "::error::Date invalide : $d"; exit 1; }
+          # Calendrier : heure de Paris, comme les journaux du serveur (AG-029)
+          auj=$(TZ=Europe/Paris date +%F)
+          [ -n "$d" ] || d=$(TZ=Europe/Paris date -d '2 days ago' +%F)
+          [[ "$d" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] && [ "$(date -d "$d" +%F 2>/dev/null)" = "$d" ] || { echo "::error::Date invalide : $d"; exit 1; }
+          [[ "$d" < "$auj" ]] || [ "$d" = "$auj" ] || { echo "::error::Date future : $d (aujourd'hui, heure de Paris : $auj)"; exit 1; }
           echo "DEPUIS=$d" >> "$GITHUB_ENV"
 
       - name: Préparer l'accès SSH
@@ -197,17 +200,23 @@ jobs:
             if [ "${lignes:-0}" -gt 0 ] && [ $((reconnues * 2)) -lt "$lignes" ]; then
               impossible "format des journaux non reconnu ($reconnues requêtes reconnues sur $lignes lignes)"
             fi
-            # Couverture (AG-026) : chaque jour de la période doit avoir des
-            # lignes, d'après la date des événements et non celle des fichiers.
-            echo "-- lignes par jour"
-            j="$DEPUIS"; auj=$(date +%F)
-            while [ "$j" \< "$auj" ] || { [ "$j" = "$auj" ] && [ "$(date +%H)" -ge 2 ]; }; do
+            # Couverture (AG-026, amendée par AG-029) : chaque jour CLOS de la
+            # période doit avoir des lignes, d'après la date des événements et
+            # non celle des fichiers. Le jour en cours n'est pas compté (ses
+            # requêtes restent analysées plus bas). Ne prouve ni l'exhaustivité
+            # des journaux ni l'absence d'interruption : une seule ligne suffit.
+            echo "-- calendrier : fuseau du serveur $(date +%Z), dates des journaux dans ce fuseau ; début $DEPUIS"
+            echo "-- lignes par jour (jours clos seulement)"
+            j="$DEPUIS"; auj=$(date +%F); clos=0
+            while [ "$j" \< "$auj" ]; do
+              clos=$((clos+1))
               cle=$(LC_ALL=C date -d "$j" +%d/%b/%Y)
               nb=$(printf '%s\n' "$req" | grep -c "^$cle " || true)
               echo "$j : $nb"
               [ "${nb:-0}" -gt 0 ] || impossible "aucune requête journalisée le $j : couverture non établie"
               j=$(date -d "$j + 1 day" +%F)
             done
+            [ "$clos" -gt 0 ] || echo "AUCUNE_JOURNEE_CLOSE : aucune journée terminée dans la période : présence quotidienne non évaluée"
             echo "-- chemins appelés hors pages connues (nombre, méthode, chemin, code)"
             printf '%s\n' "$req" | cut -d' ' -f2- | grep -vE '^(GET|POST|OPTIONS|HEAD) /(api|api-sandbox)/index\.php [0-9]+$|^(GET|HEAD) /sandbox/|^$' | sort | uniq -c | sort -rn | head -40
             echo "-- fichiers PHP autres que index.php ayant répondu 200"
@@ -242,4 +251,9 @@ jobs:
           if grep -q '^IMPOSSIBLE' rapport.txt; then grep '^IMPOSSIBLE' rapport.txt | sed 's/^/::error::/'; fi
           if grep -q '^ALERTE' rapport.txt; then grep '^ALERTE' rapport.txt | sed 's/^/::error::/'; fi
           if grep -qE '^(ALERTE|IMPOSSIBLE)' rapport.txt; then exit 1; fi
-          echo "Tout a été contrôlé : aucune anomalie."
+          if grep -q '^AUCUNE_JOURNEE_CLOSE' rapport.txt; then
+            echo "::notice::Aucune journée terminée dans la période : présence quotidienne des journaux non évaluée ; les autres contrôles n'ont rien relevé."
+            echo "Contrôlé, sauf la présence quotidienne des journaux : aucune anomalie."
+          else
+            echo "Tout a été contrôlé : aucune anomalie."
+          fi
