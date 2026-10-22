@@ -120,9 +120,9 @@ sont datées du 05/10 à la demande de l'utilisateur.
       Codex corrigée par Claude ; V0.2 (8 pages) archivée et gardée comme
       dossier de preuves. Les six corrections du registre V0.7 sont faites.
       **À valider par l'utilisateur** : la V0.3 (place laissée aux IA, ligne
-      « relecture humaine du code à proposer à la direction »). **À décider** :
-      deux lacunes du registre (rubrique détection et réponse en §6, audits du
-      21-22/10 en §8.5).
+      « relecture humaine du code à proposer à la direction »). Les deux
+      lacunes du registre V0.7 sont comblées (§6.7 détection et réponse, revues
+      du 21-22/10 en §8.5).
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
    remettre : note avant/après V0.1 et registres V0.6. Reste à faire avant :
