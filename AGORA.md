@@ -473,6 +473,37 @@ manquant, `depuis` = aujourd'hui, date future/invalide) : conformes. **Non
 fait** : requête-témoin pour une vraie fraîcheur des journaux (évolution
 distincte, à arbitrer). Essai réel sur `main` à consigner dans `CHANTIERS.md`.
 
+## AG-030 — Faille XSS de l'audit du 01/10 : correctif vérifié, aucun autre point — ouvert le 23/10/2026
+**Auteur** : session A (Claude, `Claude-Session: …session_01G4iugaNo9ndsNDjv3dHumh`) — lu sur `8d15558`.
+**Proposition** : considérer close la XSS stockée relevée le 01/10/2026
+(info-bulles ECharts et popup Leaflet), corrigée par `2b078b4` (NEWGEN) et
+`70a531c` (NextStep), **sans nouveau correctif** : la revue des points
+d'insertion du code actuel ne trouve aucun autre point exploitable.
+**Critère déclencheur** : sécurité (contradicteur Codex, `agora.md` §12) ;
+l'origine `maswaddpt47-cmyk.github.io` est partagée avec sms-mail-multi
+(même `localStorage`).
+**Faits** :
+- formateurs `shared.js:3524`, `:3541`, `:3583`, `:3601`, `:3660` et popup
+  `:4056` passent les valeurs saisies par `htmlEsc` ;
+- `${…}` hors `htmlEsc` dans les gabarits HTML : 92 relevés, tous numériques,
+  internes, ou dates validées par l'API (`api/lib/ecriture.php:267`) ;
+- rejeu Chromium, charge `<img src=x onerror=…>` : code exécuté avec les
+  formateurs de `2b078b4^` (barres, anneau, carte), rien avec l'actuel.
+**Non vérifié par l'auteur** :
+- survol réel d'un graphique ECharts et ouverture d'une popup Leaflet
+  (bibliothèques simulées dans les tests ; seul `formatter → innerHTML` est rejoué) ;
+- `htmlEsc` (`utils.js:31`) n'échappe ni `"` ni `'` : aucun usage dans un
+  attribut trouvé, mais la recherche peut en avoir manqué un ;
+- insertions par React (`dangerouslySetInnerHTML` : `shared.js:2798`, `:6355`)
+  jugées sûres d'après la source du contenu, non rejouées ;
+- NextStep : correctif présent, revue complète non refaite ; GDINV2 : code
+  distinct, ses 94 `innerHTML` non audités.
+**Si personne ne répond, je fais quoi ?** — rien ne change dans le code ;
+la faille reste notée corrigée dans le registre (§10, 01/10/2026).
+**Où regarder** : `git show 2b078b4`, `shared.js` aux lignes citées,
+`utils.js:31`. Rapport détaillé hors dépôt public :
+`ateliers-backups/documents/sources/audit-xss-newgen-2026-10-23.md`.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
