@@ -154,6 +154,8 @@ window.L = {
   // geo.api.gouv.fr : coordonnees (fetchGPSCommune) et contours de communes.
   // Jamais intercepte jusqu'ici — un vrai appel sortait pendant les suites.
   await ctx.route('**/geo.api.gouv.fr/**', route => route.abort());
+  // Onglet Sauvegardes : état du veilleur lu sur l'API GitHub (24/10/2026).
+  await ctx.route('**/api.github.com/**', route => route.abort());
   await ctx.route('**/tile.openstreetmap.org/**', route => route.abort());
   await ctx.route('**/tile.openstreetmap.fr/**', route => route.abort());
   await ctx.route('**/tiles.stadiamaps.com/**', route => route.abort());
