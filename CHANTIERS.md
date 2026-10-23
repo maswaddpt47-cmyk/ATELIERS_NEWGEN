@@ -101,15 +101,14 @@ sont datées du 05/10 à la demande de l'utilisateur.
       vert, voir le `CHANTIERS.md` de PAPPERBOARD ;
    2. en parler au directeur : remettre le registre de sécurité V0.7 et
       l'annexe A V0.3 (`ateliers-backups/documents/`, 22/10) ;
-   3. **AG-028, veilleur du contrôle d'intégrité** : la programmation horaire
-      d'`integrite-api.yml` est irrégulière (1 passage programmé du 21/10
-      17 h 15 au 22/10 00 h 27, mesuré). Veilleur amendé selon Codex et essayé
-      sur la branche `ag-028-veilleur` (`c078aee`), **pas sur `main`**. Mails
-      « Run failed: Veilleur intégrité » des 2 veilleurs rouges du 22/10 bien
-      reçus (capture de l'utilisateur, 23/10) : l'alerte arrive. Mise en service :
-      retirer le déclencheur `push` d'essai et la condition `if` du job, passer
-      sur `main`, lancer un veilleur à la main (`passages` 5, `intervalle` 60).
-      Le workflow est actif sur GitHub (réactivé après les essais).
+   3. **AG-028, veilleur du contrôle d'intégrité — en service le 23/10 à
+      12 h 18** (`74712ea` sur `main`, déclencheur d'essai et `if` retirés).
+      1er veilleur (run 15) : contrôle de reprise vert, alerte rouge
+      « surveillance interrompue » (171 min sans contrôle réussi, attendue),
+      relève passée au run 16 dont le 1er contrôle est vert. **À vérifier** :
+      la relève après 5 passages (~17 h 15) et un passage programmé du filet.
+      Arrêt durable : Actions → Veilleur intégrité → Disable workflow.
+      Branche `ag-028-veilleur` gardée, à supprimer quand validé.
    4. **AG-029 appliqué le 22/10** (`ecb6544`) : le contrôle ne compte plus le
       jour en cours (cause du mail rouge de 3 h 33, run 39706363950).
       Essais réels sur `main` : défaut, vert (run 24) ; `depuis` = aujourd'hui,
