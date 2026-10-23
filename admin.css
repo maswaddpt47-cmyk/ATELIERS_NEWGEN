@@ -51,10 +51,23 @@
 /* Téléphone : le titre se tronque au lieu de passer sous les boutons de droite
    (chevauchement « Sauvegardes » / ADMIN constaté le 28/09/2026). */
 @media (max-width: 640px) {
-  .app-topbar-v2 { padding: 0 8px; gap: 6px; }
-  .app-topbar-v2-right { gap: 4px; }
+  /* « header. » : la feuille injectée par shared.js passe après admin.css et
+     écrasait ces règles à spécificité égale (constaté le 24/10/2026). */
+  header.app-topbar-v2 { padding: 0 6px; gap: 4px; justify-content: flex-end; }
+  /* Onglet actif : déjà surligné dans la barre du bas (choix du 24/10/2026). */
+  header.app-topbar-v2 .app-topbar-v2-left { display: none; }
+  /* Le groupe de droite débordait de l'écran (490 px pour 390, 24/10/2026) :
+     nom tronqué, « Changer » réduit à son icône. */
+  header.app-topbar-v2 .app-topbar-v2-right { gap: 4px; }
   .app-topbar-v2-sub, .topbar-v2-meta { display: none; }
+  .app-topbar-v2-right .app-topbar-conseiller { max-width: 56px; padding: 4px 6px; overflow: hidden; text-overflow: ellipsis; }
+  .app-topbar-v2-right .sidebar-admin-badge { padding: 2px 5px; }
+  .app-topbar-v2-right .topbar-year-sel { padding: 4px 3px; font-size: 10px; }
+  .app-topbar-v2-right .topbar-changer-btn { padding: 4px 7px; }
+  .app-topbar-v2-right .topbar-lbl { display: none; }
+  .app-topbar-v2-right .topbar-ico-tel { display: inline; }
 }
+.topbar-ico-tel { display: none; }
 .app-main-v2 {
   flex: 1;
   padding: 16px;

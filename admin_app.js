@@ -531,7 +531,7 @@ const LOGS_KEY = lsKey('adm_logs');
         CE('span',{className:'topbar-v2-meta',title:window.VERSION_APPLI,style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},'v2'),
         entries.length>0&&CE('span',{className:'topbar-v2-meta',style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},entries.length),
         CE(ChoixAnnees,{className:'topbar-year-sel',value:annee,onChange:setAnnee,title:'Années chargées'}),
-        CE('button',{onClick:()=>setView('nouveautes'),title:'Nouveautés','aria-label':'Nouveautés',style:{position:'relative',background:'none',border:'none',cursor:'pointer',fontSize:16,padding:'2px 10px 2px 4px',lineHeight:1}},'🆕',CE(PastilleNouveautes,{nb:nbNouveautes})),
+        CE('button',{onClick:()=>setView('nouveautes'),title:'Nouveautés','aria-label':'Nouveautés',style:{position:'relative',background:'none',border:'none',cursor:'pointer',fontSize:16,padding:'2px 24px 2px 2px',lineHeight:1}},'🆕',CE(PastilleNouveautes,{nb:nbNouveautes})),
         CE('button',{
           onClick:()=>setDarkMode(d=>!d),
           style:{background:'none',border:'none',cursor:'pointer',fontSize:16,padding:0}
@@ -543,8 +543,9 @@ const LOGS_KEY = lsKey('adm_logs');
         adminConseiller&&adminConseiller!=='admin'&&CE('span',{className:'app-topbar-conseiller',style:{background:accentColor}},adminConseiller),
         CE('button',{
           className:'topbar-changer-btn',
+          title:'Changer d\'identité',
           onClick:()=>{localStorage.removeItem(lsKey('adm_conseiller'));setAdminConseiller('');}
-        },'Changer'),
+        },CE('span',{className:'topbar-ico-tel'},'👤'),CE('span',{className:'topbar-lbl'},'Changer')),
         CE('button',{
           className:'topbar-changer-btn',
           title:'Déconnexion',
