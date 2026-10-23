@@ -22,9 +22,6 @@
 name: Veilleur intégrité
 
 on:
-  # ESSAI (à retirer avant main) : enregistre le workflow depuis la branche.
-  push:
-    branches: [ag-028-veilleur]
   workflow_dispatch:
     inputs:
       passages:
@@ -51,7 +48,6 @@ permissions:
 
 jobs:
   veille:
-    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 340
     env:
