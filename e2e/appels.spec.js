@@ -59,6 +59,8 @@ async function preparer(browser) {
   // geo.api.gouv.fr : coordonnees (fetchGPSCommune) et contours de communes.
   // Jamais intercepte jusqu'ici — un vrai appel sortait pendant les suites.
   await ctx.route('**/geo.api.gouv.fr/**', r => r.abort());
+  // Pastille de 💾 Sauvegardes : état du veilleur lu sur l'API GitHub (24/10/2026).
+  await ctx.route('**/api.github.com/**', r => r.abort());
   await ctx.route('**/tile.openstreetmap.org/**', r => r.abort());
   await ctx.route('**/tile.openstreetmap.fr/**', r => r.abort());
   await ctx.route('**/tiles.stadiamaps.com/**',   r => r.abort());
