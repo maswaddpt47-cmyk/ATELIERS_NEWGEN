@@ -102,7 +102,8 @@ sont datées du 05/10 à la demande de l'utilisateur.
    2. en parler au directeur : remettre le registre de sécurité V0.7 et
       l'annexe A V0.3 (`ateliers-backups/documents/`, 22/10) ;
    3. **AG-028, veilleur du contrôle d'intégrité — en service le 23/10 à
-      12 h 18** (`74712ea` sur `main`, déclencheur d'essai et `if` retirés).
+      12 h 18, validé par l'utilisateur le 24/10 à 00 h 55** (capture GitHub :
+      #16 et #17 verts, 4 h 59 chacun, #18 en cours) (`74712ea` sur `main`, déclencheur d'essai et `if` retirés).
       1er veilleur (run 15) : contrôle de reprise vert, alerte rouge
       « surveillance interrompue » (171 min sans contrôle réussi, attendue),
       relève passée au run 16 dont le 1er contrôle est vert. **Relevé le
@@ -331,7 +332,11 @@ Règle 22 de MD-LIB `collaboration.md` : au plus 3 pistes, à la fin d'une
 fonctionnalité validée ou sur demande de revue. Une piste écartée ne se
 repropose pas sans fait nouveau.
 
-**Proposées, en attente** : aucune (10/10/2026).
+**Proposées, en attente**
+- 24/10/2026 — pastille rouge sur 💾 Sauvegardes quand la tuile « Contrôle
+  d'intégrité » est rouge, pour voir l'alerte sans ouvrir l'onglet. Coût : les
+  2 appels GitHub passeraient à l'ouverture de l'Admin (aujourd'hui : à
+  l'ouverture de l'onglet seulement).
 
 **Écartées** (date — piste — raison)
 - 03/10/2026 — lien d'abonnement agenda pour les partenaires — « pour l'instant » (utilisateur).
