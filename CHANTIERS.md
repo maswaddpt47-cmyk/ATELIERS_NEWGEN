@@ -104,9 +104,9 @@ sont datées du 05/10 à la demande de l'utilisateur.
    3. **AG-028, veilleur du contrôle d'intégrité** : la programmation horaire
       d'`integrite-api.yml` est irrégulière (1 passage programmé du 21/10
       17 h 15 au 22/10 00 h 27, mesuré). Veilleur amendé selon Codex et essayé
-      sur la branche `ag-028-veilleur` (`c078aee`), **pas sur `main`**. Avant
-      la mise en service : l'utilisateur confirme-t-il les mails « Run failed:
-      Veilleur intégrité » du 22/10 vers 00 h 53 et 01 h 00 ? Mise en service :
+      sur la branche `ag-028-veilleur` (`c078aee`), **pas sur `main`**. Mails
+      « Run failed: Veilleur intégrité » des 2 veilleurs rouges du 22/10 bien
+      reçus (capture de l'utilisateur, 23/10) : l'alerte arrive. Mise en service :
       retirer le déclencheur `push` d'essai et la condition `if` du job, passer
       sur `main`, lancer un veilleur à la main (`passages` 5, `intervalle` 60).
       Le workflow est actif sur GitHub (réactivé après les essais).
