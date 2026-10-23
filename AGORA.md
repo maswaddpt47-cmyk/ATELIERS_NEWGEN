@@ -473,6 +473,31 @@ manquant, `depuis` = aujourd'hui, date future/invalide) : conformes. **Non
 fait** : requête-témoin pour une vraie fraîcheur des journaux (évolution
 distincte, à arbitrer). Essai réel sur `main` à consigner dans `CHANTIERS.md`.
 
+## AG-031 — NextStep : la XSS du 01/10 corrigée là aussi, aucun autre point ? — ouvert le 23/10/2026
+**Auteur** : session A (Claude, `Claude-Session: …session_01G4iugaNo9ndsNDjv3dHumh`) — NextStep lu sur `2ae664c`.
+**Proposition** : étendre à **ateliers-cd47_NextStep** la conclusion d'AG-030,
+sans correctif : la XSS du 01/10 y est corrigée (`70a531c`) et aucun autre
+point exploitable n'est trouvé.
+**Critère déclencheur** : sécurité (contradicteur Codex) ; même origine web
+que NEWGEN et sms-mail-multi.
+**Faits (NextStep)** :
+- formateurs ECharts échappés : `shared.js:3189`, `:3206`, `:3248`, `:3266`,
+  `:3325` ; popup de carte `shared.js:3732` ;
+- `${…}` hors `htmlEsc` dans les gabarits HTML : même profil qu'AG-030
+  (nombres, couleurs internes, clés de mois `shared.js:3288`, libellés internes
+  `:3521`, `:3589`) ; impressions `admin_app.js:1163` en `htmlEsc` ; bilan
+  trimestriel et avis `shared.js:5965`-`6122` en `e = htmlEsc` ; QR `:2599`, `:2612` ;
+- dates validées par l'API commune (`ATELIERS_NEWGEN/api/lib/ecriture.php:267`,
+  `api/lib/import.php:232`).
+**Non vérifié par l'auteur** : **aucun rejeu** sur NextStep (revue
+automatique et lecture seulement) ; écrans propres à NextStep (`app.js`,
+navigation latérale) non relus un par un.
+**Si personne ne répond, je fais quoi ?** — rien ne change dans le code ;
+NextStep reste noté « revu automatiquement, non rejoué » (`CHANTIERS.md`).
+**Où regarder** : dépôt `ateliers-cd47_NextStep`, `git show 70a531c`,
+`shared.js` aux lignes citées ; méthode et rejeu d'AG-030 (tranché, table
+ci-dessous).
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
