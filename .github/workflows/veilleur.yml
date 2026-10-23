@@ -1,0 +1,121 @@
+# Veilleur du contrôle d'intégrité (AGORA AG-028, 22/10/2026, amendé par Codex).
+# Constat du 21-22/10/2026 : la programmation horaire d'integrite-api.yml
+# n'a donné qu'un passage entre 17 h 15 et 00 h 27 (heure de Paris) ; les
+# lancements à la demande, eux, partent. Le veilleur lance donc le contrôle à
+# la demande, toutes les heures, pendant environ 5 h, puis passe la main à un
+# successeur. C'est une relance « au mieux » au sein de GitHub : ni garantie à
+# l'heure près, ni alerte si GitHub lui-même s'arrête.
+# - Chaque passage est suivi jusqu'à sa fin : lancement refusé, contrôle non
+#   démarré, non terminé ou en échec = le veilleur passe la main puis échoue
+#   en rouge (mail de GitHub).
+# - Rupture : si le dernier contrôle réussi est plus vieux que le seuil, le
+#   veilleur fait un passage, passe la main, puis échoue en rouge. Le passage
+#   réussi devient la nouvelle référence : l'alerte ne se répète pas.
+# - Relève : groupe de concurrence natif ; le successeur attend la fin du
+#   veilleur en cours. Jamais deux veilleurs en même temps.
+# - Filet : un passage programmé d'integrite-api.yml relance un veilleur s'il
+#   n'y en a aucun.
+# - Arrêt : annuler un veilleur ne le relance pas, mais le filet peut le
+#   relancer ; pour l'arrêter durablement, désactiver ce workflow
+#   (Actions → Veilleur intégrité → Disable workflow).
+# Dépôt public : minutes d'Actions gratuites.
+name: Veilleur intégrité
+
+on:
+  workflow_dispatch:
+    inputs:
+      passages:
+        description: "Nombre de contrôles avant la relève"
+        default: "5"
+      intervalle:
+        description: "Minutes entre deux contrôles"
+        default: "60"
+      seuil:
+        description: "Minutes sans contrôle réussi au-delà desquelles la surveillance est déclarée interrompue"
+        default: "125"
+      simuler_refus:
+        description: "Essai : lancer un workflow inexistant pour vérifier l'alerte de refus"
+        type: boolean
+        default: false
+
+concurrency:
+  group: veilleur-integrite
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      GH_TOKEN: ${{ github.token }}
+      R: ${{ github.repository }}
+      REF: ${{ github.ref_name }}
+      PASSAGES: ${{ inputs.passages || '5' }}
+      INTERVALLE: ${{ inputs.intervalle || '60' }}
+      SEUIL: ${{ inputs.seuil || '125' }}
+      CIBLE: ${{ inputs.simuler_refus && 'n-existe-pas.yml' || 'integrite-api.yml' }}
+    steps:
+      - name: Veille
+        run: |
+          set -u
+          # Annulation (signal de GitHub) : sortir aussitôt, sans relève.
+          # Sans ce piège, une commande interrompue (gh, sleep) laissait la
+          # boucle continuer jusqu'à la relève (essai du 22/10/2026).
+          trap 'echo "veilleur annulé : pas de relève"; exit 130' INT TERM
+          heure(){ TZ=Europe/Paris date -d "@$1" '+%d/%m %H:%M'; }
+          for v in "$PASSAGES" "$INTERVALLE" "$SEUIL"; do
+            case "$v" in ''|*[!0-9]*) echo "::error::Paramètre non numérique : $v"; exit 1;; esac
+          done
+          releve(){
+            # Successeur : attend la fin de ce veilleur (groupe de concurrence).
+            if gh workflow run veilleur.yml -R "$R" --ref "$REF" -f passages="$PASSAGES" -f intervalle="$INTERVALLE"; then
+              echo "relève demandée"
+            else
+              echo "::error::Relève refusée par GitHub : surveillance arrêtée jusqu'au prochain filet"; return 1
+            fi
+          }
+          echec(){ echo "::error::$*"; releve; exit 1; }
+
+          # Rupture : âge du dernier contrôle réussi (contrôle seul, sans autre
+          # étape d'alerte dans le même workflow).
+          rupture=""
+          d=$(gh api "repos/$R/actions/workflows/integrite-api.yml/runs?status=success&per_page=1" --jq '.workflow_runs[0].run_started_at // ""') \
+            || echec "Historique des contrôles illisible"
+          if [ -z "$d" ]; then echo "aucun contrôle réussi dans l'historique : premier passage, pas de rupture"
+          else
+            age=$(( ( $(date +%s) - $(date -d "$d" +%s) ) / 60 ))
+            echo "dernier contrôle réussi : $(heure "$(date -d "$d" +%s)"), il y a $age min (seuil $SEUIL)"
+            [ "$age" -le "$SEUIL" ] || rupture="surveillance interrompue : aucun contrôle réussi pendant $age min (dernier le $(heure "$(date -d "$d" +%s)"))"
+          fi
+
+          debut=$(date +%s)
+          for i in $(seq 1 "$PASSAGES"); do
+            prevu=$(( debut + (i - 1) * INTERVALLE * 60 ))
+            attente=$(( prevu - $(date +%s) )); [ "$attente" -gt 0 ] && sleep "$attente"
+            avant=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            gh workflow run "$CIBLE" -R "$R" --ref main || echec "passage $i : lancement du contrôle refusé par GitHub"
+            # Retrouver l'exécution lancée (5 min au plus pour démarrer).
+            id=""
+            for t in $(seq 1 30); do
+              id=$(gh api "repos/$R/actions/workflows/$CIBLE/runs?event=workflow_dispatch&created=>=$avant&per_page=5" --jq '[.workflow_runs[] | select(.triggering_actor.login == "github-actions[bot]")] | sort_by(.id) | .[0].id // ""' 2>/dev/null || true)
+              [ -n "$id" ] && break; sleep 10
+            done
+            [ -n "$id" ] || echec "passage $i : contrôle introuvable 5 min après son lancement"
+            # Attendre sa fin (25 min au plus).
+            fin=""
+            for t in $(seq 1 100); do
+              fin=$(gh api "repos/$R/actions/runs/$id" --jq 'if .status == "completed" then .conclusion else "" end' 2>/dev/null || true)
+              [ -n "$fin" ] && break; sleep 15
+            done
+            [ -n "$fin" ] || echec "passage $i : contrôle $id non terminé après 25 min"
+            [ "$fin" = success ] || echec "passage $i : contrôle $id en échec ($fin) — voir son rapport"
+            echo "passage $i : contrôle $id réussi ($(heure "$(date +%s)"))"
+            [ -n "$rupture" ] && echec "$rupture. Le contrôle de reprise ($id) est réussi ; la surveillance reprend."
+          done
+          # Relève à l'heure du passage suivant.
+          attente=$(( debut + PASSAGES * INTERVALLE * 60 - $(date +%s) - 60 )); [ "$attente" -gt 0 ] && sleep "$attente"
+          releve
