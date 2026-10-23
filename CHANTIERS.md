@@ -105,8 +105,11 @@ sont datées du 05/10 à la demande de l'utilisateur.
       12 h 18** (`74712ea` sur `main`, déclencheur d'essai et `if` retirés).
       1er veilleur (run 15) : contrôle de reprise vert, alerte rouge
       « surveillance interrompue » (171 min sans contrôle réussi, attendue),
-      relève passée au run 16 dont le 1er contrôle est vert. **À vérifier** :
-      la relève après 5 passages (~17 h 15) et un passage programmé du filet.
+      relève passée au run 16 dont le 1er contrôle est vert. **Relevé le
+      24/10 à 00 h 07** : relèves 16 → 17 (17 h 18) → 18 (22 h 17), un
+      contrôle vert chaque heure de 12 h 19 à 23 h 17, aucun trou ; aucun mail
+      d'échec après celui du run 15. Le filet n'a jamais eu à relancer (un
+      veilleur toujours actif) : sa relance reste non éprouvée.
       Arrêt durable : Actions → Veilleur intégrité → Disable workflow.
    4. **AG-029 appliqué le 22/10** (`ecb6544`) : le contrôle ne compte plus le
       jour en cours (cause du mail rouge de 3 h 33, run 39706363950).
