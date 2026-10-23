@@ -111,6 +111,9 @@ sont datées du 05/10 à la demande de l'utilisateur.
       d'échec après celui du run 15. Le filet n'a jamais eu à relancer (un
       veilleur toujours actif) : sa relance reste non éprouvée.
       Arrêt durable : Actions → Veilleur intégrité → Disable workflow.
+      Visible dans l'Admin depuis le 24/10 (onglet Sauvegardes, tuile
+      « Contrôle d'intégrité », deux sites) : **à valider par l'utilisateur**,
+      puis proposer une annonce `NOUVEAUTES` réservée à l'Admin.
    4. **AG-029 appliqué le 22/10** (`ecb6544`) : le contrôle ne compte plus le
       jour en cours (cause du mail rouge de 3 h 33, run 39706363950).
       Essais réels sur `main` : défaut, vert (run 24) ; `depuis` = aujourd'hui,
