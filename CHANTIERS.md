@@ -123,6 +123,12 @@ sont datées du 05/10 à la demande de l'utilisateur.
       « relecture humaine du code à proposer à la direction »). Les deux
       lacunes du registre V0.7 sont comblées (§6.7 détection et réponse, revues
       du 21-22/10 en §8.5).
+01. **XSS du 01/10 revérifiée le 23/10** (AG-030, confirmé par Codex ;
+   registre de sécurité V0.8 §10) : aucun point exploitable dans NEWGEN.
+   NextStep : même revue automatique le 23/10, aucun point trouvé, rejeu non
+   fait. **Reste : auditer GDINV2** (code distinct : 94 insertions `innerHTML`
+   alimentées par un fichier Excel importé, même origine web que NEWGEN et
+   sms-mail-multi) — à mener dans son dépôt, avec Codex.
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
    remettre : note avant/après V0.1 et registres V0.6. Reste à faire avant :
