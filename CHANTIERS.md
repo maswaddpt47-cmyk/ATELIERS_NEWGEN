@@ -108,7 +108,6 @@ sont datées du 05/10 à la demande de l'utilisateur.
       relève passée au run 16 dont le 1er contrôle est vert. **À vérifier** :
       la relève après 5 passages (~17 h 15) et un passage programmé du filet.
       Arrêt durable : Actions → Veilleur intégrité → Disable workflow.
-      Branche `ag-028-veilleur` gardée, à supprimer quand validé.
    4. **AG-029 appliqué le 22/10** (`ecb6544`) : le contrôle ne compte plus le
       jour en cours (cause du mail rouge de 3 h 33, run 39706363950).
       Essais réels sur `main` : défaut, vert (run 24) ; `depuis` = aujourd'hui,
