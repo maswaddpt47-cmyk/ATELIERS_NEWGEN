@@ -21,9 +21,9 @@
       "NEWGEN admin_app.js:180",
       "NextStep admin_app.js:172"
     ],
-    "newgen": "f00974e497/e1b8ecfbcc",
-    "nextstep": "b5f4466887/265e75a660",
-    "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs. Revérifié le 21/10/2026 après le message de maintenance (#36/#37 et NextStep #24/#25) : changement identique dans les deux, seule la navigation diffère."
+    "newgen": "f00974e497/ddc9aeb595",
+    "nextstep": "b5f4466887/c8467a7d15",
+    "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs. Revérifié le 21/10/2026 après le message de maintenance (#36/#37 et NextStep #24/#25) : changement identique dans les deux, seule la navigation diffère. Revérifié le 24/10/2026 après le bandeau Admin sur téléphone : même correctif (titre masqué, nom tronqué, boutons réduits à leur icône), adapté à la coquille de chaque appli."
   },
   "VueHistorique": {
     "statut": "voulu",
