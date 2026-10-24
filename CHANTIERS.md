@@ -114,8 +114,10 @@ sont datées du 05/10 à la demande de l'utilisateur.
       Arrêt durable : Actions → Veilleur intégrité → Disable workflow.
       Visible dans l'Admin depuis le 24/10 (onglet Sauvegardes, tuile
       « Contrôle d'intégrité », deux sites), validée le 24/10 ; pas d'annonce
-      `NOUVEAUTES` (choix de l'utilisateur). Pastille rouge « ! » sur
-      💾 Sauvegardes quand la tuile est rouge : **à valider**.
+      `NOUVEAUTES` (choix de l'utilisateur). Bleue quand tout va bien,
+      validée le 24/10. Pastille rouge « ! » sur 💾 Sauvegardes et consigne
+      dans la tuile quand elle est rouge : essayées en local seulement (faux
+      GitHub), jamais vues en vrai faute d'incident.
    4. **AG-029 appliqué le 22/10** (`ecb6544`) : le contrôle ne compte plus le
       jour en cours (cause du mail rouge de 3 h 33, run 39706363950).
       Essais réels sur `main` : défaut, vert (run 24) ; `depuis` = aujourd'hui,
