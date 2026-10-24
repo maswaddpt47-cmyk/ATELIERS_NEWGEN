@@ -3,9 +3,9 @@
 //
 //   php ~/www/api-sandbox/lib/sandbox_seed.php
 //
-// Lancé par deploy-sandbox.yml à chaque déploiement du bac à sable. Ne fait
-// rien si la base contient déjà des ateliers (les essais de l'utilisateur
-// sont gardés d'un déploiement à l'autre).
+// Lancé par deploy-sandbox.yml à chaque déploiement du bac à sable. Il
+// garde les ateliers déjà présents et complète les jeux d'essai une seule
+// fois (les essais de l'utilisateur sont gardés d'un déploiement à l'autre).
 //
 // Garde-fou : refuse de tourner si la configuration ne porte pas
 // « bac_a_sable » => true — clé écrite par le seul workflow du bac à sable,
@@ -33,6 +33,7 @@ $db = api_base();
 foreach (import_requetes_schema() as $sql) $db->exec($sql);
 if ((int) $db->query('SELECT COUNT(*) FROM ateliers')->fetchColumn() > 0) {
     echo "sandbox_seed : ateliers déjà là, gardés\n";
+    seed_comparaison_annuelle($db);
     seed_avis_et_fiches($db);
     seed_conflits_test($db);
     exit(0);
@@ -82,8 +83,37 @@ for ($j = -60; $j <= 60; $j++) {
     ]);
 }
 echo "sandbox_seed : $n ateliers fictifs, " . count($comptes) . " comptes de démonstration\n";
+seed_comparaison_annuelle($db);
 seed_avis_et_fiches($db);
 seed_conflits_test($db);
+
+// Permet de voir la comparaison des années dans Stats avec la sélection
+// chargée par défaut (année courante + suivante). Aucun atelier existant
+// n'est remplacé, même si ce jeu a été modifié pendant un essai.
+function seed_comparaison_annuelle(PDO $db): void
+{
+    $annee = (int) date('Y');
+    $cle = 'sandbox_comparaison_annuelle_' . $annee;
+    $q = $db->prepare('SELECT COUNT(*) FROM config WHERE cle = ?');
+    $q->execute([$cle]);
+    if ((int) $q->fetchColumn() > 0) return;
+    $a = $db->prepare("INSERT IGNORE INTO ateliers (id, n, statut, date, horaire, duree, ampm, orienteur, commune, lieu, thematique, inscrits, presents, public, conseiller, co_animateur, residence, remarques)
+                      VALUES (?, NULL, ?, ?, '09:00', 60, 'AM', 'Partenaire Démo', 'AGEN (47000)', 'Salle de démonstration', 'Comparaison annuelle', 6, ?, 'Tout public', ?, '', '', 'Donnée fictive — comparaison annuelle')");
+    $db->beginTransaction();
+    foreach ([$annee, $annee + 1] as $an) {
+        for ($mois = 1; $mois <= 12; $mois++) {
+            $date = sprintf('%04d-%02d-15', $an, $mois);
+            foreach (['Alice Démo', 'Bruno Démo', 'Chloé Démo'] as $i => $conseiller) {
+                $statut = $date >= date('Y-m-d') ? 'Planifié' : ($i === 1 && $mois % 4 === 0 ? 'Annulé' : 'Réalisé');
+                $a->execute(['demo_comparaison_' . $an . '_' . $mois . '_' . $i, $statut, $date,
+                             $statut === 'Réalisé' ? 5 : null, $conseiller]);
+            }
+        }
+    }
+    $db->prepare("INSERT INTO config (cle, valeur) VALUES (?, '1')")->execute([$cle]);
+    $db->commit();
+    echo "sandbox_seed : comparaison annuelle fictive ($annee et " . ($annee + 1) . ")\n";
+}
 
 // Avis de stagiaires et fiches bilan FICTIFS (demande du 04/10/2026, pour
 // tester « Avis par atelier », le bilan trimestriel et la suppression d'un

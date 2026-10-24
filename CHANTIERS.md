@@ -93,7 +93,12 @@ pas à jour ou si NextStep a des commits non poussés.
   distinct de zéro, filtre mois, retrait des anciennes séries et légende
   commune aux années. À 390 px et 1280×720, pas de débordement de cette carte
   ni de chevauchement des mois ; les deux années tiennent sans défilement à
-  390 px. **Reste : validation utilisateur dans le bac à sable**, puis même
+  390 px. Graphique `d45eb64` déployé dans le bac à sable (run **101** vert).
+  Jeu d'essai complété par `sandbox_seed.php` : année courante et suivante,
+  douze mois et trois conseillers fictifs, sans remplacer les essais déjà
+  présents. Tests PHP du remplissage exécutés par le workflow avant copie
+  (PHP absent de cet environnement local).
+  **Reste : validation utilisateur dans le bac à sable**, puis même
   changement dans NextStep et fusion en production dans les deux dépôts,
   avec contrôle de parité et de déploiement. Ne pas ajouter d'annonce
   `NOUVEAUTES` sans accord.

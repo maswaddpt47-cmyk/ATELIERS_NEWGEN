@@ -36,6 +36,25 @@ $db->exec("UPDATE ateliers SET remarques = 'essai' WHERE id = 'demo_1'");
 [$code] = $lancer("$tmp/sbx.php");
 verifier($code === 0 && $db->query("SELECT remarques FROM ateliers WHERE id = 'demo_1'")->fetchColumn() === 'essai', 'redéploiement : les essais sont gardés');
 
+// La comparaison doit aussi apparaître sur un bac à sable déjà rempli.
+$an = (int) date('Y');
+$cleComparaison = 'sandbox_comparaison_annuelle_' . $an;
+$db->prepare('DELETE FROM config WHERE cle = ?')->execute([$cleComparaison]);
+$db->exec("DELETE FROM ateliers WHERE thematique = 'Comparaison annuelle'");
+[$code] = $lancer("$tmp/sbx.php");
+$comparaison = $db->query("SELECT YEAR(date) annee, COUNT(DISTINCT MONTH(date)) mois, COUNT(DISTINCT conseiller) conseillers, COUNT(*) n FROM ateliers WHERE thematique = 'Comparaison annuelle' GROUP BY YEAR(date) ORDER BY annee")->fetchAll(PDO::FETCH_ASSOC);
+verifier($code === 0 && count($comparaison) === 2 && (int) $comparaison[0]['annee'] === $an && (int) $comparaison[1]['annee'] === $an + 1
+    && array_sum(array_column($comparaison, 'n')) === 72 && (int) $comparaison[0]['mois'] === 12 && (int) $comparaison[1]['mois'] === 12
+    && (int) $comparaison[0]['conseillers'] === 3 && (int) $comparaison[1]['conseillers'] === 3,
+    'bac déjà rempli : deux années, douze mois et trois conseillers fictifs pour la comparaison');
+$idComparaison = 'demo_comparaison_' . $an . '_1_0';
+$db->prepare("UPDATE ateliers SET remarques = 'essai conservé' WHERE id = ?")->execute([$idComparaison]);
+[$code] = $lancer("$tmp/sbx.php");
+$essai = $db->prepare('SELECT remarques FROM ateliers WHERE id = ?');
+$essai->execute([$idComparaison]);
+verifier($code === 0 && (int) $db->query("SELECT COUNT(*) FROM ateliers WHERE thematique = 'Comparaison annuelle'")->fetchColumn() === 72
+    && $essai->fetchColumn() === 'essai conservé', 'redéploiement : comparaison non dupliquée, essais conservés');
+
 // Cas réel du 04/10/2026 : des avis déposés à la main n'empêchent pas les fictifs.
 $db->exec("DELETE FROM avis"); $db->exec("DELETE FROM config WHERE cle = 'sandbox_avis_fictifs'");
 $db->exec("INSERT INTO avis (atelier_id, cree_le, attentes, source) SELECT id, date, 5, 'qr' FROM ateliers WHERE statut = 'Réalisé' AND presents > 0 LIMIT 1");
