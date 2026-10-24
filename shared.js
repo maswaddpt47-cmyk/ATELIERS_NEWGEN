@@ -3610,30 +3610,50 @@ function DonutChart({data,colors,height=220}){
   return CE(EChart,{option,height});
 }
 
-// ── StackedActivityChart barres empilées ─────────────────────
+// ── Activité mensuelle : une barre empilée par année ────────
 function StackedActivityChart({data}){
-  if(!data||Object.keys(data).length===0)return CE(NoData,null);
-  const todayYM=new Date().toISOString().slice(0,7);
-  const fmtML=ym=>`${ym.slice(5,7)}/${ym.slice(2,4)}`;
-  const keys=Object.keys(data).sort();
-  const labels=keys.map(k=>fmtML(k));
+  const keys=Object.keys(data||{}).filter(k=>/^\d{4}-(0[1-9]|1[0-2])$/.test(k)).sort();
+  if(!keys.length)return CE(NoData,null);
+  const years=[...new Set(keys.map(k=>k.slice(0,4)))];
+  const months=['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+  const statuses=[
+    {name:'Réalisés',field:'realises',color:'#22c55e'},
+    {name:'Annulés',field:'annules',color:'#ef4444'},
+    {name:'Planifiés',field:'planifies',color:'#3b82f6'}
+  ];
+  const monthKey=(year,i)=>`${year}-${String(i+1).padStart(2,'0')}`;
+  const axisColor=getComputedStyle(document.documentElement).getPropertyValue('--text-2').trim()||'#64748b';
   const option={
-    backgroundColor:'transparent',grid:{top:28,right:8,bottom:48,left:28,containLabel:true},
-    tooltip:{trigger:'axis',...EC_TT,...EC_APN,
-      formatter:params=>{const k=keys[params[0].dataIndex];const d=data[k];const futur=k>=todayYM?' (à venir)':'';return`<b style="color:#60a5fa">${fmtML(k)}${futur}</b><br/><span style="color:#22c55e">✅ ${d.realises} réalisés</span><br/><span style="color:#3b82f6">📅 ${d.planifies} planifiés</span><br/><span style="color:#ef4444">❌ ${d.annules} annulés</span>`;}},
-    legend:{data:['Réalisés','Annulés','Planifiés'],textStyle:{color:'#94a3b8',fontSize:10},bottom:0,icon:'roundRect',itemWidth:10,itemHeight:8},
-    xAxis:{data:labels,...EC_AXIS_BASE,splitLine:{show:false},axisLabel:{...EC_AXIS_LABEL,rotate:-35,interval:0}},
-    yAxis:{...EC_AXIS_BASE},
-    series:[
-      {name:'Réalisés',type:'bar',stackId:'a',barMaxWidth:30,data:keys.map(k=>data[k].realises),
-        itemStyle:{color:'#22c55e'}},
-      {name:'Annulés',type:'bar',stackId:'a',barMaxWidth:30,data:keys.map(k=>data[k].annules),
-        itemStyle:{color:'#ef4444'}},
-      {name:'Planifiés',type:'bar',barMaxWidth:30,data:keys.map(k=>data[k].planifies),
-        itemStyle:{color:'#3b82f6',borderRadius:[4,4,0,0]}}
-    ]
+    backgroundColor:'transparent',grid:{top:16,right:8,bottom:42,left:8,containLabel:true},
+    tooltip:{trigger:'axis',...EC_TT,...EC_APN,confine:true,
+      formatter:params=>{
+        if(!params.length)return'';
+        const i=params[0].dataIndex;
+        return`<b style="color:#60a5fa">${months[i]}</b>`+years.map(year=>{
+          const d=data[monthKey(year,i)];
+          if(!d)return`<br/><b>${year}</b> : aucune donnée dans la sélection`;
+          return`<br/><b>${year}</b>`+statuses.map(s=>`<br/><span style="color:${s.color}">${s.name} : ${d[s.field]}</span>`).join('');
+        }).join('');
+      }},
+    legend:{data:statuses.map(s=>s.name),textStyle:{color:axisColor,fontSize:11},bottom:0,icon:'roundRect',itemWidth:10,itemHeight:8},
+    xAxis:{type:'category',data:months,...EC_AXIS_BASE,splitLine:{show:false},axisLabel:{...EC_AXIS_LABEL,color:axisColor,interval:0}},
+    yAxis:{...EC_AXIS_BASE,minInterval:1,axisLabel:{...EC_AXIS_LABEL,color:axisColor}},
+    series:years.flatMap(year=>statuses.map(s=>({
+      id:`${year}-${s.field}`,name:s.name,type:'bar',stack:year,barMaxWidth:24,barGap:'25%',
+      data:months.map((_,i)=>data[monthKey(year,i)]?.[s.field]??null),
+      itemStyle:{color:s.color}
+    })))
   };
-  return CE(EChart,{option,height:220});
+  return CE('div',null,
+    CE('p',{style:{fontSize:12,color:'var(--text-2,#64748b)',margin:'0 0 8px'}},
+      `${years.length>1?'Années de gauche à droite':'Année'} : ${years.join(' · ')} — selon les filtres actifs`),
+    CE('div',{style:{overflowX:'auto'}},
+      CE('div',{style:{minWidth:Math.max(300,years.length*150)}},
+        // Recréer le graphique si les années changent : ECharts fusionne sinon les anciennes séries.
+        CE(EChart,{key:years.join('-'),option,height:240})
+      )
+    )
+  );
 }
 
 // ── ConseillerBarChart groupé horizontal ─────────────────────
@@ -6225,12 +6245,12 @@ function VueDashboard({entries}){
     ),
 
     // ── Ligne 1 : Activité mensuelle + Donut statuts ──
-    CE('div',{style:{display:'grid',gridTemplateColumns:'2fr 1fr',gap:16,marginBottom:16}},
-      CE('div',{className:'card'},
+    CE('div',{style:{display:'flex',flexWrap:'wrap',gap:16,marginBottom:16}},
+      CE('div',{className:'card',style:{flex:'2 1 400px',minWidth:0}},
         CE('h2',null,'📈 Activité mensuelle'),
         CE(StackedActivityChart,{data:byMoisAct})
       ),
-      CE('div',{className:'card'},
+      CE('div',{className:'card',style:{flex:'1 1 220px',minWidth:0}},
         CE('h2',null,'🔵 Répartition statuts'),
         CE(DonutChart,{data:dataStat,colors:dataStat.map(d=>STATUS_COLORS[d.label]||'#718096'),height:220})
       )

@@ -85,6 +85,19 @@ pas à jour ou si NextStep a des commits non poussés.
 
 ## Reste ouvert
 
+- **Activité mensuelle — essai du 24/10/2026** (base `84a8a27`, branche
+  `sandbox`) : demande de l'utilisateur, janvier à décembre avec les années
+  côte à côte dans chaque mois. Une barre par année, empilée par statut ;
+  ordre des années indiqué et détail au toucher, filtres conservés. Vérifié
+  dans Chromium avec données fictives : alignement et totaux, mois absent
+  distinct de zéro, filtre mois, retrait des anciennes séries et légende
+  commune aux années. À 390 px et 1280×720, pas de débordement de cette carte
+  ni de chevauchement des mois ; les deux années tiennent sans défilement à
+  390 px. **Reste : validation utilisateur dans le bac à sable**, puis même
+  changement dans NextStep et fusion en production dans les deux dépôts,
+  avec contrôle de parité et de déploiement. Ne pas ajouter d'annonce
+  `NOUVEAUTES` sans accord.
+
 **Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **35** (`admin: true` = annonce réservée à l'Admin, depuis le 04/10) ; jamais 12,
 16, 19, 24, 25, 26 ni 29 (publiés puis retirés). Les entrées des 03-04/10
 sont datées du 05/10 à la demande de l'utilisateur.
