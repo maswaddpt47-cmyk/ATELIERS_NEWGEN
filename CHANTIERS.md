@@ -96,8 +96,21 @@ pas à jour ou si NextStep a des commits non poussés.
   390 px. Graphique `d45eb64` déployé dans le bac à sable (run **101** vert).
   Jeu d'essai complété par `sandbox_seed.php` : année courante et suivante,
   douze mois et trois conseillers fictifs, sans remplacer les essais déjà
-  présents. Tests PHP du remplissage exécutés par le workflow avant copie
-  (PHP absent de cet environnement local).
+  présents (`47c9839`, run **102** vert, tests PHP/MySQL et déploiement ; PHP
+  absent de cet environnement local).
+  **Liquid Glass avec relief**, demandé le 24/10 : reflets et bords ombrés
+  sur les barres/anneaux, fonds en verre, courbes et info-bulles assorties,
+  dans Synthèse, Analyse et Bilan mensuel. Valeurs, échelles et filtres
+  conservés ; labels des anneaux sur fond sombre pour rester lisibles.
+  Contrôlé avec ECharts/Chromium réels : callbacks de couleurs, pourcentages
+  et info-bulles, bord réellement assombri, transparence conservée ; Bilan
+  mensuel à 390 px et bascule clair/sombre sans débordement ni erreur JS.
+  **Accès Admin** (`1613a76`) : la capture de l'utilisateur était sur
+  `/sandbox/` (interface conseillers). Le bandeau propose maintenant
+  « Conseillers » et « Administration » (`/sandbox/admin.html`), sans
+  changer les droits ni la connexion Admin. Parcours vérifié dans Chromium
+  avec API simulée : rubriques présentes ; bandeau/en-tête sans
+  chevauchement ni débordement à 390 px et 1280 px.
   **Reste : validation utilisateur dans le bac à sable**, puis même
   changement dans NextStep et fusion en production dans les deux dépôts,
   avec contrôle de parité et de déploiement. Ne pas ajouter d'annonce
