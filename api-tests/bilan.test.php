@@ -79,6 +79,20 @@ verifier($code === 0 && count($m) === 1 && str_contains($m[0], 'A: moi@example.o
 [$code] = $lancer('--mois=2026-13');
 verifier($code === 1, 'mois invalide : refusé');
 
+// Taux de présence (règle du 20/10/2026, identique à utils.js et logic.js) :
+// un atelier réalisé dont les présents ne sont pas saisis sort du taux au lieu
+// d'être compté à 0 présent. Novembre : 8 inscrits / 6 présents, plus 4 inscrits
+// sans présents saisis → 6/8 = 75 % (et non 6/12 = 50 %) ; les lignes
+// « Inscrits » et « Présents » restent des totaux (12 et 6).
+echo "Taux de présence\n";
+$ins->execute(['t1', 'Réalisé', '2026-11-03', 'Alice', 'CAF', 8, 6]);
+$ins->execute(['t2', 'Réalisé', '2026-11-10', 'Alice', 'CAF', 4, null]);
+array_map('unlink', glob("$tmp/mails/*.txt"));
+[$code, $sortie] = $lancer('--mois=2026-11');
+$t = ($mails())[0] ?? '';
+verifier($code === 0 && str_contains($t, 'Inscrits (ateliers réalisés) : 12') && str_contains($t, 'Présents (ateliers réalisés) : 6'), 'les lignes Inscrits / Présents restent des totaux');
+verifier(str_contains($t, 'Taux de présence : 75 %'), 'présents non saisis : hors du taux (75 %, pas 50 %)');
+
 $db->exec('DROP DATABASE ateliers_test_bilan');
 exec('rm -rf ' . escapeshellarg($tmp));
 

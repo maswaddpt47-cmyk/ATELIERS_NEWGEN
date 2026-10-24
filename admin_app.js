@@ -29,7 +29,7 @@ function clearSession(){
 // ════════════════════════════════════════════════════════════
 // 3 échecs → blocage 5 min, countdown visible, reset auto.
 // ════════════════════════════════════════════════════════════
-function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp}){
+function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp,indispo}){
   const MAX_FAILS=3, LOCK_MS=5*60*1000;
 
   const[pwd,setPwd]=React.useState('');
@@ -120,6 +120,7 @@ function AdminLogin({onLogin,savedName,onResetProfil,conseillers:conseillersProp
   return CE('div',{className:'login-wrap'},
     CE('div',{className:'login-card'},
       CE('h2',null,'🔐 Accès Admin '+NOM_APPLI),
+      indispo&&CE('div',{style:{background:'#fef9c3',color:'#92400e',border:'1px solid #fcd34d',borderRadius:8,padding:'10px 14px',fontSize:13,lineHeight:1.5,marginBottom:12}},'🔧 Service indisponible ou en maintenance : connexion impossible pour le moment. Réessaie plus tard.'),
       isLocked
         ? CE('div',{style:{textAlign:'center',padding:'28px 0'}},
             CE('div',{style:{fontSize:44,marginBottom:10}},'🔒'),
@@ -209,6 +210,7 @@ function App(){
   });
   // Chargé avant l'auth pour alimenter le dropdown de login
   const[loginConseillers,setLoginConseillers]=React.useState(CONSEILLERS_DEFAULT);
+  const[apiIndispo,setApiIndispo]=React.useState(false); // getComptes injoignable (API coupée : erreur réseau côté navigateur, sans code HTTP)
   // Dropdown construit sur getComptes seul : la feuille Comptes porte déjà le
   // nom, le rôle et l'état actif de chacun. Le getAll qui servait à récupérer
   // lists.conseillers coûtait ~20 s pour la même information.
@@ -216,7 +218,7 @@ function App(){
   // sur le hint login getConfig) — CONSEILLERS_DEFAULT reste affiché entre-
   // temps de toute façon, la connexion n'est jamais bloquée par ce chargement.
   React.useEffect(()=>{
-    apiFetch('getComptes').catch(()=>null).then(res=>{
+    apiFetch('getComptes').catch(()=>{ setApiIndispo(true); return null; }).then(res=>{
       const comptes=res?.ok&&res.comptes?res.comptes:[];
       if(comptes.length===0)return; // on garde CONSEILLERS_DEFAULT
       // Mode API : getComptes public ne rend ni rôle ni état — tous les
@@ -482,8 +484,9 @@ const LOGS_KEY = lsKey('adm_logs');
   },[entries]);
 
   const[role,setRole]=React.useState('');
+  const veilleKo=etatVeille(useVeille(auth&&(role==='admin'||role==='superviseur')))===false;
   if(jetonReinit)return CE('div',{className:'login-wrap'},CE('div',{className:'login-card'},CE(VueReinitMotDePasse,{jeton:jetonReinit,onFini:()=>setJetonReinit(null)})));
-  if(!auth)return CE(AdminLogin,{onLogin:(r,nom)=>{setAuth(true);setRole(r||'user');const key=r==='superviseur'?'admin':nom;if(nom){localStorage.setItem(lsKey('adm_conseiller'),key);setAdminConseiller(key);}},savedName:adminConseiller,onResetProfil:()=>{localStorage.removeItem(lsKey('adm_conseiller'));setAdminConseiller('');},conseillers:loginConseillers})
+  if(!auth)return CE(AdminLogin,{onLogin:(r,nom)=>{setAuth(true);setRole(r||'user');const key=r==='superviseur'?'admin':nom;if(nom){localStorage.setItem(lsKey('adm_conseiller'),key);setAdminConseiller(key);}},savedName:adminConseiller,onResetProfil:()=>{localStorage.removeItem(lsKey('adm_conseiller'));setAdminConseiller('');},conseillers:loginConseillers,indispo:apiIndispo})
 
   if(!adminConseiller)return CE('div',{className:'login-wrap'},
     CE('div',{className:'login-card'},
@@ -529,7 +532,7 @@ const LOGS_KEY = lsKey('adm_logs');
         CE('span',{className:'topbar-v2-meta',title:window.VERSION_APPLI,style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},'v2'),
         entries.length>0&&CE('span',{className:'topbar-v2-meta',style:{fontSize:11,fontWeight:700,color:'var(--text-3)'}},entries.length),
         CE(ChoixAnnees,{className:'topbar-year-sel',value:annee,onChange:setAnnee,title:'Années chargées'}),
-        CE('button',{onClick:()=>setView('nouveautes'),title:'Nouveautés','aria-label':'Nouveautés',style:{position:'relative',background:'none',border:'none',cursor:'pointer',fontSize:16,padding:'2px 10px 2px 4px',lineHeight:1}},'🆕',CE(PastilleNouveautes,{nb:nbNouveautes})),
+        CE('button',{onClick:()=>setView('nouveautes'),title:'Nouveautés','aria-label':'Nouveautés',style:{position:'relative',background:'none',border:'none',cursor:'pointer',fontSize:16,padding:'2px 24px 2px 2px',lineHeight:1}},'🆕',CE(PastilleNouveautes,{nb:nbNouveautes})),
         CE('button',{
           onClick:()=>setDarkMode(d=>!d),
           style:{background:'none',border:'none',cursor:'pointer',fontSize:16,padding:0}
@@ -541,8 +544,9 @@ const LOGS_KEY = lsKey('adm_logs');
         adminConseiller&&adminConseiller!=='admin'&&CE('span',{className:'app-topbar-conseiller',style:{background:accentColor}},adminConseiller),
         CE('button',{
           className:'topbar-changer-btn',
+          title:'Changer d\'identité',
           onClick:()=>{localStorage.removeItem(lsKey('adm_conseiller'));setAdminConseiller('');}
-        },'Changer'),
+        },CE('span',{className:'topbar-ico-tel'},'👤'),CE('span',{className:'topbar-lbl'},'Changer')),
         CE('button',{
           className:'topbar-changer-btn',
           title:'Déconnexion',
@@ -703,7 +707,7 @@ const LOGS_KEY = lsKey('adm_logs');
           CE('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},CE('rect',{x:3,y:11,width:18,height:11,rx:2}),CE('path',{d:'M7 11V7a5 5 0 0 1 10 0v4'})),
           'Connexions'),
         (role==='admin'||role==='superviseur')&&navBtn('corbeille',CE('span',{style:{fontSize:18,lineHeight:1}},'🗑️'),'Corbeille'),
-        (role==='admin'||role==='superviseur')&&navBtn('sauvegardes',CE('span',{style:{fontSize:18,lineHeight:1}},'💾'),'Sauvegardes'),
+        (role==='admin'||role==='superviseur')&&CE('div',{key:'sauvegardes',style:{position:'relative',display:'flex'}},navBtn('sauvegardes',CE('span',{style:{fontSize:18,lineHeight:1}},'💾'),'Sauvegardes'),veilleKo&&CE(PastilleAlerte,{titre:'Surveillance du serveur interrompue'})),
         (role==='admin'||role==='superviseur')&&CE('div',{key:'tickets',style:{position:'relative',display:'flex'}},navBtn('tickets',CE('span',{style:{fontSize:18,lineHeight:1}},'🎫'),'Tickets'),CE(PastilleNouveautes,{nb:nbTickets,libelle:'nouveau(x) ticket(s)'}))
       )
     ),
@@ -851,6 +855,40 @@ const LOGS_COLONNES=[
 // ── Sauvegardes (AG-014, 25/09/2026) ───────────────────────────────────────
 // Lecture seule + copie à la demande. Pas de restauration complète ici, par
 // choix : une session Admin volée ne doit pas pouvoir effacer la base.
+// Veilleur du contrôle d'intégrité (AG-028) : lu sur l'API publique de GitHub,
+// sans jeton. Une lecture partagée par la pastille de 💾 Sauvegardes (lue à
+// l'ouverture de l'Admin, 24/10/2026) et la tuile de l'onglet, refaite au plus
+// toutes les 10 min. Le contrôle tourne dans ATELIERS_NEWGEN pour les deux sites.
+let veilleCache=null;
+function lireVeille(){
+  if(veilleCache&&Date.now()-veilleCache.ts<10*60000) return veilleCache.p;
+  const gh=w=>fetch('https://api.github.com/repos/maswaddpt47-cmyk/ATELIERS_NEWGEN/actions/workflows/'+w)
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
+  const p=Promise.all([gh('integrite-api.yml/runs?status=success&per_page=1'),gh('veilleur.yml/runs?per_page=5')])
+    .then(([c,v])=>({
+      dernier:(c.workflow_runs&&c.workflow_runs[0]&&c.workflow_runs[0].run_started_at)||'',
+      // Relève : le successeur attend en file, pas encore « en cours ».
+      actif:(v.workflow_runs||[]).some(x=>x.status!=='completed')}))
+    .catch(()=>({erreur:true}));
+  veilleCache={ts:Date.now(),p};
+  return p;
+}
+// null : pas encore lu ; {erreur:true} : GitHub injoignable ; {dernier,actif}.
+function useVeille(actif){
+  const[v,setV]=React.useState(null);
+  React.useEffect(()=>{
+    if(!actif) return;
+    let vivant=true;
+    lireVeille().then(r=>{ if(vivant) setV(r); });
+    return()=>{ vivant=false; };
+  },[actif]);
+  return v;
+}
+// true / false / null (inconnu). Même seuil que le veilleur : 125 min sans
+// contrôle réussi = surveillance interrompue.
+const etatVeille=v=>(!v||v.erreur)?null:(v.actif&&Date.now()-new Date(v.dernier).getTime()<125*60000);
+const PastilleAlerte=({titre})=>CE('span',{title:titre,'aria-label':titre,style:{position:'absolute',top:2,right:2,width:16,height:16,borderRadius:8,background:'#dc2626',color:'#fff',fontSize:11,fontWeight:800,lineHeight:'16px',textAlign:'center',boxShadow:'0 0 0 2px rgba(255,255,255,.85)',pointerEvents:'none'}},'!');
+
 function VueSauvegardes(){
   const[etat,setEtat]=React.useState(null);
   const[err,setErr]=React.useState('');
@@ -862,6 +900,7 @@ function VueSauvegardes(){
       .catch(e=>setErr(e.message||'Erreur réseau'));
   }
   React.useEffect(charger,[]);
+  const veille=useVeille(true);
   async function copierMaintenant(){
     setCopie(true);
     try{
@@ -875,9 +914,15 @@ function VueSauvegardes(){
   const age=s=>{ if(!s) return Infinity; const d=new Date(String(s).replace(' ','T')); return isNaN(d)?Infinity:(Date.now()-d.getTime())/3600000; };
   const affDate=s=>s?fmtDate(String(s).slice(0,10))+' à '+String(s).slice(11,16):'jamais';
   const derniere=etat&&etat.copies&&etat.copies[0];
-  const tuile=(titre,ok,ligne,detail)=>CE('div',{style:{flex:'1 1 240px',padding:'12px 14px',borderRadius:10,border:'1px solid '+(ok?'#bbf7d0':'#fecaca'),background:ok?'#f0fdf4':'#fef2f2'}},
+  const p2=n=>String(n).padStart(2,'0');
+  const affIso=s=>{ const d=new Date(s); return isNaN(d)?'jamais':affDate(d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())+' '+p2(d.getHours())+':'+p2(d.getMinutes())); };
+  const veilleOk=etatVeille(veille);
+  // ok === null : état inconnu (GitHub injoignable), ni vert ni rouge.
+  // bleu : la surveillance, en bleu quand tout va bien pour ne pas se
+  // confondre avec les deux copies (demande du 24/10/2026).
+  const tuile=(titre,ok,ligne,detail,bleu)=>CE('div',{style:{flex:'1 1 240px',padding:'12px 14px',borderRadius:10,border:'1px solid '+(ok===null?'#e5e7eb':ok?(bleu?'#bfdbfe':'#bbf7d0'):'#fecaca'),background:ok===null?'#f9fafb':ok?(bleu?'#eff6ff':'#f0fdf4'):'#fef2f2'}},
     CE('div',{style:{fontSize:12,fontWeight:700,color:'#374151'}},titre),
-    CE('div',{style:{fontSize:15,fontWeight:800,margin:'4px 0',color:ok?'#166534':'#991b1b'}},(ok?'✅ ':'⚠️ ')+ligne),
+    CE('div',{style:{fontSize:15,fontWeight:800,margin:'4px 0',color:ok===null?'#4b5563':ok?(bleu?'#1e40af':'#166534'):'#991b1b'}},(ok===null?'❔ ':ok?(bleu?'🛡️ ':'✅ '):'⚠️ ')+ligne),
     CE('div',{style:{fontSize:11,color:'#6b7280'}},detail));
   const td={padding:'4px 10px',fontSize:12,borderBottom:'1px solid var(--border,#f0f0f0)'};
   return CE('div',{className:'card'},
@@ -888,7 +933,7 @@ function VueSauvegardes(){
       CE('div',{style:{display:'flex',gap:12,flexWrap:'wrap',marginBottom:14}},
         tuile('Copie de nuit (Alwaysdata, 03:00)',age(derniere&&derniere.date)<26,affDate(derniere&&derniere.date),
           (etat.copies||[]).length+' copie(s) gardée(s), '+etat.jours+' jours'),
-        tuile('Copie chiffrée hors site (04:15)',age(etat.chiffree)<26,affDate(etat.chiffree),
+        tuile('Copie chiffrée hors site (chaque matin)',age(etat.chiffree)<26,affDate(etat.chiffree),
           CE(React.Fragment,null,'Dépôt GitHub privé, lisible avec la clé privée seulement',CE('br'),
             // Consigne visible seulement quand il faut agir (26/09/2026).
             age(etat.chiffree)>=26&&CE('div',{style:{marginTop:8,padding:'6px 8px',borderRadius:6,background:'#fff',border:'1px solid #fecaca',color:'#991b1b',fontSize:12,lineHeight:1.4}},
@@ -899,7 +944,22 @@ function VueSauvegardes(){
             CE('a',{href:'https://github.com/maswaddpt47-cmyk/ateliers-backups/actions/workflows/copie.yml',target:'_blank',rel:'noopener',
               style:{display:'inline-block',marginTop:8,padding:'4px 10px',fontSize:12,fontWeight:700,borderRadius:6,textDecoration:'none',
                      border:'1px solid '+(age(etat.chiffree)<26?'#166534':'#991b1b'),color:age(etat.chiffree)<26?'#166534':'#fff',background:age(etat.chiffree)<26?'transparent':'#991b1b'}},
-              '▶ Relancer sur GitHub')))
+              '▶ Relancer sur GitHub'))),
+        tuile('Contrôle d\'intégrité (toutes les heures)',veilleOk,
+          veille===null?'Lecture…':veille.erreur?'GitHub injoignable':affIso(veille.dernier),
+          CE(React.Fragment,null,
+            veille===null||veille.erreur?'Dernier contrôle réussi : non lu':
+              !veille.actif?'⚠️ Aucun veilleur en cours : la surveillance horaire est arrêtée':
+              age(veille.dernier)<125/60?'Veilleur en service':'⚠️ Veilleur en service, mais aucun contrôle réussi depuis plus de 2 h : voir son dernier rapport',
+            // Consigne visible seulement quand il faut agir (24/10/2026).
+            veilleOk===false&&CE('div',{style:{marginTop:8,padding:'6px 8px',borderRadius:6,background:'#fff',border:'1px solid #fecaca',color:'#991b1b',fontSize:12,lineHeight:1.4}},
+              !veille.actif
+                ?'⚠️ Le serveur n\'est plus contrôlé toutes les heures (ce n\'est pas une panne du serveur). Touchez « Voir le veilleur sur GitHub », puis « Run workflow » et le bouton vert « Run workflow ». Un mail « Run failed » suit : normal, c\'est l\'alerte de reprise. Rechargez ici après quelques minutes : la tuile doit repasser au vert.'
+                :'⚠️ Les contrôles du serveur échouent. Sur GitHub, ouvrez le dernier « Intégrité API Alwaysdata » en rouge et lisez son rapport. Lignes IMPOSSIBLE : contrôle non fait (serveur ou connexion en panne), vérifiez que les sites répondent puis relancez-le. Lignes ALERTE : intrusion possible, appliquez la procédure d\'incident du registre de sécurité (§6.7), coupure d\'urgence de l\'API si le doute est sérieux ; ne relancez pas les contrôles en boucle.'),
+            CE('br'),
+            CE('a',{href:'https://github.com/maswaddpt47-cmyk/ATELIERS_NEWGEN/actions/workflows/veilleur.yml',target:'_blank',rel:'noopener',
+              style:{display:'inline-block',marginTop:8,padding:'4px 10px',fontSize:12,fontWeight:700,borderRadius:6,textDecoration:'none',border:'1px solid #374151',color:'#374151'}},
+              '▶ Voir le veilleur sur GitHub')),true)
       ),
       CE('button',{disabled:copie,onClick:copierMaintenant,style:{padding:'8px 16px',fontSize:13,fontWeight:700,background:'#1e3a8a',color:'#fff',border:'none',borderRadius:8,cursor:copie?'progress':'pointer'}},
         copie?'Copie en cours…':'💾 Faire une copie maintenant'),

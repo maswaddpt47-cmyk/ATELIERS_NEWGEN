@@ -954,6 +954,15 @@ describe('basculerBilan', () => {
 
 // ── Rendez-vous Outlook → demi-journées occupées (12/10/2026) ─────────────────
 const {demiJourneesOccupeesICS} = require('./utils.js');
+describe('periodeExportICS', () => {
+  it('lit X-CLIPSTART/X-CLIPEND en heure de Paris, fin exclue ; absente = null (20/10/2026)', () => {
+    const { periodeExportICS } = require('./utils.js');
+    // Export Outlook « journée en cours » du 20/10 : un seul jour couvert.
+    assert.deepEqual(periodeExportICS('X-CLIPSTART:20261019T220000Z\r\nX-CLIPEND:20261020T220000Z\r\n'), { de: '2026-10-20', a: '2026-10-20' });
+    assert.deepEqual(periodeExportICS('X-CLIPSTART:20261019T220000Z\nX-CLIPEND:20261116T230000Z'), { de: '2026-10-20', a: '2026-11-16' });
+    assert.equal(periodeExportICS('BEGIN:VCALENDAR\nEND:VCALENDAR'), null);
+  });
+});
 describe('demiJourneesOccupeesICS', () => {
   const ics = (...evts) => 'BEGIN:VCALENDAR\r\n' + evts.map(e => 'BEGIN:VEVENT\r\n' + e.join('\r\n') + '\r\nEND:VEVENT\r\n').join('') + 'END:VCALENDAR';
   it('matin, chevauchement de midi, journée entière de deux jours, libre ignoré', () => {
@@ -1012,5 +1021,31 @@ describe('anneesParDefaut / ajouterAnnee', () => {
     assert.equal(ajouterAnnee('2026', 2027), '2026,2027');
     assert.equal(ajouterAnnee('2025,2026', 2027), '2025,2026,2027');
     assert.equal(ajouterAnnee('2026,2027', 2027), '2026,2027');
+  });
+});
+
+// ── tauxPresence (règle arrêtée le 20/10/2026) ────────────────────────────
+describe('tauxPresence', () => {
+  const { tauxPresence } = require('./utils.js');
+  const R = (inscrits, presents, statut = 'Réalisé') => ({ statut, inscrits, presents });
+  it('présents / inscrits des seuls réalisés', () => {
+    assert.deepEqual(tauxPresence([R(8, 6), R(4, 3), R(9, 9, 'Annulé')]), { inscrits: 12, presents: 9, ateliers: 2, tx: 75 });
+  });
+  it('présents non saisis : l\'atelier sort du taux', () => {
+    assert.equal(tauxPresence([R(8, 6), R(4, '')]).tx, 75);
+    assert.equal(tauxPresence([R(8, 6), R(4, null)]).tx, 75);
+  });
+  it('0 présent saisi est une valeur', () => assert.equal(tauxPresence([R(8, 0)]).tx, 0));
+  it('inscrits à 0 ou absents : hors taux', () => {
+    assert.equal(tauxPresence([R(0, 3), R('', 3), R(10, 5)]).tx, 50);
+  });
+  it('liste vide ou nulle → 0', () => {
+    assert.equal(tauxPresence([]).tx, 0);
+    assert.equal(tauxPresence(null).tx, 0);
+  });
+  it('kpiHistorique garde les totaux et porte la base du taux', () => {
+    const k = kpiHistorique([R(8, 6), R(4, '')]);
+    assert.equal(k.inscrits, 12); assert.equal(k.presents, 6);
+    assert.equal(k.inscritsTaux, 8); assert.equal(k.presentsTaux, 6); assert.equal(k.tx, 75);
   });
 });

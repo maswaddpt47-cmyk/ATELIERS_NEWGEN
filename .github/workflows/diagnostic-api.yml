@@ -38,6 +38,14 @@ jobs:
         run: |
           $VIA ssh -o StrictHostKeyChecking=accept-new "$COMPTE@ssh-$COMPTE.alwaysdata.net" '
             echo "== php (ligne de commande)"; php -v | head -1
+            # Version servie au web (21/10/2026, faille « PHP2Shell ») : elle peut
+            # différer de la ligne de commande. Fichier au nom aléatoire, lu par le
+            # serveur lui-même puis supprimé aussitôt.
+            echo "== php (web, celui qui exécute l API)"
+            n="diagnostic-version-$(head -c8 /dev/urandom | od -An -tx1 | tr -d " \n").php"   # nom toléré par integrite-api.yml
+            printf "<?php echo PHP_VERSION, \" \", PHP_SAPI;" > ~/www/api/$n
+            curl -sS -m 15 "https://ateliers-numeriques.alwaysdata.net/api/$n"; echo
+            rm -f ~/www/api/$n
             php -m | grep -iE "^(zip|simplexml|pdo_mysql|mbstring|libxml)$" | tr "\n" " "; echo
             echo "== fichiers"; ls -la ~/config-api.php 2>&1 | cut -c1-40; ls ~/www/api ~/www/api/lib
             echo "== journaux récents"; find ~/admin/logs -type f -mmin -1440 2>/dev/null | head -20

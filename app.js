@@ -471,7 +471,13 @@ function App(){
       // le cas d'une session admin encore ouverte (liste complète, avec rôle).
       setNomsConnexion(res.comptes.filter(c=>c.role!=='superviseur').map(c=>c.conseiller).filter(Boolean));
       if(res.maintenance) setMaintenance({msg:res.maintenance_msg||''});
-    }).catch(()=>{});
+    }).catch(()=>{
+      // API coupée (coupure d'urgence : 403 sans en-tête CORS, donc le
+      // navigateur ne rend qu'une erreur réseau, sans code HTTP) ou hors
+      // service : message par défaut de MaintenanceScreen, pas une liste
+      // vide. Un getAll réussi le retire (loadData).
+      setMaintenance({msg:''});
+    });
   },[]);
 
   // L'appel getConfig dédié qui vivait ici est supprimé : il ne servait qu'à

@@ -493,6 +493,26 @@ function conflitsDeLEntree(entries, entree, trouverOrdi, trouverMobile) {
   };
 }
 
+// Taux de présence — UNE règle pour tous les écrans, le bilan trimestriel
+// (logic.js) et le mail mensuel (api/lib/bilan.php), arrêtée par l'utilisateur
+// le 20/10/2026 : présents / inscrits sur les seuls ateliers RÉALISÉS dont les
+// inscrits sont > 0 ET dont les présents sont saisis. Un atelier sans présents
+// saisis n'est pas « 0 présent » : il sort du taux (sinon le taux est sous-estimé).
+// Avant, l'Historique et le mail comptaient ces ateliers à 0 présent (50 %)
+// quand le bilan trimestriel les écartait (75 %) : même mot, deux nombres.
+// Couvert par les tests « tauxPresence » et « même population ».
+function tauxPresence(liste) {
+  let inscrits = 0, presents = 0, ateliers = 0;
+  (liste || []).forEach(e => {
+    if (!e || e.statut !== 'Réalisé') return;
+    const i = parseInt(e.inscrits, 10);
+    const brut = e.presents;
+    const p = (brut === '' || brut === null || brut === undefined) ? NaN : parseInt(brut, 10);
+    if (i > 0 && !isNaN(p)) { inscrits += i; presents += p; ateliers++; }
+  });
+  return { inscrits, presents, ateliers, tx: inscrits ? Math.round(presents / inscrits * 100) : 0 };
+}
+
 function kpiHistorique(liste) {
   const k = { total: 0, planifies: 0, realises: 0, annules: 0, autres: 0, inscrits: 0, presents: 0 };
   (liste || []).forEach(e => {
@@ -508,7 +528,10 @@ function kpiHistorique(liste) {
   });
   const pct = n => (k.total ? Math.round(n / k.total * 100) : 0);
   k.pct = { planifies: pct(k.planifies), realises: pct(k.realises), annules: pct(k.annules), autres: pct(k.autres) };
-  k.tx = k.inscrits ? Math.round(k.presents / k.inscrits * 100) : 0;
+  // inscrits / presents ci-dessus sont des totaux (personnes) ; le taux suit
+  // tauxPresence() et porte sa propre base.
+  const tp = tauxPresence(liste);
+  k.tx = tp.tx; k.inscritsTaux = tp.inscrits; k.presentsTaux = tp.presents;
   return k;
 }
 
@@ -858,7 +881,19 @@ function demiJourneesOccupeesICS(texte) {
       dates.filter(d => !exclues.has(d)).forEach(d => marquer(d, e));
     } else marquer(e.debut.date, e);
   }
-  return { occupees: [...occ].sort(), ignores };
+  return { occupees: [...occ].sort(), ignores, couvre: periodeExportICS(texte) };
+}
+// Période couverte par un export Outlook (20/10/2026) : en-tête X-CLIPSTART /
+// X-CLIPEND, en UTC, la fin exclue. Par défaut Outlook n'exporte que la
+// journée en cours : sans cette période, les jours suivants paraissaient
+// libres alors que l'agenda était plein. Rend { de, a } (inclus) ou null.
+function periodeExportICS(texte) {
+  const lire = nom => { const m = String(texte || '').match(new RegExp('^' + nom + ':(\\d{8}T\\d{6}Z?)', 'm')); return m ? _icsDate(m[1]) : null; };
+  const de = lire('X-CLIPSTART'), fin = lire('X-CLIPEND');
+  if (!de || !fin) return null;
+  // Fin exclue : minuit pile appartient au jour suivant, on recule d'un jour.
+  const a = fin.horaire === '00:00' ? addJoursIso(fin.date, -1) : fin.date;
+  return a >= de.date ? { de: de.date, a } : null;
 }
 // _id d'atelier stable pour une occurrence Outlook : réimporter le même
 // rendez-vous retrouve l'atelier déjà créé au lieu d'en créer un second.
@@ -911,7 +946,7 @@ function idOutlook(cle) {
 
 if (typeof module !== 'undefined') {
   module.exports={
-    lireICS, evenementsOutlook, idOutlook, rapprocherOutlook, demiJourneesOccupeesICS,
+    lireICS, evenementsOutlook, idOutlook, rapprocherOutlook, demiJourneesOccupeesICS, periodeExportICS,
     genererDatesCycle, joursFeries,
     nouveautesNonVues, nouveautesPourPage, semainesEntre,
     visibiliteEffective,
@@ -929,6 +964,7 @@ if (typeof module !== 'undefined') {
   comparerHistorique,
   ampmDepuisHoraire, statutSelonDate,
   kpiHistorique,
+  tauxPresence,
   conflitsDeLEntree,
   ateliersPartenaire,
   matierePanneau,

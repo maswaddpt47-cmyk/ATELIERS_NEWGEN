@@ -1,0 +1,270 @@
+# Contrôle d'intégrité du serveur Alwaysdata (21/10/2026, faille PHP
+# « PHP2Shell » : API restée en 8.4.26 jusqu'au redémarrage du site).
+# Réécrit le 21/10/2026 selon les amendements de Codex (AGORA AG-025) :
+# - deux issues distinctes, toutes deux en échec rouge : « ALERTE » (anomalie
+#   trouvée) et « IMPOSSIBLE » (une vérification n'a pas pu se faire) ; un
+#   succès vert veut dire « tout a été contrôlé, rien trouvé », jamais
+#   « rien n'a pu être lu » ;
+# - chaque dossier comparé au commit effectivement déployé (dernier
+#   déploiement réussi), pas au dépôt courant ;
+# - rapport sans secret ni donnée personnelle : chemins sans paramètres,
+#   nom des processus sans arguments, comptes et journal en nombres seulement,
+#   jamais d'adresse IP ni de nom ;
+# - « test_alerte » provoque un échec pour vérifier que l'alerte arrive.
+# Lecture seule sur le serveur. Ne détecte qu'après coup, et ni une intrusion
+# sans fichier persistant ni une modification des données métier : ce n'est
+# pas une garantie, c'est un filet.
+name: Intégrité API Alwaysdata
+
+permissions:
+  contents: read
+  actions: write   # filet du veilleur (AG-028) : relancer veilleur.yml
+
+# Toutes les heures (demande de l'utilisateur, 21/10/2026). Un échec rouge
+# déclenche le mail d'échec de GitHub, si les notifications Actions du compte
+# sont actives : à vérifier une fois avec « test_alerte ».
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      depuis:
+        description: "Date de début (AAAA-MM-JJ). Vide = les 2 derniers jours"
+        default: ""
+      test_alerte:
+        description: "Provoquer une fausse alerte pour vérifier la réception du mail"
+        type: boolean
+        default: false
+
+jobs:
+  integrite:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Alerte de test
+        if: ${{ inputs.test_alerte }}
+        run: |
+          echo "::error::ALERTE (TEST) : fausse alerte provoquée à la main, aucune anomalie réelle"
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Période
+        run: |
+          d="${{ inputs.depuis }}"
+          # Calendrier : heure de Paris, comme les journaux du serveur (AG-029)
+          auj=$(TZ=Europe/Paris date +%F)
+          [ -n "$d" ] || d=$(TZ=Europe/Paris date -d '2 days ago' +%F)
+          [[ "$d" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] && [ "$(date -d "$d" +%F 2>/dev/null)" = "$d" ] || { echo "::error::Date invalide : $d"; exit 1; }
+          [[ "$d" < "$auj" ]] || [ "$d" = "$auj" ] || { echo "::error::Date future : $d (aujourd'hui, heure de Paris : $auj)"; exit 1; }
+          echo "DEPUIS=$d" >> "$GITHUB_ENV"
+
+      - name: Préparer l'accès SSH
+        env:
+          CLE: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+        run: |
+          [ -n "$CLE" ] && [ -n "$COMPTE" ] || { echo "::error::IMPOSSIBLE : secret ALWAYSDATA_SSH_KEY ou ALWAYSDATA_COMPTE absent"; exit 1; }
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "HOTE=$COMPTE@ssh-$COMPTE.alwaysdata.net" >> "$GITHUB_ENV"
+          ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 "$COMPTE@ssh-$COMPTE.alwaysdata.net" true \
+            || { echo "::error::IMPOSSIBLE : connexion SSH au serveur refusée ou injoignable"; exit 1; }
+
+      # Référence = commit du dernier déploiement réussi de chaque dossier :
+      # un commit poussé mais pas encore déployé n'est pas une anomalie.
+      - name: Code de l'API identique à ce qui a été déployé ?
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          echec=0
+          ref() { gh api "repos/${{ github.repository }}/actions/workflows/$1/runs?status=success&per_page=1" --jq '.workflow_runs[0].head_sha // ""'; }
+          for couple in "api:deploy-api.yml" "api-sandbox:deploy-sandbox.yml"; do
+            d=${couple%%:*}; wf=${couple#*:}
+            sha=$(ref "$wf") || { echo "::error::IMPOSSIBLE : référence de déploiement illisible ($wf)"; echec=1; continue; }
+            [ -n "$sha" ] || { echo "::error::IMPOSSIBLE : aucun déploiement réussi trouvé ($wf)"; echec=1; continue; }
+            rm -rf ref && mkdir ref && git archive "$sha" api | tar -x -C ref \
+              || { echo "::error::IMPOSSIBLE : commit $sha introuvable"; echec=1; continue; }
+            # www/$d/.htaccess (coupure d'urgence du bac à sable, AG-027) est
+            # hors comparaison : son contenu est jugé à l'étape suivante.
+            ( cd ref/api && find . -type f | LC_ALL=C sort | xargs sha256sum ) > attendu.sha
+            if ! ssh -o ConnectTimeout=20 "$HOTE" "test -d www/$d && cd www/$d && find . -type f -not -path ./.htaccess | LC_ALL=C sort | xargs -r sha256sum" > serveur.sha; then
+              echo "::error::ALERTE ou IMPOSSIBLE : www/$d absent ou illisible sur le serveur"; echec=1; continue
+            fi
+            [ -s serveur.sha ] || { echo "::error::ALERTE : www/$d vide sur le serveur"; echec=1; continue; }
+            echo "== www/$d comparé au déploiement ${sha:0:7} (« > » = seulement sur le serveur, « < » = manquant ou différent)"
+            # Statut de diff lu tel quel (AG-026) : 0 identique, 1 différent,
+            # autre = comparaison impossible. Plus de pipeline dans la condition.
+            st=0; diff attendu.sha serveur.sha > ecart.txt || st=$?
+            case $st in
+              0) echo "identique";;
+              1) grep '^[<>]' ecart.txt | sed -E 's/^([<>]) [0-9a-f]+ /\1 /'
+                 echo "::error::ALERTE : www/$d diffère du déploiement ${sha:0:7}"; echec=1;;
+              *) echo "::error::IMPOSSIBLE : comparaison de www/$d en échec (diff : $st)"; echec=1;;
+            esac
+          done
+          exit $echec
+
+      - name: Fichiers, configuration, accès, comptes et journaux
+        run: |
+          set -o pipefail
+          ssh -o ConnectTimeout=20 "$HOTE" DEPUIS="$DEPUIS" 'bash -s' <<'FIN' > rapport.txt 2>&1 || echo "IMPOSSIBLE : le script distant s'est arrêté (code $?)" >> rapport.txt
+          set -u
+          alerte(){ echo "ALERTE : $*"; }
+          impossible(){ echo "IMPOSSIBLE : $*"; }
+          [ -d ~/www ] || impossible "dossier ~/www introuvable"
+
+          echo "== fichiers PHP hors des dossiers comparés (www/api, www/api-sandbox)"
+          if x=$(find ~/www -name "*.php*" -not -path "$HOME/www/api/*" -not -path "$HOME/www/api-sandbox/*" 2>&1); then
+            if [ -n "$x" ]; then echo "$x" | sed "s#^$HOME/##"; alerte "fichier PHP inconnu dans ~/www"; else echo "aucun"; fi
+          else impossible "recherche des fichiers PHP"; fi
+
+          echo "== configuration PHP et Apache (.htaccess, .user.ini, php.ini)"
+          # Attendus : lib/.htaccess de chaque API (comparés plus haut) et, en
+          # cas de coupure d'urgence (coupure-urgence.yml), www/.htaccess,
+          # www/api-sandbox/.htaccess ou www/sandbox/.htaccess contenant
+          # exactement « Require all denied ».
+          if x=$(find ~/www ~ -maxdepth 5 \( -name ".htaccess" -o -name ".user.ini" -o -name "php.ini" \) -not -path "$HOME/admin/*" 2>&1); then
+            echo "$x" | sort -u | while read -r f; do
+              [ -z "$f" ] && continue
+              case "$f" in
+                "$HOME/www/api/lib/.htaccess"|"$HOME/www/api-sandbox/lib/.htaccess") echo "attendu : ${f#$HOME/}";;
+                "$HOME/www/.htaccess"|"$HOME/www/api-sandbox/.htaccess"|"$HOME/www/sandbox/.htaccess")
+                  if [ ! -L "$f" ] && [ "$(cat "$f")" = "Require all denied" ]; then echo "coupure d'urgence en place : ${f#$HOME/}"
+                  else alerte "${f#$HOME/} au contenu inattendu"; fi;;
+                *) alerte "fichier de configuration inattendu : ${f#$HOME/}";;
+              esac
+            done
+          else impossible "recherche des fichiers de configuration"; fi
+
+          echo "== fichiers modifiés depuis $DEPUIS (hors copies, journaux, sauvegardes Alwaysdata)"
+          if r=$(find ~ -type f -newermt "$DEPUIS" -not -path "$HOME/sauvegardes/*" -not -path "$HOME/admin/*" -not -path "$HOME/.cache/*" \
+            -printf "%TY-%Tm-%Td %TH:%TM  %8s  %P\n" 2>/dev/null); then echo "$r" | sort | tail -60
+          else impossible "liste des fichiers récents"; fi
+
+          echo "== clés SSH autorisées (empreintes publiques, date)"
+          if [ -f ~/.ssh/authorized_keys ]; then
+            if k=$(ssh-keygen -lf ~/.ssh/authorized_keys 2>/dev/null); then echo "$k" | awk '{print $1, $2, $4}'
+            else impossible "lecture des empreintes des clés"; fi
+            stat -c "modifié le %y" ~/.ssh/authorized_keys
+            find ~/.ssh -type f -newermt "$DEPUIS" 2>/dev/null | grep -q . && alerte "~/.ssh modifié depuis $DEPUIS (clé ajoutée ?)"
+          else impossible "~/.ssh/authorized_keys introuvable (le contrôle passe pourtant par une clé)"; fi
+
+          echo "== tâches cron de l'utilisateur (attendu : aucune ; les tâches planifiées Alwaysdata sont ailleurs)"
+          if ! command -v crontab >/dev/null; then echo "commande crontab absente du serveur : aucune tâche cron possible"; c=""; s=1
+          else c=$(crontab -l 2>&1); s=$?; fi
+          if ! command -v crontab >/dev/null; then :
+          elif [ $s -eq 0 ]; then
+            if echo "$c" | grep -vE '^\s*(#|$)' | grep -q .; then alerte "tâche cron inattendue"; echo "$c" | grep -vE '^\s*(#|$)' | awk '{print $1,$2,$3,$4,$5, "(commande masquée)"}'; else echo "aucune"; fi
+          elif echo "$c" | grep -qiE "no crontab|not allowed|permission"; then echo "aucune (ou crontab non disponible)"
+          else impossible "lecture de la crontab"; fi
+
+          echo "== processus du compte (noms seuls, sans arguments)"
+          if p=$(ps -u "$(id -u)" -o comm= 2>/dev/null); then echo "$p" | grep -vxE "bash|ps|sshd|sort|uniq|grep|sed|awk" | sort | uniq -c
+          else impossible "liste des processus"; fi
+
+          echo "== comptes et journal de l'application (nombres seulement)"
+          if b=$(cd ~/www/api/lib && DEPUIS="$DEPUIS" php -r '
+            require "base.php";
+            $db = api_base();
+            foreach ($db->query("SELECT role, actif, COUNT(*) n FROM comptes GROUP BY role, actif ORDER BY role, actif") as $l)
+              echo "comptes  role=", $l["role"], "  actif=", $l["actif"], "  ", $l["n"], "\n";
+            // Empreinte des comptes (nom, rôle, accès Admin) : un compte remplacé
+            // ou un rôle changé à effectif constant la modifie (AG-026). Les noms
+            // ne sortent jamais du serveur, seule leur empreinte.
+            $e = array_map(fn($l) => $l["conseiller"] . "|" . $l["role"] . "|" . $l["actif"], $db->query("SELECT conseiller, role, actif FROM comptes ORDER BY conseiller")->fetchAll());
+            echo "EMPREINTE_COMPTES ", hash("sha256", implode("\n", $e)), "\n";
+            $s = $db->prepare("SELECT action, succes, COUNT(*) n FROM journal WHERE horodatage >= ? AND action IN (\"login\",\"loginFail\",\"reinitDemande\",\"reinitMotDePasse\",\"saveCompte\",\"resetPassword\",\"setPassword\",\"selfSetPassword\",\"saveLists\",\"restaurerCorbeille\",\"setConfig\") GROUP BY action, succes ORDER BY action, succes");
+            $s->execute([getenv("DEPUIS")]);
+            foreach ($s as $l) echo "journal  ", $l["action"], "  succes=", $l["succes"], "  ", $l["n"], "\n";
+          ' 2>/dev/null); then echo "$b"
+          else impossible "lecture des comptes et du journal (base)"; fi
+
+          echo "== journaux HTTP depuis $DEPUIS"
+          fichiers=$(find ~/admin/logs -type f -name "*http*" -newermt "$DEPUIS" 2>/dev/null)
+          if [ -z "$fichiers" ]; then
+            impossible "aucun journal HTTP trouvé depuis $DEPUIS"
+          elif ! journal=$(zcat -f $fichiers 2>/dev/null); then
+            impossible "lecture des journaux HTTP en échec"
+          else
+            # Lignes reconnues : date, méthode, chemin SANS paramètres, code.
+            # Jamais d'IP ni de requête complète dans le rapport.
+            lignes=$(printf '%s\n' "$journal" | grep -ac . || true)
+            req=$(printf '%s\n' "$journal" | grep -aoE '\[[0-9]{2}/[A-Za-z]{3}/[0-9]{4}:[^]]*\] "[A-Z]+ [^ "]+ HTTP/[0-9.]+" [0-9]{3}' \
+              | sed -E 's#^\[([0-9]{2}/[A-Za-z]{3}/[0-9]{4}):[^]]*\] "([A-Z]+) ([^ ?"]*)[^ "]* HTTP/[0-9.]+" ([0-9]{3})$#\1 \2 \3 \4#' || true)
+            reconnues=$(printf '%s' "$req" | grep -c . || true)
+            echo "$(echo "$fichiers" | wc -l) fichier(s), $lignes ligne(s), $reconnues requête(s) reconnue(s)"
+            if [ "${lignes:-0}" -gt 0 ] && [ $((reconnues * 2)) -lt "$lignes" ]; then
+              impossible "format des journaux non reconnu ($reconnues requêtes reconnues sur $lignes lignes)"
+            fi
+            # Couverture (AG-026, amendée par AG-029) : chaque jour CLOS de la
+            # période doit avoir des lignes, d'après la date des événements et
+            # non celle des fichiers. Le jour en cours n'est pas compté (ses
+            # requêtes restent analysées plus bas). Ne prouve ni l'exhaustivité
+            # des journaux ni l'absence d'interruption : une seule ligne suffit.
+            echo "-- calendrier : fuseau du serveur $(date +%Z), dates des journaux dans ce fuseau ; début $DEPUIS"
+            echo "-- lignes par jour (jours clos seulement)"
+            j="$DEPUIS"; auj=$(date +%F); clos=0
+            while [ "$j" \< "$auj" ]; do
+              clos=$((clos+1))
+              cle=$(LC_ALL=C date -d "$j" +%d/%b/%Y)
+              nb=$(printf '%s\n' "$req" | grep -c "^$cle " || true)
+              echo "$j : $nb"
+              [ "${nb:-0}" -gt 0 ] || impossible "aucune requête journalisée le $j : couverture non établie"
+              j=$(date -d "$j + 1 day" +%F)
+            done
+            [ "$clos" -gt 0 ] || echo "AUCUNE_JOURNEE_CLOSE : aucune journée terminée dans la période : présence quotidienne non évaluée"
+            echo "-- chemins appelés hors pages connues (nombre, méthode, chemin, code)"
+            printf '%s\n' "$req" | cut -d' ' -f2- | grep -vE '^(GET|POST|OPTIONS|HEAD) /(api|api-sandbox)/index\.php [0-9]+$|^(GET|HEAD) /sandbox/|^$' | sort | uniq -c | sort -rn | head -40
+            echo "-- fichiers PHP autres que index.php ayant répondu 200"
+            # Tolérés : le relevé de version de diagnostic-api.yml
+            # (/api/diagnostic-version-<16 hexa>.php, créé puis supprimé dans la
+            # même seconde ; resté en place, il serait signalé plus haut comme
+            # PHP inconnu) et, le 21/10/2026 seulement, les relevés faits ce
+            # jour-là (/api/v.php à la main, /api/v<16 hexa>.php par l'ancienne
+            # version du diagnostic).
+            php200=$(printf '%s\n' "$req" | awk '$4 == "200" && $3 ~ /\.php$/' \
+              | grep -vE ' /(api|api-sandbox)/index\.php 200$| /api/diagnostic-version-[0-9a-f]{16}\.php 200$' \
+              | grep -vE '^21/Oct/2026 [A-Z]+ /api/v(\.php|[0-9a-f]{16}\.php) 200$' | cut -d' ' -f2- | sort | uniq -c || true)
+            if [ -n "$php200" ]; then echo "$php200"; alerte "fichier PHP autre que index.php a répondu 200"; else echo "aucun"; fi
+            echo "-- motifs d'exploitation connus (allow_url_include, auto_prepend, php://, %ad, /cgi-bin/)"
+            st=0; n=$(printf '%s\n' "$journal" | grep -aciE 'allow_url_include|auto_prepend|php://|%ad|/cgi-bin/') || st=$?
+            if [ $st -gt 1 ]; then impossible "recherche des motifs d'exploitation"
+            else echo "${n:-0} requête(s)"; [ "${n:-0}" -gt 0 ] && alerte "${n} requête(s) avec un motif d'exploitation connu"; fi
+          fi
+          echo "== heure du serveur"; date
+          echo "FIN_DU_RAPPORT"
+          FIN
+          cat rapport.txt
+          # Empreinte des comptes comparée à la variable du dépôt
+          # COMPTES_EMPREINTE (Settings → Secrets and variables → Actions →
+          # Variables). Absente : avertissement, pas d'échec.
+          e=$(sed -n 's/^EMPREINTE_COMPTES //p' rapport.txt)
+          if [ -z "$e" ]; then echo "IMPOSSIBLE : empreinte des comptes non calculée" >> rapport.txt
+          elif [ -z "${{ vars.COMPTES_EMPREINTE }}" ]; then echo "::warning::Référence des comptes absente : enregistrer la variable COMPTES_EMPREINTE = $e si les comptes sont ceux attendus"
+          elif [ "$e" != "${{ vars.COMPTES_EMPREINTE }}" ]; then echo "ALERTE : comptes modifiés (nom, rôle ou accès Admin) par rapport à la référence" >> rapport.txt
+          else echo "comptes conformes à la référence"; fi
+          grep -q '^FIN_DU_RAPPORT$' rapport.txt || echo "IMPOSSIBLE : rapport incomplet (script interrompu)" >> rapport.txt
+          if grep -q '^IMPOSSIBLE' rapport.txt; then grep '^IMPOSSIBLE' rapport.txt | sed 's/^/::error::/'; fi
+          if grep -q '^ALERTE' rapport.txt; then grep '^ALERTE' rapport.txt | sed 's/^/::error::/'; fi
+          if grep -qE '^(ALERTE|IMPOSSIBLE)' rapport.txt; then exit 1; fi
+          if grep -q '^AUCUNE_JOURNEE_CLOSE' rapport.txt; then
+            echo "::notice::Aucune journée terminée dans la période : présence quotidienne des journaux non évaluée ; les autres contrôles n'ont rien relevé."
+            echo "Contrôlé, sauf la présence quotidienne des journaux : aucune anomalie."
+          else
+            echo "Tout a été contrôlé : aucune anomalie."
+          fi
+
+      # Filet du veilleur (AG-028) : un passage programmé relance un veilleur
+      # s'il n'y en a aucun (en cours, en attente ou en file).
+      - name: Relancer le veilleur s'il est arrêté
+        if: always() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n=$(gh api "repos/${{ github.repository }}/actions/workflows/veilleur.yml/runs?per_page=20" --jq '[.workflow_runs[] | select(.status != "completed")] | length') \
+            || { echo "::error::Liste des veilleurs illisible"; exit 1; }
+          if [ "$n" -gt 0 ]; then echo "veilleur actif ($n)"; else gh workflow run veilleur.yml -R "${{ github.repository }}" --ref main && echo "::warning::Aucun veilleur actif : relancé"; fi

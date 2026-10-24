@@ -66,21 +66,29 @@ function bilan_chiffres(PDO $db, string $de, string $a, string $grouper = ''): a
     $col = $grouper !== '' ? "$grouper AS cle," : "'' AS cle,";
     $st = $db->prepare("SELECT $col statut, COUNT(*) AS n,
                                SUM(CASE WHEN statut = 'Réalisé' THEN COALESCE(inscrits, 0) ELSE 0 END) AS inscrits,
-                               SUM(CASE WHEN statut = 'Réalisé' THEN COALESCE(presents, 0) ELSE 0 END) AS presents
+                               SUM(CASE WHEN statut = 'Réalisé' THEN COALESCE(presents, 0) ELSE 0 END) AS presents,
+                               SUM(CASE WHEN statut = 'Réalisé' AND inscrits > 0 AND presents IS NOT NULL THEN inscrits ELSE 0 END) AS inscrits_taux,
+                               SUM(CASE WHEN statut = 'Réalisé' AND inscrits > 0 AND presents IS NOT NULL THEN presents ELSE 0 END) AS presents_taux
                         FROM ateliers WHERE date BETWEEN ? AND ? GROUP BY cle, statut");
     $st->execute([$de, $a]);
     $r = [];
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $l) {
         $k = trim((string) $l['cle']) !== '' ? trim((string) $l['cle']) : '—';
-        $r[$k] ??= ['total' => 0, 'statuts' => [], 'inscrits' => 0, 'presents' => 0];
+        $r[$k] ??= ['total' => 0, 'statuts' => [], 'inscrits' => 0, 'presents' => 0, 'inscrits_taux' => 0, 'presents_taux' => 0];
         $r[$k]['total'] += (int) $l['n'];
         $r[$k]['statuts'][$l['statut'] ?: '—'] = (int) $l['n'];
         $r[$k]['inscrits'] += (int) $l['inscrits'];
         $r[$k]['presents'] += (int) $l['presents'];
+        $r[$k]['inscrits_taux'] += (int) $l['inscrits_taux'];
+        $r[$k]['presents_taux'] += (int) $l['presents_taux'];
     }
-    return $grouper !== '' ? $r : ($r['—'] ?? ['total' => 0, 'statuts' => [], 'inscrits' => 0, 'presents' => 0]);
+    return $grouper !== '' ? $r : ($r['—'] ?? ['total' => 0, 'statuts' => [], 'inscrits' => 0, 'presents' => 0, 'inscrits_taux' => 0, 'presents_taux' => 0]);
 }
 
+// Taux de présence : même règle que tauxPresence() (utils.js) et
+// bilanTrimestriel() (logic.js), arrêtée le 20/10/2026 — ateliers réalisés dont
+// les inscrits sont > 0 et les présents saisis ; les autres sortent du taux.
+// Les lignes « Inscrits » / « Présents » restent des totaux.
 function bilan_taux(int $presents, int $inscrits): string
 {
     return $inscrits > 0 ? round($presents / $inscrits * 100) . ' %' : '—';
@@ -154,7 +162,7 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
     ];
     $texte = "Bilan des ateliers numériques — $libelle\n\n";
     foreach ($lignesChiffres as [$l, $a, $b]) $texte .= "$l : $a ($libPrec : $b, " . $ecart($a, $b) . ")\n";
-    $texte .= 'Taux de présence : ' . bilan_taux($ce['presents'], $ce['inscrits']) . " ($libPrec : " . bilan_taux($prec['presents'], $prec['inscrits']) . ")\n\nPar conseiller :\n";
+    $texte .= 'Taux de présence : ' . bilan_taux($ce['presents_taux'], $ce['inscrits_taux']) . " ($libPrec : " . bilan_taux($prec['presents_taux'], $prec['inscrits_taux']) . ")\n\nPar conseiller :\n";
     foreach ($parConseiller as $nom => $c) $texte .= "- $nom : " . $s($c, 'Réalisé') . " réalisé(s) sur {$c['total']}, {$c['presents']} présent(s) / {$c['inscrits']} inscrit(s)\n";
     $texte .= "\nPar partenaire :\n";
     foreach ($parPartenaire as $nom => $c) $texte .= "- $nom : " . $s($c, 'Réalisé') . " réalisé(s) sur {$c['total']}\n";
@@ -197,9 +205,9 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
         return $r . '</tbody></table>';
     };
     $chiffres = array_map(fn($l) => [$l[0], $l[1], $l[2], $ecart($l[1], $l[2])], $lignesChiffres);
-    $chiffres[] = ['Taux de présence', bilan_taux($ce['presents'], $ce['inscrits']), bilan_taux($prec['presents'], $prec['inscrits']), ''];
+    $chiffres[] = ['Taux de présence', bilan_taux($ce['presents_taux'], $ce['inscrits_taux']), bilan_taux($prec['presents_taux'], $prec['inscrits_taux']), ''];
     $cons = [];
-    foreach ($parConseiller as $nom => $c) $cons[] = [$nom, $s($c, 'Réalisé') . ' / ' . $c['total'], $c['presents'] . ' / ' . $c['inscrits'], bilan_taux($c['presents'], $c['inscrits'])];
+    foreach ($parConseiller as $nom => $c) $cons[] = [$nom, $s($c, 'Réalisé') . ' / ' . $c['total'], $c['presents'] . ' / ' . $c['inscrits'], bilan_taux($c['presents_taux'], $c['inscrits_taux'])];
     $part = [];
     foreach ($parPartenaire as $nom => $c) $part[] = [$nom, $s($c, 'Réalisé'), $c['total']];
     $titre = fn($t) => '<h3 style="color:#1e3a8a;font-size:15px;margin:14px 0 4px">' . $h($t) . '</h3>';

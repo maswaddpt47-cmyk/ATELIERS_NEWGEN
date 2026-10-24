@@ -1,16 +1,16 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **07/10/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **16/10/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
 `MD-LIB/hygiene-instructions.md`).
 
-**Ménages des 26/09, 02/10, 04/10, 06/10 et 07/10/2026** : époque GAS, récit
-de la parité, livraisons des 01-06/10, audit Codex et ses corrections, et
-décisions déjà verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
+**Ménages des 26/09, 02/10, 04/10, 06/10, 07/10 et 16/10/2026** : époque GAS,
+récit de la parité, livraisons, audit Codex et ses corrections, et décisions
+déjà verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
 Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
-07/10/2026**.
+16/10/2026**.
 
 ---
 
@@ -91,21 +91,58 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 **Actions de l'utilisateur**
 
+00. **Faille PHP2Shell (21/10/2026)** — API coupée puis **rouverte le 21/10 à
+   21 h 05** avec le bouton de coupure (AG-027, essai réel complet : runs 1 à
+   10). Examen de la période : aucun indice identifié, sans pouvoir exclure une
+   compromission (AG-026). Mails d'échec du contrôle horaire reçus ;
+   `COMPTES_EMPREINTE` enregistrée ; équipe avertie de la réouverture
+   (déclaré par l'utilisateur, 21/10). Reste :
+   1. ~~WoocLight~~ examiné le 22/10 à 00 h 11 (`PAPPERBOARD/integrite.yml`) :
+      vert, voir le `CHANTIERS.md` de PAPPERBOARD ;
+   2. en parler au directeur : remettre le registre de sécurité V0.7 et
+      l'annexe A V0.3 (`ateliers-backups/documents/`, 22/10) ;
+   3. **AG-028, veilleur du contrôle d'intégrité — en service le 23/10 à
+      12 h 18, validé par l'utilisateur le 24/10 à 00 h 55** (capture GitHub :
+      #16 et #17 verts, 4 h 59 chacun, #18 en cours) (`74712ea` sur `main`, déclencheur d'essai et `if` retirés).
+      1er veilleur (run 15) : contrôle de reprise vert, alerte rouge
+      « surveillance interrompue » (171 min sans contrôle réussi, attendue),
+      relève passée au run 16 dont le 1er contrôle est vert. **Relevé le
+      24/10 à 00 h 07** : relèves 16 → 17 (17 h 18) → 18 (22 h 17), un
+      contrôle vert chaque heure de 12 h 19 à 23 h 17, aucun trou ; aucun mail
+      d'échec après celui du run 15. Le filet n'a jamais eu à relancer (un
+      veilleur toujours actif) : sa relance reste non éprouvée.
+      Arrêt durable : Actions → Veilleur intégrité → Disable workflow.
+      Visible dans l'Admin depuis le 24/10 (onglet Sauvegardes, tuile
+      « Contrôle d'intégrité », deux sites), validée le 24/10 ; pas d'annonce
+      `NOUVEAUTES` (choix de l'utilisateur). Bleue quand tout va bien,
+      validée le 24/10. Pastille rouge « ! » sur 💾 Sauvegardes et consigne
+      dans la tuile quand elle est rouge : essayées en local seulement (faux
+      GitHub), jamais vues en vrai faute d'incident.
+   4. **AG-029 appliqué le 22/10** (`ecb6544`) : le contrôle ne compte plus le
+      jour en cours (cause du mail rouge de 3 h 33, run 39706363950).
+      Essais réels sur `main` : défaut, vert (run 24) ; `depuis` = aujourd'hui,
+      vert avec « présence quotidienne non évaluée » (run 25). Reste : la
+      requête-témoin pour une vraie fraîcheur des journaux, évolution à arbitrer.
+   5. **Annexe A et registre V0.7 (22/10)** : annexe courte **V0.3** rédigée
+      (3 pages, `ateliers-backups`, `docs: annexe A V0.3`) sur proposition de
+      Codex corrigée par Claude ; V0.2 (8 pages) archivée et gardée comme
+      dossier de preuves. Les six corrections du registre V0.7 sont faites.
+      **À valider par l'utilisateur** : la V0.3 (place laissée aux IA, ligne
+      « relecture humaine du code à proposer à la direction »). Les deux
+      lacunes du registre V0.7 sont comblées (§6.7 détection et réponse, revues
+      du 21-22/10 en §8.5).
+01. **XSS du 01/10 revérifiée le 23/10** (AG-030, confirmé par Codex ;
+   registre de sécurité V0.8 §10) : aucun point exploitable dans NEWGEN.
+   NextStep : vérifié et rejoué par Codex le 23/10 (AG-031, confirmé), aucun
+   point trouvé. **Reste : auditer GDINV2** (code distinct : 94 insertions `innerHTML`
+   alimentées par un fichier Excel importé, même origine web que NEWGEN et
+   sms-mail-multi) — à mener dans son dépôt, avec Codex.
 0. **Rendez-vous DSI (préparé le 06/10)** : réponses aux questions attendues
    dans `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à
-   remettre : note avant/après V0.1 et registres V0.6. Restent à faire
-   avant : mail de validation à la DPO (écart n° 7), premier jet du tableau
-   de gestion pour les Archives départementales (écart n° 9), vérifier les
-   deux « ⚠️ » du document (compte transférable, alerte d'intrusion).
+   remettre : note avant/après V0.1 et registres V0.6. Reste à faire avant :
+   vérifier les deux « ⚠️ » du document (compte transférable, alerte
+   d'intrusion).
 
-1. **Écarts RGPD à porter à la DPO** (mail pas encore envoyé au 06/10) :
-   compte Alwaysdata personnel sans DPA, durée de conservation des ateliers
-   non fixée, mention d'information des agents, procédure de sortie ; **avis
-   des stagiaires (T6) mis en service avant son avis** (qualification, base
-   légale, remarques libres, seuil de 3 avis, écart n° 11).
-   **Élimination** (AG-024, Codex, 13/10) : faire confirmer par les Archives et
-   la DPO les catégories éliminables sans formalité — purge automatique de la
-   corbeille (30 jours) comme suppression définitive manuelle.
 2. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
 3. **Avant le 01/11/2026 : prévenir l'équipe** que le rappel du matin listera
@@ -119,18 +156,13 @@ sont datées du 05/10 à la demande de l'utilisateur.
 
 **Pour Claude**
 
-1. **Planning en essai** (depuis le 03/10, à côté de l'Agenda) : vers le
-   **20/10**, relire les compteurs d'onglets (Admin → Connexions) avec
-   l'utilisateur avant de retirer l'Agenda (bilan reporté au 20/10 par
-   l'utilisateur le 13/10) ; vue Mois ajoutée le 09/10, validée, affichée par
-   défaut : reste à trancher si le Calendrier garde sa place à côté. Ajouts
-   pendant l'essai : Disponibilités, clic pour créer, jours fériés.
-   Calendrier coupé matin / après-midi le 13/10 (comme l'Agenda) : l'utilisateur
-   veut retirer l'Agenda, décision le 20/10 avec les compteurs. Fait remonté le 07/10 : sur
-   téléphone, seuls lundi et mardi tiennent à l'écran, le reste de la
-   semaine se trouve en faisant défiler — l'utilisateur a cru un atelier
-   absent. Barres sans texte et conseillers sans aucun atelier masqués
-   depuis le 07/10 (testés).
+1. **Planning en essai** (depuis le 03/10, à côté de l'Agenda) : **le 20/10**,
+   relire avec l'utilisateur les compteurs d'onglets (Admin → Connexions) ;
+   il veut retirer l'Agenda (le Calendrier est coupé matin / après-midi comme
+   lui depuis le 13/10). Reste aussi à trancher si le Calendrier garde sa
+   place à côté de la vue Mois (affichée par défaut). Fait remonté le 07/10 :
+   sur téléphone, seuls lundi et mardi tiennent à l'écran, le reste se trouve
+   en faisant défiler — l'utilisateur a cru un atelier absent.
 2. **Mention d'information RGPD des agents** : texte proposé le 03/10, **mis
    en pause par l'utilisateur** — ne pas relancer sans sa demande.
 3. **Supports par atelier (pptx, docx…) — mis de côté le 04/10** : les
@@ -159,12 +191,18 @@ vont sur des branches `claude/…` à fusionner dans `main` — à vérifier au 
 le 1er avril, juillet et octobre. Copilot écarté le 07/10 (abonnement payant
 requis) ; Gemini en réserve.
 
-Hors liste, choix assumé : les noms `GAS_*`/`gasAppel`/`__gasLog` (~120
-occurrences, verrouillées par les tests réseau) restent, ils désignent la
-couche d'appel.
-
 ## À ne pas réapprendre — Alwaysdata et déploiement
 
+- **Correctif PHP d'Alwaysdata : redémarrer le site** (21/10/2026, faille
+  « PHP2Shell ») : `php -v` en SSH donnait 8.4.27 (corrigée) alors que l'API
+  tournait encore en 8.4.26. Web → Sites → Redémarrer a suffi. Contrôle de la
+  version servie : `diagnostic-api.yml` (section « php (web) »). Blocage
+  d'urgence : `echo 'Require all denied' > www/.htaccess` (403), `rm` pour
+  rouvrir. **SSH par clé seule depuis le 21/10/2026** (mot de passe
+  désactivé par l'utilisateur, déclaré) : les workflows (`deploy-api`,
+  `deploy-sandbox`, `diagnostic-api`, `copie.yml` d'ateliers-backups) passent
+  par clé. Pour une intervention à la main : réactiver le mot de passe, puis le
+  désactiver (procédure de restauration V0.3, section 3).
 - Un secret GitHub ne part au serveur qu'au **déploiement suivant** : après
   toute modification de secret, relancer « Déploiement API Alwaysdata ».
 - L'utilisateur MySQL est **sensible à la casse** (`…_michel`, pas
@@ -192,6 +230,11 @@ couche d'appel.
 
 ## Décisions de l'utilisateur à ne pas « corriger »
 
+- **Plus de démarche auprès de la DPD ni des Archives départementales
+  (16/10/2026)** : ne proposer ni mail, ni tableau de gestion, ni visa
+  d'élimination. Les écarts du registre RGPD V0.6 (n° 1, 2, 3, 5, 6, 7, 9 à
+  11) restent ouverts dans le registre ; s'ils doivent avancer, ce sera par
+  une autre voie choisie par l'utilisateur.
 - **Risques acceptés, audit du 01/10 (décidé le 02/10/2026)** :
   `StrictHostKeyChecking=accept-new` dans les workflows ; blocage de 15 min
   après 5 échecs par compte, sans compter l'IP ; SheetJS 0.18.5 gardé (ses
@@ -253,10 +296,6 @@ couche d'appel.
 - **Plafond d'avis = présents, à défaut inscrits** : le formulaire propose 4
   inscrits par défaut ; sans mise à jour des présents, le 5ᵉ stagiaire est
   refusé (rappelé dans la fenêtre du QR et la Nouveauté 28).
-- **Constantes `const` d'`utils.js` dans `logic.js`** : un `var` du même nom
-  fait échouer le chargement de `logic.js` dans les pages (redéclaration),
-  sans que les suites Node le voient — passer par `LOGIC_UTILS` (cas
-  `BILAN_CHOIX`, attrapé par `e2e/sandbox.spec.js` le 04/10).
 
 ## Points à ne pas défaire
 
@@ -289,11 +328,6 @@ couche d'appel.
   chemin.
 - **Couche réseau client gardée** : avec l'API elle ne sert que sur une
   vraie coupure (4G terrain).
-- **Un nom de composant ou de fonction n'est déclaré qu'une fois** entre
-  `shared.js`, `app.js` et `admin_app.js` : sinon le dernier chargé remplace
-  l'autre en silence. `scripts/parite.js` le signale (« définition écrasée »).
-- **NEWGEN charge `logic.js`** dans ses pages (lot 0 d'AG-015) : ce qui est
-  testé est ce qui tourne.
 
 ## Pistes d'amélioration
 
@@ -301,7 +335,8 @@ Règle 22 de MD-LIB `collaboration.md` : au plus 3 pistes, à la fin d'une
 fonctionnalité validée ou sur demande de revue. Une piste écartée ne se
 repropose pas sans fait nouveau.
 
-**Proposées, en attente** : aucune (10/10/2026).
+**Proposées, en attente** : aucune (24/10/2026 ; la pastille rouge de
+💾 Sauvegardes, proposée ce jour, a été retenue et faite).
 
 **Écartées** (date — piste — raison)
 - 03/10/2026 — lien d'abonnement agenda pour les partenaires — « pour l'instant » (utilisateur).

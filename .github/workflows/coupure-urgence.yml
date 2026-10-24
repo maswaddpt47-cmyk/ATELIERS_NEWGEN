@@ -1,0 +1,210 @@
+# Coupure d'urgence de l'API Alwaysdata (AGORA AG-027, 21/10/2026, amendé par
+# Codex). Né de la faille PHP « PHP2Shell » : couper a demandé un ordinateur,
+# le mot de passe SSH réactivé et des commandes tapées à la main. Ici, depuis
+# le téléphone : Actions → Coupure d'urgence → Run workflow.
+# - couper : pose un .htaccess « Require all denied » (403) ;
+# - rouvrir : le retire, seulement s'il contient exactement cette ligne.
+# Cibles :
+# - tout : ~/www/.htaccess (API, bac à sable et ses pages) ;
+# - bac-a-sable : ~/www/api-sandbox/.htaccess et ~/www/sandbox/.htaccess,
+#   pour les essais. Sans effet visible si « tout » est déjà coupé : refusé.
+# Seules les URL de VERIFIER sont contrôlées : un autre domaine éventuel du
+# compte n'est pas prouvé coupé. Les pages GitHub ne sont pas touchées.
+# Un .htaccess au contenu inconnu, ou un lien symbolique, n'est jamais écrasé
+# ni supprimé : le workflow s'arrête et le signale. Les tâches planifiées
+# (rappels, copie de nuit) continuent : elles ne passent pas par le web.
+# Ne nettoie pas un serveur compromis : il ferme la porte, rien de plus.
+# Un déploiement du bac à sable (deploy-sandbox.yml, rsync --delete) efface
+# www/sandbox/.htaccess : recouper après coup si besoin.
+# integrite-api.yml reconnaît ces fichiers comme des coupures voulues.
+# Jamais déclenché automatiquement : une alerte prévient, l'humain décide.
+name: Coupure d'urgence
+# Visible dans la liste des runs, y compris dans l'appli GitHub du téléphone.
+run-name: "Coupure d'urgence : ${{ inputs.action }} — ${{ inputs.cible }}"
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "couper ou rouvrir"
+        type: choice
+        options: [couper, rouvrir]
+      cible:
+        description: "tout (production comprise) ou bac-a-sable (essais)"
+        type: choice
+        options: [bac-a-sable, tout]
+      confirmation:
+        description: "Retaper le mot de l'action (couper / rouvrir), contre un appui par erreur"
+        required: true
+
+concurrency:
+  group: coupure-urgence
+  cancel-in-progress: false
+
+jobs:
+  coupure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirmation
+        env:
+          ACTION: ${{ inputs.action }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          c=$(printf '%s' "$CONFIRMATION" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
+          [ "$c" = "$ACTION" ] || { echo "::error::Confirmation « $CONFIRMATION » différente de « $ACTION » : rien n'est fait"; exit 1; }
+
+      - name: Préparer l'accès SSH
+        env:
+          CLE: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+          CIBLE: ${{ inputs.cible }}
+        run: |
+          [ -n "$CLE" ] && [ -n "$COMPTE" ] || { echo "::error::Secret ALWAYSDATA_SSH_KEY ou ALWAYSDATA_COMPTE absent"; exit 1; }
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "HOTE=$COMPTE@ssh-$COMPTE.alwaysdata.net" >> "$GITHUB_ENV"
+          b="https://$COMPTE.alwaysdata.net"
+          # URL contrôlées : api = point d'entrée PHP (réponse JSON ok:true
+          # attendue à la réouverture), page = page HTML du bac à sable.
+          case "$CIBLE" in
+            tout) echo "VERIFIER=api:$b/api/index.php api:$b/api-sandbox/index.php page:$b/sandbox/index.html" >> "$GITHUB_ENV";;
+            bac-a-sable) echo "VERIFIER=api:$b/api-sandbox/index.php page:$b/sandbox/index.html" >> "$GITHUB_ENV";;
+            *) echo "::error::Cible inconnue : $CIBLE"; exit 1;;
+          esac
+
+      - name: Appliquer
+        env:
+          ACTION: ${{ inputs.action }}
+          CIBLE: ${{ inputs.cible }}
+        # Les messages du serveur (« Déjà coupé », « REFUS »…) vont aussi dans
+        # le résumé du run : le journal seul est peu lisible sur téléphone.
+        run: |
+          set -o pipefail
+          st=0
+          ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 "$HOTE" ACTION="$ACTION" CIBLE="$CIBLE" 'bash -s' <<'FIN' | tee serveur.txt || st=$?
+          set -eu
+          attendu="Require all denied"
+          # Verrou : une seule intervention de ce script à la fois sur le
+          # serveur. Une session SSH tapée à la main n'est pas couverte : la
+          # pose et le retrait restent donc sans écrasement (voir plus bas).
+          exec 9>"$HOME/.coupure-urgence.lock"
+          flock -w 30 9 || { echo "REFUS : une autre coupure est en cours."; exit 4; }
+          case "$CIBLE" in
+            tout) fichiers="$HOME/www/.htaccess";;
+            bac-a-sable)
+              if [ -e "$HOME/www/.htaccess" ]; then
+                echo "REFUS : la coupure générale (www/.htaccess) est en place ; un essai sur le bac à sable ne prouverait rien."; exit 3
+              fi
+              fichiers="$HOME/www/api-sandbox/.htaccess $HOME/www/sandbox/.htaccess";;
+          esac
+          # Tout vérifier avant de toucher quoi que ce soit : jamais de coupure
+          # à moitié posée ou retirée.
+          for f in $fichiers; do
+            d=$(dirname "$f"); nom=${f#$HOME/}
+            [ -d "$d" ] && [ ! -L "$d" ] || { echo "REFUS : dossier ${d#$HOME/} absent ou lien symbolique ; rien n'est fait."; exit 3; }
+            [ -L "$f" ] && { echo "REFUS : $nom est un lien symbolique ; rien n'est fait."; exit 3; }
+            if [ -e "$f" ] && ! { [ -f "$f" ] && [ "$(cat "$f")" = "$attendu" ]; }; then
+              echo "REFUS : $nom existe avec un autre contenu que la coupure ; rien n'est fait."; exit 3
+            fi
+          done
+          tmp=""; trap 'rm -f "${tmp:-}"' EXIT
+          for f in $fichiers; do
+            d=$(dirname "$f"); nom=${f#$HOME/}
+            [ -d "$d" ] && [ ! -L "$d" ] || { echo "REFUS : dossier ${d#$HOME/} absent ou lien symbolique."; exit 3; }
+            if [ -L "$f" ]; then echo "REFUS : $nom est un lien symbolique ; rien n'est touché."; exit 3; fi
+            if [ "$ACTION" = couper ]; then
+              if [ -e "$f" ]; then
+                if [ -f "$f" ] && [ "$(cat "$f")" = "$attendu" ]; then echo "Déjà coupé : $nom"; continue; fi
+                echo "REFUS : $nom existe avec un autre contenu ; rien n'est écrasé."; exit 3
+              fi
+              # Temporaire unique dans le même dossier, puis lien dur : « ln »
+              # échoue si le fichier final est apparu entre-temps, il n'écrase
+              # jamais rien.
+              tmp=$(mktemp "$d/.coupure.XXXXXXXX")
+              printf '%s\n' "$attendu" > "$tmp"; chmod 644 "$tmp"
+              ln "$tmp" "$f" || { echo "REFUS : $nom est apparu pendant la pose ; rien n'est écrasé."; exit 3; }
+              rm -f "$tmp"; tmp=""
+              echo "Coupure posée : $nom"
+            else
+              [ -e "$f" ] || { echo "Déjà ouvert : $nom absent"; continue; }
+              # Retrait en deux temps : le fichier est d'abord mis de côté sous
+              # un nom unique (renommage atomique), puis vérifié. Si ce n'est
+              # pas la coupure, il est remis en place sans rien écraser.
+              tmp=$(mktemp -u "$d/.coupure-retrait.XXXXXXXX")
+              mv -T "$f" "$tmp"
+              if [ ! -L "$tmp" ] && [ -f "$tmp" ] && [ "$(cat "$tmp")" = "$attendu" ]; then
+                rm -f "$tmp"; tmp=""
+                echo "Coupure retirée : $nom"
+              else
+                if ln "$tmp" "$f" 2>/dev/null || mv -n -T "$tmp" "$f"; then rm -f "$tmp"; fi
+                tmp=""
+                echo "REFUS : $nom n'est pas la coupure d'urgence ; remis en place, rien n'est supprimé."; exit 3
+              fi
+            fi
+          done
+          FIN
+          {
+            echo "### Sur le serveur ($ACTION, $CIBLE)"
+            sed 's/^/- /' serveur.txt
+            [ "$st" = 0 ] || echo "- arrêt avec le code $st"
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Annotations : affichées en tête du run, hors du journal.
+          while IFS= read -r l; do echo "::notice::$l"; done < serveur.txt
+          exit $st
+
+      # Vérification depuis l'extérieur, comme un usager.
+      # - couper : 403 sur chaque URL ;
+      # - rouvrir : « blocage retiré » = plus de 403 ; « service opérationnel »
+      #   = HTTP 200 et, pour l'API, une réponse JSON ok:true à action=logLogin
+      #   (sans donnée, mais passe par PHP et la connexion à la base : index.php
+      #   ouvre la base avant de traiter l'action). Le contenu n'est pas affiché.
+      - name: Vérifier depuis Internet
+        env:
+          ACTION: ${{ inputs.action }}
+          CIBLE: ${{ inputs.cible }}
+        run: |
+          echec=0; resume=""
+          for v in $VERIFIER; do
+            type=${v%%:*}; url=${v#*:}
+            for i in 1 2 3; do
+              rc=0
+              if [ "$type" = api ]; then
+                code=$(curl -sS -o corps.txt -w '%{http_code}' -m 15 -d action=logLogin "$url") || rc=$?
+              else
+                code=$(curl -sS -o corps.txt -w '%{http_code}' -m 15 "$url") || rc=$?
+              fi
+              ok=non
+              if [ "$rc" = 0 ] && [ "$code" = 200 ]; then
+                if [ "$type" = api ]; then grep -q '"ok":true' corps.txt && ok=oui
+                else grep -q 'shared.js' corps.txt && ok=oui; fi
+              fi
+              [ "$ACTION" = couper ] && [ "$rc" = 0 ] && [ "$code" = 403 ] && break
+              [ "$ACTION" = rouvrir ] && [ "$ok" = oui ] && break
+              sleep 5
+            done
+            rm -f corps.txt
+            chemin=${url#https://*/}
+            if [ "$ACTION" = couper ]; then
+              if [ "$rc" = 0 ] && [ "$code" = 403 ]; then l="coupé (HTTP 403)"
+              else l="NON COUPÉ (HTTP $code, curl $rc)"; echec=1; fi
+            else
+              if [ "$rc" != 0 ] || [ "$code" = 403 ]; then l="BLOCAGE TOUJOURS EN PLACE OU INJOIGNABLE (HTTP $code, curl $rc)"; echec=1
+              elif [ "$ok" = oui ]; then l="blocage retiré, service opérationnel (HTTP 200)"
+              else l="blocage retiré, SERVICE NON OPÉRATIONNEL (HTTP $code)"; echec=1; fi
+            fi
+            echo "::notice::/$chemin : $l"; resume="$resume"$'\n'"- \`/$chemin\` : $l"
+          done
+          {
+            echo "### $ACTION — $CIBLE — $(TZ=Europe/Paris date '+%d/%m/%Y %H:%M') (heure de Paris)"
+            echo "$resume"
+            [ "$CIBLE" = tout ] && echo "" && echo "Seules ces URL sont contrôlées."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$echec" = 1 ]; then
+            if [ "$ACTION" = couper ]; then echo "::error::Coupure non constatée partout : couper par SSH (procédure de restauration, section 3)"
+            else echo "::error::Réouverture incomplète : voir le détail ci-dessus"; fi
+            exit 1
+          fi

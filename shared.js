@@ -1578,58 +1578,56 @@ function ComboOrienteur({value,onChange,entries,hasError}){
   );
 }
 
+// Catalogue des ateliers 2026-2027 du Département (mis à jour le 19/10/2026).
+// Libellé = titre de l'atelier, sans le détail qui suit les deux-points dans
+// le catalogue. La thématique reste un texte libre : un atelier saisi avec un
+// ancien libellé le garde, et le libellé reste proposé sous « Thèmes précédents ».
 const CATALOGUE_THEMATIQUES_GROUPED=[
   {cat:'A — Le numérique par l\'outil',items:[
     'Prendre en main l\'ordinateur',
-    'Prendre en main la tablette',
-    'Prendre en main le smartphone',
-    'Télécharger et gérer ses applis (iOS, Android)',
-    'Naviguer sur internet',
+    'Prendre en main le smartphone / la tablette',
+    'Télécharger et gérer ses applications',
+    'Savoir naviguer sur Internet',
     'Sécuriser son environnement numérique',
   ]},
   {cat:'B — Le numérique pour le quotidien',items:[
-    'Prendre en main sa boite mail',
-    'Recevoir et envoyer un mail avec pièce jointe',
-    'Créer son identité numérique (FranceConnect)',
-    'Démarches administratives en ligne (servicepublic.fr, boussole des jeunes…)',
-    'Espace personnel site administratif (Ameli, CAF, MSA, Impôts…)',
-    'Espace personnel site médical (Mon espace santé, Doctolib…)',
-    'Outils numériques de scolarité (Pronote, Educonnect, Parcoursup…)',
-    'Solutions numériques pour la gestion de budget',
+    'Prendre en main et gérer sa boite mail',
+    'Démarches administratives en ligne, comment s\'y retrouver ?',
+    'Créer et gérer un espace personnel d\'un site médical (Mon espace santé, Doctolib…)',
+    'Découvrir les solutions numériques liées à la gestion de son budget',
     'Sécuriser ses achats en ligne et éviter les arnaques',
+    'S\'initier aux outils d\'Intelligence Artificielle (IA)',
   ]},
-  {cat:'C — Bureautique & stockage',items:[
-    'Traitement de texte',
-    'Tableur',
-    'Manier les PDF',
-    'Transférer et stocker ses fichiers (Drive, Cloud…)',
-    'Organiser ses fichiers multimédias',
+  {cat:'C — Le numérique pour le bureau',items:[
+    'S\'initier au traitement de texte',
+    'S\'initier au tableur',
+    'Gérer ses contenus numériques',
   ]},
-  {cat:'D — Emploi & formation',items:[
-    'Recherche d\'emploi (CV, lettre de motivation…)',
-    'Compte Personnel de Formation (CPF)',
-    'Sites JOB47 et France Travail',
+  {cat:'D — Le numérique pour l\'emploi et la mobilité',items:[
+    'Découvrir les solutions numériques liées à la recherche d\'emploi',
+    'Découvrir les solutions numériques liées à la mobilité',
+    'Découvrir les solutions numériques d\'autoformation',
   ]},
-  {cat:'E — Mobilité',items:[
-    'Solutions numériques liées à la mobilité (GPS, bus, covoiturage…)',
-  ]},
-  {cat:'F — Sécurité & citoyenneté numérique',items:[
+  {cat:'E — Le numérique responsable',items:[
     'Cybersécurité',
-    'Découverte des réseaux sociaux',
-    'Réseaux sociaux et jeunesse',
-    'E-réputation',
-    'Écrans et jeunesse',
-  ]},
-  {cat:'G — Environnement & IA',items:[
+    'Données personnelles',
+    'Souveraineté numérique',
     'Numérique et environnement',
-    'Intelligence artificielle (IA)',
   ]},
-  {cat:'H — Culture & loisirs numériques',items:[
-    'Plateforme ressources numériques de la Médiathèque Départementale',
-    'Regarder et écouter (films, musiques)',
-    'Lire (e-book)',
-    'Apprendre et s\'informer (autoformation, presse)',
-    'Visites virtuelles (musées, opéras, théâtres…)',
+  {cat:'F — Le numérique pour la jeunesse',items:[
+    'Réseaux sociaux et jeunesse',
+    'Cyberharcèlement',
+    'Éducation aux médias et à l\'information (EMI)',
+    'Écrans et jeunesse',
+    'Être parent à l\'ère du numérique',
+    'Contrôle parental',
+  ]},
+  {cat:'G — Le numérique pour se divertir',items:[
+    'Découvrir la plateforme des ressources numériques de la Médiathèque Départementale',
+    'Découvrir les sites de visites virtuelles',
+    'Découvrir les réseaux sociaux',
+    'Atelier débat « Café IA »',
+    'Découvrir les outils de création numérique',
   ]},
 ];
 const CATALOGUE_THEMATIQUES=CATALOGUE_THEMATIQUES_GROUPED.flatMap(g=>g.items);
@@ -3030,7 +3028,7 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
       CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--ok)'}},CE('b',null,kpi.realises),CE('span',null,'Réalisés'),kpi.total?CE('small',null,kpi.pct.realises+'%'):null),
       CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--err)'}},CE('b',null,kpi.annules),CE('span',null,'Annulés'),kpi.total?CE('small',null,kpi.pct.annules+'%'):null),
       CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--text-3)'},title:'Reportés et non réalisés'},CE('b',null,kpi.autres),CE('span',null,'Autres'),kpi.total?CE('small',null,kpi.pct.autres+'%'):null),
-      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--warn)'},title:'Présents / inscrits des ateliers réalisés'},CE('b',null,kpi.presents+'/'+kpi.inscrits),CE('span',null,'Présents'),kpi.inscrits?CE('small',null,kpi.tx+'%'):null)
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--warn)'},title:'Présents / inscrits des ateliers réalisés. Taux : ateliers dont les présents sont saisis ('+kpi.presentsTaux+'/'+kpi.inscritsTaux+')'},CE('b',null,kpi.presents+'/'+kpi.inscrits),CE('span',null,'Présents'),kpi.inscritsTaux?CE('small',null,kpi.tx+'%'):null)
     ),
     // Alerte retards v2
     nRetard>0&&CE('div',{className:'alerte-retard-v2'},
@@ -3646,20 +3644,20 @@ function ConseillerBarChart({entries}){
     const cs=[e.conseiller||'?'];
     if(e.co_animateur)cs.push(e.co_animateur);
     cs.forEach(c=>{
-      if(!cons[c])cons[c]={realises:0,planifies:0,annules:0,inscrits:0,presents:0};
-      if(e.statut==='Réalisé'){cons[c].realises++;cons[c].inscrits+=(parseInt(e.inscrits)||0);cons[c].presents+=(parseInt(e.presents)||0);}
+      if(!cons[c])cons[c]={realises:0,planifies:0,annules:0,inscrits:0,presents:0,liste:[]};
+      if(e.statut==='Réalisé'){cons[c].liste.push(e);cons[c].realises++;cons[c].inscrits+=(parseInt(e.inscrits)||0);cons[c].presents+=(parseInt(e.presents)||0);}
       else if(e.statut==='Planifié')cons[c].planifies++;
       else if(e.statut==='Annulé')cons[c].annules++;
     });
   });
   const data=Object.entries(cons).sort((a,b)=>b[1].realises-a[1].realises)
-    .map(([name,d])=>({name:trunc(name,14),...d,tx:d.inscrits>0?Math.round(d.presents/d.inscrits*100):0}));
+    .map(([name,d])=>{const tp=tauxPresence(d.liste);return{name:trunc(name,14),...d,tx:tp.tx,presentsTx:tp.presents,inscritsTx:tp.inscrits};});
   if(!data.length)return CE(NoData,null);
   const h=Math.max(180,100+data.length*34);
   const option={
     backgroundColor:'transparent',grid:{top:8,right:60,bottom:30,left:8,containLabel:true},
     tooltip:{trigger:'axis',...EC_TT,...EC_APN,
-      formatter:params=>{const d=data[params[0].dataIndex];return`<b style="color:#60a5fa">${htmlEsc(d.name)}</b><br/><span style="color:#22c55e">✅ Réalisés : ${d.realises}</span><br/><span style="color:#3b82f6">📅 Planifiés : ${d.planifies}</span><br/><span style="color:#ef4444">❌ Annulés : ${d.annules}</span><br/><span style="color:#a78bfa;font-weight:700">👥 Présents : ${d.presents}/${d.inscrits} — ${d.tx}%</span>`;}},
+      formatter:params=>{const d=data[params[0].dataIndex];return`<b style="color:#60a5fa">${htmlEsc(d.name)}</b><br/><span style="color:#22c55e">✅ Réalisés : ${d.realises}</span><br/><span style="color:#3b82f6">📅 Planifiés : ${d.planifies}</span><br/><span style="color:#ef4444">❌ Annulés : ${d.annules}</span><br/><span style="color:#a78bfa;font-weight:700">👥 Présents : ${d.presents}/${d.inscrits} — taux ${d.tx}% (${d.presentsTx}/${d.inscritsTx} saisis)</span>`;}},
     legend:{data:['Réalisés','Planifiés','Annulés'],textStyle:{color:'#94a3b8',fontSize:10},bottom:0,icon:'roundRect',itemWidth:10,itemHeight:8},
     xAxis:{...EC_AXIS_BASE},
     yAxis:{type:'category',data:data.map(d=>d.name),axisLabel:{...EC_AXIS_LABEL,fontSize:11},axisLine:{show:false},axisTick:{show:false},splitLine:{show:false}},
@@ -3733,7 +3731,7 @@ function VueGraphiques({entries}){
   const total=passes.length;
   const totalInscrits=passes.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);
   const totalPresents=passes.reduce((s,e)=>s+(parseInt(e.presents)||0),0);
-  const txPresence=totalInscrits>0?Math.round(totalPresents/totalInscrits*100):0;
+  const txPresence=tauxPresence(passes).tx;
   const annules=filtered.filter(e=>e.statut==='Annulé').length;
   const todayYM=new Date().toISOString().slice(0,7);
   const fmtML=ym=>ym==='?'?'?':`${ym.slice(5,7)}-${ym.slice(0,4)}`;
@@ -4619,7 +4617,7 @@ function TableCommunesDashboard({fd}){
     const rl=r.filter(d=>d.statut==='Réalisé').length;
     const ins=kpiHistorique(r).inscrits;
     const pre=kpiHistorique(r).presents;
-    const tp=ins?Math.round(pre/ins*100):0;
+    const tp=kpiHistorique(r).tx;
     return{name:c,ateliers:r.length,realises:rl,inscrits:ins,presents:pre,presence:tp};
   }).sort((a,b)=>sortDir*(a[sortKey]>b[sortKey]?1:a[sortKey]<b[sortKey]?-1:0));
 
@@ -4736,7 +4734,7 @@ function VuePowerBI({entries, conseillers: conseillersList}){
   const tReal=total?Math.round(real/total*100):0;
   const totPre=kpiHistorique(fd).presents;
   const totIns=kpiHistorique(fd).inscrits;
-  const tPres=totIns?Math.round(totPre/totIns*100):0;
+  const tPres=kpiHistorique(fd).tx;
 
   // Par mois
   const pMois=MOIS_PBI.map((l,i)=>{
@@ -5351,7 +5349,7 @@ function CreneauxLibres({annees,entries,conseillers,conseillerFixe,onNouveau,onC
   function importerOlk(f){
     if(!f)return;const r=new FileReader();
     r.onload=()=>{const res=demiJourneesOccupeesICS(String(r.result||''));
-      const v={conseiller:cons,le:todayLocal(),occupees:res.occupees,ignores:res.ignores};
+      const v={conseiller:cons,le:todayLocal(),occupees:res.occupees,ignores:res.ignores,couvre:res.couvre||null};
       setOlk(v);try{localStorage.setItem(CLE_OLK,JSON.stringify(v));}catch(_){}
       showToast('✅ '+res.occupees.length+' demi-journée(s) occupée(s) lue(s) dans Outlook'+(res.ignores?' — '+res.ignores+' série(s) non lue(s)':''));};
     r.readAsText(f);
@@ -5361,6 +5359,8 @@ function CreneauxLibres({annees,entries,conseillers,conseillerFixe,onNouveau,onC
   const bascule=(liste,set,v)=>set(liste.includes(v)?liste.filter(x=>x!==v):[...liste,v].sort());
   const libres=React.useMemo(()=>creneauxLibres(entries,{conseiller:cons,du,au,jours,moments,bloques:olkActif?olkActif.occupees:[],
     estFerie:d=>joursFeries(+d.slice(0,4))[d]||''}),[entries,cons,du,au,jours,moments,olkActif]);
+  // Demi-journées prises (20/10/2026) : le partenaire affiché à côté du créneau libre.
+  const pris=React.useMemo(()=>creneauxPris(entries,{conseiller:cons,du,au,bloques:olkActif?olkActif.occupees:[]}),[entries,cons,du,au,olkActif]);
   // Sélection active (13/10/2026) : « Copier » ne prend que les cases cochées.
   const choisis=libres.filter(c=>sel.includes(c.date+'|'+c.demi));
   const grouper=liste=>{const g=[];liste.forEach(c=>{const l=g[g.length-1];if(l&&l.date===c.date)l.demis.push(c.demi);else g.push({date:c.date,demis:[c.demi]});});return g;};
@@ -5403,6 +5403,11 @@ function CreneauxLibres({annees,entries,conseillers,conseillerFixe,onNouveau,onC
           CE('button',{className:'btn btn-secondary btn-sm',style:{fontSize:11},onClick:retirerOlk},'Retirer'))
         :CE('span',{style:{color:'var(--text-3,#64748b)'}},'Dans Outlook : Fichier → Enregistrer le calendrier → « Disponibilité uniquement » → fichier .ics.'),
       CE('span',{style:{flexBasis:'100%',color:'#92400e'}},'Congés et absences : dans Outlook, réglez « Afficher en tant que » sur « Absent(e) » — un événement laissé en « Libre » n\'est pas exporté. L\'import reste sur cet appareil : après un effacement des cookies et données du site, rechargez votre fichier.')),
+    // Export Outlook plus court que la période (20/10/2026) : Outlook n'exporte
+    // par défaut que la journée en cours, les jours suivants paraissaient libres.
+    (()=>{const c=olkActif&&olkActif.couvre;if(!c||!du||!au||(du>=c.de&&au<=c.a))return null;
+      return CE('div',{style:{fontSize:13,fontWeight:600,color:'#b45309',background:'#fffbeb',border:'1px solid #fcd34d',borderRadius:8,padding:'8px 10px',marginBottom:10}},
+        '⚠️ Votre export Outlook ne couvre que '+(c.de===c.a?'le '+fmtDate(c.de):'du '+fmtDate(c.de)+' au '+fmtDate(c.a))+' : vos rendez-vous en dehors sont inconnus et ces jours peuvent paraître libres à tort. Dans Outlook : Fichier → Enregistrer le calendrier → Plus d\'options → Plage de dates « Spécifier les dates » (du '+fmtDate(du)+' au '+fmtDate(au)+'), puis rechargez le fichier ici.');})(),
     // Années de la période non chargées (13/10/2026) : leurs ateliers sont
     // absents d'`entries`, ces jours paraîtraient libres à tort.
     (()=>{if(!annees||!du||!au)return null;const ch=anneesListe(annees),manque=[];
@@ -5421,10 +5426,20 @@ function CreneauxLibres({annees,entries,conseillers,conseillerFixe,onNouveau,onC
             '🔄 Créer un cycle avec la sélection ('+sel.filter(k=>libres.some(c=>c.date+'|'+c.demi===k)).length+')'),
           sel.length>0&&CE('button',{className:'btn btn-secondary btn-sm',onClick:()=>setSel([])},'Vider'),
           CE('button',{className:'btn btn-secondary btn-sm',onClick:copier},choisis.length?'📋 Copier la sélection ('+choisis.length+')':'📋 Copier la liste'))),
-      CE('div',{style:{maxHeight:320,overflowY:'auto',border:'1px solid var(--border,#e2e8f0)',borderRadius:8}},
-        parDate.map(x=>CE('div',{key:x.date,style:{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',borderBottom:'1px solid var(--border,#e2e8f0)'}},
-          CE('span',{style:{fontSize:13,fontWeight:700,minWidth:120}},libJour(x.date)),
-          x.demis.map(dm=>CE('span',{key:dm,style:{display:'inline-flex',alignItems:'center',gap:3}},
+      // Colonnes fixes (20/10/2026) : matin et après-midi toujours au même
+      // endroit d'une ligne à l'autre ; une demi-journée prise = pastille 🔒,
+      // le partenaire au survol (PC) ou au toucher (bandeau, téléphone).
+      CE('div',{style:{maxHeight:320,overflowY:'auto',overflowX:'auto',border:'1px solid var(--border,#e2e8f0)',borderRadius:8}},
+        parDate.map(x=>CE('div',{key:x.date,style:{display:'grid',gridTemplateColumns:'7.5em '+moments.map(()=>'9.5em').join(' '),alignItems:'center',gap:8,padding:'6px 10px',borderBottom:'1px solid var(--border,#e2e8f0)'}},
+          CE('span',{style:{fontSize:13,fontWeight:700,whiteSpace:'nowrap'}},libJour(x.date)),
+          moments.map(dm=>!x.demis.includes(dm)?CE('span',{key:dm,style:{display:'inline-flex',alignItems:'center',gap:3}},
+            pris[x.date+'|'+dm]&&CE(React.Fragment,null,
+              onCycle&&CE('span',{style:{width:16,flex:'0 0 16px'}}),
+              CE('button',{type:'button',title:pris[x.date+'|'+dm],'aria-label':(dm==='AM'?'Matin':'Après-midi')+' pris : '+pris[x.date+'|'+dm],
+                onClick:()=>showToast('🔒 '+libJour(x.date)+', '+(dm==='AM'?'matin':'après-midi')+' : '+pris[x.date+'|'+dm]),
+                style:{padding:'3px 10px',borderRadius:12,fontSize:12,cursor:'help',border:'1px solid #cbd5e1',background:'#f1f5f9',color:'#64748b',whiteSpace:'nowrap'}},
+                '🔒 '+(dm==='AM'?'Matin':'Après-midi'))))
+          :CE('span',{key:dm,style:{display:'inline-flex',alignItems:'center',gap:3,whiteSpace:'nowrap'}},
             onCycle&&CE('input',{type:'checkbox',checked:sel.includes(x.date+'|'+dm),onChange:()=>cocher(x.date+'|'+dm),
               title:'Ajouter au cycle','aria-label':'Ajouter '+libJour(x.date)+' '+(dm==='AM'?'matin':'après-midi')+' au cycle',style:{width:16,height:16,margin:0,cursor:'pointer'}}),
             CE('button',{type:'button',disabled:!onNouveau,title:onNouveau?'Saisir un atelier ce '+(dm==='AM'?'matin':'après-midi'):undefined,
@@ -5499,7 +5514,8 @@ function VuePlanning({annees,entries,onEdit,onDelete,onDuplicate,canDelete,accen
   const hMin=Math.min(480,...items.map(x=>Math.floor(x.debut/60)*60));
   const hMax=Math.max(1080,...items.map(x=>Math.ceil(x.fin/60)*60));
   const span=hMax-hMin;
-  const LJ=150,NOM=104,VOIE=30;
+  // NOM : 130 depuis le 20/10/2026 (104 coupait « Cynthia Pineau »).
+  const LJ=150,NOM=130,VOIE=30;
   const parCase={};
   items.forEach(x=>{const k=x.nom+'|'+x.jour;(parCase[k]=parCase[k]||[]).push(x);});
   const nbVoies={};
@@ -6130,7 +6146,7 @@ function VueDashboard({entries}){
   const planifies=filtered.filter(e=>e.statut==='Planifié'&&e.date>=todayStr);
   const presents=realises.reduce((s,e)=>s+(parseInt(e.presents)||0),0);
   const inscrits=realises.reduce((s,e)=>s+(parseInt(e.inscrits)||0),0);
-  const txPresence=inscrits>0?Math.round(presents/inscrits*100):0;
+  const txPresence=tauxPresence(realises).tx;
   const txAnnul=filtered.length>0?Math.round(annules.length/filtered.length*100):0;
   const prevR=prevFiltered.filter(e=>e.statut==='Réalisé');
   const prevPresents=prevR.reduce((s,e)=>s+(parseInt(e.presents)||0),0);
