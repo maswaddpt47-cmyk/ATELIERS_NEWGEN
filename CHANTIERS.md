@@ -88,11 +88,17 @@ pas à jour ou si NextStep a des commits non poussés.
 - **Activité mensuelle — essai du 24/10/2026** (base `84a8a27`, branche
   `sandbox`) : demande de l'utilisateur, janvier à décembre avec les années
   côte à côte dans chaque mois. Une barre par année, empilée par statut ;
-  ordre des années indiqué et détail au toucher, filtres conservés. Vérifié
+  **année complète écrite sous chaque barre** (verticale pour tenir sur
+  téléphone), mois centré sur la seconde ligne. L'indication « de gauche à
+  droite » seule était insuffisante (retour utilisateur du 24/10).
+  Repères indépendants des statuts : restent visibles pour une valeur nulle
+  ou absente et quand la légende masque un statut. Détail au toucher et
+  filtres conservés. Vérifié
   dans Chromium avec données fictives : alignement et totaux, mois absent
   distinct de zéro, filtre mois, retrait des anciennes séries et légende
   commune aux années. À 390 px et 1280×720, pas de débordement de cette carte
-  ni de chevauchement des mois ; les deux années tiennent sans défilement à
+  ni de chevauchement des 24 repères d'année et des 12 mois ; mois centrés
+  sur leurs barres, totaux conservés. Les deux années tiennent sans défilement à
   390 px. Graphique `d45eb64` déployé dans le bac à sable (run **101** vert).
   Jeu d'essai complété par `sandbox_seed.php` : année courante et suivante,
   douze mois et trois conseillers fictifs, sans remplacer les essais déjà

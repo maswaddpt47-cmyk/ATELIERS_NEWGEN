@@ -3681,13 +3681,14 @@ function StackedActivityChart({data}){
     {name:'Planifiés',field:'planifies',color:'#3b82f6'}
   ];
   const monthKey=(year,i)=>`${year}-${String(i+1).padStart(2,'0')}`;
+  const columns=months.flatMap((month,i)=>years.map(year=>({year,key:monthKey(year,i)})));
   const axisColor=getComputedStyle(document.documentElement).getPropertyValue('--text-2').trim()||'#64748b';
   const option={
-    backgroundColor:'transparent',grid:{top:16,right:8,bottom:42,left:8,containLabel:true},
+    backgroundColor:'transparent',grid:{top:16,right:8,bottom:70,left:8,containLabel:true},
     tooltip:{trigger:'axis',...EC_TT,...EC_APN,confine:true,
       formatter:params=>{
         if(!params.length)return'';
-        const i=params[0].dataIndex;
+        const i=Math.floor(params[0].dataIndex/years.length);
         return`<b style="color:#60a5fa">${months[i]}</b>`+years.map(year=>{
           const d=data[monthKey(year,i)];
           if(!d)return`<br/><b>${year}</b> : aucune donnée dans la sélection`;
@@ -3695,21 +3696,27 @@ function StackedActivityChart({data}){
         }).join('');
       }},
     legend:{data:statuses.map(s=>s.name),textStyle:{color:axisColor,fontSize:11},bottom:0,icon:'roundRect',itemWidth:10,itemHeight:8},
-    xAxis:{type:'category',data:months,...EC_AXIS_BASE,splitLine:{show:false},axisLabel:{...EC_AXIS_LABEL,color:axisColor,interval:0}},
+    xAxis:[
+      {type:'category',data:columns.map(c=>c.year),...EC_AXIS_BASE,splitLine:{show:false},
+        axisLabel:{...EC_AXIS_LABEL,color:axisColor,interval:0,rotate:90,margin:8}},
+      {type:'category',data:months,...EC_AXIS_BASE,position:'bottom',offset:36,
+        splitLine:{show:true,lineStyle:{color:'rgba(148,163,184,.16)'}},
+        axisLabel:{...EC_AXIS_LABEL,color:axisColor,fontSize:11,fontWeight:600,interval:0,margin:8}}
+    ],
     yAxis:{...EC_AXIS_BASE,minInterval:1,axisLabel:{...EC_AXIS_LABEL,color:axisColor}},
-    series:years.flatMap(year=>statuses.map(s=>({
-      id:`${year}-${s.field}`,name:s.name,type:'bar',stack:year,barMaxWidth:24,barGap:'25%',
-      data:months.map((_,i)=>data[monthKey(year,i)]?.[s.field]??null),
+    series:statuses.map(s=>({
+      id:s.field,name:s.name,type:'bar',stack:'activity',barMaxWidth:24,barCategoryGap:'28%',
+      data:columns.map(c=>data[c.key]?.[s.field]??null),
       itemStyle:{color:s.color}
-    })))
+    }))
   };
   return CE('div',null,
     CE('p',{style:{fontSize:12,color:'var(--text-2,#64748b)',margin:'0 0 8px'}},
-      `${years.length>1?'Années de gauche à droite':'Année'} : ${years.join(' · ')} — selon les filtres actifs`),
+      `${years.length>1?'Comparaison':'Année'} : ${years.join(' · ')} — selon les filtres actifs`),
     CE('div',{style:{overflowX:'auto'}},
       CE('div',{style:{minWidth:Math.max(300,years.length*150)}},
         // Recréer le graphique si les années changent : ECharts fusionne sinon les anciennes séries.
-        CE(EChart,{key:years.join('-'),option,height:240})
+        CE(EChart,{key:years.join('-'),option,height:280})
       )
     )
   );
