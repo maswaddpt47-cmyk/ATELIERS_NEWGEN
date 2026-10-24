@@ -30,8 +30,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2860",
-      "NextStep shared.js:2674"
+      "NEWGEN shared.js:2873",
+      "NextStep shared.js:2689"
     ],
     "newgen": "baef7e677a/baef7e677a",
     "nextstep": "ca0c9b7a3b/ca0c9b7a3b",
@@ -57,8 +57,8 @@
       "NEWGEN shared.js:7",
       "NextStep shared.js:7"
     ],
-    "newgen": "cbc7e45266/cbc7e45266",
-    "nextstep": "dc8145ad7e/dc8145ad7e",
-    "note": "Styles propres à chaque design (v2 NEWGEN, menu latéral NextStep) — navigation « touche pas », 26/09/2026."
+    "newgen": "114ebee9b5/114ebee9b5",
+    "nextstep": "6b0ba36ee8/6b0ba36ee8",
+    "note": "Styles propres à chaque design (v2 NEWGEN, menu latéral NextStep) — navigation « touche pas », 26/09/2026. Revérifié le 24/10/2026 : mêmes reflets Liquid Glass dans les deux interfaces ; seule NextStep adapte le décalage du bandeau sandbox à son scroller mobile interne, sans changer la navigation de production."
   }
 }

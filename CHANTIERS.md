@@ -85,46 +85,6 @@ pas à jour ou si NextStep a des commits non poussés.
 
 ## Reste ouvert
 
-- **Activité mensuelle — essai du 24/10/2026** (base `84a8a27`, branche
-  `sandbox`) : demande de l'utilisateur, janvier à décembre avec les années
-  côte à côte dans chaque mois. Une barre par année, empilée par statut ;
-  **année complète écrite sous chaque barre** (verticale pour tenir sur
-  téléphone), mois centré sur la seconde ligne. L'indication « de gauche à
-  droite » seule était insuffisante (retour utilisateur du 24/10).
-  Repères indépendants des statuts : restent visibles pour une valeur nulle
-  ou absente et quand la légende masque un statut. Détail au toucher et
-  filtres conservés. Vérifié
-  dans Chromium avec données fictives : alignement et totaux, mois absent
-  distinct de zéro, filtre mois, retrait des anciennes séries et légende
-  commune aux années. À 390 px et 1280×720, pas de débordement de cette carte
-  ni de chevauchement des 24 repères d'année et des 12 mois ; mois centrés
-  sur leurs barres, totaux conservés. Les deux années tiennent sans défilement à
-  390 px. Graphique `d45eb64` déployé dans le bac à sable (run **101** vert).
-  Jeu d'essai complété par `sandbox_seed.php` : année courante et suivante,
-  douze mois et trois conseillers fictifs, sans remplacer les essais déjà
-  présents (`47c9839`, run **102** vert, tests PHP/MySQL et déploiement ; PHP
-  absent de cet environnement local).
-  **Liquid Glass avec relief**, demandé le 24/10 : reflets et bords ombrés
-  sur les barres/anneaux, fonds en verre, courbes et info-bulles assorties,
-  dans Synthèse, Analyse et Bilan mensuel. Valeurs, échelles et filtres
-  conservés ; labels des anneaux sur fond sombre pour rester lisibles.
-  Contrôlé avec ECharts/Chromium réels : callbacks de couleurs, pourcentages
-  et info-bulles, bord réellement assombri, transparence conservée ; Bilan
-  mensuel à 390 px et bascule clair/sombre sans débordement ni erreur JS.
-  **Effet Liquid Glass validé par l'utilisateur le 24/10/2026** (« Effet
-  glass réussi sinon », version `5047104`). Cette validation porte sur
-  l'effet visuel ; les repères d'année sous les barres restent à confirmer.
-  **Accès Admin** (`1613a76`) : la capture de l'utilisateur était sur
-  `/sandbox/` (interface conseillers). Le bandeau propose maintenant
-  « Conseillers » et « Administration » (`/sandbox/admin.html`), sans
-  changer les droits ni la connexion Admin. Parcours vérifié dans Chromium
-  avec API simulée : rubriques présentes ; bandeau/en-tête sans
-  chevauchement ni débordement à 390 px et 1280 px.
-  **Reste : validation des repères d'année dans le bac à sable**, puis même
-  changement dans NextStep et fusion en production dans les deux dépôts,
-  avec contrôle de parité et de déploiement. Ne pas ajouter d'annonce
-  `NOUVEAUTES` sans accord.
-
 **Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **35** (`admin: true` = annonce réservée à l'Admin, depuis le 04/10) ; jamais 12,
 16, 19, 24, 25, 26 ni 29 (publiés puis retirés). Les entrées des 03-04/10
 sont datées du 05/10 à la demande de l'utilisateur.
@@ -339,6 +299,16 @@ requis) ; Gemini en réserve.
 
 ## Points à ne pas défaire
 
+- **Graphiques communs (24/10/2026)** : effet Liquid Glass validé et
+  publication autorisée par l'utilisateur. Activité mensuelle : janvier à
+  décembre, années côte à côte avec l'année complète sous chaque barre et
+  le mois centré dessous ; couleurs réservées aux statuts. Les repères
+  d'année restent visibles même sans données ou après masquage d'un statut.
+  L'habillage conserve valeurs, échelles, filtres et échappement HTML.
+- **Démonstration (24/10/2026)** : faux ateliers sur l'année courante et la
+  suivante, sans remplacer les essais ; liens « Conseillers » et
+  « Administration » dans le bandeau du bac à sable, avec connexion Admin
+  habituelle. Aucun peuplement sans le garde-fou `bac_a_sable=true`.
 - Déjà dans `CLAUDE.md` §4-5 et verrouillés par les tests, non répétés ici :
   `_id` client gardé jusqu'au succès, écritures jamais doublées, plafonds,
   aucun appel superflu, `sw.js` de désinscription.
