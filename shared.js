@@ -720,9 +720,19 @@ const API_PHP_URL = urlApiPour(location.hostname, location.pathname);
 // production.
 if(API_PHP_URL.indexOf('/api-sandbox/')>=0){
   const poser=()=>{if(document.getElementById('bandeau-bac-a-sable'))return;const b=document.createElement('div');b.id='bandeau-bac-a-sable';
-    b.textContent='BAC À SABLE — fausses données, rien n\'arrive en production';
-    b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#ea580c;color:#fff;font:700 11px/18px sans-serif;text-align:center;pointer-events:none;letter-spacing:.04em';
-    document.body.appendChild(b);document.title='[BAC À SABLE] '+document.title;};
+    b.style.cssText='position:sticky;top:0;z-index:99999;background:#c2410c;color:#fff;font:700 11px/18px sans-serif;text-align:center;letter-spacing:.02em;padding:3px 8px;display:flex;gap:4px 14px;align-items:center;justify-content:center;flex-wrap:wrap';
+    const texte=document.createElement('span');texte.textContent='BAC À SABLE — fausses données, rien n\'arrive en production';b.appendChild(texte);
+    [['Conseillers','index.html'],['Administration','admin.html']].forEach(([label,href])=>{
+      const a=document.createElement('a');a.textContent=label;a.href=href;
+      a.style.cssText='color:#fff;text-decoration:underline;text-underline-offset:3px;padding:3px 5px';
+      if(location.pathname.endsWith(href)||(href==='index.html'&&location.pathname.endsWith('/')))a.setAttribute('aria-current','page');
+      b.appendChild(a);
+    });
+    document.body.prepend(b);document.title='[BAC À SABLE] '+document.title;
+    const s=document.createElement('style');s.textContent='.app-topbar-v2,.app-topbar,nav{top:var(--sandbox-banner-height)!important}';document.head.appendChild(s);
+    const ajuster=()=>document.documentElement.style.setProperty('--sandbox-banner-height',b.offsetHeight+'px');
+    ajuster();new ResizeObserver(ajuster).observe(b);
+  };
   if(document.body)poser();else document.addEventListener('DOMContentLoaded',poser);
 }
 // Un onglet resté sur ?backend=gas l'avait mémorisé : on l'efface.
