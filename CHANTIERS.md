@@ -87,27 +87,20 @@ pas à jour ou si NextStep a des commits non poussés.
 
 ## Reste ouvert
 
-### Contrôle utilisateur — Analyse et saisie, 25/10/2026
+### Chiffres métier — contrôle restant
 
-- Les trois pistes approuvées le 25/10/2026 sont réalisées sur les deux
-  interfaces : Analyse allégée, indicateurs précisés et saisie conservée
-  pendant la navigation. Code NEWGEN `e852863` (`shared.js?v=255`),
-  NextStep `a644767` (`shared.js?v=228`).
-- Vérifications CI et déploiements : NEWGEN run `40222729425`, NextStep
-  run `40222723294`, tous deux verts (36 tests navigateur NEWGEN, 50 NextStep). Les parcours couvrent conservation
-  One Shot/cycle, abandon refusé/accepté, reprise partielle sans doublon,
-  déconnexion/reconnexion et mesures à 390/1280 px.
-- **Saisie validée par l'utilisateur le 25/10/2026** : « La saisie est
-  bonne, ça fonctionne ». Ce retour porte sur la saisie.
-- **Reste à valider à l'œil par l'utilisateur** : lisibilité de l'Analyse.
-  Son annonce Nouveautés attend cette validation. L'annonce n° 35 porte
-  uniquement sur la saisie validée ; elle figure dans les deux applications.
 - Audit des chiffres métier sur export réel toujours non réalisé ; les
-  vérifications ci-dessus utilisent des données fictives.
+  vérifications de la livraison du 25/10/2026 utilisent des données fictives.
 
 **Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **36** (`admin: true` = annonce réservée à l'Admin, depuis le 04/10) ; jamais 12,
 16, 19, 24, 25, 26 ni 29 (publiés puis retirés). Les entrées des 03-04/10
 sont datées du 05/10 à la demande de l'utilisateur.
+
+**Choix du 25/10/2026** : saisie validée (« La saisie est bonne, ça fonctionne »),
+puis livraison confirmée par « Tout est OK ». Annonce n° 35 sur la conservation
+de la saisie uniquement, retenue explicitement par l'utilisateur ; l'Analyse
+n'est pas annoncée pour cette livraison. Pour la suite, proposer les annonces
+significatives et leur texte, puis attendre son choix (règle 18 de `CLAUDE.md`).
 
 **Actions de l'utilisateur**
 
