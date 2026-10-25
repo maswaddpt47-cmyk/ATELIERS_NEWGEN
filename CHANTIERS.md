@@ -89,11 +89,14 @@ pas à jour ou si NextStep a des commits non poussés.
 
 - **AM/PM après « Distribution horaire »** : format donut demandé par
   l'utilisateur. Deux parts AM orange et PM turquoise, pourcentages dans
-  l'anneau et dans la légende (y compris les petites parts), effectifs en
-  infobulle. Même population, calcul et exclusions : période sélectionnée,
+  l'anneau lorsque la place le permet et dans la légende pour toutes les
+  parts ; effectifs en infobulle. Même population, calcul et exclusions : période sélectionnée,
   tous statuts, AM/PM explicite sinon heure de début, arrondi au dixième
-  totalisant 100 %. Aucun graphique sans créneau renseigné. Préparé dans
-  les deux interfaces ; vérifications et publication sur `main` à suivre.
+  totalisant 100 %. Aucun graphique sans créneau renseigné. Livré sur
+  `main` : NEWGEN `8035f85` (`shared.js?v=242`), run `40191538645` ;
+  NextStep `9b45d53` (`shared.js?v=215`), run `40191535769`. CI et
+  déploiements verts : type donut, effectifs, pourcentages, exclusions,
+  état sans données et rendu 390/1280 px clair/sombre vérifiés.
 
 - **Décision utilisateur** : retirer les deux tableaux « Thématiques par
   commune » et « Partenaires par conseiller » ; ils alourdissent la page et
