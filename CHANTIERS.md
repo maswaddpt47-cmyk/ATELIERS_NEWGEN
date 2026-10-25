@@ -87,18 +87,13 @@ pas à jour ou si NextStep a des commits non poussés.
 
 ### Analyse des ateliers — 25/10/2026
 
-- **AM/PM après « Distribution horaire »** : l'utilisateur demande un
-  graphique, pas un tableau. Remplacement par deux barres horizontales
-  de pourcentage, AM orange et PM turquoise, échelle 0–100 %, valeurs
-  visibles et effectifs dans les infobulles. Même calcul et exclusions :
-  période sélectionnée, tous statuts, AM/PM explicite sinon heure de début,
-  arrondi au dixième totalisant 100 %, absence de graphique sans créneau
-  renseigné. Le tableau est retiré des deux interfaces. Livré sur `main` :
-  NEWGEN `8c8e922` (`shared.js?v=241`), run `40190028768` ; NextStep
-  `4c46383` (`shared.js?v=214`), run `40190024768`. CI et déploiements
-  vérifiés verts : barres et libellés 50/50, axe 0–100, exclusions, état
-  sans données et parcours annuels ; rendu 390/1280 px clair/sombre.
-  Le contrôle utilisateur reste à faire.
+- **AM/PM après « Distribution horaire »** : format donut demandé par
+  l'utilisateur. Deux parts AM orange et PM turquoise, pourcentages dans
+  l'anneau et dans la légende (y compris les petites parts), effectifs en
+  infobulle. Même population, calcul et exclusions : période sélectionnée,
+  tous statuts, AM/PM explicite sinon heure de début, arrondi au dixième
+  totalisant 100 %. Aucun graphique sans créneau renseigné. Préparé dans
+  les deux interfaces ; vérifications et publication sur `main` à suivre.
 
 - **Décision utilisateur** : retirer les deux tableaux « Thématiques par
   commune » et « Partenaires par conseiller » ; ils alourdissent la page et
