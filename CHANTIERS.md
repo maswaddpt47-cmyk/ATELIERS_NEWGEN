@@ -87,6 +87,12 @@ pas à jour ou si NextStep a des commits non poussés.
 
 ### Analyse des ateliers — 25/10/2026
 
+- **Ajout demandé après « Distribution horaire »** : petit tableau AM/PM,
+  avec nombre et pourcentage, total renseigné et créneaux manquants exclus
+  du dénominateur. Même population que le graphique Matin/Après-midi :
+  période sélectionnée, tous statuts ; AM/PM explicite, sinon heure de début.
+  Arrondi partagé au dixième, somme 100 %, tiret sans données. Préparé dans
+  les deux interfaces ; contrôles et publication sur `main` à suivre.
 - **Décision utilisateur** : retirer les deux tableaux « Thématiques par
   commune » et « Partenaires par conseiller » ; ils alourdissent la page et
   ne sont pas utiles dans son usage. Retrait demandé sur les deux sites,
