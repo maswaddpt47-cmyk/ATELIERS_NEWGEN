@@ -21,8 +21,8 @@
       "NEWGEN admin_app.js:180",
       "NextStep admin_app.js:172"
     ],
-    "newgen": "f00974e497/ee801337a0",
-    "nextstep": "b5f4466887/dbb4310489",
+    "newgen": "dfe6c14393/0d75282a8b",
+    "nextstep": "e7fd54fb77/7adbea903d",
     "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs. Revérifié le 21/10/2026 après le message de maintenance (#36/#37 et NextStep #24/#25) : changement identique dans les deux, seule la navigation diffère. Revérifié le 24/10/2026 après le bandeau Admin sur téléphone : même correctif (titre masqué, nom tronqué, boutons réduits à leur icône), adapté à la coquille de chaque appli. Revérifié le 24/10/2026 après la pastille de 💾 Sauvegardes : même lecture du veilleur, posée sur la barre du bas (NEWGEN) ou le menu latéral (NextStep)."
   },
   "VueHistorique": {
@@ -30,8 +30,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2873",
-      "NextStep shared.js:2689"
+      "NEWGEN shared.js:2877",
+      "NextStep shared.js:2693"
     ],
     "newgen": "baef7e677a/baef7e677a",
     "nextstep": "ca0c9b7a3b/ca0c9b7a3b",
@@ -57,8 +57,8 @@
       "NEWGEN shared.js:7",
       "NextStep shared.js:7"
     ],
-    "newgen": "114ebee9b5/114ebee9b5",
-    "nextstep": "6b0ba36ee8/6b0ba36ee8",
+    "newgen": "a39e721de1/a39e721de1",
+    "nextstep": "f380949986/f380949986",
     "note": "Styles propres à chaque design (v2 NEWGEN, menu latéral NextStep) — navigation « touche pas », 26/09/2026. Revérifié le 24/10/2026 : mêmes reflets Liquid Glass dans les deux interfaces ; seule NextStep adapte le décalage du bandeau sandbox à son scroller mobile interne, sans changer la navigation de production."
   }
 }

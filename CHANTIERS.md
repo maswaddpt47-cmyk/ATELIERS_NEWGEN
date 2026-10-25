@@ -85,6 +85,31 @@ pas à jour ou si NextStep a des commits non poussés.
 
 ## Reste ouvert
 
+### Analyse des ateliers — 25/10/2026
+
+- Périmètre approuvé : comparaison N/N−1 sur la même période écoulée,
+  historique non chargé/vide distingué de zéro ; tableaux complets
+  thématiques par commune et partenaires par conseiller, équipe configurée
+  visible à zéro, coanimation et informations manquantes conservées.
+- Sources de départ : NEWGEN `71f0257`, NextStep `914a64d`. Implémentation
+  dans les deux interfaces ; les lectures d'historique sont explicites,
+  partagées dans l'Analyse et invalidées après actualisation des ateliers.
+- Suites Node passées localement sur les deux projets ; syntaxe et parité
+  vérifiées. Deux parcours navigateur ajoutés : historiques absent/erreur,
+  reprise, lecture périmée, tableaux, échappement, 390/1280 px clair/sombre.
+  Leur exécution locale est bloquée par les sockets du bac d'exécution ;
+  vérification prévue par les workflows GitHub avant publication des pages.
+- **Instruction explicite de cette session : « Push sur main après ».**
+  Publication sur `main` NextStep puis NEWGEN après les vérifications ;
+  le circuit habituel du bac à sable reste inchangé pour les autres travaux.
+- Pas d'audit sur données métier réelles : copies chiffrées non ouvertes.
+  Contrôle utilisateur de Stats → Analyse et audit des chiffres avant leur
+  diffusion restent à faire. Aucune annonce Nouveautés avant validation.
+- Pertinence : autres graphiques conservés. Propositions en attente :
+  réunir Présents/mois et Inscrits/Présents ; retirer le repère de 70 % sans
+  objectif documenté ; alléger les vues horaires (elles décrivent l'offre,
+  pas les horaires préférés des participants).
+
 **Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **35** (`admin: true` = annonce réservée à l'Admin, depuis le 04/10) ; jamais 12,
 16, 19, 24, 25, 26 ni 29 (publiés puis retirés). Les entrées des 03-04/10
 sont datées du 05/10 à la demande de l'utilisateur.
