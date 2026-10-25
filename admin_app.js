@@ -183,6 +183,7 @@ function App(){
   const[jetonReinit,setJetonReinit]= React.useState(()=>window.jetonReinitUrl());
   const[adminConseiller,setAdminConseiller]= React.useState(()=>localStorage.getItem(lsKey('adm_conseiller'))||'');
   const[view,setView]           = React.useState('historique');
+  const controleSaisie=React.useRef(null);
   const navScrollRef=React.useRef(null);
   React.useEffect(()=>{majIndiceNav(navScrollRef.current);});
   React.useEffect(()=>{const f=()=>majIndiceNav(navScrollRef.current);window.addEventListener('resize',f);return()=>window.removeEventListener('resize',f);},[]);
@@ -311,7 +312,9 @@ const LOGS_KEY = lsKey('adm_logs');
     addLog('Session expirée (30 min inactivité)','info');
   }
   function handleLogout(){
-    if(!window.confirm('Se déconnecter ?'))return;
+    const saisie=controleSaisie.current;
+    if(saisie&&!saisie.confirmerSortie(saisie.modifiee?'Se déconnecter et abandonner la saisie en cours ?':undefined))return;
+    if(!saisie?.modifiee&&!window.confirm('Se déconnecter ?'))return;
     window.authToken.clear();
     clearSession();
     setAuth(false);
@@ -454,17 +457,18 @@ const LOGS_KEY = lsKey('adm_logs');
     catch(err){showToast('❌ '+err.message,false);}
   }
 
-  function handleEdit(id){setEditingId(id);setPrefillData(null);setView('saisie');}
+  function handleEdit(id){if(controleSaisie.current&&!controleSaisie.current.demanderRemplacement())return;setEditingId(id);setPrefillData(null);setView('saisie');}
   // Calendrier / Agenda (08/10/2026) : clic sur une case, import ICS.
-  function handleNouveauLe(date,conseiller,demi){setEditingId(null);setPrefillData({_creneau:date,_conseiller:conseiller||'',_demi:demi||''});setView('saisie');}
-  function handleCycleCreneaux(liste,conseiller){setEditingId(null);setPrefillData({_cycle:liste,_conseiller:conseiller||''});setView('saisie');}
-  function handleImportICS(){setEditingId(null);setPrefillData({_importICS:true});setView('saisie');}
+  function handleNouveauLe(date,conseiller,demi){if(controleSaisie.current&&!controleSaisie.current.demanderRemplacement())return;setEditingId(null);setPrefillData({_creneau:date,_conseiller:conseiller||'',_demi:demi||''});setView('saisie');}
+  function handleCycleCreneaux(liste,conseiller){if(controleSaisie.current&&!controleSaisie.current.demanderRemplacement())return;setEditingId(null);setPrefillData({_cycle:liste,_conseiller:conseiller||''});setView('saisie');}
+  function handleImportICS(){if(controleSaisie.current&&!controleSaisie.current.demanderRemplacement())return;setEditingId(null);setPrefillData({_importICS:true});setView('saisie');}
   // isNewEntry=true : déjà inséré dans `entries` via onNewEntry, inutile
   // d'attendre un aller-retour GAS complet pour afficher Historique — voir
   // le même commentaire côté Index (app.js).
   function handleSaved(isNewEntry,entry){ if(!isNewEntry) appliquerEntree(entry); setView('historique'); }
 
   function handleDuplicate(entry){
+    if(controleSaisie.current&&!controleSaisie.current.demanderRemplacement())return;
     const{_id,_n,date,horaire,ampm,inscrits,presents,remarques,...rest}=entry;
     setPrefillData({...rest});setEditingId(null);setView('saisie');
   }
@@ -545,7 +549,7 @@ const LOGS_KEY = lsKey('adm_logs');
         CE('button',{
           className:'topbar-changer-btn',
           title:'Changer d\'identité',
-          onClick:()=>{localStorage.removeItem(lsKey('adm_conseiller'));setAdminConseiller('');}
+          onClick:()=>{if(controleSaisie.current&&!controleSaisie.current.confirmerSortie())return;localStorage.removeItem(lsKey('adm_conseiller'));setAdminConseiller('');}
         },CE('span',{className:'topbar-ico-tel'},'👤'),CE('span',{className:'topbar-lbl'},'Changer')),
         CE('button',{
           className:'topbar-changer-btn',
@@ -559,8 +563,8 @@ const LOGS_KEY = lsKey('adm_logs');
     CE('main',{className:'app-main-v2'},
       loading&&CE(AttenteGAS,{titre:'Chargement des ateliers'}),
       error&&CE('div',{className:'error-box'},CE('strong',null,'❌ Impossible de charger'),CE('span',null,error),CE('button',{className:'btn btn-primary',onClick:()=>loadData()},'🔄 Réessayer')),
+      CE(SaisiePersistante,{key:'saisie-session',active:!loading&&!error&&view==='saisie'},CE(VueSaisie,{controleSaisie,entries,onSaved:handleSaved,onNewEntry:e=>{if(anneeIncluse(annee,e.date))setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(adminConseiller)})),
       !loading&&!error&&CE('div',{key:view,className:'view-anim'},
-        view==='saisie'&&CE(VueSaisie,{entries,onSaved:handleSaved,onNewEntry:e=>{if(anneeIncluse(annee,e.date))setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(adminConseiller)}),
         view==='historique'&&CE(VueHistorique,{key:'hist_'+adminConseiller,onOuvrirGestionOrdi:d=>{setDateGestionOrdi(d||null);setView('gestion_ordi');},entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,onResetConseiller:()=>{},onChangeConseiller:(c)=>{const nom=c==='Tous'?'admin':c;localStorage.setItem(lsKey('adm_conseiller'),nom);setAdminConseiller(nom);}}),
         view==='agenda'&&CE(VueAgendaSemaine,{onNouveau:handleNouveauLe,key:'agenda_'+adminConseiller,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:adminConseiller&&adminConseiller!=='admin'?adminConseiller:null,accentColor}),
         view==='planning'&&CE(VuePlanning,{annees:annee,onCycle:handleCycleCreneaux,onNouveau:handleNouveauLe,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,accentColor,conseillers:lists.conseillers}),
@@ -570,7 +574,7 @@ const LOGS_KEY = lsKey('adm_logs');
         view==='roadmap'&&CE(VueRoadmap,{entries,annee:anneeReference(annee),conseillers:lists.conseillers}),
         view==='bingo'&&CE(VueBingo,{entries}),
         view==='nouveautes'&&CE(VueNouveautes,{onVu:marquerNouveautes}),
-        view==='anomalies'&&CE(VueAnomalies,{entries,onEdit:(id)=>{setEditingId(id);setPrefillData(null);setView('saisie');},communes:window.COMMUNES_47_CACHE||[],apiFetch,showToast,addLog}),
+        view==='anomalies'&&CE(VueAnomalies,{entries,onEdit:handleEdit,communes:window.COMMUNES_47_CACHE||[],apiFetch,showToast,addLog}),
         view==='gestion_ordi'&&CE(VueGestionOrdi,{key:'go_'+(dateGestionOrdi||''),dateInitiale:dateGestionOrdi,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true}),
         view==='admin'&&role==='admin'&&CE(VueAdmin,{entries,onRefresh:()=>loadData(),addLog,conseillersList:lists.conseillers,onSaveColors:(c)=>{applyColors(c);},annee:anneeReference(annee),adminConseiller,initialVisibility:cachedVisibility}),
         view==='logs_connexion'&&(role==='admin'||role==='superviseur')&&CE(React.Fragment,null,CE(VueUsageOnglets,null),CE(VueLogs,null)),

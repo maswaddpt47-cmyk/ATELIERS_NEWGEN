@@ -256,6 +256,7 @@ function VueLoginIndex({conseillers,onSuccess}){
 function App(){
   const[authed,setAuthed]          = React.useState(()=>!!window.authToken.get());
   const[view,setView]              = React.useState('accueil');
+  const controleSaisie=React.useRef(null);
   const navScrollRef=React.useRef(null);
   React.useEffect(()=>{majIndiceNav(navScrollRef.current);});
   React.useEffect(()=>{const f=()=>majIndiceNav(navScrollRef.current);window.addEventListener('resize',f);return()=>window.removeEventListener('resize',f);},[]);
@@ -326,13 +327,17 @@ function App(){
   // ── Helpers ───────────────────────────────────────────────────
   function setAnnee(v){ localStorage.setItem(lsKey('f_annee'),v); setAnneeState(v); }
   function resetConseiller(){ setFiltreConseiller(null); }
+  function retourAccueil(){
+    if(controleSaisie.current&&!controleSaisie.current.confirmerSortie())return;
+    resetConseiller();setView('accueil');
+  }
   // ── Déconnexion automatique après 30 min d'inactivité (24/09/2026) ──────
   // Même règle que l'Admin, pour les postes partagés (médiathèques, lieux
   // d'accueil) : une session oubliée restait ouverte jusqu'à 6 h. Clé propre
   // à Index : l'activité sur l'Admin ne prolonge pas Index. EXCEPTION
-  // volontaire : jamais pendant la saisie d'un atelier (aucun brouillon
-  // n'est gardé, un conseiller qui anime son atelier perdrait sa saisie) —
-  // le compteur reprend en sortant du formulaire.
+  // volontaire : jamais pendant la saisie d'un atelier. La saisie reste en
+  // mémoire entre les onglets (25/10/2026), mais pas après fermeture ou
+  // rechargement ; le compteur reprend en sortant du formulaire.
   const vueCourante=React.useRef(view);
   vueCourante.current=view;
   React.useEffect(()=>{
@@ -363,7 +368,9 @@ function App(){
     };
   },[authed]);
   function handleLogout(){
-    if(!window.confirm('Se déconnecter ?'))return;
+    const saisie=controleSaisie.current;
+    if(saisie&&!saisie.confirmerSortie(saisie.modifiee?'Se déconnecter et abandonner la saisie en cours ?':undefined))return;
+    if(!saisie?.modifiee&&!window.confirm('Se déconnecter ?'))return;
     window.authToken.clear();
     setAuthed(false);
     setFiltreConseiller(null);
@@ -511,11 +518,11 @@ function App(){
     setView(visibility.historique?'historique':visibility.calendrier?'calendrier':visibility.saisie?'saisie':'dashboard');
     if(nom) sessionStorage.setItem('gs_conseiller', nom);
   }
-  function handleEdit(id){setEditingId(id);setPrefillData(null);setView('saisie');}
+  function handleEdit(id){if(controleSaisie.current&&!controleSaisie.current.demanderRemplacement())return;setEditingId(id);setPrefillData(null);setView('saisie');}
   // Calendrier / Agenda (08/10/2026) : clic sur une case, import ICS.
-  function handleNouveauLe(date,conseiller,demi){setEditingId(null);setPrefillData({_creneau:date,_conseiller:conseiller||'',_demi:demi||''});setView('saisie');}
-  function handleCycleCreneaux(liste,conseiller){setEditingId(null);setPrefillData({_cycle:liste,_conseiller:conseiller||''});setView('saisie');}
-  function handleImportICS(){setEditingId(null);setPrefillData({_importICS:true});setView('saisie');}
+  function handleNouveauLe(date,conseiller,demi){if(controleSaisie.current&&!controleSaisie.current.demanderRemplacement())return;setEditingId(null);setPrefillData({_creneau:date,_conseiller:conseiller||'',_demi:demi||''});setView('saisie');}
+  function handleCycleCreneaux(liste,conseiller){if(controleSaisie.current&&!controleSaisie.current.demanderRemplacement())return;setEditingId(null);setPrefillData({_cycle:liste,_conseiller:conseiller||''});setView('saisie');}
+  function handleImportICS(){if(controleSaisie.current&&!controleSaisie.current.demanderRemplacement())return;setEditingId(null);setPrefillData({_importICS:true});setView('saisie');}
   // ── Application locale d'une écriture déjà confirmée par GAS ───────────
   // Une modification ou une suppression déclenchait jusqu'ici un loadData()
   // complet : deux allers-retours au lieu d'un, le second étant le plus lent
@@ -554,6 +561,7 @@ function App(){
     catch(err){showToast('❌ '+err.message,false);}
   }
   function handleDuplicate(entry){
+    if(controleSaisie.current&&!controleSaisie.current.demanderRemplacement())return;
     const{_id,_n,date,horaire,ampm,inscrits,presents,remarques,...rest}=entry;
     setPrefillData({...rest});setEditingId(null);setView('saisie');
   }
@@ -699,7 +707,7 @@ function App(){
         ),
         !filtreConseiller&&CE('button',{
           className:'topbar-changer-btn',
-          onClick:()=>{ resetConseiller(); setView('accueil'); }
+          onClick:retourAccueil
         },'Changer'),
         CE('button',{
           className:'topbar-changer-btn',
@@ -716,8 +724,8 @@ function App(){
         CE(AttenteGAS,null),
         [1,2,3].map(i=>CE('div',{key:i,className:'skeleton skeleton-card'}))
       ),
+      visibility.saisie&&CE(SaisiePersistante,{key:'saisie-session',active:!loading&&!error&&view==='saisie'},CE(VueSaisie,{controleSaisie,conseillerDefaut:(()=>{try{return sessionStorage.getItem('gs_conseiller')||'';}catch(_){return '';}})(),entries,onSaved:handleSaved,onNewEntry:e=>{if(anneeIncluse(annee,e.date))setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')})),
       !loading&&!error&&CE('div',{className:'view-anim',key:view+'_'+(filtreConseiller||'all')},
-        view==='saisie'&&visibility.saisie&&CE(VueSaisie,{conseillerDefaut:(()=>{try{return sessionStorage.getItem('gs_conseiller')||'';}catch(_){return '';}})(),entries,onSaved:handleSaved,onNewEntry:e=>{if(anneeIncluse(annee,e.date))setEntries(prev=>[e,...prev]);setNewEntries(n=>[e,...n]);setSeenIds(s=>{const ns=new Set(s);ns.add(e._id);return ns;});},lists,editingId,onClearEdit:()=>setEditingId(null),prefillData,onClearPrefill:()=>setPrefillData(null),accentColor:conseillerColor(filtreConseiller||'')}),
         view==='historique'&&visibility.historique&&CE(VueHistorique,{onOuvrirGestionOrdi:visibility.gestion_ordi?(d=>{setDateGestionOrdi(d||null);setView('gestion_ordi');}):null,entries,onEdit:handleEdit,onDelete:handleDelete,onRefresh:()=>loadData(),onEntryUpdated:appliquerEntree,onDuplicate:handleDuplicate,initConseiller:filtreConseiller,onResetConseiller:()=>{},canDelete:true,onChangeConseiller:c=>setFiltreConseiller(c==='Tous'?null:c)}),
         view==='agenda'&&visibility.agenda&&CE(VueAgendaSemaine,{onNouveau:visibility.saisie?handleNouveauLe:undefined,entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,initConseiller:filtreConseiller,accentColor}),
         view==='planning'&&visibility.planning&&CE(VuePlanning,{annees:annee,onCycle:visibility.saisie?handleCycleCreneaux:undefined,onNouveau:visibility.saisie?handleNouveauLe:undefined,conseillerFixe:(()=>{try{return sessionStorage.getItem('gs_conseiller')||'';}catch(_){return '';}})(),entries,onEdit:handleEdit,onDelete:handleDelete,onDuplicate:handleDuplicate,canDelete:true,accentColor,conseillers:conseillerActifs}),
