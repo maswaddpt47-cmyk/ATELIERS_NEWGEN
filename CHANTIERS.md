@@ -95,10 +95,13 @@ pas à jour ou si NextStep a des commits non poussés.
   distinction entre historique non chargé, année vide et zéro connu,
   chargement explicite, invalidation des lectures périmées et reprise
   après erreur. Les autres graphiques ne changent pas.
-- Retrait des composants, du calcul de matrices devenu inutile et de ses
-  tests spécifiques ; les parcours existants sont adaptés à la comparaison
-  annuelle. Syntaxe, suites Node et parité vérifiées localement ; contrôles
-  navigateur et déploiements à suivre dans la CI après le push.
+- Retrait des composants et du calcul de matrices devenu inutile ; parcours
+  existants adaptés à la comparaison annuelle. Livré sur `main` : NEWGEN
+  `812f026` (`shared.js?v=239`, `logic.js?v=12`), run `40188183932` ;
+  NextStep `61c50f2` (`shared.js?v=212`, `logic.js?v=22`), run `40188180578`.
+  Suites Node, syntaxe et parité vérifiées ; CI et déploiements verts,
+  32 tests navigateur NEWGEN et 46 NextStep. Mesures des deux feuilles
+  de style à 390/1280 px clair/sombre : aucun élargissement du document.
 - Le contrôle utilisateur reste distinct des essais synthétiques. Audit
   des chiffres sur données métier réelles toujours non réalisé (copies
   chiffrées non ouvertes). Aucune annonce Nouveautés avant validation.
