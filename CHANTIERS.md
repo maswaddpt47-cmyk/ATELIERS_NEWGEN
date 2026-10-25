@@ -100,12 +100,12 @@ pas à jour ou si NextStep a des commits non poussés.
 - **Saisie validée par l'utilisateur le 25/10/2026** : « La saisie est
   bonne, ça fonctionne ». Ce retour porte sur la saisie.
 - **Reste à valider à l'œil par l'utilisateur** : lisibilité de l'Analyse.
-  Son annonce Nouveautés attend cette validation ; la saisie peut désormais
-  être annoncée selon la règle 18 de `CLAUDE.md`.
+  Son annonce Nouveautés attend cette validation. L'annonce n° 35 porte
+  uniquement sur la saisie validée ; elle figure dans les deux applications.
 - Audit des chiffres métier sur export réel toujours non réalisé ; les
   vérifications ci-dessus utilisent des données fictives.
 
-**Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **35** (`admin: true` = annonce réservée à l'Admin, depuis le 04/10) ; jamais 12,
+**Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **36** (`admin: true` = annonce réservée à l'Admin, depuis le 04/10) ; jamais 12,
 16, 19, 24, 25, 26 ni 29 (publiés puis retirés). Les entrées des 03-04/10
 sont datées du 05/10 à la demande de l'utilisateur.
 
