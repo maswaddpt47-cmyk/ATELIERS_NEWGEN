@@ -85,12 +85,6 @@ pas à jour ou si NextStep a des commits non poussés.
 
 ## Reste ouvert
 
-- **Distribution horaire sans heures vides** (demande du 25/10) : sur
-  `sandbox` seulement (`01fbe33`, `shared.js?v=243`), déployé au bac à sable
-  le 25/10 à 14 h 27. **À tester par l'utilisateur**, puis `main` (NEWGEN) et
-  le même filtre dans NextStep (`shared.js:3613`), puis `main` reporté dans
-  `sandbox`.
-
 ### Analyse des ateliers — 25/10/2026
 
 - **AM/PM après « Distribution horaire »** : format donut demandé par
