@@ -95,12 +95,18 @@ pas à jour ou si NextStep a des commits non poussés.
   dans les deux interfaces ; les lectures d'historique sont explicites,
   partagées dans l'Analyse et invalidées après actualisation des ateliers.
 - Suites Node passées localement sur les deux projets ; syntaxe et parité
-  vérifiées. Deux parcours navigateur ajoutés : historiques absent/erreur,
-  reprise, lecture périmée, tableaux, échappement, 390/1280 px clair/sombre.
-  Leur exécution locale est bloquée par les sockets du bac d'exécution ;
-  vérification prévue par les workflows GitHub avant publication des pages.
+  vérifiées. CI complètes et déploiements verts : NEWGEN `5f865d9`
+  (`shared.js?v=238`, `logic.js?v=11`), run `40184492608`, 32 tests
+  navigateur ; NextStep `8e9723c` (`shared.js?v=211`, `logic.js?v=21`),
+  run `40184487768`, 46 tests navigateur. Contrôle des parcours absent/vide,
+  erreur/reprise, lecture périmée, équipe à zéro, coanimation et échappement.
+- Rendu mesuré dans Chromium CI avec les feuilles de style conseillers et
+  Admin : document à 390 px pour une fenêtre de 390 px et à 1280 px pour
+  1280 px, dans les deux thèmes ; tableaux défilants sans élargir la page.
+  Contraste des explications et légendes de tableaux : au moins 13,6:1.
+  Le contrôle visuel par l'utilisateur reste à faire.
 - **Instruction explicite de cette session : « Push sur main après ».**
-  Publication sur `main` NextStep puis NEWGEN après les vérifications ;
+  Publication sur `main` NextStep puis NEWGEN effectuée et vérifiée ;
   le circuit habituel du bac à sable reste inchangé pour les autres travaux.
 - Pas d'audit sur données métier réelles : copies chiffrées non ouvertes.
   Contrôle utilisateur de Stats → Analyse et audit des chiffres avant leur
