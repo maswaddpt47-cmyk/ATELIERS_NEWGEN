@@ -118,9 +118,8 @@ pas à jour ou si NextStep a des commits non poussés.
 - Le contrôle utilisateur reste distinct des essais synthétiques. Audit
   des chiffres sur données métier réelles toujours non réalisé (copies
   chiffrées non ouvertes). Aucune annonce Nouveautés avant validation.
-- Autres propositions en attente : réunir les deux vues de présence,
-  retirer le repère de 70 % sans objectif documenté et alléger les vues
-  horaires. Ne pas les appliquer dans le retrait des tableaux.
+- Propositions en attente : tenues dans la section « Pistes d'amélioration »
+  (allègement de l'Analyse, sens des indicateurs et conservation de la saisie).
 
 **Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **35** (`admin: true` = annonce réservée à l'Admin, depuis le 04/10) ; jamais 12,
 16, 19, 24, 25, 26 ni 29 (publiés puis retirés). Les entrées des 03-04/10
@@ -383,9 +382,34 @@ initiative dès l'analyse, recommandations argumentées et examen de la pertinen
 de l'existant. Règle 22 de MD-LIB copiée dans `CLAUDE.md` ; ce registre garde
 les pistes et les décisions, sans reproposer une piste écartée sans fait nouveau.
 
-**Proposées, en attente** : aucune (25/10/2026 ; les deux pistes du jour —
-animations coupées si « réduire les animations », Synthèse à 360 px — ont été
-retenues et faites).
+**Proposées, en attente** — 25/10/2026, réalisation non approuvée :
+
+1. **Alléger l'Analyse.** Constat vérifié dans le code : deux donuts AM/PM
+   alimentés par le même `dataAmPm` (NEWGEN `shared.js` 4019/4056,
+   NextStep 3697/3735), et présence mensuelle présentée seule puis avec les
+   inscrits. Recommandation : garder le donut détaillé après Distribution
+   horaire, réunir les vues mensuelles de présence et placer le détail
+   horaire dans un bloc dépliable. Gain : moins de défilement ; charge
+   utilisateur : aucune saisie, un clic pour le détail. Reprend les pistes
+   d'allègement déjà ouvertes dans la rubrique Analyse.
+2. **Rendre le sens et la couverture des chiffres visibles.** Constats
+   vérifiés dans le code : « Participants présents » cumule les présences
+   aux séances, sans dédupliquer les personnes ; `tauxPresence` retourne
+   0 sans base exploitable et l'Analyse affiche alors « 0 % » ; le repère
+   de 70 % subsiste sans objectif documenté. Recommandation : libeller
+   « Participations », montrer le nombre d'ateliers avec présence saisie,
+   afficher « — » sans base de calcul et retirer le repère de 70 %.
+   Gain : limiter les interprétations erronées ; aucune saisie ajoutée.
+   Aucun audit des chiffres métier réels réalisé dans cette proposition.
+3. **Conserver la saisie pendant un aller-retour dans l'Agenda.** Constat
+   de code : formulaire porté par l'état React, démonté au changement de
+   vue ; absence de brouillon explicitée dans `app.js` (NEWGEN 333/719,
+   NextStep 370/884). Risque de ressaisie identifié ; fréquence réelle
+   des pertes non mesurée, parcours non rejoué. Recommandation : garder
+   temporairement le formulaire et le cycle en mémoire pendant la session,
+   les retrouver au retour, confirmer seulement un abandon volontaire.
+   Gain : éviter de tout ressaisir ; aucune étape sur le parcours normal,
+   évolution plus importante que les deux premières.
 
 **Écartées** (date — piste — raison)
 - 25/10/2026 — Tableaux thématiques × communes et partenaires × conseillers — retirés à la demande de l'utilisateur : alourdissent la page, jugés inutiles. Ne pas les reproposer sans fait nouveau.
