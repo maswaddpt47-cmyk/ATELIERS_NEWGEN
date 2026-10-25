@@ -87,34 +87,24 @@ pas à jour ou si NextStep a des commits non poussés.
 
 ### Analyse des ateliers — 25/10/2026
 
-- Périmètre approuvé : comparaison N/N−1 sur la même période écoulée,
-  historique non chargé/vide distingué de zéro ; tableaux complets
-  thématiques par commune et partenaires par conseiller, équipe configurée
-  visible à zéro, coanimation et informations manquantes conservées.
-- Sources de départ : NEWGEN `71f0257`, NextStep `914a64d`. Implémentation
-  dans les deux interfaces ; les lectures d'historique sont explicites,
-  partagées dans l'Analyse et invalidées après actualisation des ateliers.
-- Suites Node passées localement sur les deux projets ; syntaxe et parité
-  vérifiées. CI complètes et déploiements verts : NEWGEN `5f865d9`
-  (`shared.js?v=238`, `logic.js?v=11`), run `40184492608`, 32 tests
-  navigateur ; NextStep `8e9723c` (`shared.js?v=211`, `logic.js?v=21`),
-  run `40184487768`, 46 tests navigateur. Contrôle des parcours absent/vide,
-  erreur/reprise, lecture périmée, équipe à zéro, coanimation et échappement.
-- Rendu mesuré dans Chromium CI avec les feuilles de style conseillers et
-  Admin : document à 390 px pour une fenêtre de 390 px et à 1280 px pour
-  1280 px, dans les deux thèmes ; tableaux défilants sans élargir la page.
-  Contraste des explications et légendes de tableaux : au moins 13,6:1.
-  Le contrôle visuel par l'utilisateur reste à faire.
-- **Instruction explicite de cette session : « Push sur main après ».**
-  Publication sur `main` NextStep puis NEWGEN effectuée et vérifiée ;
-  le circuit habituel du bac à sable reste inchangé pour les autres travaux.
-- Pas d'audit sur données métier réelles : copies chiffrées non ouvertes.
-  Contrôle utilisateur de Stats → Analyse et audit des chiffres avant leur
-  diffusion restent à faire. Aucune annonce Nouveautés avant validation.
-- Pertinence : autres graphiques conservés. Propositions en attente :
-  réunir Présents/mois et Inscrits/Présents ; retirer le repère de 70 % sans
-  objectif documenté ; alléger les vues horaires (elles décrivent l'offre,
-  pas les horaires préférés des participants).
+- **Décision utilisateur** : retirer les deux tableaux « Thématiques par
+  commune » et « Partenaires par conseiller » ; ils alourdissent la page et
+  ne sont pas utiles dans son usage. Retrait demandé sur les deux sites,
+  avec publication sur `main` déjà autorisée dans cette session.
+- **À conserver** : comparaison N/N−1 sur la même période écoulée,
+  distinction entre historique non chargé, année vide et zéro connu,
+  chargement explicite, invalidation des lectures périmées et reprise
+  après erreur. Les autres graphiques ne changent pas.
+- Retrait des composants, du calcul de matrices devenu inutile et de ses
+  tests spécifiques ; les parcours existants sont adaptés à la comparaison
+  annuelle. Syntaxe, suites Node et parité vérifiées localement ; contrôles
+  navigateur et déploiements à suivre dans la CI après le push.
+- Le contrôle utilisateur reste distinct des essais synthétiques. Audit
+  des chiffres sur données métier réelles toujours non réalisé (copies
+  chiffrées non ouvertes). Aucune annonce Nouveautés avant validation.
+- Autres propositions en attente : réunir les deux vues de présence,
+  retirer le repère de 70 % sans objectif documenté et alléger les vues
+  horaires. Ne pas les appliquer dans le retrait des tableaux.
 
 **Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **35** (`admin: true` = annonce réservée à l'Admin, depuis le 04/10) ; jamais 12,
 16, 19, 24, 25, 26 ni 29 (publiés puis retirés). Les entrées des 03-04/10
@@ -380,6 +370,7 @@ repropose pas sans fait nouveau.
 💾 Sauvegardes, proposée ce jour, a été retenue et faite).
 
 **Écartées** (date — piste — raison)
+- 25/10/2026 — Tableaux thématiques × communes et partenaires × conseillers — retirés à la demande de l'utilisateur : alourdissent la page, jugés inutiles. Ne pas les reproposer sans fait nouveau.
 - 03/10/2026 — lien d'abonnement agenda pour les partenaires — « pour l'instant » (utilisateur).
 - 03/10/2026 — tri des onglets d'après les compteurs d'usage — « pour l'instant ».
 - 03/10/2026 — aide « Premiers pas » pour un nouvel arrivant — « pour l'instant ».
