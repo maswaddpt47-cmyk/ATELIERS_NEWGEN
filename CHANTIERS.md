@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **16/10/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **25/10/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
@@ -287,7 +287,9 @@ requis) ; Gemini en réserve.
 - Le rôle **superviseur** garde ses pouvoirs quasi admin (24/09) et **n'apparaît
   pas dans la liste de connexion d'Index** (26/09).
 - **Déconnexion automatique d'Index après 30 min** d'inactivité, jamais
-  pendant la saisie d'un atelier (aucun brouillon n'est gardé).
+  pendant la saisie d'un atelier. Conservation en mémoire entre onglets
+  approuvée le 25/10/2026 ; fermeture/rechargement et déconnexion
+  détruisent cette mémoire, le délai reste inchangé.
 - **Deux interfaces, une base** : l'équipe garde NextStep, l'utilisateur
   travaille sur NEWGEN ; toute modification d'interface se fait sur les deux.
 - **Interfaces, décidé le 26/09/2026**, non testés, à ne pas défaire : volet
@@ -382,7 +384,7 @@ initiative dès l'analyse, recommandations argumentées et examen de la pertinen
 de l'existant. Règle 22 de MD-LIB copiée dans `CLAUDE.md` ; ce registre garde
 les pistes et les décisions, sans reproposer une piste écartée sans fait nouveau.
 
-**Proposées, en attente** — 25/10/2026, réalisation non approuvée :
+**Retenues, en cours** — réalisation approuvée le 25/10/2026 (« Fait tout ») :
 
 1. **Alléger l'Analyse.** Constat vérifié dans le code : deux donuts AM/PM
    alimentés par le même `dataAmPm` (NEWGEN `shared.js` 4019/4056,
