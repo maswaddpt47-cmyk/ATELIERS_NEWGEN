@@ -87,39 +87,21 @@ pas à jour ou si NextStep a des commits non poussés.
 
 ## Reste ouvert
 
-### Analyse des ateliers — 25/10/2026
+### Contrôle utilisateur — Analyse et saisie, 25/10/2026
 
-- **AM/PM après « Distribution horaire »** : format donut demandé par
-  l'utilisateur. Deux parts AM orange et PM turquoise, pourcentages dans
-  l'anneau lorsque la place le permet et dans la légende pour toutes les
-  parts ; effectifs en infobulle. Même population, calcul et exclusions : période sélectionnée,
-  tous statuts, AM/PM explicite sinon heure de début, arrondi au dixième
-  totalisant 100 %. Aucun graphique sans créneau renseigné. Livré sur
-  `main` : NEWGEN `8035f85` (`shared.js?v=242`), run `40191538645` ;
-  NextStep `9b45d53` (`shared.js?v=215`), run `40191535769`. CI et
-  déploiements verts : type donut, effectifs, pourcentages, exclusions,
-  état sans données et rendu 390/1280 px clair/sombre vérifiés.
-
-- **Décision utilisateur** : retirer les deux tableaux « Thématiques par
-  commune » et « Partenaires par conseiller » ; ils alourdissent la page et
-  ne sont pas utiles dans son usage. Retrait demandé sur les deux sites,
-  avec publication sur `main` déjà autorisée dans cette session.
-- **À conserver** : comparaison N/N−1 sur la même période écoulée,
-  distinction entre historique non chargé, année vide et zéro connu,
-  chargement explicite, invalidation des lectures périmées et reprise
-  après erreur. Les autres graphiques ne changent pas.
-- Retrait des composants et du calcul de matrices devenu inutile ; parcours
-  existants adaptés à la comparaison annuelle. Livré sur `main` : NEWGEN
-  `812f026` (`shared.js?v=239`, `logic.js?v=12`), run `40188183932` ;
-  NextStep `61c50f2` (`shared.js?v=212`, `logic.js?v=22`), run `40188180578`.
-  Suites Node, syntaxe et parité vérifiées ; CI et déploiements verts,
-  32 tests navigateur NEWGEN et 46 NextStep. Mesures des deux feuilles
-  de style à 390/1280 px clair/sombre : aucun élargissement du document.
-- Le contrôle utilisateur reste distinct des essais synthétiques. Audit
-  des chiffres sur données métier réelles toujours non réalisé (copies
-  chiffrées non ouvertes). Aucune annonce Nouveautés avant validation.
-- Propositions en attente : tenues dans la section « Pistes d'amélioration »
-  (allègement de l'Analyse, sens des indicateurs et conservation de la saisie).
+- Les trois pistes approuvées le 25/10/2026 sont réalisées sur les deux
+  interfaces : Analyse allégée, indicateurs précisés et saisie conservée
+  pendant la navigation. Code NEWGEN `e852863` (`shared.js?v=255`),
+  NextStep `a644767` (`shared.js?v=228`).
+- Vérifications CI et déploiements : NEWGEN run `40222729425`, NextStep
+  run `40222723294`, tous deux verts (36 tests navigateur NEWGEN, 50 NextStep). Les parcours couvrent conservation
+  One Shot/cycle, abandon refusé/accepté, reprise partielle sans doublon,
+  déconnexion/reconnexion et mesures à 390/1280 px.
+- **À valider à l'œil par l'utilisateur** : lisibilité de l'Analyse et
+  aller-retour Nouveau → Agenda → Nouveau avec une saisie en cours.
+  Aucune annonce Nouveautés avant cette validation.
+- Audit des chiffres métier sur export réel toujours non réalisé ; les
+  vérifications ci-dessus utilisent des données fictives.
 
 **Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **35** (`admin: true` = annonce réservée à l'Admin, depuis le 04/10) ; jamais 12,
 16, 19, 24, 25, 26 ni 29 (publiés puis retirés). Les entrées des 03-04/10
@@ -337,6 +319,20 @@ requis) ; Gemini en réserve.
 
 ## Points à ne pas défaire
 
+- **Analyse (25/10/2026)** : un seul donut AM/PM, après le détail horaire
+  dépliable ; présence mensuelle réunie avec les inscrits. Pas de seuil
+  de réussite de 70 % ni d'objectif sans décision métier documentée.
+- **Unité et couverture (25/10/2026)** : participations = présences cumulées,
+  jamais personnes uniques. Taux seulement sur les ateliers réalisés avec
+  inscrits > 0 et présence saisie ; couverture visible. Sans base : « — » ;
+  une présence saisie à zéro reste un vrai zéro.
+- **Saisie (25/10/2026)** : formulaire/cycle et préparatifs Outlook/périodicité
+  restent en mémoire entre onglets, jamais stockés ni envoyés en plus.
+  Abandon/remplacement confirmés ; succès ou fin de session les efface.
+  Lignes de cycle adaptées à 390 px sur les deux interfaces.
+  Fermeture/rechargement détruit cette mémoire, avec avertissement si modifiée.
+  Les identifiants d'une écriture non confirmée restent stables à la reprise.
+
 - **Graphiques communs (24/10/2026)** : effet Liquid Glass validé et
   publication autorisée par l'utilisateur. Activité mensuelle : janvier à
   décembre, années côte à côte avec l'année complète sous chaque barre et
@@ -384,34 +380,7 @@ initiative dès l'analyse, recommandations argumentées et examen de la pertinen
 de l'existant. Règle 22 de MD-LIB copiée dans `CLAUDE.md` ; ce registre garde
 les pistes et les décisions, sans reproposer une piste écartée sans fait nouveau.
 
-**Retenues, en cours** — réalisation approuvée le 25/10/2026 (« Fait tout ») :
-
-1. **Alléger l'Analyse.** Constat vérifié dans le code : deux donuts AM/PM
-   alimentés par le même `dataAmPm` (NEWGEN `shared.js` 4019/4056,
-   NextStep 3697/3735), et présence mensuelle présentée seule puis avec les
-   inscrits. Recommandation : garder le donut détaillé après Distribution
-   horaire, réunir les vues mensuelles de présence et placer le détail
-   horaire dans un bloc dépliable. Gain : moins de défilement ; charge
-   utilisateur : aucune saisie, un clic pour le détail. Reprend les pistes
-   d'allègement déjà ouvertes dans la rubrique Analyse.
-2. **Rendre le sens et la couverture des chiffres visibles.** Constats
-   vérifiés dans le code : « Participants présents » cumule les présences
-   aux séances, sans dédupliquer les personnes ; `tauxPresence` retourne
-   0 sans base exploitable et l'Analyse affiche alors « 0 % » ; le repère
-   de 70 % subsiste sans objectif documenté. Recommandation : libeller
-   « Participations », montrer le nombre d'ateliers avec présence saisie,
-   afficher « — » sans base de calcul et retirer le repère de 70 %.
-   Gain : limiter les interprétations erronées ; aucune saisie ajoutée.
-   Aucun audit des chiffres métier réels réalisé dans cette proposition.
-3. **Conserver la saisie pendant un aller-retour dans l'Agenda.** Constat
-   de code : formulaire porté par l'état React, démonté au changement de
-   vue ; absence de brouillon explicitée dans `app.js` (NEWGEN 333/719,
-   NextStep 370/884). Risque de ressaisie identifié ; fréquence réelle
-   des pertes non mesurée, parcours non rejoué. Recommandation : garder
-   temporairement le formulaire et le cycle en mémoire pendant la session,
-   les retrouver au retour, confirmer seulement un abandon volontaire.
-   Gain : éviter de tout ressaisir ; aucune étape sur le parcours normal,
-   évolution plus importante que les deux premières.
+**Proposées, en attente** : aucune.
 
 **Écartées** (date — piste — raison)
 - 25/10/2026 — Tableaux thématiques × communes et partenaires × conseillers — retirés à la demande de l'utilisateur : alourdissent la page, jugés inutiles. Ne pas les reproposer sans fait nouveau.
