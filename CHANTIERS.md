@@ -93,8 +93,12 @@ pas à jour ou si NextStep a des commits non poussés.
   visibles et effectifs dans les infobulles. Même calcul et exclusions :
   période sélectionnée, tous statuts, AM/PM explicite sinon heure de début,
   arrondi au dixième totalisant 100 %, absence de graphique sans créneau
-  renseigné. Le tableau est retiré des deux interfaces ; contrôles et
-  publication sur `main` à suivre.
+  renseigné. Le tableau est retiré des deux interfaces. Livré sur `main` :
+  NEWGEN `8c8e922` (`shared.js?v=241`), run `40190028768` ; NextStep
+  `4c46383` (`shared.js?v=214`), run `40190024768`. CI et déploiements
+  vérifiés verts : barres et libellés 50/50, axe 0–100, exclusions, état
+  sans données et parcours annuels ; rendu 390/1280 px clair/sombre.
+  Le contrôle utilisateur reste à faire.
 
 - **Décision utilisateur** : retirer les deux tableaux « Thématiques par
   commune » et « Partenaires par conseiller » ; ils alourdissent la page et
