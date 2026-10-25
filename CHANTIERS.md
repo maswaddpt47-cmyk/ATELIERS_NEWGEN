@@ -382,12 +382,9 @@ Règle 22 de MD-LIB `collaboration.md` : au plus 3 pistes, à la fin d'une
 fonctionnalité validée ou sur demande de revue. Une piste écartée ne se
 repropose pas sans fait nouveau.
 
-**Proposées, en attente**
-- 25/10/2026 — graphiques : couper l'animation pour qui a réglé son téléphone
-  ou son PC sur « réduire les animations » (préférence d'accessibilité), comme
-  le fait déjà la pastille Nouveautés (`shared.js`, `prefers-reduced-motion`).
-- 25/10/2026 — Synthèse du Dashboard NextStep : 2 px de débordement à 360 px
-  (petits téléphones), mesuré le 25/10 ; rien à 390 px.
+**Proposées, en attente** : aucune (25/10/2026 ; les deux pistes du jour —
+animations coupées si « réduire les animations », Synthèse à 360 px — ont été
+retenues et faites).
 
 **Écartées** (date — piste — raison)
 - 25/10/2026 — Tableaux thématiques × communes et partenaires × conseillers — retirés à la demande de l'utilisateur : alourdissent la page, jugés inutiles. Ne pas les reproposer sans fait nouveau.
