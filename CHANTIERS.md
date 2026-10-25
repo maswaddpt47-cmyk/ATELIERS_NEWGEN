@@ -97,9 +97,11 @@ pas à jour ou si NextStep a des commits non poussés.
   run `40222723294`, tous deux verts (36 tests navigateur NEWGEN, 50 NextStep). Les parcours couvrent conservation
   One Shot/cycle, abandon refusé/accepté, reprise partielle sans doublon,
   déconnexion/reconnexion et mesures à 390/1280 px.
-- **À valider à l'œil par l'utilisateur** : lisibilité de l'Analyse et
-  aller-retour Nouveau → Agenda → Nouveau avec une saisie en cours.
-  Aucune annonce Nouveautés avant cette validation.
+- **Saisie validée par l'utilisateur le 25/10/2026** : « La saisie est
+  bonne, ça fonctionne ». Ce retour porte sur la saisie.
+- **Reste à valider à l'œil par l'utilisateur** : lisibilité de l'Analyse.
+  Son annonce Nouveautés attend cette validation ; la saisie peut désormais
+  être annoncée selon la règle 18 de `CLAUDE.md`.
 - Audit des chiffres métier sur export réel toujours non réalisé ; les
   vérifications ci-dessus utilisent des données fictives.
 
