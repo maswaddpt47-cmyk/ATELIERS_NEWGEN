@@ -60,9 +60,11 @@ décidée le 23/09 (AG-009), bascule faite le 25/09 au matin.
   à sable le 08/10 (le secret ne sert qu'au premier remplissage), fausses
   données seulement (`sandbox_seed.php` : ateliers, avis et fiches fictifs,
   quatre ateliers de test des conflits des 05-06/10). **Gardé pour les
-  essais** (utilisateur, 04/10). Circuit de toute nouveauté : branche
-  `sandbox` → test par l'utilisateur → fusion dans `main` → production NEWGEN
-  et NextStep → `main` reporté dans `sandbox`.
+  essais** (utilisateur, 04/10). **Depuis le 25/10 : directement en
+  production (`main`) sauf si l'utilisateur demande le bac à sable** ; dans le
+  doute, lui poser la question « sandbox ou main ». Passage par le bac à
+  sable : branche `sandbox` → test par l'utilisateur → fusion dans `main` →
+  production NEWGEN et NextStep → `main` reporté dans `sandbox`.
 
 ## 🔧 Parité NEWGEN/NextStep (AG-015)
 
