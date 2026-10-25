@@ -91,8 +91,13 @@ pas à jour ou si NextStep a des commits non poussés.
   avec nombre et pourcentage, total renseigné et créneaux manquants exclus
   du dénominateur. Même population que le graphique Matin/Après-midi :
   période sélectionnée, tous statuts ; AM/PM explicite, sinon heure de début.
-  Arrondi partagé au dixième, somme 100 %, tiret sans données. Préparé dans
-  les deux interfaces ; contrôles et publication sur `main` à suivre.
+  Arrondi partagé au dixième, somme 100 %, tiret sans données. Livré sur
+  `main` : NEWGEN `a4cfff2` (`shared.js?v=240`), run `40189289562` ;
+  NextStep `afd5395` (`shared.js?v=213`), run `40189285751`. Calculs
+  vérifiés sur jeux de contrôle ; syntaxe, parité, CI et déploiements verts.
+  Parcours navigateur avec parts 50/50, créneau manquant exclu et absence de
+  données ; contrôle du débordement et du contraste à 390/1280 px dans les
+  deux thèmes, avec les feuilles de style conseillers et Admin.
 - **Décision utilisateur** : retirer les deux tableaux « Thématiques par
   commune » et « Partenaires par conseiller » ; ils alourdissent la page et
   ne sont pas utiles dans son usage. Retrait demandé sur les deux sites,
