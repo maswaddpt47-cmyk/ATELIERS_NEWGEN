@@ -379,7 +379,11 @@ initiative dès l'analyse, recommandations argumentées et examen de la pertinen
 de l'existant. Règle 22 de MD-LIB copiée dans `CLAUDE.md` ; ce registre garde
 les pistes et les décisions, sans reproposer une piste écartée sans fait nouveau.
 
-**Proposées, en attente** : aucune.
+**Proposées, en attente**
+- 26/10/2026 — Bilan trimestriel : « Imprimer un bilan par conseiller » en un
+  clic (un PDF par CONUM, à la suite), au lieu de choisir chaque nom puis
+  imprimer. Utile si les bilans individuels sont remis à chaque CONUM ou à la
+  hiérarchie (hypothèse : usage non confirmé). Charge : faible.
 
 **Écartées** (date — piste — raison)
 - 25/10/2026 — Tableaux thématiques × communes et partenaires × conseillers — retirés à la demande de l'utilisateur : alourdissent la page, jugés inutiles. Ne pas les reproposer sans fait nouveau.
