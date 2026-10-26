@@ -5,7 +5,7 @@ var VIEW_META_F = {
   dashboard:  {ico:'📊',  label:'Dashboard',    group:'Voir'},
   bilans:     {ico:'📝',  label:'Mes bilans',   group:'Voir'},
   agenda:     {ico:'🗓️', label:'Agenda',        group:'Voir'},
-  planning:   {ico:'📊', label:'Planning',      group:'Voir'},
+  planning:   {ico:'🧑‍🤝‍🧑', label:'Planning',      group:'Voir'},
   calendrier: {ico:'📅',  label:'Calendrier',   group:'Voir'},
   carte:      {ico:'🗺️', label:'Carte',        group:'Voir'},
   roadmap:    {ico:'🛣️', label:'Roadmap',      group:'Voir'},

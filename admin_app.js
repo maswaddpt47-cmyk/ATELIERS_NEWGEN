@@ -159,7 +159,7 @@ var VIEW_META = {
   saisie:     { ico: '✏️',  label: 'Nouveau',        group: 'Action' },
   historique: { ico: '📋',  label: 'Historique',     group: 'Consulter' },
   agenda:     { ico: '🗓️', label: 'Agenda',          group: 'Consulter' },
-  planning:   { ico: '📊', label: 'Planning',        group: 'Consulter' },
+  planning:   { ico: '🧑‍🤝‍🧑', label: 'Planning',        group: 'Consulter' },
   calendrier: { ico: '📅',  label: 'Calendrier',     group: 'Consulter' },
   carte:      { ico: '🗺️', label: 'Carte',          group: 'Consulter' },
   roadmap:    { ico: '🛣️', label: 'Roadmap',         group: 'Consulter' },

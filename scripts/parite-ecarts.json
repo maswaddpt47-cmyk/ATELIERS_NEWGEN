@@ -22,8 +22,8 @@
       "NextStep admin_app.js:172"
     ],
     "newgen": "ad493007e8/5768235fe4",
-    "nextstep": "9afa7f40f2/b383887849",
-    "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs. Revérifié le 21/10/2026 après le message de maintenance (#36/#37 et NextStep #24/#25) : changement identique dans les deux, seule la navigation diffère. Revérifié le 24/10/2026 après le bandeau Admin sur téléphone : même correctif (titre masqué, nom tronqué, boutons réduits à leur icône), adapté à la coquille de chaque appli. Revérifié le 24/10/2026 après la pastille de 💾 Sauvegardes : même lecture du veilleur, posée sur la barre du bas (NEWGEN) ou le menu latéral (NextStep). Revérifié le 25/10/2026 : même conservation de saisie et mêmes confirmations dans les deux coquilles ; seuls les emplacements de navigation restent propres à chacune."
+    "nextstep": "3ffa0e5b6e/a99e44ca27",
+    "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs. Revérifié le 21/10/2026 après le message de maintenance (#36/#37 et NextStep #24/#25) : changement identique dans les deux, seule la navigation diffère. Revérifié le 24/10/2026 après le bandeau Admin sur téléphone : même correctif (titre masqué, nom tronqué, boutons réduits à leur icône), adapté à la coquille de chaque appli. Revérifié le 24/10/2026 après la pastille de 💾 Sauvegardes : même lecture du veilleur, posée sur la barre du bas (NEWGEN) ou le menu latéral (NextStep). Revérifié le 25/10/2026 : même conservation de saisie et mêmes confirmations dans les deux coquilles ; seuls les emplacements de navigation restent propres à chacune. Revérifié le 26/10/2026 après l'icône Planning (🧑‍🤝‍🧑) : même changement dans les deux."
   },
   "VueHistorique": {
     "statut": "voulu",
