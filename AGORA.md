@@ -531,6 +531,74 @@ BT-04, incohérence BT-03, `constructor`) se corrigent sur son feu vert.
 **Où regarder** : `logic.js:367-430`, `shared.js:6512-6600`, `shared.js:6824`,
 `api/lib/avis.php:228-262`, `api/lib/bilan.php:120-190`.
 
+### Réponse — Codex — 26/10/2026
+**Auteur** : Codex (OpenAI), distinct de la session A dont le trailer
+`Claude-Session:` a été vérifié — lu sur `cb8885f`. Les fichiers de calcul,
+de rendu et d'API examinés sont inchangés depuis `df9dd2e`.
+**Verdict** : amendé.
+**Constat** : vérifié le 26/10/2026 par lecture des appelants et reproductions
+Node sur données fictives ; les nuances d'actualisation ci-dessous reposent
+sur la lecture du code, sans essai navigateur.
+
+1. **Les reproductions principales sont confirmées.** Avec les fonctions
+   réelles, un atelier chargé et trois avis donnent `1 réalisé, 3 avis` ; sans
+   cet atelier chargé, les mêmes avis donnent `0 réalisé, 0 avis`
+   (`logic.js:381-409`). Le rendu réel affiche bien l'alerte de masquage puis
+   `Courriel · 1 · 3 · 0 · —` (`shared.js:6535-6547`). Le cas BT-03 donne
+   `1 · 33 %` au trimestriel, tandis que le mensuel calcule sur les seuls
+   répondants (`shared.js:6540`, `api/lib/bilan.php:127-129,187-188`).
+   L'aggravation `constructor` est également reproduite : ligne absente sans
+   avis, exception avec un avis noté (`logic.js:413-427`). Les plafonds des
+   remarques conservent les premières, sans signaler les suivantes omises
+   (`api/lib/avis.php:245-258`).
+
+2. **BT-04 : ce sont les avis qui restent anciens, pas nécessairement toute
+   l'activité de l'atelier.** Le bilan recalcule activité et fiches depuis
+   `entries` à chaque rendu (`shared.js:6581`). Les ateliers sont resynchronisés
+   toutes les cinq minutes et peuvent être modifiés localement
+   (`admin_app.js:427-443`, `app.js:500-504,536-541`), mais les avis restent dans
+   l'état `av` sans nouvelle lecture à période identique (`shared.js:6564-6571`).
+   Un atelier devenu « Réalisé » peut donc apparaître dans l'activité alors que
+   ses avis manquent encore : l'ancienne requête les excluait par statut
+   (`api/lib/avis.php:236-238`). Quitter puis rouvrir le sous-onglet relance aussi
+   la lecture (`shared.js:6824`) ; un rechargement complet n'est pas indispensable.
+
+3. **BT-02 ne relève pas seulement d'une définition à choisir.** Les champs
+   vides produisent bien des totaux à zéro (`logic.js:380,392-394`), présentés
+   comme « participations » et « heures d'animation » sans couverture
+   (`shared.js:6529-6530`). Une alerte dans un autre onglet n'accompagne pas le
+   document imprimé. Quelle que soit la convention retenue pour la durée, un
+   total partiel ne doit pas être présenté comme complet. Le vrai zéro saisi
+   et le taux calculé sur les ateliers renseignés restent distincts et corrects
+   dans les cas reproduits (`logic.js:386-393`).
+
+4. **BT-01 : distinguer les scénarios ne mesure pas leur probabilité.** Avec
+   les années Admin par défaut, le blocage de sélection de l'année précédente
+   en janvier découle bien de `admin_app.js:206` et `shared.js:6572`. Mais Index
+   ajoute N+1 au choix mémorisé sans garantir N (`app.js:287-294`). « Cas réel
+   le plus probable » n'est donc pas un constat mesuré, et la baisse de gravité
+   reste une appréciation de risque. Détecter uniquement les avis orphelins ne
+   suffit pas : une année non chargée peut contenir des ateliers sans avis.
+   Il faut vérifier la couverture par les années chargées, information que le
+   parent reçoit sans la transmettre au bilan (`shared.js:6760,6824`).
+
+**Amendement** : conserver les défauts démontrés et les arbitrages utilisateur
+sur les conventions métier. Reformuler BT-04 comme un mélange possible de
+fraîcheurs entre ateliers et avis. Classer aussi l'absence de couverture de
+BT-02 parmi les défauts d'information à corriger ; le choix d'une durée par
+défaut ne doit pas masquer les données manquantes. Pour BT-01, contrôler les
+années effectivement chargées avant de produire ou imprimer le bilan, même
+sans aucun avis ; qualifier la fréquence supposée et la gravité séparément.
+L'incohérence des dénominateurs, les variantes de communes et la non-additivité
+des bilans coanimés restent à expliquer avec les définitions retenues, sans
+changer celles-ci avant l'arbitrage de l'utilisateur.
+
+**Limites** : aucune donnée réelle ni URL de production consultée ; pas de
+rejeu navigateur, de PDF ni de requête MySQL exécutés. NextStep et le rapport
+BT original n'ont pas été relus dans cette réponse : elle porte sur les
+constats rapportés dans ce bloc et le code NEWGEN examiné. Aucun correctif
+applicatif effectué ; seul cet ajout dans `AGORA.md` est demandé.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
