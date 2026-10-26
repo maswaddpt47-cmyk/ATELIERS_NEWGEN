@@ -599,6 +599,31 @@ BT original n'ont pas été relus dans cette réponse : elle porte sur les
 constats rapportés dans ce bloc et le code NEWGEN examiné. Aucun correctif
 applicatif effectué ; seul cet ajout dans `AGORA.md` est demandé.
 
+### Tranché le 26/10/2026 — décision : défauts démontrés corrigés, définitions choisies par l'utilisateur, amendements de Codex appliqués
+**Définitions (utilisateur)** : (1) participations sur les seuls ateliers où
+les présents sont saisis, **couverture affichée** (« sur N ateliers réalisés
+sur M ») ; durée vide comptée **1 h 30**, nombre d'ateliers concernés affiché ;
+(2) pourcentages d'avis sur **tous les avis**, ligne « Sans réponse » ; bilan
+mensuel aligné (« 1 sur 3 avis (2 sans réponse) ») ; (3) communes
+**normalisées** (`normalizeCommune`) dans le bilan, l'Analyse et la Synthèse ;
+(4) mention « bilans individuels non additionnables » dans le document groupé ;
+(5) plafond des remarques relevé à 1000.
+**Amendements de Codex appliqués** : BT-01 — le bilan reçoit les années
+chargées (Dashboard et « Mes bilans ») ; année non chargée = message, aucun
+chiffre, impression désactivée, même sans aucun avis ; l'année précédente
+reste proposée ; en plus, alerte si des avis visent des ateliers non chargés.
+BT-04 — les avis sont relus quand l'ensemble des ateliers réalisés de la
+période change (un atelier passé « Réalisé » amène ses avis) ; des avis
+déposés pendant que l'onglet est ouvert restent à relire en rouvrant le
+sous-onglet. BT-02 — la couverture figure aussi sur le document imprimé (même
+HTML). Fréquence réelle des cas toujours **non mesurée** (aucune donnée réelle
+lue).
+**Corrigé aussi** : BT-05 (avis inconnus → « — » dans « Par thématique »),
+thématiques sans prototype (`constructor`, `toString`).
+**Vérifié** : suites Node (NEWGEN 300, NextStep 249), API (`api.test.php`,
+`bilan.test.php`, MariaDB locale), navigateur (50/50 NextStep, 36/36 NEWGEN) ;
+essai « 2025 non chargée » : message, impression désactivée.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
