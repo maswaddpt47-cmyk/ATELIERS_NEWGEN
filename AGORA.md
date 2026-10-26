@@ -473,6 +473,64 @@ manquant, `depuis` = aujourd'hui, date future/invalide) : conformes. **Non
 fait** : requête-témoin pour une vraie fraîcheur des journaux (évolution
 distincte, à arbitrer). Essai réel sur `main` à consigner dans `CHANTIERS.md`.
 
+## AG-032 — Bilan trimestriel : contre-lecture de l'audit Codex du 26/10/2026 — ouvert le 26/10/2026
+**Auteur** : session A (Claude, `Claude-Session: …session_01RFTEby5PGuwTBCMS9gdY2Y`) — lu sur `df9dd2e`
+(NEWGEN) et `31b6794` (NextStep), les commits audités par Codex. Rapport Codex
+« Vérification du Bilan trimestriel — 26/10/2026 » (BT-01 à BT-06), transmis
+par l'utilisateur. **Rien n'est corrigé** avant que ce bloc soit tranché.
+**Proposition** : retenir comme défauts démontrés BT-05, BT-01 (gravité
+amendée), BT-04, l'incohérence de BT-03 entre deux documents et la thématique
+`constructor` ; faire trancher par l'utilisateur les cinq définitions de la
+section « À trancher » avant tout correctif.
+**Critère déclencheur** : 2 (plusieurs définitions possibles, aucune écrite) ;
+chiffres montrés à la hiérarchie (MD-LIB `chiffres-diffuses.md`, règle 33).
+**Méthode** : `logic.js`/`utils.js` de production appelés en Node, rendu
+`htmlBilanTrimestriel` extrait de `shared.js` et exécuté tel quel, sur les
+deux dépôts : **résultats identiques à l'octet** (script de reproduction dans
+la session, données fictives, aucune donnée réelle). Les constats d'interface
+(BT-01, BT-04) sont établis par lecture du code, pas exécutés dans un navigateur.
+
+### Constat par constat — défauts démontrés
+
+| Réf. | Verdict sur Codex | Preuve (NEWGEN `df9dd2e`) | Reproduction |
+|---|---|---|---|
+| BT-05 | **confirmé** | `shared.js:6535` (alerte) puis `:6545` (tableau construit quand même) | lecture des avis en erreur : alerte affichée, ligne `Courriel · 1 · 3 · 0 · —` — « 0 avis » est inventé. Même chemin pour « résultats masqués » (moins de 3 avis, « Mes bilans »). |
+| BT-01 | **amendé (gravité)** | `shared.js:6824` (le bilan ne reçoit que `entries`), `:6568` (avis lus par date à l'API), `logic.js:409` (avis gardés s'ils touchent un atelier chargé) | même trimestre, 3 avis renvoyés par l'API : année non chargée → `0 réalisé, 0 avis` ; chargée → `1 réalisé, 3 avis`. Mécanisme confirmé. **Mais** le faux zéro exige une année proposée dans la liste et non chargée : l'Admin charge toujours N et N+1 à l'ouverture (`admin_app.js:206`), Index ajoute N+1 chaque année au choix enregistré (`app.js:287-294`). Cas réel le plus probable : **en janvier**, l'Admin (2027 et 2028 chargées) ne trouve pas 2026 dans le menu des années du bilan (`shared.js:6572`) — blocage, pas faux chiffre. Faux zéro silencieux seulement si l'utilisateur a décoché l'année en cours. Gravité : haute → **moyenne** ; le correctif reste nécessaire, l'API ayant de quoi le détecter (avis reçus mais aucun atelier correspondant). |
+| BT-04 | **confirmé par lecture** | `shared.js:6571` : avis relus seulement au changement de `debut`/`fin` | non exécuté. Effet : avis déposés ou atelier passé « Réalisé » après l'ouverture de l'onglet absents jusqu'au changement de trimestre ou au rechargement. Gravité basse à moyenne. |
+| BT-03 (incohérence) | **confirmé** | trimestriel : `shared.js:6540`, base = tous les avis (`v.n`) ; mensuel : `api/lib/bilan.php:129,187`, base = répondants (`autonomie IS NOT NULL`) ; l'API accepte la non-réponse (`api/lib/avis.php:213`) | 3 avis, 1 « Oui » et 2 sans réponse : trimestriel `1 · 33 %`, mensuel `1/1`. Deux documents, même population, deux dénominateurs : défaut démontré quelle que soit la définition retenue. |
+| Secondaire `constructor` | **confirmé et aggravé** | `logic.js:413` (`themes = {}`), `:423` | avec un avis : exception (`Cannot read properties of undefined (reading 'push')`, l'onglet tombe). **Sans avis : l'atelier disparaît du tableau sans erreur** (`parTheme = []`) — non relevé par Codex. Concerne aussi `toString`, `valueOf`… Probabilité réelle très faible (thématique libre en français), correctif d'une ligne. |
+| Remarques plafonnées | **confirmé** | `api/lib/avis.php:246` (`LIMIT 100`), `:256` (`LIMIT 500`), `ORDER BY v.id` | au-delà de 100 remarques sur le trimestre, **les plus récentes** sont coupées sans mention. Volume réel non mesuré. |
+
+### Constats qui sont des définitions — à trancher par l'utilisateur
+
+| Réf. | Ce qui est vrai | Contre-exemple / limite | Choix à faire |
+|---|---|---|---|
+| BT-02 | présences vides comptées 0 (`logic.js:392`), durée vide comptée 0 h (`:394`) : 2 ateliers réalisés sans présences ni durée → `0 participation, 0 h` | le taux reste juste (`null`, « — ») ; un **vrai** 0 saisi reste 0 (`presents:'0'` → taux 0 %). Les présences vides sur un « Réalisé » sont déjà signalées dans **Anomalies** (champ manquant) : c'est un défaut de saisie visible ailleurs, pas caché. Durée : 1 atelier sans durée + 1 de 90 min → 1,5 h, alors que le reste de l'appli prend 90 min par défaut (`DUREE_DEFAUT`) | (a) afficher « — » ou la couverture (« 11 participations sur 3 ateliers renseignés / 4 ») ; (b) durée vide = 0 h, 1 h 30 par défaut, ou exclue avec mention |
+| BT-03 (base) | pourcentages d'avis sur tous les avis, non-réponses invisibles | ni l'une ni l'autre base n'est fausse ; l'erreur est de ne pas dire laquelle | base = répondants (comme le mensuel) **ou** tous les avis avec une ligne « sans réponse » |
+| BT-06 | 3 graphies d'Agen → 3 communes (`logic.js:395`) ; `normalizeCommune` → 1 | `normalizeCommune` ne règle pas tout : « Sainte-Livrade-sur-Lot » / « Ste Livrade sur Lot » restent 2. **Même comptage brut** dans l'Analyse (`shared.js:4001`, graphique « Par commune »), alors que le Bingo normalise (`shared.js:4782`) : trois écrans, deux règles. Fréquence réelle non mesurée ; la saisie passe par la liste officielle et l'onglet Anomalies signale les noms hors liste | normaliser pour **tous** les comptages (bilan, Analyse) avec le même outil, ou corriger les données à la source |
+| Coanimation | 1 atelier de 1,5 h co-animé : `1,5 h` global, `1,5 h` Alice, `1,5 h` Bob | conforme au filtre voulu le 26/10 (animé **ou** co-animé) | mention « bilans individuels non additionnables » dans le document groupé, ou partage des heures |
+| Remarques | plafond 100 / 500 | — | relever le plafond, ou annoncer « 100 premières remarques sur N » |
+
+### Ce que la contre-lecture n'a pas pu vérifier
+- Fréquence réelle de chaque cas (présences ou durées vides, graphies de
+  communes, non-réponses, plus de 100 remarques) : aucune donnée réelle lue.
+  Un comptage par requête en lecture sur la base (nombres seuls, sans nom)
+  dirait lesquels pèsent vraiment.
+- BT-01 et BT-04 n'ont pas été rejoués dans un navigateur.
+- Rien sur le rendu imprimé réel (PDF).
+
+**Ce que ça engage** : les corrections de BT-02/03/06 changent des chiffres
+déjà diffusés (heures, taux d'avis, nombre de communes) : un bilan réimprimé ne
+donnera plus les mêmes valeurs que l'ancien.
+**Non vérifié par l'auteur** : voir ci-dessus ; en particulier l'hypothèse
+« cas de janvier » de BT-01 repose sur la lecture de `admin_app.js:206` et
+`app.js:287-294`, pas sur un essai.
+**Si personne ne répond, je fais quoi ?** — j'attends les choix de
+l'utilisateur sur les cinq définitions ; les défauts démontrés (BT-05, BT-01,
+BT-04, incohérence BT-03, `constructor`) se corrigent sur son feu vert.
+**Où regarder** : `logic.js:367-430`, `shared.js:6512-6600`, `shared.js:6824`,
+`api/lib/avis.php:228-262`, `api/lib/bilan.php:120-190`.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
