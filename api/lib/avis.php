@@ -243,7 +243,7 @@ function action_bilan_avis(PDO $db, array $p, array $session): array
         'rythme' => $r['rythme'], 'aise' => $r['aise'], 'autonomie' => $r['autonomie'], 'sujet' => $r['sujet']],
         $s->fetchAll(PDO::FETCH_ASSOC));
     $r = $db->prepare("SELECT v.remarque FROM avis v JOIN ateliers a ON a.id = v.atelier_id
-                       WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ?$f AND v.remarque <> '' ORDER BY v.id LIMIT 100");
+                       WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ?$f AND v.remarque <> '' ORDER BY v.id LIMIT 1000");   // relevé de 100 (AG-032)
     $r->execute(array_merge([$du, $au], $fp));
     $remarques = $r->fetchAll(PDO::FETCH_COLUMN);
     if ($f !== '' && count($avis) < AVIS_SEUIL) return ['ok' => true, 'avis' => [], 'remarques' => [], 'masque' => true, 'seuil' => AVIS_SEUIL];
@@ -253,7 +253,7 @@ function action_bilan_avis(PDO $db, array $p, array $session): array
     // atelier » ; le conseiller garde des remarques sans lien avec l'atelier.
     if ($f === '') {
         $ra = $db->prepare("SELECT v.atelier_id, v.remarque FROM avis v JOIN ateliers a ON a.id = v.atelier_id
-                            WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ? AND v.remarque <> '' ORDER BY v.id LIMIT 500");
+                            WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ? AND v.remarque <> '' ORDER BY v.id LIMIT 1000");   // relevé de 500 (AG-032)
         $ra->execute([$du, $au]);
         $rep['remarques_ateliers'] = $ra->fetchAll(PDO::FETCH_ASSOC);
     }

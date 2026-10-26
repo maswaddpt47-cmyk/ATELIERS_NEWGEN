@@ -175,7 +175,9 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
         return $cles ? implode(', ', array_map(fn($k) => "$k : {$compte[$k]}", $cles)) : '—';
     };
     $note = fn($v) => $v === null ? '—' : str_replace('.', ',', (string) round((float) $v, 1)) . '/5';
-    $part = fn($o, $n) => $n ? "$o sur $n" : '—';
+    // Base = tous les avis, non-réponses dites (AG-032, 26/10/2026) : même base
+    // que le bilan trimestriel, « 1 sur 3 avis (2 sans réponse) ».
+    $part = fn($o, $repondu, $total) => $total ? "$o sur $total avis" . ($total > $repondu ? ' (' . ($total - $repondu) . ' sans réponse)' : '') : '—';
     $lignesQualite = [
         ['Fiches bilan remplies', $q['fiches'] . ' sur ' . $q['realises'] . ' atelier(s) réalisé(s)'],
         ['Objectif atteint', $repart($q['objectif'], 'objectif')],
@@ -184,8 +186,8 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
         ['Avis des stagiaires', $av['n'] . ' avis sur ' . $av['ateliers'] . ' atelier(s)'],
         ['Réponse aux attentes', $note($av['attentes'])],
         ['Clarté', $note($av['clarte'])],
-        ['Plus à l\'aise (« oui »)', $part((int) $av['aise_oui'], (int) $av['aise_n'])],
-        ['Pourra refaire seul(e) (« oui »)', $part((int) $av['autonomie_oui'], (int) $av['autonomie_n'])],
+        ['Plus à l\'aise (« oui »)', $part((int) $av['aise_oui'], (int) $av['aise_n'], (int) $av['n'])],
+        ['Pourra refaire seul(e) (« oui »)', $part((int) $av['autonomie_oui'], (int) $av['autonomie_n'], (int) $av['n'])],
     ];
     $texte .= "\nQualité des ateliers réalisés :\n";
     foreach ($lignesQualite as [$l, $v]) $texte .= "- $l : $v\n";
