@@ -243,6 +243,10 @@ requis) ; Gemini en réserve.
 
 ## Décisions de l'utilisateur à ne pas « corriger »
 
+- **Pas d'annonce `NOUVEAUTES` réservée à l'Admin** (26/10/2026) : l'utilisateur
+  est le seul Admin, une annonce `admin: true` n'apprend rien à personne. Ne
+  plus en proposer.
+
 - **Plus de démarche auprès de la DPD ni des Archives départementales
   (16/10/2026)** : ne proposer ni mail, ni tableau de gestion, ni visa
   d'élimination. Les écarts du registre RGPD V0.6 (n° 1, 2, 3, 5, 6, 7, 9 à
