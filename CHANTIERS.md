@@ -87,6 +87,14 @@ pas à jour ou si NextStep a des commits non poussés.
 
 ## Reste ouvert
 
+- **AG-032, Bilan trimestriel (26/10)** : corrections en ligne (NEWGEN
+  `b63a61b` + API `5facad8`, NextStep `6ba579d`), déploiements ✅. **À valider
+  à l'écran par l'utilisateur** : mentions de couverture sous « Activité »,
+  ligne « Sans réponse » des avis, message d'année non chargée, document
+  « un bilan par conseiller ». Ensuite : sortir AG-032 de `AGORA.md` vers le
+  tableau des blocs tranchés (verdict Codex : amendé). Fréquence réelle des cas
+  jamais mesurée (comptage en lecture sur la base possible).
+
 ### Chiffres métier — contrôle restant
 
 - Audit des chiffres métier sur export réel toujours non réalisé ; les
