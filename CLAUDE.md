@@ -253,7 +253,7 @@ complète et justification : `MD-LIB/agora.md`.
 elle est la plus haute là où il raisonne sur ce qu'il n'a pas vérifié. Le
 déclenchement se fait sur des faits constatables dans le diff.
 
-**Soumettre un bloc dès qu'un de ces six critères est rempli :**
+**Soumettre un bloc dès qu'un de ces sept critères est rempli :**
 
 1. la décision **ferme une porte** — schéma de données, format `localStorage`,
    nouvelle dépendance, contrat entre `shared.js` et les applis ;
@@ -264,10 +264,16 @@ déclenchement se fait sur des faits constatables dans le diff.
 5. la proposition **contredit une note datée** de `CLAUDE.md`, `CHANTIERS.md`
    ou un commentaire de décision ;
 6. **coût irréversible côté usager** — perte de données, migration, rupture
-   d'une PWA déjà installée.
+   d'une PWA déjà installée ;
+7. **le changement touche un calcul ou un chiffre affiché** (indicateur, total,
+   taux, filtre, définition ; écran, export, impression) — **systématique,
+   quelle que soit sa taille** (décision du 26/10/2026, après AG-032).
+   Contradicteur : Codex. Bloc ouvert avant la correction, définitions métier
+   séparées des défauts démontrés et tranchées par l'utilisateur.
 
 **N'y vont pas :** un changement de rendu pur (règle 17), un correctif
-localisé appuyé sur une preuve, tout ce qui se défait en un commit.
+localisé appuyé sur une preuve, tout ce qui se défait en un commit — **sauf
+calcul ou chiffre affiché : critère 7, toujours.**
 
 **Comment :** écrire le bloc, le committer **sur `main` immédiatement**
 (exception assumée au workflow de branche de la section 1 — c'est du texte,
