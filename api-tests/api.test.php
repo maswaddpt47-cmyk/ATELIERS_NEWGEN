@@ -502,6 +502,8 @@ verifier(($bT['masque'] ?? false) && $bT['avis'] === [] && $bT['remarques'] === 
 $b = appel(['action' => 'bilanAvis'], $A + ['du' => $debut, 'au' => $auj]);
 verifier(count($b['avis'] ?? []) === 2 && $b['remarques'] === ['Merci'] && !array_key_exists('remarque', $b['avis'][0]) && !array_key_exists('cree_le', $b['avis'][0]),
     'bilan des avis : remarques à part, sans date ni lien avec l\'atelier');
+verifier(($b['remarques_ateliers'] ?? null) === [['atelier_id' => 'av_1', 'remarque' => 'Merci']] && !array_key_exists('remarques_ateliers', $bT),
+    'bilan des avis : lien remarque-atelier pour l\'Admin seul (filtre par conseiller) — ' . json_encode($b['remarques_ateliers'] ?? null));
 // Récapitulatif par atelier : tous statuts, remarques rattachées à l'atelier.
 $db->exec("UPDATE ateliers SET statut = 'Planifié' WHERE id = 'av_1'");
 verifier(appel(['action' => 'avisParAtelier'], ['du' => $debut, 'au' => $auj])['auth'] ?? false, 'récapitulatif des avis : réservé à l\'équipe connectée');

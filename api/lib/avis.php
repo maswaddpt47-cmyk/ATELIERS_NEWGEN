@@ -247,7 +247,17 @@ function action_bilan_avis(PDO $db, array $p, array $session): array
     $r->execute(array_merge([$du, $au], $fp));
     $remarques = $r->fetchAll(PDO::FETCH_COLUMN);
     if ($f !== '' && count($avis) < AVIS_SEUIL) return ['ok' => true, 'avis' => [], 'remarques' => [], 'masque' => true, 'seuil' => AVIS_SEUIL];
-    return ['ok' => true, 'avis' => $avis, 'remarques' => $remarques];
+    $rep = ['ok' => true, 'avis' => $avis, 'remarques' => $remarques];
+    // Admin seulement (26/10/2026) : chaque remarque avec son atelier, pour le
+    // filtre par conseiller du bilan. L'Admin voit déjà ce lien dans « Avis par
+    // atelier » ; le conseiller garde des remarques sans lien avec l'atelier.
+    if ($f === '') {
+        $ra = $db->prepare("SELECT v.atelier_id, v.remarque FROM avis v JOIN ateliers a ON a.id = v.atelier_id
+                            WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ? AND v.remarque <> '' ORDER BY v.id LIMIT 500");
+        $ra->execute([$du, $au]);
+        $rep['remarques_ateliers'] = $ra->fetchAll(PDO::FETCH_ASSOC);
+    }
+    return $rep;
 }
 
 // Récapitulatif des avis atelier par atelier (demande du 04/10/2026), à tout
