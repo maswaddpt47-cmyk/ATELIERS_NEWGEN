@@ -10,8 +10,8 @@ est soldé. Ce n'est pas de la documentation permanente (cf.
 époque GAS, récit de la parité, livraisons, audit Codex et ses corrections,
 récit de la faille PHP2Shell et des essais AG-027 à AG-029, décisions déjà
 verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
-26/10/2026** (AG-027 à AG-032 sortis ce jour).
+Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **AG-033 ouvert le
+27/10/2026** (bac à sable NextStep, Codex) ; AG-027 à AG-032 sortis le 26/10.
 
 ---
 
@@ -115,6 +115,10 @@ l'utilisateur.
 
 **Pour Claude**
 
+0. **Bac à sable NextStep (AG-033, 27/10/2026)** : demandé par l'utilisateur.
+   Pages dans `www/sandbox/nextstep/` (jamais hors `/sandbox/` : `urlApiPour`
+   enverrait vers l'API de production). Attend le choix A/B de l'utilisateur
+   et la réponse de Codex ; la branche `sandbox` a 45 commits de retard sur `main`.
 1. **Planning en essai** (depuis le 03/10, à côté de l'Agenda) : relecture
    des compteurs d'onglets (Admin → Connexions) prévue le 20/10, **pas encore
    faite** ; l'utilisateur veut retirer l'Agenda (le Calendrier est coupé
