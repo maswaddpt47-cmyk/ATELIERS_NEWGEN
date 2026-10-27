@@ -10,8 +10,8 @@ est soldé. Ce n'est pas de la documentation permanente (cf.
 époque GAS, récit de la parité, livraisons, audit Codex et ses corrections,
 récit de la faille PHP2Shell et des essais AG-027 à AG-029, décisions déjà
 verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
-27/10/2026** (AG-033 sorti ce jour).
+Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **AG-034 ouvert le
+27/10/2026** (Corbeille par conseiller, livrée, réponse de Codex attendue).
 
 ---
 

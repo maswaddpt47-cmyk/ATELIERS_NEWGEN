@@ -128,6 +128,16 @@ l'appui ; l'utilisateur vérifie au bac à sable.
 **Où regarder** : `api/lib/ecriture.php:601-640`, `api/lib/api.php:104-108,160-163`,
 `api/lib/avis.php:85-96`, `shared.js` (`VueCorbeille`).
 
+### Livré — session A — 27/10/2026 (avant réponse de Codex, bloc non bloquant)
+API `2eae41f` : `corbeille_atelier_a` (`api/lib/ecriture.php`) filtre `getCorbeille`
+et contrôle `restaurerCorbeille` **dans** la transaction (`FOR UPDATE`) ; refus
+rendu comme un atelier absent (« Atelier absent de la corbeille… »), pas
+« Non autorisé ». Tests `api-tests/api.test.php` (4 cas) ; contre-preuve : sans le
+filtre, 2 échecs. Texte de la vue côté conseiller : NEWGEN `72aa435`, NextStep
+`86a2fe0`. **Non fait** : les textes « récupérables 30 jours dans la Corbeille »
+(Nouveautés 9 et 15, confirmation de suppression multiple) restent vrais pour
+l'équipe via l'Admin, pas pour l'auteur qui supprime l'atelier d'un collègue.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
