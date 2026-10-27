@@ -106,6 +106,23 @@ jobs:
           rsync -az --delete --exclude /nextstep/ -e "$SSH" pages/ "$COMPTE@ssh-$COMPTE.alwaysdata.net:www/sandbox/"
           $SSH "$COMPTE@ssh-$COMPTE.alwaysdata.net" 'php www/api-sandbox/lib/sandbox_seed.php'
 
+      # Pages NextStep (AG-033, 27/10/2026) dans sandbox/nextstep/ : même API
+      # du bac à sable, parce que leur chemin commence par /sandbox/ (urlApiPour).
+      # Dépôt public, lu sans clé ; branche `sandbox` de NextStep, sinon `main`.
+      - name: Copier les pages NextStep
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+        run: |
+          SSH="ssh -o StrictHostKeyChecking=accept-new"
+          NS=https://github.com/maswaddpt47-cmyk/ateliers-cd47_NextStep.git
+          BR=sandbox; git ls-remote --exit-code --heads "$NS" sandbox >/dev/null || BR=main
+          git clone -q --depth 1 -b "$BR" "$NS" "$RUNNER_TEMP/nextstep"
+          cd "$RUNNER_TEMP/nextstep"
+          echo "::notice::NextStep $BR $(git rev-parse --short HEAD)"
+          node -e "const u=require('./utils.js').urlApiPour('ateliers-numeriques.alwaysdata.net','/sandbox/nextstep/index.html');if(!u.includes('/api-sandbox/')){console.error('::error::NextStep parlerait à '+u);process.exit(1)}"
+          mkdir -p "$RUNNER_TEMP/ns-pages" && cp -r index.html admin.html *.css utils.js logic.js shared.js app.js admin_app.js admin_config.js xlsxstyle.js icons vendor "$RUNNER_TEMP/ns-pages/"
+          rsync -az --delete -e "$SSH" "$RUNNER_TEMP/ns-pages/" "$COMPTE@ssh-$COMPTE.alwaysdata.net:www/sandbox/nextstep/"
+
       - name: Vérifier en ligne
         env:
           COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
@@ -114,4 +131,6 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' "https://$COMPTE.alwaysdata.net/api-sandbox/lib/schema.sql")
           if [ "$code" = "200" ]; then echo "::error::api-sandbox/lib/ lisible depuis internet"; exit 1; fi
           curl -fsS "https://$COMPTE.alwaysdata.net/sandbox/index.html" | grep -q 'shared.js'
-          echo "::notice::Bac à sable : https://$COMPTE.alwaysdata.net/sandbox/"
+          for page in index.html admin.html utils.js; do curl -fsS "https://$COMPTE.alwaysdata.net/sandbox/nextstep/$page" >/dev/null || { echo "::error::NextStep : $page absente"; exit 1; }; done
+          curl -fsS "https://$COMPTE.alwaysdata.net/sandbox/nextstep/utils.js" | grep -q 'api-sandbox'
+          echo "::notice::Bac à sable : https://$COMPTE.alwaysdata.net/sandbox/ — NextStep : https://$COMPTE.alwaysdata.net/sandbox/nextstep/"
