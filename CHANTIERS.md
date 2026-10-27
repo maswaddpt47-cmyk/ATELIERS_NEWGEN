@@ -268,7 +268,8 @@ appel superflu, `sw.js` de désinscription.
   suivante, liens « Conseillers » / « Administration » dans le bandeau du bac à
   sable ; aucun peuplement sans le garde-fou `bac_a_sable=true`.
 - **Corbeille** : un conseiller ne voit que ses ateliers animés ou co-animés
-  (AG-034) ; purge définitive réservée admin/superviseur (AG-024). Testés.
+  (AG-034) ; l'Admin voit tout, sans suivre le sélecteur de conseiller (choix du
+  27/10) ; purge définitive réservée admin/superviseur (AG-024). Testés.
 - **Matériel** : `periodePretMateriel` retombe sur la date de l'atelier sans
   dates de prêt (22/09). Seul le stock d'ordinateurs compte (05/10 : « Classe
   mobile » = ordinateurs du stock), à l'heure près (AG-022) : prêt d'un jour
