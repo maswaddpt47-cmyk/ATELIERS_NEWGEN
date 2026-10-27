@@ -115,10 +115,8 @@ l'utilisateur.
 
 **Pour Claude**
 
-0. **Bac à sable NextStep (AG-033, 27/10/2026)** : demandé par l'utilisateur.
-   Pages dans `www/sandbox/nextstep/` (jamais hors `/sandbox/` : `urlApiPour`
-   enverrait vers l'API de production). Attend le choix A/B de l'utilisateur
-   et la réponse de Codex ; la branche `sandbox` a 45 commits de retard sur `main`.
+0. **Bac à sable NextStep (AG-033, 27/10)** : `www/sandbox/nextstep/`, jamais
+   hors `/sandbox/` (sinon API de production). Attend le choix A/B et Codex.
 1. **Planning en essai** (depuis le 03/10, à côté de l'Agenda) : relecture
    des compteurs d'onglets (Admin → Connexions) prévue le 20/10, **pas encore
    faite** ; l'utilisateur veut retirer l'Agenda (le Calendrier est coupé
@@ -136,8 +134,7 @@ l'utilisateur.
 4. **Réimport Outlook** : un rendez-vous simple importé **avant** le 03/10 et
    déplacé depuis n'est pas reconnu (apparaît nouveau + supprimé). Options 2
    (calendrier publié) et 3 (Microsoft 365) écartées pour l'instant : DPO / DSI.
-5. **Thématique « TBD »** (sans urgence) : visible telle quelle dans les
-   statistiques tant qu'elle n'est pas remplacée.
+5. **Thématique « TBD »** (sans urgence) : visible dans les statistiques.
 
 **Audit trimestriel** : routine `trig_01J6ZMsLHKbgXAQsRYgQL16q` (6 dépôts,
 prochaine le 01/01/2027), créée dans l'interface : **Claude ne peut pas la
