@@ -179,9 +179,10 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
 
 ## Décisions de l'utilisateur à ne pas « corriger »
 
-- **Fiches bilan vides hors du mail du matin** (27/10/2026) : interrupteur
-  « 📋 Fiches bilan vides » (Admin → Listes → Conseillers) éteint ; le
-  rallumer seulement après avoir prévenu l'équipe. Les statuts restent rappelés.
+- **Fiches bilan (27/10/2026)** : interrupteur « 📋 Fiches bilan vides » (Admin →
+  Listes → Conseillers) éteint, à rallumer après avoir prévenu l'équipe ; les
+  statuts restent rappelés. Fenêtre au passage en « Réalisé » (volet,
+  formulaire) : n'annonce le mail que s'il partira (`rappelFichePrevu`).
 - **Écarté du CR « option 1 »** : PWA (AG-012), nouveau modèle de données,
   PHPWord/TCPDF.
 - **Plus de démarche auprès de la DPD ni des Archives départementales
