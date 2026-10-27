@@ -104,10 +104,9 @@ l'utilisateur.
    du document (compte transférable, alerte d'intrusion).
 4. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
-5. **Avant le 01/11/2026 : prévenir l'équipe** que le rappel du matin listera
-   aussi les fiches bilan vides (ateliers « Réalisé » à partir du 01/11,
-   `RAPPELS_FICHE_DEPUIS` dans `api/lib/rappels.php`). **Pas d'annonce
-   Nouveautés** (choix de l'utilisateur, 26/10/2026).
+5. **Rappel des fiches bilan vides suspendu** (27/10/2026) : le mail du matin
+   ne rappelle que les statuts. Le rallumer : `RAPPELS_FICHES_ACTIF` dans
+   `api/lib/rappels.php`, après avoir prévenu l'équipe (sans annonce Nouveautés).
 6. **Depuis le PC** : coller `MD-LIB/outils/script-demarrage.sh` dans le
    Setup script de l'environnement (menu de l'environnement → Edit). Il
    installe le contrôle automatique du déploiement (`MD-LIB/deploiement.md`) ;
