@@ -180,8 +180,8 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
 ## Décisions de l'utilisateur à ne pas « corriger »
 
 - **Fiches bilan** : interrupteur « 📋 Fiches bilan vides » (Admin → Listes →
-  Conseillers) éteint le 27/10, **rallumé le 28/10/2026** par l'utilisateur ;
-  seuls les ateliers datés du 01/11/2026 ou après sont rappelés. Fenêtre au passage en « Réalisé » (volet,
+  Conseillers) éteint le 27/10, **rallumé le 28/10/2026**, équipe prévenue par
+  une démonstration le même jour ; ateliers datés du 01/11/2026 ou après seulement. Fenêtre au passage en « Réalisé » (volet,
   formulaire) : n'annonce le mail que s'il partira (`rappelFichePrevu`).
 - **Écarté du CR « option 1 »** : PWA (AG-012), nouveau modèle de données,
   PHPWord/TCPDF.
