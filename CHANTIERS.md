@@ -10,8 +10,8 @@ est soldé. Ce n'est pas de la documentation permanente (cf.
 époque GAS, récit de la parité, livraisons, audit Codex et ses corrections,
 récit de la faille PHP2Shell et des essais AG-027 à AG-029, décisions déjà
 verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **AG-034 ouvert le
-27/10/2026** (Corbeille par conseiller, livrée, réponse de Codex attendue).
+Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
+27/10/2026** (AG-034 sorti ce jour).
 
 ---
 
@@ -267,9 +267,10 @@ appel superflu, `sw.js` de désinscription.
 - **Démonstration (24/10)** : faux ateliers sur l'année courante et la
   suivante, liens « Conseillers » / « Administration » dans le bandeau du bac à
   sable ; aucun peuplement sans le garde-fou `bac_a_sable=true`.
-- **Suppression définitive dans la Corbeille réservée admin/superviseur**
-  (AG-024) : `purgerCorbeille` ne rejoint jamais la porte « corbeille ouverte »
-  des conseillers (`api/lib/api.php`, verrouillé par `api-tests/api.test.php`).
+- **Corbeille par conseiller (AG-034, 27/10)** : hors admin/superviseur, ses
+  ateliers animés ou co-animés seulement, comparés par la base (casse ignorée).
+- **Purge définitive de la Corbeille : admin/superviseur seuls** (AG-024,
+  verrouillé par `api-tests/api.test.php`).
 - **Matériel** : `periodePretMateriel` retombe sur la date de l'atelier sans
   dates de prêt (22/09). Seul le stock d'ordinateurs compte (05/10 : « Classe
   mobile » = ordinateurs du stock), à l'heure près (AG-022) : prêt d'un jour
