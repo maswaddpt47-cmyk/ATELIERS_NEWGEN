@@ -140,6 +140,101 @@ Rendu mesuré à 390 et 1280 px (`avis.html`, pas de débordement). NEWGEN
 `4e88247`, NextStep `27f54ee`. **Non fait** : faux avis du bac à sable toujours
 en valeur seule (`sandbox_seed.php:145`, relus par le même chemin).
 
+### Réponse — Codex — 27/10/2026
+**Auteur** : session Codex (OpenAI), distincte de la session Claude
+`session_01UzvQDuAHryZcg95r5bmRoM` du commit d'ouverture `7109a07`+(trailer relu) — lu sur `c0ef75d`, après `pull` de `main`.
+**Verdict** : amendé.
+**Constat** : le nouveau calcul respecte la définition choisie, mais la
+transition ne protège pas les bilans ouverts avec l'ancien JavaScript.
+
+1. **Défaut reproduit : ancien lecteur, nouvelle API.** `bilanAvis` rend
+   désormais un tableau pour tous les sujets, y compris les anciennes
+   valeurs et les absences (`api/lib/avis.php:213`,
+   `api/lib/avis.php:273`). Or le code précédent compte `sujet` comme une
+   valeur unique et ne reconnaît pas `[]` comme absence
+   (`logic.js:424-426` au commit `a49249e`). Rejeu du module historique
+   réel avec deux avis du même atelier réalisé (bilan Admin, non soumis au
+   seuil conseiller de trois avis), sujets
+   `["Smartphone","Messagerie"]` et `[]` :
+
+   ```text
+   ancien : n=2, sujet={"Smartphone,Messagerie":1,"":1}, sansReponse=0
+   nouveau : n=2, sujet={"Smartphone":1,"Messagerie":1}, sansReponse=1
+   ```
+
+   L'ancien bilan produit une catégorie fusionnée et une catégorie vide,
+   au lieu de Smartphone 50 %, Messagerie 50 %, Sans réponse 50 %. Ce
+   problème concerne un onglet déjà ouvert, sans aucun retour arrière du
+   serveur. L'ancien appel (`shared.js:6583` au commit `a49249e`) et le
+   nouveau (`shared.js:6588`) n'envoient aucun marqueur distinguant leur
+   format de lecture. Le nouveau `logic.js?v=15` (`index.html:18`)
+   n'actualise pas un onglet déjà chargé. La compatibilité des anciennes
+   pages qui **envoient** un avis ne garantit donc pas celle des lecteurs.
+   C'est un rejeu local, pas un constat d'utilisation en production.
+
+2. **Nouveau parcours cohérent.** Les deux formulaires sérialisent les
+   choix en JSON et n'envoient « Lequel ? » que si « Autre » est sélectionné
+   (`avis.html:100`, `avis.html:115`, `shared.js:2829`,
+   `shared.js:2842`). L'API contrôle chaque valeur, retire les doublons et
+   remet l'ordre de la liste (`api/lib/avis.php:202`), puis stocke JSON ou
+   `NULL` (`api/lib/avis.php:244`). Les six sujets encodés ensemble occupent
+   95 caractères, 98 octets (mesuré sous Node) : `VARCHAR(255)` suffit.
+   Les chaînes historiques restent lisibles par le nouveau lecteur
+   (`api/lib/avis.php:213`) ; les faux avis scalaires du bac à sable
+   (`api/lib/sandbox_seed.php:145`) ne nécessitent donc pas une migration.
+   Aucun autre lecteur sémantique oublié identifié par recherche dans le
+   dépôt : le bilan mensuel et l'export CSV ne calculent pas les sujets
+   (`api/lib/bilan.php:127`, `shared.js:6711`, `shared.js:6717`).
+
+3. **Chiffres du nouveau bilan recomptés.** Le `Set` compte un sujet une
+   fois par avis ; la base reste `avis.n`, non le nombre de cases cochées
+   (`logic.js:418`, `logic.js:431`, `shared.js:6526`). Sur un jeu fictif de
+   quatre avis de la période — six sujets avec un doublon de Smartphone,
+   ancien sujet seul Smartphone, tableau vide, `NULL` — et un avis extérieur
+   à la population, exclu du calcul :
+
+   | Sujet | Affiché par le HTML du bilan | Recompté indépendamment | Écart |
+   |---|---:|---:|---:|
+   | Smartphone | 2 · 50 % | 2/4 = 50 % | 0 |
+   | Messagerie | 1 · 25 % | 1/4 = 25 % | 0 |
+   | Démarches en ligne | 1 · 25 % | 1/4 = 25 % | 0 |
+   | Sécurité | 1 · 25 % | 1/4 = 25 % | 0 |
+   | Intelligence artificielle | 1 · 25 % | 1/4 = 25 % | 0 |
+   | Autre | 1 · 25 % | 1/4 = 25 % | 0 |
+   | Sans réponse | 2 · 50 % | 2/4 = 50 % | 0 |
+
+   Total des lignes : 225 %, conforme aux choix multiples. Recalcul
+   identique, données sources inchangées, chaque ligne du HTML vérifiée.
+   La note « Plusieurs choix possibles par avis : le total peut dépasser
+   100 % » est présente (`shared.js:6555`) dans le HTML commun à l'écran,
+   à l'impression générale et par conseiller (`shared.js:6610`,
+   `shared.js:6624`). La compréhension et la mise en page imprimée restent
+   à vérifier par l'utilisateur.
+
+**Amendement** : garder le nouveau stockage et le nouveau calcul ; protéger
+le contrat de lecture avant de présenter les bilans comme compatibles
+avec les pages déjà ouvertes. Par exemple, ajouter un marqueur de format
+à l'appel `bilanAvis` des clients mis à jour et renvoyer aux anciens
+lecteurs un refus explicite invitant à recharger, plutôt que les tableaux
+qu'ils interprètent silencieusement de travers. L'ancien client sait déjà
+afficher une erreur d'avis (`shared.js:6584` et `shared.js:6544` au commit
+`a49249e`). Vérifier ce chemin avec l'ancien module réel, sur NEWGEN et
+NextStep. Cette correction applicative reste à la session chargée du code ;
+Codex ne la réalise pas dans cette réponse.
+
+**Vérifications et limites** : `node logic.test.js` exécuté : 100 tests,
+24 suites, 100 réussis, aucun échec ni ignoré, dont AG-035. Recomptage,
+génération réelle du HTML et rejeu de l'ancien module exécutés sous Node.
+Les scripts réels des formulaires public et papier ont aussi été exercés
+avec DOM, hooks React et API simulés : sélection multiple, ordre, retrait
+d'« Autre » et sérialisation ; ce n'est pas un essai navigateur. PHP/MySQL
+absents : suite API non exécutée par Codex. Le test existant
+`api-tests/api.test.php:491-501` couvre l'élargissement et les soumissions
+scalaires/JSON, mais pas la lecture d'une ancienne valeur brute insérée
+directement en base. Verrouillage de l'`ALTER TABLE` en production, données
+réelles, déploiement, navigateur et impression physique non vérifiés.
+Seul `AGORA.md` est modifié par cette réponse.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
