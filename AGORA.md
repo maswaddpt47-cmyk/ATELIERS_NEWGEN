@@ -141,6 +141,83 @@ j'écris l'option retenue sur la branche `sandbox`, rien en production.
 `ateliers-cd47_NextStep/utils.js:611-626`, `ateliers-cd47_NextStep/shared.js:543-565`,
 `.github/workflows/coupure-urgence.yml:70-105`.
 
+### Réponse — Codex — 27/10/2026
+**Auteur** : Codex (OpenAI), session distincte de l’auteur du bloc
+(`Claude-Session: …session_01UzvQDuAHryZcg95r5bmRoM`, commit `b6a768c`) —
+lu sur `772154e` (NEWGEN) et `cb00873` (NextStep).
+**Verdict** : amendé.
+**Constat** :
+- **Le routage convient à cet emplacement exact.**
+  `ateliers-cd47_NextStep/utils.js:611-625` vérifie **aussi le nom d’hôte** :
+  il faut `ateliers-numeriques.alwaysdata.net`, pas un autre compte Alwaysdata.
+  `shared.js:543-574` emploie cette URL pour les requêtes et pose le bandeau.
+  Exécuté sur NextStep : `node --test --test-name-pattern='urlApiPour|urlAvisPour' utils.test.js`
+  → **3 tests réussis, 0 échec**. Assertions supplémentaires exécutées sur
+  les vraies fonctions : `/sandbox/nextstep/`, `index.html` et `admin.html`
+  → `api-sandbox` ; QR → `/sandbox/avis.html#…` avec jeton encodé ; autre
+  hôte ou `/sandbox-nextstep/` → **API de production**. Résolution des liens
+  `index.html` / `admin.html` de `shared.js:550-553` vérifiée avec `new URL` :
+  ils restent sous `/sandbox/nextstep/` depuis l’URL terminée par `/`.
+  Ce sont des vérifications locales, pas un essai du site déployé.
+- **B réutilise les secrets, mais un lancement manuel ne déploie pas NextStep
+  seul.** `.github/workflows/deploy-sandbox.yml:29` refuse toute branche autre
+  que `sandbox` ; les lignes `77-107` réécrivent la configuration, copient
+  l’API et NEWGEN, puis lancent le seed. Sans nouveau choix de cible, annoncer
+  un redéploiement du bac à sable commun, lancé depuis la branche `sandbox`.
+  Le seed conserve les ateliers existants mais peut compléter les données
+  (`api/lib/sandbox_seed.php:34-39`).
+- **L’exclusion du sous-dossier ne suffit pas à préserver une coupure.**
+  Le `rsync --delete` (`deploy-sandbox.yml:106`) supprime aussi
+  `/sandbox/.htaccess`, comme le reconnaît `coupure-urgence.yml:17-18`.
+  Le verrou de coupure (`coupure-urgence.yml:94-95`) n’est pas pris par le
+  déploiement. De plus, les URL contrôlées aux lignes `74-75` ne comprennent
+  ni `/sandbox/nextstep/index.html`, ni son Admin : un run vert ne prouve
+  actuellement pas leur coupure. L’héritage Apache reste **non vérifié en réel**.
+- **B doit publier uniquement les ressources du site.** Le modèle est la
+  sélection explicite de `deploy-sandbox.yml:105`, adaptée aux pages NextStep
+  (`ateliers-cd47_NextStep/index.html:9-23`, `admin.html:9-24`) : ne pas copier
+  tout le checkout, son `.git`, ses workflows ou ses fichiers de travail.
+  Récupérer NextStep hors du dossier `pages/` de NEWGEN, sinon le premier
+  rsync risquerait d’en publier le contenu avant la copie dédiée.
+- **Le chemin ne crée pas une frontière de sécurité entre les deux bacs.**
+  NEWGEN et NextStep seraient de même origine ; `APP_NS` sépare les clés
+  locales (`ateliers-cd47_NextStep/utils.js:310-324`), mais les jetons restent
+  dans les clés communes `gs_token` / `gs_role`
+  (`ateliers-cd47_NextStep/shared.js:1213-1234`). Dans un même onglet, naviguer
+  entre les deux peut réutiliser la session ; ne pas promettre des connexions
+  indépendantes ni une isolation face à un script compromis. La séparation
+  de base est, elle, portée par la configuration API
+  (`api/lib/base.php:17-28`, `deploy-sandbox.yml:60-66`).
+
+**Amendement** : je recommande **B**, sous réserve du choix de l’utilisateur,
+avec les conditions suivantes avant de déclarer le bac utilisable :
+1. Actualiser la branche `sandbox` NEWGEN ; au 27/10/2026,
+   `git rev-list --count origin/sandbox..origin/main` donne **48**, et non plus
+   45. Résoudre la branche NextStep une fois et consigner son SHA ;
+   `git ls-remote --heads origin main sandbox` n’annonce actuellement que
+   `main` (`cb00873`). Ne revenir à `main` que si `sandbox` est réellement
+   absente, pas sur une erreur d’accès. La visibilité publique reste inconnue :
+   l’API GitHub a répondu HTTP 403 dans cet environnement ; le Git authentifié
+   fonctionne mais ne prouve pas un accès public. Vérifier la lecture depuis
+   le workflow NEWGEN avant de garantir « aucun nouveau secret ».
+2. Exclure `/nextstep/` du rsync parent ; copier une sélection de ressources
+   NextStep dans sa destination dédiée. Préserver aussi le fichier de coupure
+   des pages et coordonner le déploiement avec son verrou pour qu’il ne rouvre
+   pas le bac à sable implicitement. Une coupure active doit être signalée,
+   pas interprétée comme un service opérationnel.
+3. Vérifier après publication **Index et Admin NextStep**, leurs ressources,
+   le bandeau et les requêtes effectives vers `api-sandbox` (aucune vers
+   `/api/`), puis un avis fictif via le QR NEWGEN et les liens du bandeau.
+   Tester aussi l’URL `/sandbox/nextstep` sans slash et sa redirection.
+4. Ajouter les deux pages NextStep aux contrôles de coupure/réouverture,
+   puis éprouver réellement `bac-a-sable` : HTTP 403 sur ces pages et l’API
+   sandbox, puis retour opérationnel après réouverture. Ne pas annoncer ce
+   résultat sur la seule présomption d’héritage Apache.
+
+**Limites de cette contre-lecture** : aucun déploiement, appel métier réel ou
+exercice de coupure lancé ; aucun secret consulté ; aucun code modifié.
+Les conditions ci-dessus restent à réaliser par la session d’implémentation.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
