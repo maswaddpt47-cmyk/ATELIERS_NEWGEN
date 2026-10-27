@@ -321,9 +321,12 @@ verifier(in_array('cb_mien', $vus, true) && in_array('cb_co', $vus, true) && !in
 verifier(in_array('cb_autre', array_column(appel(['action' => 'getCorbeille'], $A)['ateliers'], '_id'), true), 'corbeille de l\'admin : tous les ateliers');
 $r = appel(['action' => 'restaurerCorbeille'], $T + ['_id' => 'cb_autre']);
 verifier(($r['ok'] ?? true) === false && str_contains($r['error'], 'absent') && $lire('cb_autre') === null && (int) $db->query("SELECT COUNT(*) FROM ateliers_corbeille WHERE id = 'cb_autre'")->fetchColumn() === 1, 'atelier d\'un autre : restauration refusée, sans dire qu\'il existe');
+$ins->execute(['cb_casse', json_encode(['_id' => 'cb_casse', 'date' => '2026-12-05', 'conseiller' => 'NOUVEAU VENU'])]);
+$cbT = appel(['action' => 'getCorbeille'], $T);
+verifier(in_array('cb_casse', array_column($cbT['ateliers'], '_id'), true) && $cbT['filtre'] === true && appel(['action' => 'getCorbeille'], $A)['filtre'] === false, 'corbeille : majuscules ignorées comme pour les avis ; filtre signalé au conseiller seulement');
 $r = appel(['action' => 'restaurerCorbeille'], $T + ['_id' => 'cb_co']);
 verifier(($r['ok'] ?? false) && $lire('cb_co') !== null, 'co-animateur : restauration acceptée');
-$db->exec("DELETE FROM ateliers_corbeille WHERE id IN ('cb_mien', 'cb_autre')");
+$db->exec("DELETE FROM ateliers_corbeille WHERE id IN ('cb_mien', 'cb_autre', 'cb_casse')");
 $db->exec("DELETE FROM ateliers WHERE id = 'cb_co'");
 verifier(str_contains(appel(['action' => 'saveVisibility'], $T + ['visibility' => '{}'])['error'] ?? '', 'administrateurs'), 'corbeille ouverte : les autres actions admin restent fermées');
 appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'carte' => false])]);

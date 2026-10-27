@@ -600,19 +600,28 @@ function action_get_usage_onglets(PDO $db): array
 
 // Un conseiller (hors admin/superviseur) ne voit et ne restaure que les
 // ateliers qu'il animait ou co-animait au moment de la suppression (AG-034,
-// 27/10/2026, même règle que les avis : avis.php). $limite = null : tout.
-function corbeille_atelier_a(array $e, ?string $limite): bool
+// 27/10/2026). Comparaison faite par la base, avec la collation des colonnes
+// d'ateliers (utf8mb4_unicode_ci : casse et accents ignorés), comme pour les
+// avis (avis.php) — choix de l'utilisateur après la réponse de Codex.
+// $limite = null : tout.
+function corbeille_filtre_sql(?string $limite): array
 {
-    return $limite === null || ($limite !== '' && (($e['conseiller'] ?? '') === $limite || ($e['co_animateur'] ?? '') === $limite));
+    if ($limite === null) return ['', []];
+    $champ = fn($c) => "CONVERT(JSON_UNQUOTE(JSON_EXTRACT(donnees, '$.$c')) USING utf8mb4) COLLATE utf8mb4_unicode_ci";
+    return [' AND ? <> \'\' AND (' . $champ('conseiller') . ' = ? OR ' . $champ('co_animateur') . ' = ?)', [$limite, $limite, $limite]];
 }
 
 function action_get_corbeille(PDO $db, ?string $limite = null): array
 {
     corbeille_schema($db);
     $db->exec('DELETE FROM ateliers_corbeille WHERE supprime_le < NOW() - INTERVAL ' . CORBEILLE_JOURS . ' DAY');
-    $l = $db->query('SELECT id, donnees, supprime_le, supprime_par FROM ateliers_corbeille ORDER BY supprime_le DESC')->fetchAll(PDO::FETCH_ASSOC);
-    $l = array_values(array_filter($l, fn($r) => corbeille_atelier_a(json_decode($r['donnees'], true) ?: [], $limite)));
-    return ['ok' => true, 'jours' => CORBEILLE_JOURS, 'ateliers' => array_map(function ($r) {
+    [$filtre, $params] = corbeille_filtre_sql($limite);
+    $s = $db->prepare("SELECT id, donnees, supprime_le, supprime_par FROM ateliers_corbeille WHERE 1 $filtre ORDER BY supprime_le DESC");
+    $s->execute($params);
+    $l = $s->fetchAll(PDO::FETCH_ASSOC);
+    // `filtre` : la vue dit au conseiller qu'il ne voit que ses ateliers ;
+    // l'Admin, même sur Index, voit tout (amendement Codex, AG-034).
+    return ['ok' => true, 'jours' => CORBEILLE_JOURS, 'filtre' => $limite !== null, 'ateliers' => array_map(function ($r) {
         $e = json_decode($r['donnees'], true) ?: [];
         return ['_id' => $r['id'], 'supprime_le' => $r['supprime_le'], 'supprime_par' => $r['supprime_par'],
                 'date' => $e['date'] ?? '', 'horaire' => $e['horaire'] ?? '', 'thematique' => $e['thematique'] ?? '',
@@ -634,16 +643,16 @@ function action_restaurer_corbeille(PDO $db, array $p, string $acteur, ?string $
     // corbeille passent ensemble ou pas du tout (amendement AG-014).
     $db->beginTransaction();
     try {
-        $s = $db->prepare('SELECT donnees FROM ateliers_corbeille WHERE id = ? FOR UPDATE');
-        $s->execute([$id]);
+        // Atelier d'un autre : introuvable, même réponse qu'un atelier absent (AG-034).
+        [$filtre, $params] = corbeille_filtre_sql($limite);
+        $s = $db->prepare("SELECT donnees FROM ateliers_corbeille WHERE id = ? $filtre FOR UPDATE");
+        $s->execute(array_merge([$id], $params));
         $donnees = $s->fetchColumn();
         $s = $db->prepare('SELECT 1 FROM ateliers WHERE id = ? FOR UPDATE');
         $s->execute([$id]);
         $d = $donnees === false ? null : json_decode($donnees, true);
         $err = null;
         if ($donnees === false) $err = 'Atelier absent de la corbeille (déjà restauré ou purgé)';
-        // Même réponse qu'un atelier absent : ne dit pas qu'il existe (AG-034).
-        elseif (!corbeille_atelier_a(json_decode($donnees, true) ?: [], $limite)) $err = 'Atelier absent de la corbeille (déjà restauré ou purgé)';
         elseif ($s->fetchColumn() !== false) $err = 'Un atelier avec cet identifiant existe déjà';
         elseif (!is_array($d)) $err = 'Données de la corbeille illisibles';
         // Chemin d'écriture normal : validé comme une saisie, numéro d'origine repris.
