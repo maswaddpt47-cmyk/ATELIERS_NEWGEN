@@ -104,10 +104,7 @@ l'utilisateur.
    du document (compte transférable, alerte d'intrusion).
 4. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
-5. **Rappel des fiches bilan vides suspendu** (27/10/2026) : le mail du matin
-   ne rappelle que les statuts. Le rallumer : Admin → Listes → Conseillers,
-   interrupteur « 📋 Fiches bilan vides », après avoir prévenu l'équipe.
-6. **Depuis le PC** : coller `MD-LIB/outils/script-demarrage.sh` dans le
+5. **Depuis le PC** : coller `MD-LIB/outils/script-demarrage.sh` dans le
    Setup script de l'environnement (menu de l'environnement → Edit). Il
    installe le contrôle automatique du déploiement (`MD-LIB/deploiement.md`) ;
    d'ici là, le lancer à la main après chaque push.
@@ -182,6 +179,9 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
 
 ## Décisions de l'utilisateur à ne pas « corriger »
 
+- **Fiches bilan vides hors du mail du matin** (27/10/2026) : interrupteur
+  « 📋 Fiches bilan vides » (Admin → Listes → Conseillers) éteint ; le
+  rallumer seulement après avoir prévenu l'équipe. Les statuts restent rappelés.
 - **Écarté du CR « option 1 »** : PWA (AG-012), nouveau modèle de données,
   PHPWord/TCPDF.
 - **Plus de démarche auprès de la DPD ni des Archives départementales
