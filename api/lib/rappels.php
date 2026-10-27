@@ -31,9 +31,8 @@ require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/api.php';   // api_config_base, api_json, api_journal
 
 const RAPPELS_URL_APPLI = 'https://maswaddpt47-cmyk.github.io/ateliers-cd47_NextStep/';
-// Rappel des fiches lancé au 01/11/2026 (demande du 10/10 : l'équipe doit
-// être prévenue avant) ; seuls les ateliers réalisés depuis cette date comptent.
-define('RAPPELS_FICHE_DEPUIS', getenv('ATELIERS_RAPPELS_FICHE_DEPUIS') ?: '2026-11-01');   // variable : tests seulement
+// RAPPELS_FICHE_DEPUIS : api.php (getAll le donne aussi à la fenêtre « fiche
+// bilan » des pages, qui n'annonce le mail que s'il partira).
 
 $test = null;
 foreach (array_slice($argv, 1) as $arg) {

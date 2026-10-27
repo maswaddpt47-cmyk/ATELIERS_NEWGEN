@@ -27,6 +27,9 @@ const API_JETON_DUREE_S = 6 * 3600;          // comme TOKEN_TTL_SECONDS du GAS
 const API_ECHECS_MAX = 5;                    // 5 échecs → blocage 15 min
 const API_BLOCAGE_S = 15 * 60;
 const API_ROLES_ADMIN = ['admin', 'superviseur'];
+// Rappel des fiches bilan vides (rappels.php) : seuls les ateliers réalisés
+// depuis cette date comptent (lancé au 01/11/2026, l'équipe prévenue avant).
+define('RAPPELS_FICHE_DEPUIS', getenv('ATELIERS_RAPPELS_FICHE_DEPUIS') ?: '2026-11-01');   // variable : tests seulement
 // RGPD : durée de conservation du journal, décidée par l'utilisateur le
 // 24/09/2026. Purge à chaque connexion réussie (pas besoin de tâche planifiée).
 const API_JOURNAL_MOIS = 12;
@@ -407,6 +410,7 @@ function action_get_all(PDO $db, array $p, array $session): array
         // ferme plus que l'Admin (24/09/2026) : personne n'est masqué du
         // sélecteur d'Index. Gardée pour ne pas changer la forme de réponse.
         'conseillers_inactifs' => [],
+        'rappelsFiches' => api_rappels_fiches($cfg),
     ];
     // RGPD, minimisation (art. 5.1.c) : les adresses mail ne servent qu'à
     // l'Admin (Listes → Conseillers, rappels). Index les recevait sans s'en
@@ -416,6 +420,24 @@ function action_get_all(PDO $db, array $p, array $session): array
     $tk = tickets_resume($db, $session['conseiller']);
     if ($tk !== null) $r['tickets'] = $tk;
     return $r;
+}
+
+// Qui recevra le mail de rappel d'une fiche bilan vide (mêmes conditions que
+// rappels.php) : null si l'interrupteur de l'Admin est éteint. Les pages ne
+// promettent ce mail que s'il partira (fenêtre « fiche bilan », 27/10/2026).
+// Des noms seulement, jamais les adresses (réservées à l'Admin).
+function api_rappels_fiches(array $cfg): ?array
+{
+    if (!in_array((string) ($cfg['rappels_fiches'] ?? ''), ['true', 'TRUE'], true)) return null;
+    if (in_array((string) ($cfg['rappels_actifs'] ?? ''), ['false', 'FALSE'], true)) return null;
+    $actifs = api_json($cfg['rappels_actifs'] ?? '', []);
+    $emails = api_json($cfg['emails'] ?? '', []);
+    $noms = [];
+    foreach ((is_array($emails) ? $emails : []) as $nom => $adresse) {
+        if (trim((string) $adresse) === '' || (is_array($actifs) && ($actifs[$nom] ?? true) === false)) continue;
+        $noms[] = (string) $nom;
+    }
+    return ['depuis' => RAPPELS_FICHE_DEPUIS, 'conseillers' => $noms];
 }
 
 // « 2027,2026,2026 » → ['2026','2027'] ; de 1 à 3 années (GAS_NEWGEN.js:587-595).

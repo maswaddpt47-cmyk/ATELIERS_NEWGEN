@@ -124,7 +124,7 @@ $r = appel(['action' => 'getAll', 'year' => '2026', 'token' => $admin['token']])
 verifier(($r['ok'] ?? null) === false, 'jeton dans l\'URL : refusé');
 $r = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']]);
 verifier($r['ok'] === true, 'jeton dans le corps : accepté');
-verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'stockOrdinateurs', 'materielsCaches', 'conseillers_inactifs', 'tickets'], 'clés de la réponse conseiller = GAS NEWGEN sans emails : ' . implode(',', array_keys($r)));
+verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'stockOrdinateurs', 'materielsCaches', 'conseillers_inactifs', 'rappelsFiches', 'tickets'], 'clés de la réponse conseiller = GAS NEWGEN sans emails : ' . implode(',', array_keys($r)));
 // RGPD (25/09/2026) : les adresses mail ne vont qu'à l'Admin.
 verifier(!str_contains(json_encode($r), 'nouveau.venu@example.org'), '[RGPD-15] getAll conseiller : aucune adresse mail');
 $ra = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $admin['token']]);
@@ -308,6 +308,13 @@ verifier(str_contains(appel(['action' => 'setConfig'], $T + ['key' => 'stock_ord
 appel(['action' => 'setConfig'], $A + ['key' => 'stock_ordinateurs', 'value' => '20']);
 appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'carte' => false])]);
 verifier(appel(['action' => 'getAll'], $A)['stockOrdinateurs'] === 20, 'setConfig relu par getAll');
+// Fenêtre « fiche bilan » (27/10/2026) : getAll dit qui recevra le mail de
+// rappel d'une fiche vide — rien si l'interrupteur est éteint, des noms sans adresse.
+verifier(array_key_exists('rappelsFiches', appel(['action' => 'getAll'], $T)) && appel(['action' => 'getAll'], $T)['rappelsFiches'] === null, 'rappel des fiches éteint : getAll n\'annonce aucun mail');
+appel(['action' => 'setConfig'], $A + ['key' => 'rappels_fiches', 'value' => 'true']);
+$rf = appel(['action' => 'getAll'], $T)['rappelsFiches'] ?? null;
+verifier(is_array($rf) && $rf['depuis'] === '2026-11-01' && in_array('Nouveau Venu', $rf['conseillers'], true) && !str_contains(json_encode($rf), '@'), 'rappel des fiches allumé : date de départ et destinataires, sans adresse — ' . json_encode($rf));
+appel(['action' => 'setConfig'], $A + ['key' => 'rappels_fiches', 'value' => 'false']);
 verifier(appel(['action' => 'getVisibility'], $A)['visibility'] === ['saisie' => true, 'carte' => false], 'saveVisibility relu');
 appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'carte' => false, 'corbeille' => true])]);
 verifier((appel(['action' => 'getCorbeille'], $T)['ok'] ?? false) === true, 'corbeille rendue visible sur Index : ouverte aux conseillers');
