@@ -218,6 +218,29 @@ avec les conditions suivantes avant de déclarer le bac utilisable :
 exercice de coupure lancé ; aucun secret consulté ; aucun code modifié.
 Les conditions ci-dessus restent à réaliser par la session d’implémentation.
 
+### Décision — utilisateur — 27/10/2026
+**Option A** : workflow propre à NextStep (`deploy-sandbox.yml` du dépôt
+NextStep, branche `sandbox`), secrets `ALWAYSDATA_COMPTE` et
+`ALWAYSDATA_SSH_KEY` à saisir dans NextStep par l'utilisateur. Écrit avant la
+réponse de Codex, à sa demande (« prépare ») : rien n'est publié tant que les
+secrets ne sont pas saisis et la branche `sandbox` non poussée.
+- NEWGEN `deploy-sandbox.yml:106` : `--exclude /nextstep/` ajouté. Essai local
+  (rsync 3.2.7, 27/10) : avec l'exclusion le sous-dossier reste, sans elle il
+  est effacé.
+- NextStep : aiguillage contrôlé dans le workflow sur le `utils.js` publié, et
+  verrouillé dans `utils.test.js` (`/sandbox/nextstep/` → `api-sandbox`,
+  `/sandbox-nextstep/` → production) ; refus si le bac à sable NEWGEN manque.
+- Amendements de Codex retenus pour A : sélection explicite des ressources
+  (pas le checkout) ; le déploiement NextStep ne touche pas `sandbox/.htaccess`
+  et échoue en rouge, avec un message de coupure, si le bac à sable est coupé ;
+  contrôle en ligne d'Index **et** d'Admin et de `/sandbox/nextstep` sans
+  barre finale. **Restent après la première publication** : pages NextStep
+  ajoutées aux contrôles de `coupure-urgence.yml` puis coupure éprouvée en
+  réel ; requêtes vers `api-sandbox` vues dans un navigateur ; avis fictif par
+  le QR. La branche `sandbox` de NEWGEN a 48 commits de retard (Codex).
+  **Sans isolation entre les deux bacs** : même origine, jeton commun
+  (`gs_token`), ne pas promettre des connexions indépendantes.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
