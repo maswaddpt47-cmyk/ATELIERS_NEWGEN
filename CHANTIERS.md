@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **26/10/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **27/10/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
@@ -10,8 +10,8 @@ est soldé. Ce n'est pas de la documentation permanente (cf.
 époque GAS, récit de la parité, livraisons, audit Codex et ses corrections,
 récit de la faille PHP2Shell et des essais AG-027 à AG-029, décisions déjà
 verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **AG-033 ouvert le
-27/10/2026** (bac à sable NextStep, Codex) ; AG-027 à AG-032 sortis le 26/10.
+Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
+27/10/2026** (AG-033 sorti ce jour).
 
 ---
 
@@ -44,12 +44,12 @@ NextStep (équipe) et NEWGEN (utilisateur) : **même API PHP chez Alwaysdata**
   validation** (DPO/DSI), un cran par mise à jour ; archives dans
   `documents/archives/`, rendu par `documents/sources/rendre.js`. Prochaine
   révision : audit du 01/01/2027 (ACME Alwaysdata à vérifier).
-- **Bac à sable** (AG-019) : https://ateliers-numeriques.alwaysdata.net/sandbox/
-  — comptes « Démo … » (« Démo Admin » : secret `SANDBOX_MDP_DEMO`, les autres
-  changés le 08/10), fausses données seulement (`sandbox_seed.php`). **Depuis
-  le 25/10 : directement en production (`main`) sauf si l'utilisateur demande
-  le bac à sable** ; dans le doute, demander « sandbox ou main ». Circuit :
-  branche `sandbox` → test → fusion dans `main` → `main` reporté dans `sandbox`.
+- **Bac à sable** (AG-019) : https://ateliers-numeriques.alwaysdata.net/sandbox/,
+  NextStep dans `sandbox/nextstep/` (AG-033) — comptes « Démo … » (« Démo
+  Admin » : secret `SANDBOX_MDP_DEMO`), fausses données (`sandbox_seed.php`).
+  **Depuis le 25/10 : directement sur `main` sauf demande du bac à sable** ;
+  dans le doute, demander. Circuit : `sandbox` (NextStep d'abord) → test →
+  `main` → `main` reporté dans `sandbox`.
 
 ## 🔧 Parité NEWGEN/NextStep (AG-015)
 
@@ -115,8 +115,9 @@ l'utilisateur.
 
 **Pour Claude**
 
-0. **Bac à sable NextStep (AG-033, option A, 27/10)** : préparé, rien publié ;
-   étapes dans le `CHANTIERS.md` de NextStep. Réponse de Codex attendue.
+0. **Bac à sable NextStep** (AG-033, en ligne le 27/10) : à éprouver — pages
+   NextStep dans les contrôles de `coupure-urgence.yml` puis coupure réelle ;
+   requêtes vers `api-sandbox` vues au navigateur ; avis fictif par le QR.
 1. **Planning en essai** (depuis le 03/10, à côté de l'Agenda) : relecture
    des compteurs d'onglets (Admin → Connexions) prévue le 20/10, **pas encore
    faite** ; l'utilisateur veut retirer l'Agenda (le Calendrier est coupé
