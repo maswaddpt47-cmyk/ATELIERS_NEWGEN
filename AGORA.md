@@ -131,6 +131,15 @@ l'appui ; l'utilisateur vérifie au bac à sable.
 **Où regarder** : `avis.html:50-52,78-101`, `api/lib/avis.php:20-45,203-245,320-333`,
 `logic.js:418-427`, `shared.js:2813-2840,6516-6560,6672`.
 
+### Livré — session A — 27/10/2026 (avant réponse de Codex, bloc non bloquant)
+API `avis_sujets_recus` / `avis_sujets_lus` (`api/lib/avis.php`), colonne élargie
+par `avis_schema` (testé sur une colonne remise à 40) ; tests API : ordre de la
+liste, doublon retiré, valeur hors liste refusée, valeur seule acceptée.
+`bilanTrimestriel` : `Set` par avis, test `logic.test.js` (4 avis, 2 sans sujet).
+Rendu mesuré à 390 et 1280 px (`avis.html`, pas de débordement). NEWGEN
+`4e88247`, NextStep `27f54ee`. **Non fait** : faux avis du bac à sable toujours
+en valeur seule (`sandbox_seed.php:145`, relus par le même chemin).
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
