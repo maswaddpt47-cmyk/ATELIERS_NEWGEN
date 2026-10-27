@@ -10,8 +10,8 @@ est soldé. Ce n'est pas de la documentation permanente (cf.
 époque GAS, récit de la parité, livraisons, audit Codex et ses corrections,
 récit de la faille PHP2Shell et des essais AG-027 à AG-029, décisions déjà
 verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **AG-035 ouvert le
-27/10/2026** (sujets d'avis multiples, livré, réponse de Codex attendue).
+Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
+27/10/2026** (AG-035 sorti ce jour).
 
 ---
 
@@ -251,6 +251,7 @@ appel superflu, `sw.js` de désinscription.
   affichée ; durée vide = 1 h 30, ateliers concernés comptés ; avis en % de
   tous les avis avec « Sans réponse » ; communes normalisées ; année non
   chargée = message, aucun chiffre, impression désactivée (détail : `AGORA.md`).
+- **Sujets d'avis multiples (AG-035)** : % des avis ; `bilanAvis` exige `format=2`.
 - **Unité et couverture (25/10)** : participations = présences cumulées,
   jamais personnes uniques. Taux seulement sur les ateliers réalisés avec
   inscrits > 0 et présence saisie ; sans base : « — » ; une présence saisie à
@@ -264,9 +265,8 @@ appel superflu, `sw.js` de désinscription.
   janvier → décembre, années côte à côte, couleurs réservées aux statuts,
   repères d'année visibles même sans données ; l'habillage ne touche ni
   valeurs, ni échelles, ni filtres, ni échappement HTML.
-- **Démonstration (24/10)** : faux ateliers sur l'année courante et la
-  suivante, liens « Conseillers » / « Administration » dans le bandeau du bac à
-  sable ; aucun peuplement sans le garde-fou `bac_a_sable=true`.
+- **Démonstration (24/10)** : faux ateliers sur deux années, liens du bandeau ;
+  aucun peuplement sans le garde-fou `bac_a_sable=true`.
 - **Corbeille** : un conseiller ne voit que ses ateliers animés ou co-animés
   (AG-034) ; l'Admin voit tout, sans suivre le sélecteur de conseiller (choix du
   27/10) ; purge définitive réservée admin/superviseur (AG-024). Testés.
