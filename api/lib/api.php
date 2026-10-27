@@ -157,10 +157,11 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
             return action_envoyer_lien_reinit($db, $p);
         case 'setPassword':     return action_set_password($db, $p, $session);
         case 'getLogs':         return action_get_logs($db, $p);
-        case 'getCorbeille':    return action_get_corbeille($db);
+        // Hors admin/superviseur : ses ateliers seulement (AG-034, 27/10/2026).
+        case 'getCorbeille':    return action_get_corbeille($db, api_acces_admin($db, $session) ? null : $session['conseiller']);
         case 'etatSauvegardes': return action_etat_sauvegardes();
         case 'copieMaintenant': return action_copie_maintenant();
-        case 'restaurerCorbeille': return action_restaurer_corbeille($db, $p, $session['conseiller']);
+        case 'restaurerCorbeille': return action_restaurer_corbeille($db, $p, $session['conseiller'], api_acces_admin($db, $session) ? null : $session['conseiller']);
         case 'purgerCorbeille': return action_purger_corbeille($db, $p, $session);
     }
     return ['ok' => false, 'error' => 'action inconnue: ' . $action];

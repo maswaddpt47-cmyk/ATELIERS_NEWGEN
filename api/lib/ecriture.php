@@ -598,11 +598,20 @@ function action_get_usage_onglets(PDO $db): array
 
 // ── Corbeille (AG-014) ────────────────────────────────────────────────────
 
-function action_get_corbeille(PDO $db): array
+// Un conseiller (hors admin/superviseur) ne voit et ne restaure que les
+// ateliers qu'il animait ou co-animait au moment de la suppression (AG-034,
+// 27/10/2026, même règle que les avis : avis.php). $limite = null : tout.
+function corbeille_atelier_a(array $e, ?string $limite): bool
+{
+    return $limite === null || ($limite !== '' && (($e['conseiller'] ?? '') === $limite || ($e['co_animateur'] ?? '') === $limite));
+}
+
+function action_get_corbeille(PDO $db, ?string $limite = null): array
 {
     corbeille_schema($db);
     $db->exec('DELETE FROM ateliers_corbeille WHERE supprime_le < NOW() - INTERVAL ' . CORBEILLE_JOURS . ' DAY');
     $l = $db->query('SELECT id, donnees, supprime_le, supprime_par FROM ateliers_corbeille ORDER BY supprime_le DESC')->fetchAll(PDO::FETCH_ASSOC);
+    $l = array_values(array_filter($l, fn($r) => corbeille_atelier_a(json_decode($r['donnees'], true) ?: [], $limite)));
     return ['ok' => true, 'jours' => CORBEILLE_JOURS, 'ateliers' => array_map(function ($r) {
         $e = json_decode($r['donnees'], true) ?: [];
         return ['_id' => $r['id'], 'supprime_le' => $r['supprime_le'], 'supprime_par' => $r['supprime_par'],
@@ -616,7 +625,7 @@ function action_get_corbeille(PDO $db): array
 
 // Remet l'atelier tel qu'il était. Refusé si un atelier de même _id existe
 // (recréé entre-temps) : jamais d'écrasement silencieux.
-function action_restaurer_corbeille(PDO $db, array $p, string $acteur): array
+function action_restaurer_corbeille(PDO $db, array $p, string $acteur, ?string $limite = null): array
 {
     $id = trim((string) ($p['_id'] ?? ''));
     if ($id === '') return ['ok' => false, 'error' => 'ID manquant'];
@@ -633,6 +642,8 @@ function action_restaurer_corbeille(PDO $db, array $p, string $acteur): array
         $d = $donnees === false ? null : json_decode($donnees, true);
         $err = null;
         if ($donnees === false) $err = 'Atelier absent de la corbeille (déjà restauré ou purgé)';
+        // Même réponse qu'un atelier absent : ne dit pas qu'il existe (AG-034).
+        elseif (!corbeille_atelier_a(json_decode($donnees, true) ?: [], $limite)) $err = 'Atelier absent de la corbeille (déjà restauré ou purgé)';
         elseif ($s->fetchColumn() !== false) $err = 'Un atelier avec cet identifiant existe déjà';
         elseif (!is_array($d)) $err = 'Données de la corbeille illisibles';
         // Chemin d'écriture normal : validé comme une saisie, numéro d'origine repris.

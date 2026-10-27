@@ -311,6 +311,20 @@ verifier(appel(['action' => 'getAll'], $A)['stockOrdinateurs'] === 20, 'setConfi
 verifier(appel(['action' => 'getVisibility'], $A)['visibility'] === ['saisie' => true, 'carte' => false], 'saveVisibility relu');
 appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'carte' => false, 'corbeille' => true])]);
 verifier((appel(['action' => 'getCorbeille'], $T)['ok'] ?? false) === true, 'corbeille rendue visible sur Index : ouverte aux conseillers');
+// AG-034 (27/10/2026) : un conseiller ne voit et ne restaure que ses ateliers
+// (animés ou co-animés) ; l'admin voit tout.
+$ins = $db->prepare("INSERT INTO ateliers_corbeille (id, donnees, supprime_le, supprime_par) VALUES (?, ?, NOW(), 'Admin')");
+foreach (['cb_mien' => ['conseiller' => 'Nouveau Venu'], 'cb_co' => ['conseiller' => 'Ancien Collegue', 'co_animateur' => 'Nouveau Venu'], 'cb_autre' => ['conseiller' => 'Ancien Collegue', 'co_animateur' => '']] as $id => $qui)
+    $ins->execute([$id, json_encode(['_id' => $id, 'date' => '2026-12-05'] + $qui)]);
+$vus = array_column(appel(['action' => 'getCorbeille'], $T)['ateliers'] ?? [], '_id');
+verifier(in_array('cb_mien', $vus, true) && in_array('cb_co', $vus, true) && !in_array('cb_autre', $vus, true), 'corbeille d\'un conseiller : ses ateliers animés ou co-animés, pas ceux des autres');
+verifier(in_array('cb_autre', array_column(appel(['action' => 'getCorbeille'], $A)['ateliers'], '_id'), true), 'corbeille de l\'admin : tous les ateliers');
+$r = appel(['action' => 'restaurerCorbeille'], $T + ['_id' => 'cb_autre']);
+verifier(($r['ok'] ?? true) === false && str_contains($r['error'], 'absent') && $lire('cb_autre') === null && (int) $db->query("SELECT COUNT(*) FROM ateliers_corbeille WHERE id = 'cb_autre'")->fetchColumn() === 1, 'atelier d\'un autre : restauration refusée, sans dire qu\'il existe');
+$r = appel(['action' => 'restaurerCorbeille'], $T + ['_id' => 'cb_co']);
+verifier(($r['ok'] ?? false) && $lire('cb_co') !== null, 'co-animateur : restauration acceptée');
+$db->exec("DELETE FROM ateliers_corbeille WHERE id IN ('cb_mien', 'cb_autre')");
+$db->exec("DELETE FROM ateliers WHERE id = 'cb_co'");
 verifier(str_contains(appel(['action' => 'saveVisibility'], $T + ['visibility' => '{}'])['error'] ?? '', 'administrateurs'), 'corbeille ouverte : les autres actions admin restent fermées');
 appel(['action' => 'saveVisibility'], $A + ['visibility' => json_encode(['saisie' => true, 'carte' => false])]);
 verifier(str_contains(appel(['action' => 'restaurerCorbeille'], $T + ['_id' => 'x'])['error'] ?? '', 'administrateurs'), 'corbeille masquée sur Index : refermée aux conseillers');
