@@ -100,7 +100,36 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-*Aucun bloc ouvert au 27/10/2026.*
+## AG-035 — Avis : sujet souhaité à choix multiples — ouvert le 27/10/2026
+**Auteur** : session A (Claude, `Claude-Session: …session_01UzvQDuAHryZcg95r5bmRoM`) — lu sur `a49249e`.
+**Proposition** (demande de l'utilisateur, choix du 27/10/2026 : autant de
+cases qu'il veut, liste fixe des 6 sujets, bilan en % des avis) :
+- `avis.html` et la saisie papier (`shared.js:2813-2840`) : cases à cocher ;
+  « Autre » garde son champ « Lequel ? » ;
+- API (`api/lib/avis.php:24,206-215`) : `sujet` reçu en tableau JSON **ou** en
+  chaîne seule (ancienne page encore en cache), chaque valeur contrôlée contre
+  la liste, doublons retirés ; stocké en tableau JSON dans la même colonne,
+  élargie de `VARCHAR(40)` à `VARCHAR(255)` par `avis_schema` ; les avis
+  existants (chaîne seule) restent lisibles sans migration ;
+- lectures (`bilanAvis`, `avisAtelier`, `avis.php:236-243,323`) : `sujet`
+  toujours rendu en tableau ;
+- bilan trimestriel (`logic.js:424`) : chaque sujet coché compte une fois par
+  avis ; base des % = tous les avis (inchangée, AG-032), « Sans réponse » =
+  avis sans aucun sujet ; total au-delà de 100 %, mention « plusieurs choix
+  possibles » dans le rendu (`shared.js:6550`).
+**Critère déclencheur** : 1 (format stocké) et 7 (chiffre affiché) → Codex.
+**Ce que ça engage** : un avis déjà stocké en tableau ne se relit plus avec
+l'ancien code (retour arrière = migration inverse) ; les % des sujets ne se
+somment plus à 100 % alors que les autres questions, si.
+**Non vérifié par l'auteur** :
+- qu'aucun autre lecteur de `avis.sujet` n'existe (bilan mensuel `bilan.php` :
+  lu, ne s'en sert pas ; export CSV « Avis par atelier » : pas de sujet) ;
+- `ALTER TABLE` sur la base de production pendant que des avis arrivent ;
+- la lecture humaine d'un total à plus de 100 % dans le bilan imprimé.
+**Si personne ne répond, je fais quoi ?** — je livre comme décrit, tests à
+l'appui ; l'utilisateur vérifie au bac à sable.
+**Où regarder** : `avis.html:50-52,78-101`, `api/lib/avis.php:20-45,203-245,320-333`,
+`logic.js:418-427`, `shared.js:2813-2840,6516-6560,6672`.
 
 ## Blocs tranchés — sortis de ce fichier
 
