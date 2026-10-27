@@ -255,8 +255,15 @@ function avis_enregistrer(PDO $db, string $atelierId, array $p, string $source):
 // des ateliers « Réalisé » de la période, une ligne par avis, sans date ni
 // remarque ; les remarques à part, sans lien avec leur atelier. Le client
 // agrège (bilanTrimestriel, logic.js). Lecture seule, équipe connectée.
+// Format des sujets rendus par bilanAvis : tableau depuis AG-035 (27/10/2026).
+// Une page ouverte avant compterait ces tableaux de travers (sujets fusionnés,
+// catégorie vide : amendement de Codex) ; sans ce marqueur, elle reçoit un
+// refus qu'elle sait déjà afficher, au lieu de chiffres faux.
+const AVIS_FORMAT_BILAN = '2';
+
 function action_bilan_avis(PDO $db, array $p, array $session): array
 {
+    if ((string) ($p['format'] ?? '') !== AVIS_FORMAT_BILAN) return ['ok' => false, 'error' => 'Page à mettre à jour : rechargez-la (Ctrl+F5) pour afficher les avis.'];
     avis_schema($db);
     [$f, $fp] = avis_filtre_conum($session, $p);
     $du = (string) ($p['du'] ?? '');

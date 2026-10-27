@@ -499,6 +499,9 @@ verifier(($m1['ok'] ?? false) && !($m2['ok'] ?? true) && ($m3['ok'] ?? false)
     && array_column($lus, 'sujet') === [['Smartphone', 'Sécurité', 'Autre'], ['Messagerie']] && array_column($lus, 'sujet_autre') === ['Tablette', null],
     'sujets : plusieurs choix, dans l\'ordre de la liste, sans doublon ; valeur hors liste refusée ; ancienne valeur seule acceptée — ' . json_encode($lus));
 verifier(stripos($db->query("SHOW COLUMNS FROM avis LIKE 'sujet'")->fetch(PDO::FETCH_ASSOC)['Type'], 'varchar(255)') === 0, 'sujets : colonne élargie à 255 sur une base existante');
+$db->exec("INSERT INTO avis (atelier_id, cree_le, sujet, source) VALUES ('av_multi', CURDATE(), 'Sécurité', 'qr')");   // avis d'avant le 27/10/2026
+$tous = appel(['action' => 'avisAtelier'], $A + ['_id' => 'av_multi'])['avis'];
+verifier(end($tous)['sujet'] === ['Sécurité'], 'sujets : ancienne valeur seule en base, relue en tableau');
 $db->exec("DELETE FROM avis WHERE atelier_id = 'av_multi'");
 $db->exec("DELETE FROM ateliers WHERE id = 'av_multi'");
 $jv = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_vieux']);
@@ -522,16 +525,18 @@ verifier(($pap['ok'] ?? false) && $db->query("SELECT source FROM avis WHERE atel
     && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'saisirAvisPapier' AND ref = 'av_vieux'")->fetchColumn() === 1, 'avis papier enregistré hors fenêtre, marqué « papier », journalisé');
 // Bilan trimestriel : avis des seuls ateliers « Réalisé » de la période.
 $debut = date('Y-m-d', strtotime('-60 days'));
-verifier(appel(['action' => 'bilanAvis'], ['du' => $debut, 'au' => $auj])['auth'] ?? false, 'bilan des avis : réservé à l\'équipe connectée');
-verifier(!(appel(['action' => 'bilanAvis'], $T + ['du' => $auj, 'au' => $debut])['ok'] ?? true), 'bilan des avis : période à l\'envers refusée');
+verifier(appel(['action' => 'bilanAvis'], ['format' => '2', 'du' => $debut, 'au' => $auj])['auth'] ?? false, 'bilan des avis : réservé à l\'équipe connectée');
+verifier(!(appel(['action' => 'bilanAvis'], $T + ['format' => '2', 'du' => $auj, 'au' => $debut])['ok'] ?? true), 'bilan des avis : période à l\'envers refusée');
+$vieuxLecteur = appel(['action' => 'bilanAvis'], $A + ['du' => $debut, 'au' => $auj]);
+verifier(!($vieuxLecteur['ok'] ?? true) && str_contains($vieuxLecteur['error'], 'rechargez'), 'bilan des avis : page d\'avant AG-035 (sans format) invitée à recharger, pas de chiffres faux');
 $db->exec("UPDATE ateliers SET statut = 'Réalisé' WHERE id = 'av_vieux'");
-$b = appel(['action' => 'bilanAvis'], $A + ['du' => $debut, 'au' => $auj]);
+$b = appel(['action' => 'bilanAvis'], $A + ['format' => '2', 'du' => $debut, 'au' => $auj]);
 verifier(($b['ok'] ?? false) && count($b['avis']) === 1 && $b['avis'][0]['atelier_id'] === 'av_vieux' && $b['avis'][0]['attentes'] === 3 && $b['remarques'] === [],
     'bilan des avis : atelier non réalisé écarté — ' . json_encode($b));
 $db->exec("UPDATE ateliers SET statut = 'Réalisé' WHERE id = 'av_1'");
-$bT = appel(['action' => 'bilanAvis'], $T + ['du' => $debut, 'au' => $auj]);
+$bT = appel(['action' => 'bilanAvis'], $T + ['format' => '2', 'du' => $debut, 'au' => $auj]);
 verifier(($bT['masque'] ?? false) && $bT['avis'] === [] && $bT['remarques'] === [], 'bilan de moins de 3 avis : rien de lisible pour le conseiller');
-$b = appel(['action' => 'bilanAvis'], $A + ['du' => $debut, 'au' => $auj]);
+$b = appel(['action' => 'bilanAvis'], $A + ['format' => '2', 'du' => $debut, 'au' => $auj]);
 verifier(count($b['avis'] ?? []) === 2 && $b['remarques'] === ['Merci'] && !array_key_exists('remarque', $b['avis'][0]) && !array_key_exists('cree_le', $b['avis'][0]),
     'bilan des avis : remarques à part, sans date ni lien avec l\'atelier');
 verifier(($b['remarques_ateliers'] ?? null) === [['atelier_id' => 'av_1', 'remarque' => 'Merci']] && !array_key_exists('remarques_ateliers', $bT),
@@ -558,7 +563,7 @@ $idsA = array_column(appel(['action' => 'avisParAtelier'], $A + ['du' => $debut,
 $idsAmoi = array_column(appel(['action' => 'avisParAtelier'], $A + ['du' => $debut, 'au' => $auj, 'moi' => '1'])['ateliers'] ?? [], 'atelier_id');
 verifier(in_array('av_autre', $idsAmoi, true) && !in_array('av_1', $idsAmoi, true), 'Admin, « Mes bilans » (moi=1) : ses seuls ateliers');
 $db->exec("UPDATE ateliers SET statut = 'Réalisé' WHERE id = 'av_autre'");
-$remT = appel(['action' => 'bilanAvis'], $T + ['du' => $debut, 'au' => $auj])['remarques'] ?? null;
+$remT = appel(['action' => 'bilanAvis'], $T + ['format' => '2', 'du' => $debut, 'au' => $auj])['remarques'] ?? null;
 verifier(!in_array('av_autre', $idsT, true) && in_array('av_autre', $idsA, true) && is_array($remT) && !in_array('Autre animateur', $remT, true),
     'récapitulatif et bilan : le conseiller ne voit que ses ateliers, l\'Admin voit tout');
 $db->exec("UPDATE ateliers SET co_animateur = 'Nouveau Venu' WHERE id = 'av_autre'");
