@@ -143,8 +143,7 @@ modifier** (champ « Instructions » seulement, par l'utilisateur) ; ses commits
 vont sur des branches `claude/…` à fusionner dans `main` — à vérifier au 01/01.
 **Rappels de l'audit Codex** (lancé à la main), push et mail à 08:52 :
 `trig_012uCnnzo6MZhyWNYr6JAFqv` le 2 janvier, `trig_01XC6RefYHqVbN2Wcjz3kkXo`
-le 1er avril, juillet et octobre. Copilot écarté le 07/10 (abonnement payant
-requis) ; Gemini en réserve.
+le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
 
 ## À ne pas réapprendre — Alwaysdata et déploiement
 
