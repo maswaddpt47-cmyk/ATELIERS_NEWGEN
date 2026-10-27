@@ -47,9 +47,9 @@ NextStep (équipe) et NEWGEN (utilisateur) : **même API PHP chez Alwaysdata**
 - **Bac à sable** (AG-019) : https://ateliers-numeriques.alwaysdata.net/sandbox/,
   NextStep dans `sandbox/nextstep/` (AG-033) — comptes « Démo … » (« Démo
   Admin » : secret `SANDBOX_MDP_DEMO`), fausses données (`sandbox_seed.php`).
-  **Depuis le 25/10 : directement sur `main` sauf demande du bac à sable** ;
-  dans le doute, demander. Circuit : `sandbox` (NextStep d'abord) → test →
-  `main` → `main` reporté dans `sandbox`.
+  **Depuis le 25/10 : directement sur `main` sauf demande du bac à sable.**
+  Depuis le 27/10, chaque push de code sur `main` de NEWGEN republie aussi le
+  bac à sable (`deploy-sandbox.yml`) ; un push NextStep seul : le lancer à la main.
 
 ## 🔧 Parité NEWGEN/NextStep (AG-015)
 
