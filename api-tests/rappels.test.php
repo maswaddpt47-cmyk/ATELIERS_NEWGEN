@@ -39,9 +39,9 @@ $cfg->execute(['rappels_actifs', json_encode(['Bruno' => false])]);
 $tmp = sys_get_temp_dir() . '/rappels-test-' . getmypid();
 @mkdir("$tmp/mails", 0700, true);
 file_put_contents("$tmp/config.php", '<?php return ' . var_export(['db_hote' => $hote, 'db_nom' => 'ateliers_test_rappels', 'db_utilisateur' => $util, 'db_mot_de_passe' => $mdp], true) . ';');
-$lancer = function (string $args = '') use ($tmp): array {
+$lancer = function (string $args = '', bool $fiches = true) use ($tmp): array {
     $env = 'ATELIERS_API_CONFIG=' . escapeshellarg("$tmp/config.php") . ' ATELIERS_MAIL_TEST_DIR=' . escapeshellarg("$tmp/mails")
-         . ' ATELIERS_RAPPELS_FICHE_DEPUIS=' . date('Y-m-d', strtotime('-5 days'));
+         . ' ATELIERS_RAPPELS_FICHE_DEPUIS=' . date('Y-m-d', strtotime('-5 days')) . ($fiches ? ' ATELIERS_RAPPELS_FICHES=1' : '');
     exec("$env php " . escapeshellarg(__DIR__ . '/../api/lib/rappels.php') . " $args 2>&1", $sortie, $code);
     return [$code, implode("\n", $sortie)];
 };
@@ -59,6 +59,15 @@ verifier(str_contains($denis, 'Fiche seule') && !str_contains($denis, 'Planifié
 verifier(str_contains($sortie, '1 rappel(s) coupé(s)') && str_contains($sortie, '1 conseiller(s) sans adresse'), 'interrupteur de rappel individuel respecté, absence d\'adresse comptée');
 verifier(!preg_match('/Alice|Bruno|Chloé|example\.org/', $sortie), 'compte rendu sans nom ni adresse');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'alertesRetard' AND conseiller = 'Alice'")->fetchColumn() === 1, 'envoi journalisé');
+
+// Liste des fiches suspendue (réglage par défaut depuis le 27/10/2026) :
+// seuls les statuts à mettre à jour sont rappelés.
+array_map('unlink', glob("$tmp/mails/*.txt"));
+[$code, $sortie] = $lancer('', false);
+$m = $mails();
+$alice = implode('', array_filter($m, fn($x) => str_contains($x, 'A: alice@example.org')));
+verifier($code === 0 && count($m) === 1 && str_contains($alice, 'Mails <b>gras</b>') && !str_contains($alice, 'Sans fiche') && !str_contains($alice, 'fiche bilan est vide'),
+    'fiches suspendues : statuts seuls rappelés, plus de mail pour une fiche vide seule');
 
 array_map('unlink', glob("$tmp/mails/*.txt"));
 [$code, $sortie] = $lancer('--test=moi@example.org');
