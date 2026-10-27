@@ -34,10 +34,6 @@ const RAPPELS_URL_APPLI = 'https://maswaddpt47-cmyk.github.io/ateliers-cd47_Next
 // Rappel des fiches lancé au 01/11/2026 (demande du 10/10 : l'équipe doit
 // être prévenue avant) ; seuls les ateliers réalisés depuis cette date comptent.
 define('RAPPELS_FICHE_DEPUIS', getenv('ATELIERS_RAPPELS_FICHE_DEPUIS') ?: '2026-11-01');   // variable : tests seulement
-// Liste des fiches bilan SUSPENDUE (décision de l'utilisateur, 27/10/2026) :
-// le mail ne rappelle que les statuts à mettre à jour. Pour la rallumer :
-// passer à true, et prévenir l'équipe avant. Variable : tests seulement.
-define('RAPPELS_FICHES_ACTIF', getenv('ATELIERS_RAPPELS_FICHES') === '1' ? true : false);
 
 $test = null;
 foreach (array_slice($argv, 1) as $arg) {
@@ -55,6 +51,10 @@ if (in_array((string) ($cfg['rappels_actifs'] ?? ''), ['false', 'FALSE'], true))
     exit(0);
 }
 $actifs = api_json($cfg['rappels_actifs'] ?? '', []);
+// Liste des fiches bilan vides : interrupteur de l'Admin (Listes → Conseillers,
+// config rappels_fiches = 'true'), éteint par défaut — suspendue par
+// l'utilisateur le 27/10/2026 ; la rallumer après avoir prévenu l'équipe.
+$fichesActives = in_array((string) ($cfg['rappels_fiches'] ?? ''), ['true', 'TRUE'], true);
 $emails = api_json($cfg['emails'] ?? '', []);
 if (!is_array($emails)) $emails = [];
 $actifs = is_array($actifs) ? $actifs : [];
@@ -72,7 +72,7 @@ $st = $db->prepare("SELECT date, horaire, thematique, conseiller, commune FROM a
                     ORDER BY conseiller, date, horaire");
 $st->execute([date('Y-m-d'), RAPPELS_FICHE_DEPUIS]);
 $fiches = [];
-if (RAPPELS_FICHES_ACTIF) foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) $fiches[$r['conseiller']][] = $r;
+if ($fichesActives) foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) $fiches[$r['conseiller']][] = $r;
 
 // Mail d'un conseiller : sujet, texte, HTML. Tout ce qui vient de la base est
 // échappé (le GAS l'insérait tel quel dans le HTML). Deux listes possibles :

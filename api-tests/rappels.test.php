@@ -35,13 +35,14 @@ $db->exec("UPDATE ateliers SET fiche_bilan = '{\"objectif\":\"oui\"}' WHERE id =
 $cfg = $db->prepare('INSERT INTO config (cle, valeur) VALUES (?, ?)');
 $cfg->execute(['emails', json_encode(['Alice' => 'alice@example.org', 'Bruno' => 'bruno@example.org', 'Denis' => 'denis@example.org'])]);
 $cfg->execute(['rappels_actifs', json_encode(['Bruno' => false])]);
+$cfg->execute(['rappels_fiches', 'true']);   // interrupteur de l'Admin allumé pour les premiers essais
 
 $tmp = sys_get_temp_dir() . '/rappels-test-' . getmypid();
 @mkdir("$tmp/mails", 0700, true);
 file_put_contents("$tmp/config.php", '<?php return ' . var_export(['db_hote' => $hote, 'db_nom' => 'ateliers_test_rappels', 'db_utilisateur' => $util, 'db_mot_de_passe' => $mdp], true) . ';');
-$lancer = function (string $args = '', bool $fiches = true) use ($tmp): array {
+$lancer = function (string $args = '') use ($tmp): array {
     $env = 'ATELIERS_API_CONFIG=' . escapeshellarg("$tmp/config.php") . ' ATELIERS_MAIL_TEST_DIR=' . escapeshellarg("$tmp/mails")
-         . ' ATELIERS_RAPPELS_FICHE_DEPUIS=' . date('Y-m-d', strtotime('-5 days')) . ($fiches ? ' ATELIERS_RAPPELS_FICHES=1' : '');
+         . ' ATELIERS_RAPPELS_FICHE_DEPUIS=' . date('Y-m-d', strtotime('-5 days'));
     exec("$env php " . escapeshellarg(__DIR__ . '/../api/lib/rappels.php') . " $args 2>&1", $sortie, $code);
     return [$code, implode("\n", $sortie)];
 };
@@ -60,10 +61,11 @@ verifier(str_contains($sortie, '1 rappel(s) coupé(s)') && str_contains($sortie,
 verifier(!preg_match('/Alice|Bruno|Chloé|example\.org/', $sortie), 'compte rendu sans nom ni adresse');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'alertesRetard' AND conseiller = 'Alice'")->fetchColumn() === 1, 'envoi journalisé');
 
-// Liste des fiches suspendue (réglage par défaut depuis le 27/10/2026) :
+// Interrupteur des fiches éteint, ou absent (défaut depuis le 27/10/2026) :
 // seuls les statuts à mettre à jour sont rappelés.
+$db->exec("DELETE FROM config WHERE cle = 'rappels_fiches'");
 array_map('unlink', glob("$tmp/mails/*.txt"));
-[$code, $sortie] = $lancer('', false);
+[$code, $sortie] = $lancer();
 $m = $mails();
 $alice = implode('', array_filter($m, fn($x) => str_contains($x, 'A: alice@example.org')));
 verifier($code === 0 && count($m) === 1 && str_contains($alice, 'Mails <b>gras</b>') && !str_contains($alice, 'Sans fiche') && !str_contains($alice, 'fiche bilan est vide'),
