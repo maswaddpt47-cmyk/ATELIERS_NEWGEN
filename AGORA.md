@@ -100,7 +100,46 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-*Aucun bloc ouvert au 26/10/2026.*
+## AG-033 — Bac à sable pour NextStep — ouvert le 27/10/2026
+**Auteur** : session A (Claude, `Claude-Session: …session_01UzvQDuAHryZcg95r5bmRoM`) — lu sur `15f3556`
+(NEWGEN) et `cb00873` (NextStep).
+**Proposition** : publier les pages de NextStep dans `~/www/sandbox/nextstep/`
+(→ `https://<compte>.alwaysdata.net/sandbox/nextstep/`), branchées sur
+l'`api-sandbox` et la base de fausses données existantes. Rien à changer dans
+le code de NextStep : `urlApiPour` (`utils.js:611`) choisit déjà l'API du bac à
+sable pour tout chemin `^/sandbox/`, et le bandeau existe (`shared.js:546`).
+**Deux options pour le déploiement** (critère 2) :
+- **B (recommandée)** — `deploy-sandbox.yml` de NEWGEN récupère aussi NextStep
+  (branche `sandbox` de NextStep si elle existe, sinon `main`) et copie ses
+  pages ; aucun nouveau secret. Un essai NextStep seul = lancer ce workflow à la
+  main (`workflow_dispatch`).
+- A — un workflow dans NextStep, avec ses propres secrets : la clé SSH
+  d'Alwaysdata recopiée dans un second dépôt.
+**Critère déclencheur** : 1 (nouvel emplacement publié chez l'hébergeur) et 2 ;
+hébergement → contradicteur Codex.
+**Ce que ça engage** :
+- le `rsync --delete` des pages NEWGEN (`deploy-sandbox.yml:106`) effacerait le
+  sous-dossier : il doit l'exclure (`--exclude /nextstep/`) ;
+- un chemin hors `/sandbox/` (ex. `/sandbox-nextstep/`) ferait parler ces pages
+  à l'**API de production** : la vérification en ligne doit prouver que
+  `sandbox/nextstep/index.html` appelle `api-sandbox` ;
+- la branche `sandbox` de NEWGEN a 45 commits de retard sur `main` (mesuré le
+  27/10/2026, `git rev-list --count`) : la mettre à jour avant le premier essai.
+**Non vérifié par l'auteur** :
+- que le dépôt NextStep est public (supposé, il est servi par GitHub Pages) :
+  sinon l'option B demande un jeton de lecture ;
+- que la coupure d'urgence `bac-a-sable` (`coupure-urgence.yml:102`, `.htaccess`
+  de `www/sandbox/`) couvre le sous-dossier : supposé par héritage Apache,
+  jamais essayé ;
+- `urlAvisPour` (`utils.js:621`) renvoie le QR vers `sandbox/avis.html` de NEWGEN
+  — voulu, une seule page d'avis — non essayé depuis NextStep ;
+- les liens « Conseillers / Administration » du bandeau sont relatifs : restent
+  dans `sandbox/nextstep/` (lecture du code seulement).
+**Si personne ne répond, je fais quoi ?** — l'utilisateur choisit A ou B ;
+j'écris l'option retenue sur la branche `sandbox`, rien en production.
+**Où regarder** : `.github/workflows/deploy-sandbox.yml:100-117`,
+`ateliers-cd47_NextStep/utils.js:611-626`, `ateliers-cd47_NextStep/shared.js:543-565`,
+`.github/workflows/coupure-urgence.yml:70-105`.
 
 ## Blocs tranchés — sortis de ce fichier
 
