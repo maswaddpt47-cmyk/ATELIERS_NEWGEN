@@ -1,5 +1,8 @@
 # Bac à sable (AG-019, 04/10/2026) : chaque push sur la branche `sandbox`
-# publie, chez Alwaysdata et SANS toucher à la production :
+# publie, chez Alwaysdata et SANS toucher à la production. Chaque push sur
+# `main` aussi (décision de l'utilisateur, 27/10/2026 : le bac à sable reste à
+# jour en même temps que la production) ; les pages NextStep viennent alors de
+# son `main`. Documentation seule (*.md) : rien n'est republié.
 #   - l'API dans ~/www/api-sandbox/, avec ~/config-api-sandbox.php ;
 #   - les pages dans ~/www/sandbox/ → https://<compte>.alwaysdata.net/sandbox/
 #     (elles parlent à l'API du bac à sable : urlApiPour, utils.js).
@@ -17,7 +20,8 @@ permissions:
 
 on:
   push:
-    branches: [sandbox]
+    branches: [sandbox, main]
+    paths-ignore: ['**.md']
   workflow_dispatch:
 
 concurrency:
@@ -26,7 +30,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/sandbox'
+    if: github.ref == 'refs/heads/sandbox' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -108,14 +112,16 @@ jobs:
 
       # Pages NextStep (AG-033, 27/10/2026) dans sandbox/nextstep/ : même API
       # du bac à sable, parce que leur chemin commence par /sandbox/ (urlApiPour).
-      # Dépôt public, lu sans clé ; branche `sandbox` de NextStep, sinon `main`.
+      # Dépôt public, lu sans clé. Depuis `main` : `main` de NextStep ; depuis
+      # `sandbox` : sa branche `sandbox`, sinon `main`.
       - name: Copier les pages NextStep
         env:
           COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
         run: |
           SSH="ssh -o StrictHostKeyChecking=accept-new"
           NS=https://github.com/maswaddpt47-cmyk/ateliers-cd47_NextStep.git
-          BR=sandbox; git ls-remote --exit-code --heads "$NS" sandbox >/dev/null || BR=main
+          BR=main
+          if [ "$GITHUB_REF_NAME" = sandbox ] && git ls-remote --exit-code --heads "$NS" sandbox >/dev/null; then BR=sandbox; fi
           git clone -q --depth 1 -b "$BR" "$NS" "$RUNNER_TEMP/nextstep"
           cd "$RUNNER_TEMP/nextstep"
           echo "::notice::NextStep $BR $(git rev-parse --short HEAD)"
