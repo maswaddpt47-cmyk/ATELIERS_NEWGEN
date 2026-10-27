@@ -486,6 +486,21 @@ verifier(!(appel(['action' => 'deposerAvis'], ['a' => $j['jeton'], 'attentes' =>
     && !(appel(['action' => 'deposerAvis'], ['a' => $j['jeton'], 'rythme' => 'Bof'])['ok'] ?? true)
     && !(appel(['action' => 'deposerAvis'], ['a' => $j['jeton']])['ok'] ?? true), 'réponse hors liste ou avis vide : refusés');
 verifier(!(appel(['action' => 'deposerAvis'], ['a' => str_repeat('0', 32), 'attentes' => '5'])['ok'] ?? true), 'jeton inconnu : refusé');
+// AG-035 (27/10/2026) : sujets à choix multiples, tableau JSON ; valeur seule
+// (ancienne page en cache) toujours acceptée ; toujours relus en tableau.
+$db->exec('ALTER TABLE avis MODIFY sujet VARCHAR(40) NULL');   // base d'avant le 27/10/2026
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_multi', 'date' => $auj, 'thematique' => 'X', 'conseiller' => 'Nouveau Venu'])]);
+$jm = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_multi'])['jeton'];
+$m1 = appel(['action' => 'deposerAvis'], ['a' => $jm, 'sujet' => json_encode(['Sécurité', 'Smartphone', 'Sécurité', 'Autre']), 'sujet_autre' => 'Tablette']);
+$m2 = appel(['action' => 'deposerAvis'], ['a' => $jm, 'sujet' => json_encode(['Smartphone', 'Bof'])]);
+$m3 = appel(['action' => 'deposerAvis'], ['a' => $jm, 'sujet' => 'Messagerie', 'sujet_autre' => 'ignoré']);
+$lus = appel(['action' => 'avisAtelier'], $A + ['_id' => 'av_multi'])['avis'] ?? [];
+verifier(($m1['ok'] ?? false) && !($m2['ok'] ?? true) && ($m3['ok'] ?? false)
+    && array_column($lus, 'sujet') === [['Smartphone', 'Sécurité', 'Autre'], ['Messagerie']] && array_column($lus, 'sujet_autre') === ['Tablette', null],
+    'sujets : plusieurs choix, dans l\'ordre de la liste, sans doublon ; valeur hors liste refusée ; ancienne valeur seule acceptée — ' . json_encode($lus));
+verifier(stripos($db->query("SHOW COLUMNS FROM avis LIKE 'sujet'")->fetch(PDO::FETCH_ASSOC)['Type'], 'varchar(255)') === 0, 'sujets : colonne élargie à 255 sur une base existante');
+$db->exec("DELETE FROM avis WHERE atelier_id = 'av_multi'");
+$db->exec("DELETE FROM ateliers WHERE id = 'av_multi'");
 $jv = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_vieux']);
 $f = appel(['action' => 'avisPublic'], ['a' => $jv['jeton']]);
 verifier(!($f['ok'] ?? true) && str_contains($f['error'] ?? '', 'fermé depuis le'), 'atelier passé depuis plus de 30 jours : questionnaire fermé, avec la date');

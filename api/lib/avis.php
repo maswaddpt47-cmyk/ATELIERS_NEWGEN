@@ -36,10 +36,14 @@ function avis_schema(PDO $db): void
     $db->exec("CREATE TABLE IF NOT EXISTS avis (
         id INT NOT NULL AUTO_INCREMENT, atelier_id VARCHAR(64) NOT NULL, cree_le DATETIME NOT NULL,
         attentes TINYINT NULL, rythme VARCHAR(20) NULL, clarte TINYINT NULL, aise VARCHAR(20) NULL,
-        autonomie VARCHAR(20) NULL, sujet VARCHAR(40) NULL, sujet_autre VARCHAR(60) NULL, remarque VARCHAR(500) NULL,
+        autonomie VARCHAR(20) NULL, sujet VARCHAR(255) NULL, sujet_autre VARCHAR(60) NULL, remarque VARCHAR(500) NULL,
         source VARCHAR(10) NOT NULL DEFAULT 'qr',
         PRIMARY KEY (id), KEY idx_atelier (atelier_id), KEY idx_cree (cree_le)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    // Sujets à choix multiples (AG-035, 27/10/2026) : tableau JSON, plus large
+    // que l'ancienne valeur seule (VARCHAR(40)).
+    $t = $db->query("SHOW COLUMNS FROM avis LIKE 'sujet'")->fetch(PDO::FETCH_ASSOC);
+    if ($t && stripos((string) $t['Type'], 'varchar(40)') === 0) $db->exec('ALTER TABLE avis MODIFY sujet VARCHAR(255) NULL');
     // Table créée avant l'amendement D d'AG-021 (bac à sable) : colonne source.
     if (!$db->query("SHOW COLUMNS FROM avis LIKE 'source'")->fetch()) {
         $db->exec("ALTER TABLE avis ADD COLUMN source VARCHAR(10) NOT NULL DEFAULT 'qr'");
@@ -192,6 +196,28 @@ function avis_plafond(PDO $db, string $atelierId): int
     return AVIS_MAX;
 }
 
+// Sujets souhaités, à choix multiples depuis le 27/10/2026 (AG-035). Reçus en
+// tableau JSON, ou en valeur seule (ancienne page encore en cache) ; null si
+// une valeur n'est pas dans la liste. Rendus sans doublon, dans l'ordre de la liste.
+function avis_sujets_recus(string $v): ?array
+{
+    $v = trim($v);
+    if ($v === '') return [];
+    $l = str_starts_with($v, '[') ? json_decode($v, true) : [$v];
+    if (!is_array($l)) return null;
+    foreach ($l as $x) if (!is_string($x) || !in_array($x, AVIS_CHOIX['sujet'], true)) return null;
+    return array_values(array_intersect(AVIS_CHOIX['sujet'], $l));
+}
+
+// Lecture : un avis d'avant le 27/10/2026 garde sa valeur seule. Toujours un tableau.
+function avis_sujets_lus(?string $v): array
+{
+    if ($v === null || $v === '') return [];
+    if (!str_starts_with($v, '[')) return [$v];
+    $l = json_decode($v, true);
+    return is_array($l) ? array_values(array_filter($l, 'is_string')) : [];
+}
+
 function avis_enregistrer(PDO $db, string $atelierId, array $p, string $source): array
 {
     $a = ['id' => $atelierId];
@@ -208,11 +234,15 @@ function avis_enregistrer(PDO $db, string $atelierId, array $p, string $source):
         $l[$c] = (int) $v;
     }
     foreach (AVIS_CHOIX as $c => $liste) {
+        if ($c === 'sujet') continue;
         $v = trim((string) ($p[$c] ?? ''));
         if ($v !== '' && !in_array($v, $liste, true)) return ['ok' => false, 'error' => "Réponse invalide ($c)"];
         $l[$c] = $v === '' ? null : $v;
     }
-    $l['sujet_autre'] = ($l['sujet'] ?? '') === 'Autre' ? (mb_substr(trim((string) ($p['sujet_autre'] ?? '')), 0, 60) ?: null) : null;
+    $sujets = avis_sujets_recus((string) ($p['sujet'] ?? ''));
+    if ($sujets === null) return ['ok' => false, 'error' => 'Réponse invalide (sujet)'];
+    $l['sujet'] = $sujets ? json_encode($sujets, JSON_UNESCAPED_UNICODE) : null;
+    $l['sujet_autre'] = in_array('Autre', $sujets, true) ? (mb_substr(trim((string) ($p['sujet_autre'] ?? '')), 0, 60) ?: null) : null;
     $l['remarque'] = mb_substr(trim((string) ($p['remarque'] ?? '')), 0, 500);
     if (count(array_filter($l, fn($v) => $v !== null && $v !== '')) <= 3) return ['ok' => false, 'error' => 'Répondez au moins à une question'];
     $cols = array_keys($l);
@@ -240,7 +270,7 @@ function action_bilan_avis(PDO $db, array $p, array $session): array
     $avis = array_map(fn($r) => ['atelier_id' => $r['atelier_id'],
         'attentes' => $r['attentes'] !== null ? (int) $r['attentes'] : null,
         'clarte' => $r['clarte'] !== null ? (int) $r['clarte'] : null,
-        'rythme' => $r['rythme'], 'aise' => $r['aise'], 'autonomie' => $r['autonomie'], 'sujet' => $r['sujet']],
+        'rythme' => $r['rythme'], 'aise' => $r['aise'], 'autonomie' => $r['autonomie'], 'sujet' => avis_sujets_lus($r['sujet'])],
         $s->fetchAll(PDO::FETCH_ASSOC));
     $r = $db->prepare("SELECT v.remarque FROM avis v JOIN ateliers a ON a.id = v.atelier_id
                        WHERE a.statut = 'Réalisé' AND a.date BETWEEN ? AND ?$f AND v.remarque <> '' ORDER BY v.id LIMIT 1000");   // relevé de 100 (AG-032)
@@ -327,6 +357,7 @@ function action_avis_atelier(PDO $db, array $p): array
         $r['id'] = (int) $r['id'];
         $r['cree_le'] = substr((string) $r['cree_le'], 0, 10);
         foreach (['attentes', 'clarte'] as $c) $r[$c] = $r[$c] !== null ? (int) $r[$c] : null;
+        $r['sujet'] = avis_sujets_lus($r['sujet']);
         return $r;
     }, $s->fetchAll(PDO::FETCH_ASSOC))];
 }
