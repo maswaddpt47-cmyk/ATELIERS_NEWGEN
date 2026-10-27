@@ -100,7 +100,33 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-*Aucun bloc ouvert au 27/10/2026.*
+## AG-034 — Corbeille : chaque conseiller ne voit que ses ateliers — ouvert le 27/10/2026
+**Auteur** : session A (Claude, `Claude-Session: …session_01UzvQDuAHryZcg95r5bmRoM`) — lu sur `ce62955`.
+**Constat** : Corbeille ouverte aux conseillers (Admin → Visibilité), `getCorbeille`
+renvoie **tous** les ateliers supprimés de l'équipe et `restaurerCorbeille`
+restaure n'importe lequel (`api/lib/ecriture.php:601-640`, porte ouverte par
+`api/lib/api.php:104-108`).
+**Proposition** (demande de l'utilisateur, définition choisie le 27/10/2026 :
+« animés ou co-animés ») : hors admin/superviseur actifs (`api_acces_admin`),
+l'API ne renvoie et ne restaure que les ateliers dont `conseiller` ou
+`co_animateur` du **contenu supprimé** (`ateliers_corbeille.donnees`) est la
+personne connectée — même règle que les avis (`api/lib/avis.php:94`). Refus
+« Non autorisé » sinon, sans dire si l'atelier existe. Texte de la vue adapté
+pour les conseillers ; Admin inchangé (tout voir, purger).
+**Critère déclencheur** : sécurité / droits d'accès → contradicteur Codex.
+**Ce que ça engage** : un conseiller qui supprime l'atelier d'un collègue ne le
+voit plus dans sa Corbeille (seul l'Admin peut le rendre) ; un co-animateur peut
+restaurer un atelier supprimé par l'animateur.
+**Non vérifié par l'auteur** :
+- comparaison des noms : égalité exacte, sans `trim` ni casse (comme `avis.php`) ;
+  un atelier saisi avec un nom mal orthographié n'apparaît chez personne ;
+- l'Admin consulté sur Index (rôle admin) voit tout : voulu, pas essayé ;
+- `restaurerCorbeille` lit `donnees` sous `FOR UPDATE` : le contrôle se fait
+  dans la même transaction, pas avant (sinon course entre lecture et restauration).
+**Si personne ne répond, je fais quoi ?** — je livre comme décrit, tests API à
+l'appui ; l'utilisateur vérifie au bac à sable.
+**Où regarder** : `api/lib/ecriture.php:601-640`, `api/lib/api.php:104-108,160-163`,
+`api/lib/avis.php:85-96`, `shared.js` (`VueCorbeille`).
 
 ## Blocs tranchés — sortis de ce fichier
 
