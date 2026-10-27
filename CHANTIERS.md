@@ -267,10 +267,8 @@ appel superflu, `sw.js` de désinscription.
 - **Démonstration (24/10)** : faux ateliers sur l'année courante et la
   suivante, liens « Conseillers » / « Administration » dans le bandeau du bac à
   sable ; aucun peuplement sans le garde-fou `bac_a_sable=true`.
-- **Corbeille par conseiller (AG-034, 27/10)** : hors admin/superviseur, ses
-  ateliers animés ou co-animés seulement, comparés par la base (casse ignorée).
-- **Purge définitive de la Corbeille : admin/superviseur seuls** (AG-024,
-  verrouillé par `api-tests/api.test.php`).
+- **Corbeille** : un conseiller ne voit que ses ateliers animés ou co-animés
+  (AG-034) ; purge définitive réservée admin/superviseur (AG-024). Testés.
 - **Matériel** : `periodePretMateriel` retombe sur la date de l'atelier sans
   dates de prêt (22/09). Seul le stock d'ordinateurs compte (05/10 : « Classe
   mobile » = ordinateurs du stock), à l'heure près (AG-022) : prêt d'un jour
