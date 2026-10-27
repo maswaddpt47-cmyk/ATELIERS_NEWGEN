@@ -47,8 +47,8 @@
     <div class="carte"><p class="q">3. Les explications étaient claires</p><div class="choix etoiles" data-q="clarte" data-etoiles="5"></div></div>
     <div class="carte"><p class="q">4. Je me sens plus à l'aise avec le numérique</p><div class="choix emo" data-q="aise" data-valeurs="Non|Un peu|Oui" data-libelles="😞|😐|🙂"></div></div>
     <div class="carte"><p class="q">5. Je pourrai refaire seul(e)</p><div class="choix" data-q="autonomie" data-valeurs="Oui|Avec de l'aide|Non"></div></div>
-    <div class="carte"><p class="q">6. Le sujet que j'aimerais ensuite</p>
-      <select id="sujet"><option value="">— Choisir (facultatif) —</option><option>Smartphone</option><option>Messagerie</option><option>Démarches en ligne</option><option>Sécurité</option><option>Intelligence artificielle</option><option>Autre</option></select>
+    <div class="carte"><p class="q">6. Les sujets que j'aimerais ensuite <span class="note">(plusieurs choix possibles, facultatif)</span></p>
+      <div class="choix" id="sujets" data-valeurs="Smartphone|Messagerie|Démarches en ligne|Sécurité|Intelligence artificielle|Autre"></div>
       <input id="sujet_autre" class="cache" maxlength="60" placeholder="Lequel ?" style="margin-top:8px">
     </div>
     <div class="carte"><p class="q">7. Une remarque ? <span class="note">(facultatif)</span></p><textarea id="remarque" maxlength="500"></textarea><p class="note">Merci de n'écrire aucun nom (ni le vôtre, ni celui d'une autre personne).</p></div>
@@ -67,6 +67,8 @@
   // Jeton dans le fragment (#) : jamais envoyé à l'hébergeur de la page.
   var jeton=decodeURIComponent(location.hash.replace(/^#/,''))||new URLSearchParams(location.search).get('a')||'';
   var reponses={};
+  // Sujets souhaités : plusieurs choix (AG-035, 27/10/2026), dans l'ordre de la liste.
+  var sujets=[];
   var cle='avis_envoye_'+jeton;
   function $(id){return document.getElementById(id);}
   function appel(action,donnees){
@@ -75,7 +77,7 @@
       .then(function(r){return r.json();});
   }
   function merci(){$('formulaire').classList.add('cache');$('merci').classList.remove('cache');}
-  function majBouton(){$('envoyer').disabled=!Object.keys(reponses).length&&!$('sujet').value&&!$('remarque').value.trim();}
+  function majBouton(){$('envoyer').disabled=!Object.keys(reponses).length&&!sujets.length&&!$('remarque').value.trim();}
   // Boutons de choix : un appui choisit, un second retire le choix.
   document.querySelectorAll('[data-q]').forEach(function(bloc){
     var q=bloc.dataset.q;
@@ -95,10 +97,22 @@
       bloc.appendChild(b);
     });
   });
-  $('sujet').addEventListener('change',function(){$('sujet_autre').classList.toggle('cache',this.value!=='Autre');majBouton();});
+  var listeSujets=$('sujets').dataset.valeurs.split('|');
+  listeSujets.forEach(function(v){
+    var b=document.createElement('button');b.type='button';b.textContent=v;b.setAttribute('aria-pressed','false');
+    b.addEventListener('click',function(){
+      var i=sujets.indexOf(v);
+      if(i>=0)sujets.splice(i,1);else sujets.push(v);
+      sujets.sort(function(x,y){return listeSujets.indexOf(x)-listeSujets.indexOf(y);});
+      b.setAttribute('aria-pressed',i>=0?'false':'true');
+      $('sujet_autre').classList.toggle('cache',sujets.indexOf('Autre')<0);
+      majBouton();
+    });
+    $('sujets').appendChild(b);
+  });
   $('remarque').addEventListener('input',majBouton);
   $('envoyer').addEventListener('click',function(){
-    var d=Object.assign({a:jeton},reponses,{sujet:$('sujet').value,sujet_autre:$('sujet_autre').value,remarque:$('remarque').value});
+    var d=Object.assign({a:jeton},reponses,{sujet:JSON.stringify(sujets),sujet_autre:sujets.indexOf('Autre')>=0?$('sujet_autre').value:'',remarque:$('remarque').value});
     this.disabled=true;$('erreur').textContent='';
     appel('deposerAvis',d).then(function(r){
       if(r&&r.ok){try{localStorage.setItem(cle,'1');}catch(e){}merci();}
