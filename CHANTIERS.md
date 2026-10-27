@@ -115,8 +115,8 @@ l'utilisateur.
 
 **Pour Claude**
 
-0. **Bac à sable NextStep (AG-033, 27/10)** : `www/sandbox/nextstep/`, jamais
-   hors `/sandbox/` (sinon API de production). Attend le choix A/B et Codex.
+0. **Bac à sable NextStep (AG-033, option A, 27/10)** : préparé, rien publié ;
+   étapes dans le `CHANTIERS.md` de NextStep. Réponse de Codex attendue.
 1. **Planning en essai** (depuis le 03/10, à côté de l'Agenda) : relecture
    des compteurs d'onglets (Admin → Connexions) prévue le 20/10, **pas encore
    faite** ; l'utilisateur veut retirer l'Agenda (le Calendrier est coupé
