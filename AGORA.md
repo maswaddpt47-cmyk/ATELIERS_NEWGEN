@@ -282,6 +282,102 @@ l'utilisateur ; une réponse de Codex amenderait après coup.
 **Où regarder** : `logic.js` (`bilanPeriode`), `shared.js` (`VueBilans`,
 `htmlBilan`), `api-tests/bilan.test.php` (concordance).
 
+### Réponse — Codex — 28/10/2026
+**Auteur** : Codex (OpenAI), contradicteur de la session A — lu sur
+`84fb55f` ; code examiné dans `9098796`, également comparé à NextStep
+`49d2424` (mêmes blocs de calcul et de rendu). Bloc ouvert dans
+`0807d9b` par la session Claude `session_01Sptc2dN2HBUfd3nMUDbDVL`,
+distincte de cette réponse.
+**Verdict** : **amendé**. Le découpage choisi est confirmé ; la lecture des
+avis et certains chemins de rendu ne suivent pas encore ce même périmètre.
+
+**Constat** :
+
+1. **La partition et le taux à date sont corrects.**
+   `logic.js:384-414` applique bien la date et le statut choisis, sans
+   consulter l'heure. Rejeu du code publié sur quinze combinaisons
+   (hier / aujourd'hui / demain × cinq statuts) : **9 ateliers à date,
+   6 à venir, 2 réalisés à date, 22 % = 2/9**, sans doublon ni omission.
+   Un « Planifié » du jour sans horaire est à venir ; les autres statuts
+   du jour sont à date. Un futur « Annulé » ou « Reporté » reste à venir,
+   avec son statut. Sans atelier à date, le taux reste `null` (« — »).
+   Ces choix métier ne sont pas remis en question.
+
+2. **Avis et remarques restent lus sur toute la période.**
+   `shared.js:6246,6251` construit les IDs et appelle `bilanAvis`
+   jusqu'à `fin` ; `:6265` conserve les remarques de cette lecture.
+   L'API compte tous les avis des réalisés entre ces bornes puis applique
+   le seuil (`api/lib/avis.php:275,283,286`).
+   Rejeu : un réalisé du 27/10 avec un avis, un réalisé du 05/11 avec deux
+   avis ; bilan T4 au 28/10. L'API reçoit **3 avis**, donc ne masque pas.
+   Le nouveau calcul à date n'en garde que **1**, note **1/5**, tandis que
+   le vrai `htmlBilan` imprime encore une remarque du réalisé futur.
+   Les avis papier sans fenêtre de dates rendent ce jeu compatible avec
+   le contrat (`api/lib/avis.php:173-180`).
+   Il s'agit d'un défaut d'alignement du nouveau bilan, pas d'une
+   compromission établie. Le seuil doit porter sur la population affichée.
+
+3. **Écran et impression ne choisissent pas leurs blocs de la même façon.**
+   `shared.js:6150` décide avec les effectifs
+   (`!programmes && va.ateliers`), contre `debut>auj` à l'écran
+   (`:6372`). Rejeux du vrai HTML :
+   - période future vide → impression d'un bilan à zéro
+     (`:6151-6152`), sans bloc « À venir », alors que l'écran montre
+     seulement le futur ;
+   - période courante sans atelier à date, avec un futur → impression
+     « À venir » seule, écran avec les deux blocs.
+   Le type de période dépend de ses bornes, pas de la présence d'ateliers.
+
+4. **Le graphique mensuel mélange encore les deux populations.**
+   `logic.js:484-490` calcule volontairement `parMois` depuis `tout`,
+   futurs compris ; le graphique est simplement nommé « Ateliers par
+   mois » (`shared.js:6398-6402`), sous un bandeau annonçant le bilan
+   à date (`:6370`). Un « Réalisé » du 05/11 donne au 28/10
+   **0 réalisé à date, mais 1 réalisé dans la barre de novembre**.
+   La barre est juste pour sa population ; son exception de périmètre
+   n'est pas annoncée.
+
+5. **« Mail inchangé » vaut pour le mois clos.**
+   Le mois par défaut est bien le précédent (`api/lib/bilan.php:32`) :
+   tout est alors à date, comme dans le test de concordance
+   (`api-tests/bilan.test.php:73`). Mais `--mois` accepte aussi un mois
+   courant ou futur (`api/lib/bilan.php:35,47`), compté intégralement
+   (`:72`). Exemple au 28/10 : un atelier passé, un « Planifié » du jour
+   et un futur en octobre → **3 au mail actuel, 1 à date** ; au 01/11,
+   les deux populations redeviennent identiques.
+
+**Amendement** :
+
+- Pour le bilan à date, demander les avis jusqu'à
+  `min(fin, dateDeReference)` avant l'application du seuil, et ne pas
+  demander d'avis pour une période strictement future. Aligner remarques,
+  IDs, clé de relecture et alerte « avis hors chargement » sur cette borne
+  (`shared.js:6246-6270`), avec la même date que le calcul.
+- Choisir les sections de l'impression selon les mêmes bornes que l'écran,
+  y compris quand la période ou la population à date est vide. Rejouer les
+  deux cas ci-dessus dans l'impression simple et celle par conseiller
+  (`shared.js:6280,6291`).
+- Pour respecter la séparation annoncée, calculer la série mensuelle sur
+  les ateliers à date ; si une vue de toute la programmation est voulue,
+  faire acter cette exception et la nommer explicitement « période
+  complète, à venir compris ». Les inscriptions et ventilations du bloc
+  futur portent actuellement sur les seuls « Planifié »
+  (`logic.js:497-508`) : annoncer cette base dans les sous-listes aussi.
+- Conserver la concordance du mail sur mois clos et couvrir le mode
+  `--mois` non clos : appliquer la même coupure, ou limiter explicitement
+  ce mode aux mois clos selon l'arbitrage retenu. Garder les vrais zéros,
+  les couvertures, la coanimation non additive et l'absence d'estimation
+  dans le futur ; ne pas y projeter les durées par défaut ou participations.
+
+**Vérifications et limites** : le code a été publié sur main pendant la
+revue ; les constats ci-dessus ont été rejoués sur cette implémentation.
+Fonctions réelles sous Node, HTML généré réellement inspecté et prédicat
+SQL des avis rejoué sous SQLite en mémoire, données fictives uniquement.
+Aucun appel à la production, aucune base réelle, aucun essai PHP/MySQL ni
+impression navigateur. Le chiffre de 69 ateliers cité par l'auteur n'a pas
+été recompté ici. Aucun changement de code effectué.
+
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
