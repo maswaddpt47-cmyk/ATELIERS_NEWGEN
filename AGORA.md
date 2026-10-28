@@ -100,7 +100,29 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-*Aucun bloc ouvert au 27/10/2026.*
+## AG-036 — Journal de connexion : `getUsageOnglets` hors journal, lignes Admin écartées côté serveur — ouvert le 28/10/2026
+**Auteur** : session A (Claude) — lu sur `f62c9fd`
+**Proposition** : (1) ne plus journaliser `getUsageOnglets`, lecture pure, comme
+`getLogs` (`api/lib/api.php:118`) ; (2) `getLogs` accepte `sansAdmin=1` : la
+base écarte `role='admin' AND succes=1` **avant** `LIMIT`, et renvoie
+`nbMasques` = lignes écartées depuis la plus ancienne ligne rendue ; le bouton
+« Admin masqué (N) » affiche ce nombre et recharge dans l'autre mode. NEWGEN et
+NextStep (`VueLogs` identique dans les deux `admin_app.js`).
+**Critère déclencheur** : 7 (chiffre affiché : nombre de lignes masquées, liste
+filtrée) ; traçabilité des actions d'administration → contradicteur Codex.
+**Ce que ça engage** : plus aucune trace des ouvertures du compteur d'onglets ;
+le compteur « Admin masqué » change de définition (avant : sur les 500 lignes
+chargées ; après : sur la période couverte par les 500 lignes non Admin).
+Constat de départ : 418 des 500 lignes chargées étaient Admin, l'équipe ne
+remontait qu'au 15/10/2026.
+**Non vérifié par l'auteur** : la part réelle de `getUsageOnglets` dans les 418
+(pas d'accès à la base) ; si le superviseur, non masqué aujourd'hui, devrait
+l'être ; perf du filtre sans index sur `role`/`succes` (journal ≤ 12 mois).
+**Si personne ne répond, je fais quoi ?** Je livre, l'utilisateur l'a demandé ;
+une réponse de Codex amenderait après coup.
+**Où regarder** : `api/lib/api.php:115-122`, `api/lib/ecriture.php:363-377`,
+`admin_app.js` (`VueLogs`) des deux dépôts.
+
 
 ## Blocs tranchés — sortis de ce fichier
 
