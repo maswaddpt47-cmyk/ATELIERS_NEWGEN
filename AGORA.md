@@ -257,6 +257,31 @@ Amendement de Codex retenu : résultat commun défini avant les vues, alias
 conservés, impression vérifiée sur sa vraie chaîne. Annonce pour tous après
 validation du texte par l'utilisateur.
 
+## AG-038 — Bilans : bilan à date et bloc « À venir » séparés — ouvert le 28/10/2026
+**Auteur** : session A (Claude) — lu sur `3077be1`
+**Proposition** : dans `bilanPeriode` (`logic.js`), séparer la période en deux
+populations. **Bilan à date** : ateliers datés d'avant aujourd'hui, plus ceux
+du jour qui ne sont plus « Planifié ». **À venir** : le reste (date future, ou
+du jour encore « Planifié »). Programmation, statuts et taux de réalisation
+portent sur le bilan à date (réalisés ÷ ateliers à date) ; le bloc « À venir »
+ne montre que des faits saisis (ateliers par statut, inscrits connus, par
+conseiller, thématique, commune), **aucune estimation**. Période révolue :
+bilan seul ; période future : « À venir » seul. Écran, impression, NEWGEN et
+NextStep. Choix de l'utilisateur du 28/10/2026 (trois questions posées).
+**Critère déclencheur** : 7 (définition du taux de réalisation et de la
+programmation affichés). Contradicteur : Codex.
+**Ce que ça engage** : le taux de réalisation change sur toute période en
+cours (4e trimestre au 28/10 : 20 % sur 69 ateliers → réalisés ÷ ateliers à
+date) ; « Ateliers programmés » devient « Ateliers à date ».
+**Non vérifié par l'auteur** : le traitement d'un atelier « Annulé » ou
+« Reporté » à date future (proposé : dans « À venir », compté par statut) ;
+l'effet sur le mail mensuel (envoyé le 1er pour le mois écoulé, donc tout à
+date : inchangé en principe) ; un atelier du jour sans heure.
+**Si personne ne répond, je fais quoi ?** Je livre selon les choix de
+l'utilisateur ; une réponse de Codex amenderait après coup.
+**Où regarder** : `logic.js` (`bilanPeriode`), `shared.js` (`VueBilans`,
+`htmlBilan`), `api-tests/bilan.test.php` (concordance).
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
