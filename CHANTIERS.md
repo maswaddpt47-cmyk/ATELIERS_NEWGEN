@@ -9,9 +9,9 @@ soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 faille PHP2Shell et essais AG-027 à AG-029, décisions verrouillées par les
 tests retirés — `git log -p CHANTIERS.md`.
 Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **AG-037 ouvert le
-28/10/2026** (fusion des bilans mensuel et trimestriel ; Codex : amendé ;
-D1-D5 tranchés par l'utilisateur ; en cours ; **annonce pour tous** après
-validation du texte par l'utilisateur, décision du 28/10).
+28/10/2026** (fusion des bilans : onglet « 📈 Bilans » et mail alignés, en ligne
+le 28/10 ; reste : contrôle à l'écran par l'utilisateur, **annonce pour tous**
+— texte à valider, id 36, et entrée 27 à mettre à jour).
 
 ---
 
