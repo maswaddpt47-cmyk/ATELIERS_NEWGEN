@@ -30,12 +30,12 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:2938",
-      "NextStep shared.js:2754"
+      "NEWGEN shared.js:3006",
+      "NextStep shared.js:2822"
     ],
-    "newgen": "baef7e677a/baef7e677a",
-    "nextstep": "ca0c9b7a3b/ca0c9b7a3b",
-    "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres)."
+    "newgen": "dd9521a79a/dd9521a79a",
+    "nextstep": "c87bea2830/c87bea2830",
+    "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres). Revérifié le 28/10/2026 après les chiffres animés des tuiles : même composant NombreAnime dans les deux, posé sur le bandeau propre à chaque appli."
   },
   "majIndiceNav": {
     "statut": "voulu",
