@@ -87,8 +87,9 @@ l'utilisateur.
 1. **Faille PHP2Shell (21/10/2026)** — API rouverte le 21/10 à 21 h 05 ;
    aucun indice identifié, sans pouvoir exclure une compromission (AG-026).
    Reste :
-   - en parler au directeur : remettre le registre de sécurité V0.7 et
-     l'annexe A **V0.3** (`ateliers-backups/documents/`, 22/10), après avoir
+   - en parler au directeur : remettre le registre de sécurité **V0.8**
+     (23/10, NextStep vérifié au §10) et l'annexe A **V0.3**
+     (`ateliers-backups/documents/`, 22/10), après avoir
      **validé la V0.3** (place laissée aux IA, ligne « relecture humaine du
      code à proposer à la direction ») ; la V0.2 (8 pages) reste archivée
      comme dossier de preuves ;
@@ -99,8 +100,9 @@ l'utilisateur.
    NEWGEN et NextStep : rien d'exploitable (AG-030, AG-031, registre V0.8 §10).
 3. **Rendez-vous DSI (préparé le 06/10)** : réponses dans
    `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à remettre :
-   note avant/après V0.1 et registres V0.6. Avant : vérifier les deux « ⚠️ »
-   du document (compte transférable, alerte d'intrusion).
+   note avant/après V0.1, registre de sécurité V0.8 et registre RGPD V0.6.
+   Avant : vérifier les deux « ⚠️ » du document (compte transférable, alerte
+   d'intrusion).
 4. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
 5. **Depuis le PC** : coller `MD-LIB/outils/script-demarrage.sh` dans le
