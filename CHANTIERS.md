@@ -11,7 +11,7 @@ tests retirés — `git log -p CHANTIERS.md`.
 Contradiction : `AGORA.md` — **AG-037 et AG-038 en ligne** (onglet « 📈 Bilans »,
 bilan à date + « À venir », mail limité aux mois écoulés) ; Codex a amendé AG-038,
 amendements livrés le 28/10 ; **reste** : sortir les deux blocs d'AGORA (tranchés),
-contrôle à l'écran par l'utilisateur, annonce pour tous (id 36 + entrée 27, texte à valider).
+contrôle à l'écran par l'utilisateur ; annonce 36 publiée et entrée 27 revue le 28/10.
 
 ---
 
@@ -77,7 +77,7 @@ pas à jour ou si NextStep a des commits non poussés.
   durée vide, avis sans réponse) jamais mesurée : comptage en lecture sur la
   base possible.
 
-**Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **36** ; jamais `admin:
+**Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **37** ; jamais `admin:
 true` (26/10) ; jamais 12, 16, 19, 24, 25, 26 ni 29 (publiés puis retirés).
 Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
 
