@@ -38,8 +38,7 @@ const INDEX_VIEWS = [
   { label: 'Stats',      ariaLabel: 'Stats'      },
   { label: 'Mes bilans', ariaLabel: 'Mes bilans' },                     // hors de Stats côté conseillers (04/10/2026)
   { label: 'Avis par atelier', ariaLabel: '💬 Avis par atelier' },
-  { label: 'Bilan mensuel', ariaLabel: '📈 Bilan mensuel' },
-  { label: 'Bilan trimestriel', ariaLabel: '🗓️ Bilan trimestriel' },
+  { label: 'Bilans', ariaLabel: '📈 Bilans' },                         // mensuel et trimestriel réunis (AG-037)
   { label: 'Agenda',     ariaLabel: 'Agenda'     },
   { label: 'Planning',   ariaLabel: 'Planning'   },
   { label: 'Calendrier', ariaLabel: 'Calendrier' },
@@ -56,7 +55,7 @@ const ADMIN_VIEWS = [
   { label: 'Nouveau',    ariaLabel: 'Nouveau'    },
   { label: 'Dashboard',  ariaLabel: 'Dashboard'  },
   { label: 'Avis par atelier', ariaLabel: '💬 Avis par atelier' },     // sous-onglet du Dashboard (04/10/2026)
-  { label: 'Bilan trimestriel', ariaLabel: '🗓️ Bilan trimestriel' },   // sous-onglet du Dashboard (04/10/2026)
+  { label: 'Bilans', ariaLabel: '📈 Bilans' },                         // sous-onglet du Dashboard (AG-037)
   { label: 'Agenda',     ariaLabel: 'Agenda'     },
   { label: 'Planning',   ariaLabel: 'Planning'   },
   { label: 'Calendrier', ariaLabel: 'Calendrier' },
