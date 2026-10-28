@@ -413,6 +413,16 @@ $j = $db->query("SELECT conseiller, ref, role FROM journal WHERE action = 'saveC
 verifier($j === ['conseiller' => 'Conseiller Test', 'ref' => 'Nouvelle Recrue', 'role' => 'admin'], 'action admin journalisée (auteur, cible) : ' . json_encode($j, JSON_UNESCAPED_UNICODE));
 $r = appel(['action' => 'getLogs'], $A + ['n' => 3]);
 verifier(count($r['logs']) === 3 && str_ends_with($r['logs'][0]['timestamp'], 'Z') && is_bool($r['logs'][0]['success']), 'getLogs : n dernières lignes, format GAS');
+// AG-036 (28/10/2026) : lecture pure hors journal ; lignes Admin écartées avant la limite.
+verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'getUsageOnglets'")->fetchColumn() === 0, 'getUsageOnglets : lecture, non journalisée');
+// Toutes les lignes non Admin tiennent dans 1000 : période = depuis la plus ancienne d'entre elles.
+$nbAdmin = (int) $db->query("SELECT COUNT(*) FROM journal WHERE role = 'admin' AND succes = 1 AND id >= (SELECT MIN(id) FROM journal WHERE NOT (role = 'admin' AND succes = 1))")->fetchColumn();
+$r = appel(['action' => 'getLogs'], $A + ['n' => 1000, 'sansAdmin' => 1]);
+verifier($nbAdmin > 0 && $r['logs'] && !array_filter($r['logs'], fn($l) => $l['role'] === 'admin' && $l['success']) && $r['nbMasques'] === $nbAdmin,
+    "getLogs sansAdmin : aucune ligne Admin réussie, nbMasques = $nbAdmin (" . ($r['nbMasques'] ?? '?') . ')');
+$r1 = appel(['action' => 'getLogs'], $A + ['n' => 1, 'sansAdmin' => 1]);
+$apres = (int) $db->query("SELECT COUNT(*) FROM journal WHERE role = 'admin' AND succes = 1 AND id >= (SELECT MAX(id) FROM journal WHERE NOT (role = 'admin' AND succes = 1))")->fetchColumn();
+verifier(count($r1['logs']) === 1 && $r1['nbMasques'] === $apres, "getLogs sansAdmin : nbMasques compté sur la période rendue ($apres)");
 verifier(appel(['action' => 'logLogin'], ['conseiller' => 'Faux']) === ['ok' => true] && (int) $db->query("SELECT COUNT(*) FROM journal WHERE conseiller = 'Faux'")->fetchColumn() === 0, 'logLogin : ne journalise plus rien');
 verifier(appel(['action' => 'logAccesIndex'], ['conseiller' => 'Faux'])['ok'] === false, 'logAccesIndex sans jeton : refusé');
 appel(['action' => 'logAccesIndex'], $T + ['conseiller' => 'Conseiller Test', 'userAgent' => 'test']);

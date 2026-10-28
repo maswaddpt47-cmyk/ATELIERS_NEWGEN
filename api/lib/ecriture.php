@@ -364,9 +364,23 @@ function action_get_logs(PDO $db, array $p): array
 {
     $n = max(1, min(1000, (int) ($p['n'] ?? 100) ?: 100));
     $site = journal_colonne_site($db) ? 'site' : "'' AS site";
-    $l = $db->query("SELECT horodatage, action, conseiller, ref, role, succes, tentatives, user_agent, source, $site FROM journal ORDER BY id DESC LIMIT $n")->fetchAll(PDO::FETCH_ASSOC);
+    // sansAdmin (AG-036, 28/10/2026) : les passages réussis du rôle Admin sont
+    // écartés AVANT la limite, sinon ils occupaient 418 des 500 lignes et
+    // l'équipe ne remontait qu'à 13 jours. Les échecs restent toujours.
+    $admin = "role = 'admin' AND succes = 1";
+    $sansAdmin = !empty($p['sansAdmin']);
+    $l = $db->query("SELECT id, horodatage, action, conseiller, ref, role, succes, tentatives, user_agent, source, $site FROM journal"
+        . ($sansAdmin ? " WHERE NOT ($admin)" : '') . " ORDER BY id DESC LIMIT $n")->fetchAll(PDO::FETCH_ASSOC);
+    $r = ['ok' => true];
+    if ($sansAdmin) {
+        // Lignes écartées sur la même période que les lignes rendues.
+        $plusAncien = $l ? (int) end($l)['id'] : PHP_INT_MAX;
+        $s = $db->prepare("SELECT COUNT(*) FROM journal WHERE $admin AND id >= ?");
+        $s->execute([$plusAncien]);
+        $r['nbMasques'] = (int) $s->fetchColumn();
+    }
     $paris = new DateTimeZone('Europe/Paris');
-    return ['ok' => true, 'logs' => array_map(fn($r) => [
+    return $r + ['logs' => array_map(fn($r) => [
         // Même format que le GAS : ISO 8601 en UTC.
         'timestamp' => (new DateTimeImmutable($r['horodatage'], $paris))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s.v\Z'),
         'conseiller' => $r['conseiller'], 'role' => $r['role'],   // vide = inconnu (tâche, nom inexistant) : plus de « user » par défaut
