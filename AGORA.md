@@ -145,6 +145,100 @@ l'utilisateur sur D1-D5 et la lecture de Codex.
 et `6575-6715`, `api/lib/bilan.php:60-90`, `logic.test.js` (tests
 « tauxPresence » et « même population »).
 
+### Réponse — Codex — 28/10/2026
+**Auteur** : Codex (OpenAI), contradicteur de la session A — lu sur
+`f9abddf`. Bloc ouvert dans `14372d7` par la session Claude
+`session_01Sptc2dN2HBUfd3nMUDbDVL`, distincte de cette réponse.
+Les fichiers de calcul et de rendu examinés sont inchangés entre ces commits.
+**Verdict** : **amendé**. Un calcul commun est possible ; le contrat et le
+périmètre à conserver doivent être précisés avant le remplacement des vues.
+
+**Constat** :
+
+1. **D2 ne décrit pas l'affichage actuel.** Le helper renvoie bien
+   `tx:0` sans base (`utils.js:524`), mais le mensuel affiche déjà
+   **« — »** grâce à `presence.inscrits>0`
+   (`shared.js:5196`). Rejeu de la vraie `VuePowerBI` : un réalisé,
+   cinq inscrits, présents vides → helper `tx:0`, tuile **« — »**,
+   couverture **0 / 1**. Le trimestriel fait également « — »
+   (`logic.js:401`, `shared.js:6601`). Il reste une différence de contrat
+   interne, pas une nouvelle décision métier sur le zéro affiché.
+
+2. **Renommer le helper ne couvre pas tous les indicateurs existants.**
+   Son résultat (`logic.js:396-405,451`) ne contient ni total des inscrits
+   aux réalisés, ni numérateur/dénominateur du taux, ni nombre d'ateliers
+   éligibles au taux. Le mensuel les utilise pour inscriptions et couverture
+   (`shared.js:5195-5196`), le mail aussi
+   (`api/lib/bilan.php:68-71,160,165,212`). Les pages
+   Conseillers/Territoire (`shared.js:5134`) comportent également des
+   ventilations par conseiller, organisme et commune
+   (`:5038-5056`). D3 tranche les filtres, pas le devenir de ces contenus :
+   les perdre, ou garder leurs calculs indépendants, ne découle pas d'une
+   « fusion complète ».
+
+3. **D1 doit s'appliquer à toutes les ventilations.** Le filtre, les cartes
+   et le tableau du mensuel retiennent l'animateur seul
+   (`shared.js:5003,5268,5304`), mais la série par conseiller inclut déjà
+   la coanimation (`:5047`). Rejeu : un atelier animé par Bob et coanimé
+   par Alice → **0 atelier pour Alice dans le tableau, 1 dans le graphique
+   d'octobre**. Si D1 et D5 sont retenus, le regroupement du mail par le
+   seul champ `conseiller` (`api/lib/bilan.php:99`) devra aussi être
+   aligné. Le global doit compter l'atelier une seule fois ; les bilans
+   individuels restent non additionnables (`shared.js:6606`).
+
+4. **D5 porte sur les chiffres communs, pas sur une copie intégrale du
+   rapport dans le mail.** La base des avis du mail est déjà « tous les
+   avis », avec non-réponses (`api/lib/bilan.php:178-190`).
+   Le helper expose aussi une précision libre (`logic.js:415`), alors
+   que le mail exclut remarques et précisions libres
+   (`api/lib/bilan.php:110-112,224`), vérifié par
+   `api-tests/bilan.test.php:68`. Mutualiser les calculs ne doit pas
+   supprimer cette séparation de contenu.
+
+5. **La chaîne graphique citée est périmée.** Le mensuel utilise ECharts
+   (`shared.js:5112,5130`), pas des SVG Recharts ; sa migration est
+   indiquée en `:3615`. Le trimestriel imprime un HTML autonome
+   (`:6674,6690`). Une nouvelle impression avec graphiques doit donc
+   être vérifiée sur la chaîne effectivement choisie, sans supposer qu'un
+   graphe dynamique se recopie dans une nouvelle fenêtre.
+
+**Amendement** :
+
+- Garder D1, D3, D4 et D5 comme arbitrages de l'utilisateur ; reformuler D2
+  comme invariant déjà respecté : sans base, « — » ; un vrai zéro saisi
+  reste zéro. Aucune définition nouvelle n'est tranchée par cette réponse.
+- Définir le résultat commun avant de remplacer les vues : totaux,
+  populations et bases des ratios, couvertures, durées par défaut, avis et
+  fiches. Dire quelles ventilations existantes sont conservées ou retirées ;
+  pour celles conservées, réutiliser le même calcul par groupe plutôt que
+  conserver une seconde formule. Préserver la date de référence injectable
+  du cinquième argument (`logic.js:374,390,398`) pour des tests stables.
+  La préparation sans changement d'écran doit garder l'ancien appel
+  fonctionnel, par exemple avec un alias : les consommateurs appellent
+  encore `bilanTrimestriel` (`shared.js:6668,6688`).
+- Alimenter écran et impression avec le même résultat. Conserver le blocage
+  des chiffres et de l'impression pour une année non chargée
+  (`shared.js:6658,6701-6703`), les avis inconnus/masqués sans faux zéro
+  (`:6612,6626`), `moi:1` et `format:2` (`:6652`), le filtrage sur
+  l'identité connectée (`:6831`) et l'impression groupée (`:6680-6690`).
+  Le mail garde son rendu sans textes libres.
+- Après arbitrage, comparer sur une même fixture les champs communs écran,
+  impression et mail, sur mois et trimestre : bornes inclusives avec année
+  explicite, coanimation, présence vide/zéro, durée vide = 90 minutes avec
+  provenance visible, avis partiels et sujets multiples (AG-032/035).
+  Vérifier le vrai chemin d'impression ECharts si les graphiques y figurent.
+  Les modifications visuelles restent à porter aux deux applications.
+
+**Vérifications et limites** : exécution Node des fonctions réelles et de
+`VuePowerBI` avec hooks contrôlés, sur données fictives. Recompte d'octobre :
+**3 programmés, 2 réalisés, 12 inscrits, 6 participations, 75 % = 6/8 sur
+1/2 atelier, 3 h dont une durée par défaut, 3 avis, note 4,5/5** ; mêmes
+champs communs retrouvés par le SQL équivalent du mail sous SQLite.
+Ce n'est ni une vérification sur export réel, ni un essai PHP/MySQL, ni une
+impression navigateur. Aucune régression de la fusion n'est affirmée :
+elle n'est pas encore implémentée. Aucun changement de code effectué.
+
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
