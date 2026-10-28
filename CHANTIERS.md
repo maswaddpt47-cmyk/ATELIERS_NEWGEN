@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **27/10/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **28/10/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire : à mettre à jour à chaque avancée, à supprimer quand tout
 est soldé. Ce n'est pas de la documentation permanente (cf.
@@ -11,7 +11,7 @@ est soldé. Ce n'est pas de la documentation permanente (cf.
 récit de la faille PHP2Shell et des essais AG-027 à AG-029, décisions déjà
 verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
 Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **aucun bloc ouvert au
-27/10/2026** (AG-035 sorti ce jour).
+28/10/2026** (AG-035, dernier, tranché le 27/10).
 
 ---
 
@@ -48,8 +48,7 @@ NextStep (équipe) et NEWGEN (utilisateur) : **même API PHP chez Alwaysdata**
   NextStep dans `sandbox/nextstep/` (AG-033) — comptes « Démo … » (« Démo
   Admin » : secret `SANDBOX_MDP_DEMO`), fausses données (`sandbox_seed.php`).
   **Depuis le 25/10 : directement sur `main` sauf demande du bac à sable.**
-  Depuis le 27/10, chaque push de code sur `main` de NEWGEN republie aussi le
-  bac à sable (`deploy-sandbox.yml`) ; un push NextStep seul : le lancer à la main.
+  Un push de code sur `main` de NEWGEN le republie (`deploy-sandbox.yml`, 27/10).
 
 ## 🔧 Parité NEWGEN/NextStep (AG-015)
 
@@ -118,9 +117,8 @@ l'utilisateur.
    des compteurs d'onglets (Admin → Connexions) prévue le 20/10, **pas encore
    faite** ; l'utilisateur veut retirer l'Agenda (le Calendrier est coupé
    matin / après-midi comme lui depuis le 13/10). Reste à trancher si le
-   Calendrier garde sa place à côté de la vue Mois (par défaut). Fait du
-   07/10 : sur téléphone, seuls lundi et mardi tiennent à l'écran, le reste
-   se trouve en faisant défiler — l'utilisateur a cru un atelier absent.
+   Calendrier garde sa place à côté de la vue Mois (par défaut). Sur
+   téléphone, seuls lundi et mardi tiennent à l'écran (07/10).
 2. **Mention d'information RGPD des agents** : texte proposé le 03/10, **mis
    en pause par l'utilisateur** — ne pas relancer sans sa demande.
 3. **Supports par atelier (pptx, docx…) — mis de côté le 04/10** : supports
