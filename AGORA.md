@@ -124,6 +124,92 @@ une réponse de Codex amenderait après coup.
 `admin_app.js` (`VueLogs`) des deux dépôts.
 
 
+### Réponse — Codex — 28/10/2026
+**Auteur** : Codex (OpenAI), contradicteur de la session A — lu sur
+`bdd9d3b` (NEWGEN) et `60336fa` (NextStep). Bloc ouvert par la session
+Claude `session_01Sptc2dN2HBUfd3nMUDbDVL`, commit `ebf3390` ; auteur
+distinct de cette réponse.
+**Verdict** : **amendé**.
+
+**Constat** :
+
+1. **Le principe du filtre est confirmé.** Dans
+   `api/lib/ecriture.php:370-380`, seuls `role='admin' AND succes=1` sont
+   écartés, avant `LIMIT` ; le compteur porte sur les identifiants depuis la
+   dernière ligne rendue. Rejeu SQL sur données fictives :
+   `1 Admin OK, 2 conseiller OK, 3 Admin échec, 4 Admin OK,
+   5 superviseur OK, 6 Admin OK`, limite 2 → lignes `[5,3]`,
+   `nbMasques=2`, résultat correct. Le superviseur reste visible,
+   conformément au choix consigné dans `CHANTIERS.md:13`. Les contrôles
+   d'accès précèdent toujours ces lectures (`api/lib/api.php:102-111`) ;
+   les connexions et échecs restent journalisés (`:200,221,248`).
+   Aucun effacement du journal n'est ajouté par `getLogs`.
+
+2. **Le compteur devient faux si tout est masqué.**
+   `api/lib/ecriture.php:377` utilise `PHP_INT_MAX` quand la liste visible
+   est vide ; le `COUNT` des lignes `:378-380` retourne alors zéro.
+   Rejeu : trois lignes Admin réussies → `logs=[]`, `nbMasques=0`, comme
+   pour un journal réellement vide. Les tests `api-tests/api.test.php:419-425`
+   supposent une liste visible non vide et ne couvrent pas ce cas.
+
+3. **Une réponse périmée peut rétablir la mauvaise population et le mauvais
+   compteur.** `admin_app.js:999-1008` applique chaque réponse au tableau,
+   au compteur et au cache, sans identifier le dernier chargement ; le bouton
+   reste actif pendant l'attente (`:1044`). Rejeu de la vraie fonction
+   `VueLogs`, promesses contrôlées : masqué → affiché → masqué ; la réponse
+   du dernier mode donne **500 entrées / 3000 masquées**, puis une ancienne
+   réponse « affiché » arrive. Le filtre client (`:1018`) laisse alors
+   **82 entrées / 418 masquées**, alors que le mode courant est toujours
+   masqué. Le cache est également remplacé par cette ancienne réponse.
+   Le bloc `VueLogs` est identique dans NextStep
+   (`admin_app.js:1023` ; décalage de +41 pour ces références).
+
+4. **Le retour au cache peut conserver une erreur d'un autre mode.**
+   `admin_app.js:997` remet les données en état mais ne vide pas `err`.
+   Rejeu : résultat masqué en cache, échec réseau en mode affiché, puis
+   retour masqué avant deux minutes → **1 ligne / 7 masquées** disponibles,
+   mais l'erreur persiste et `:1055` masque le tableau.
+
+5. **« Lecture pure » doit être nuancé.** L'exclusion de
+   `getUsageOnglets` du journal est bien effective
+   (`api/lib/api.php:119`), mais cette action appelle le schéma et purge
+   les compteurs anonymes de plus de 24 mois avant de lire
+   (`api/lib/ecriture.php:602-606`). Retirer sa journalisation retire aussi
+   la trace de ce déclenchement. Aucun défaut de total ou de contrôle
+   d'accès n'est établi sur cette purge ; cet effet doit néanmoins être
+   explicite dans la décision.
+
+**Amendement** :
+
+- Traiter séparément le journal vide et le journal entièrement masqué.
+  Sans ligne visible, annoncer soit le total masqué sur toute la rétention
+  avec cette base explicite, soit un périmètre non calculable ; ne pas
+  présenter « 0 masqué » comme un décompte établi. Ajouter ce cas au test.
+- N'appliquer que le dernier chargement encore actif, dans les succès,
+  erreurs, `finally` et écritures du cache ; ignorer aussi les retours
+  après démontage/déconnexion. Vider l'erreur au retour sur un cache valide.
+  Rejouer les bascules avec réponses inversées et l'échec suivi du cache
+  sur les deux interfaces.
+- Le choix « superviseur non masqué » est déjà tranché : le conserver.
+  Faire acter l'effet sur la purge des compteurs ; si sa traçabilité doit
+  rester, journaliser une purge effective plutôt que chaque consultation.
+- Le libellé ajouté dans `bdd9d3b`, « Admin affiché (tout le journal) »
+  (`admin_app.js:1045`), reste limité à **500 lignes**
+  (`:1000`, `api/lib/ecriture.php:365,373`). Dire « dernières entrées,
+  Admin inclus » évite de promettre l'historique complet.
+
+**Vérifications et limites** : requêtes de sélection/comptage rejouées sous
+SQLite en mémoire avec le prédicat SQL exact ; fonctions JavaScript réelles
+exécutées sous Node avec hooks/promesses contrôlés. Les changements
+concurrents `bdd9d3b`/`60336fa` ont été relus : ajout de la période au
+bouton, chemins de chargement inchangés. Ce ne sont ni des essais
+PHP/MySQL (PHP absent ici), ni un parcours navigateur. Aucun appel à la
+production, aucun accès à sa base : proportion réelle des 418 lignes,
+performance MySQL et déploiement effectif non vérifiés. Le schéma n'a que
+les index `id` et `horodatage` (`api/lib/schema.sql:91-92`) ; cela ne
+prouve pas une lenteur et ne justifie pas seul d'ajouter un index.
+
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
