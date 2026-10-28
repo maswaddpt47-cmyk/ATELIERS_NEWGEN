@@ -239,6 +239,24 @@ impression navigateur. Aucune régression de la fusion n'est affirmée :
 elle n'est pas encore implémentée. Aucun changement de code effectué.
 
 
+### Tranché le 28/10/2026 — décision : fusion, avec l'amendement de Codex
+Choix de l'utilisateur sur les définitions (après la réponse de Codex) :
+- **D1** : un atelier compte pour l'animateur **et** le co-animateur, dans toutes
+  les ventilations par conseiller ; le global le compte une fois ; les bilans
+  individuels ne s'additionnent pas.
+- **D2** : invariant déjà respecté (Codex n° 1, l'auteur s'était trompé) : sans
+  base, « — » ; un zéro saisi reste zéro.
+- **D3** : filtres multi-mois et statuts retirés ; ventilations conservées
+  (conseiller, orienteur, commune, thématique), calculées par le calcul commun.
+- **D4** : périodes Mois et Trimestre.
+- **D5** : le mail mensuel donne les mêmes chiffres communs que l'écran « Mois »
+  (regroupement par conseiller compris, D1), sans textes libres ; test de
+  concordance écran / impression / mail.
+Amendement de Codex retenu : résultat commun défini avant les vues, alias
+`bilanTrimestriel` gardé pendant la préparation, garde-fous d'AG-032/035
+conservés, impression vérifiée sur sa vraie chaîne. Annonce pour tous après
+validation du texte par l'utilisateur.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
