@@ -8,10 +8,8 @@ soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 **Ménages (26/09 → 26/10/2026)** : époque GAS, parité, livraisons, audit Codex,
 faille PHP2Shell et essais AG-027 à AG-029, décisions verrouillées par les
 tests retirés — `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` — **AG-037 et AG-038 en ligne** (onglet « 📈 Bilans »,
-bilan à date + « À venir », mail limité aux mois écoulés) ; Codex a amendé AG-038,
-amendements livrés le 28/10 ; **reste** : sortir les deux blocs d'AGORA (tranchés),
-contrôle à l'écran par l'utilisateur ; annonce 36 publiée et entrée 27 revue le 28/10.
+Contradiction : `AGORA.md` — **aucun bloc ouvert au 28/10/2026** (AG-038, dernier,
+tranché et validé à l'écran le 28/10).
 
 ---
 
@@ -251,6 +249,7 @@ appel superflu, `sw.js` de désinscription.
   tous les avis avec « Sans réponse » ; communes normalisées ; année non
   chargée = message, aucun chiffre, impression désactivée (détail : `AGORA.md`).
 - **Sujets d'avis multiples (AG-035)** : % des avis ; `bilanAvis` exige `format=2`.
+- **Bilans (AG-037/038)** : un onglet « 📈 Bilans » Mois / Trimestre, calcul `bilanPeriode` commun écran/impression/mail ; bilan à date + « À venir » sans estimation ; co-animé compté pour les deux ; mail : mois écoulés seulement.
 - **Journal de connexion (AG-036)** : lignes Admin réussies écartées par l'API avant la limite ; superviseur visible ; `getUsageOnglets` non journalisé (purge non tracée, actée).
 - **Unité et couverture (25/10)** : participations = présences cumulées,
   jamais personnes uniques. Taux seulement sur les ateliers réalisés avec
