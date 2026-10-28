@@ -423,6 +423,13 @@ verifier($nbAdmin > 0 && $r['logs'] && !array_filter($r['logs'], fn($l) => $l['r
 $r1 = appel(['action' => 'getLogs'], $A + ['n' => 1, 'sansAdmin' => 1]);
 $apres = (int) $db->query("SELECT COUNT(*) FROM journal WHERE role = 'admin' AND succes = 1 AND id >= (SELECT MAX(id) FROM journal WHERE NOT (role = 'admin' AND succes = 1))")->fetchColumn();
 verifier(count($r1['logs']) === 1 && $r1['nbMasques'] === $apres, "getLogs sansAdmin : nbMasques compté sur la période rendue ($apres)");
+// Journal entièrement masqué : total sur tout le journal, marqué comme tel (Codex n° 2).
+$db->exec("CREATE TEMPORARY TABLE journal_sauve AS SELECT * FROM journal WHERE NOT (role = 'admin' AND succes = 1)");
+$db->exec("DELETE FROM journal WHERE NOT (role = 'admin' AND succes = 1)");
+$tout = (int) $db->query("SELECT COUNT(*) FROM journal")->fetchColumn();
+$r0 = appel(['action' => 'getLogs'], $A + ['n' => 500, 'sansAdmin' => 1]);
+verifier($r0['logs'] === [] && ($r0['toutJournal'] ?? false) === true && $r0['nbMasques'] === $tout && $tout > 0, "getLogs sansAdmin, tout masqué : $tout sur tout le journal (" . ($r0['nbMasques'] ?? '?') . ')');
+$db->exec("INSERT INTO journal SELECT * FROM journal_sauve");
 verifier(appel(['action' => 'logLogin'], ['conseiller' => 'Faux']) === ['ok' => true] && (int) $db->query("SELECT COUNT(*) FROM journal WHERE conseiller = 'Faux'")->fetchColumn() === 0, 'logLogin : ne journalise plus rien');
 verifier(appel(['action' => 'logAccesIndex'], ['conseiller' => 'Faux'])['ok'] === false, 'logAccesIndex sans jeton : refusé');
 appel(['action' => 'logAccesIndex'], $T + ['conseiller' => 'Conseiller Test', 'userAgent' => 'test']);

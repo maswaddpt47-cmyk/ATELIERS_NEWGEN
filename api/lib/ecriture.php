@@ -373,11 +373,14 @@ function action_get_logs(PDO $db, array $p): array
         . ($sansAdmin ? " WHERE NOT ($admin)" : '') . " ORDER BY id DESC LIMIT $n")->fetchAll(PDO::FETCH_ASSOC);
     $r = ['ok' => true];
     if ($sansAdmin) {
-        // Lignes écartées sur la même période que les lignes rendues.
-        $plusAncien = $l ? (int) end($l)['id'] : PHP_INT_MAX;
+        // Lignes écartées sur la même période que les lignes rendues. Aucune
+        // ligne rendue : total sur tout le journal, dit comme tel (toutJournal),
+        // jamais « 0 » par défaut (AG-036, Codex n° 2).
+        $plusAncien = $l ? (int) end($l)['id'] : 0;
         $s = $db->prepare("SELECT COUNT(*) FROM journal WHERE $admin AND id >= ?");
         $s->execute([$plusAncien]);
         $r['nbMasques'] = (int) $s->fetchColumn();
+        if (!$l) $r['toutJournal'] = true;
     }
     $paris = new DateTimeZone('Europe/Paris');
     return $r + ['logs' => array_map(fn($r) => [
