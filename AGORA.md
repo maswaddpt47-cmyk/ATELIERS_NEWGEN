@@ -209,6 +209,50 @@ performance MySQL et déploiement effectif non vérifiés. Le schéma n'a que
 les index `id` et `horodatage` (`api/lib/schema.sql:91-92`) ; cela ne
 prouve pas une lenteur et ne justifie pas seul d'ajouter un index.
 
+## AG-037 — Fusion des bilans mensuel et trimestriel en un seul onglet « Bilans » — ouvert le 28/10/2026
+**Auteur** : session A (Claude) — lu sur `bdd9d3b`
+**Proposition** : un seul calcul pour toute période (`bilanTrimestriel`,
+`logic.js:374`, généralisé en `bilanPeriode(entries, debut, fin, avis)`), un
+seul onglet « Bilans » avec choix **Mois / Trimestre**, rendu écran à la charte
+du mensuel (tuiles KPI, barres, donut), impression sobre aux mêmes couleurs.
+Remplace `VuePowerBI` (`shared.js:4985`) et `VueBilanTrimestriel`
+(`shared.js:6639`) dans le Dashboard Admin (`shared.js:6912-6914`) et dans
+« Mes bilans » des conseillers (`shared.js:6845-6846`). NEWGEN et NextStep.
+Demande de l'utilisateur du 28/10/2026 (« fusion complète »).
+**Critère déclencheur** : 7 (calcul et chiffres affichés, écran et impression),
+et 1 (le format de calcul validé par AG-032 devient commun à deux écrans).
+Contradicteur : Codex.
+**Ce que ça engage** : les chiffres du mensuel changent de définition partout
+où ils divergent du trimestriel ; le bilan trimestriel validé à l'écran le
+26/10/2026 (AG-032) est re-rendu ; l'impression est réécrite.
+
+**Définitions métier à trancher par l'utilisateur** (pas des défauts) :
+- D1. Filtre par conseiller : le mensuel ne garde que l'animateur
+  (`shared.js:5003`), le trimestriel prend aussi le co-animateur. Proposé :
+  animé **ou** co-animé, comme le trimestriel et « Mes bilans ».
+- D2. Taux de présence sans base : 0 % au mensuel (`utils.js:524`, `tx: 0`),
+  « — » au trimestriel. Proposé : « — » (AG-032).
+- D3. Filtres d'exploration du mensuel (plusieurs mois, statuts) : retirés, ou
+  gardés dans un mode « Personnalisé ». Proposé : retirés, la période se choisit
+  par Mois ou Trimestre ; l'Analyse du Dashboard garde l'exploration.
+- D4. Périodes proposées : Mois et Trimestre ; Année en plus ?
+- D5. Le mail mensuel (`api/lib/bilan.php:69-81`) suit-il les mêmes
+  définitions que l'écran « Mois » ? Proposé : oui, vérifié par un test de
+  concordance (même mois, mêmes chiffres).
+
+**Défauts démontrés à ce jour** : aucun ; les divergences D1-D2 sont des choix
+non alignés, pas des erreurs prouvées sur données réelles.
+**Non vérifié par l'auteur** : la concordance actuelle écran mensuel / mail
+mensuel sur un mois réel ; l'impression des graphes dynamiques (SVG Recharts)
+dans une fenêtre d'impression ; le coût en lecture `bilanAvis` d'un changement
+de période fréquent (un appel par période, jamais au démarrage) ; l'usage réel
+des filtres du mensuel (compteurs d'onglets non relus).
+**Si personne ne répond, je fais quoi ?** Je prépare `bilanPeriode` et ses tests
+(aucun changement d'écran) ; rien n'est affiché ni livré avant les réponses de
+l'utilisateur sur D1-D5 et la lecture de Codex.
+**Où regarder** : `logic.js:351-420`, `utils.js:507-525`, `shared.js:4985-5370`
+et `6575-6715`, `api/lib/bilan.php:60-90`, `logic.test.js` (tests
+« tauxPresence » et « même population »).
 
 ## Blocs tranchés — sortis de ce fichier
 

@@ -5,13 +5,13 @@ même base depuis la bascule du 25/09/2026).
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
-**Ménages des 26/09, 02/10, 04/10, 06/10, 07/10, 16/10 et 26/10/2026** :
-époque GAS, récit de la parité, livraisons, audit Codex et ses corrections,
-récit de la faille PHP2Shell et des essais AG-027 à AG-029, décisions déjà
-verrouillées par les tests retirés — `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **AG-036 ouvert le
-28/10/2026** (journal de connexion, livré ; superviseur **non** masqué,
-choix de l'utilisateur du 28/10 ; réponse de Codex attendue).
+**Ménages (26/09 → 26/10/2026)** : époque GAS, parité, livraisons, audit Codex,
+faille PHP2Shell et essais AG-027 à AG-029, décisions verrouillées par les
+tests retirés — `git log -p CHANTIERS.md`.
+Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **ouverts le 28/10/2026 :
+AG-036** (journal de connexion, livré ; superviseur **non** masqué, choix de
+l'utilisateur ; Codex attendu) **et AG-037** (fusion des bilans mensuel et
+trimestriel ; D1-D5 à trancher par l'utilisateur, Codex attendu, rien livré).
 
 ---
 
