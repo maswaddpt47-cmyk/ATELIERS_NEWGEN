@@ -8,10 +8,10 @@ soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 **Ménages (26/09 → 26/10/2026)** : époque GAS, parité, livraisons, audit Codex,
 faille PHP2Shell et essais AG-027 à AG-029, décisions verrouillées par les
 tests retirés — `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **ouverts le 28/10/2026 :
-AG-036** (journal de connexion, livré ; superviseur **non** masqué, choix de
-l'utilisateur ; Codex attendu) **et AG-037** (fusion des bilans mensuel et
-trimestriel ; D1-D5 à trancher par l'utilisateur, Codex attendu, rien livré).
+Contradiction : `AGORA.md` (section 8 du `CLAUDE.md`) — **AG-037 ouvert le
+28/10/2026** (fusion des bilans mensuel et trimestriel ; D1-D5 à trancher par
+l'utilisateur, Codex attendu, rien livré ; **annonce pour tous** après validation
+du texte par l'utilisateur, décision du 28/10).
 
 ---
 
@@ -77,10 +77,9 @@ pas à jour ou si NextStep a des commits non poussés.
   durée vide, avis sans réponse) jamais mesurée : comptage en lecture sur la
   base possible.
 
-**Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **36** ; jamais
-`admin: true` (26/10) ; jamais 12, 16, 19, 24, 25, 26 ni 29 (publiés puis
-retirés). Les entrées des 03-04/10 sont datées du 05/10 à la demande de
-l'utilisateur.
+**Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **36** ; jamais `admin:
+true` (26/10) ; jamais 12, 16, 19, 24, 25, 26 ni 29 (publiés puis retirés).
+Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
 
 **Actions de l'utilisateur**
 
@@ -252,6 +251,7 @@ appel superflu, `sw.js` de désinscription.
   tous les avis avec « Sans réponse » ; communes normalisées ; année non
   chargée = message, aucun chiffre, impression désactivée (détail : `AGORA.md`).
 - **Sujets d'avis multiples (AG-035)** : % des avis ; `bilanAvis` exige `format=2`.
+- **Journal de connexion (AG-036)** : lignes Admin réussies écartées par l'API avant la limite ; superviseur visible ; `getUsageOnglets` non journalisé (purge non tracée, actée).
 - **Unité et couverture (25/10)** : participations = présences cumulées,
   jamais personnes uniques. Taux seulement sur les ateliers réalisés avec
   inscrits > 0 et présence saisie ; sans base : « — » ; une présence saisie à
