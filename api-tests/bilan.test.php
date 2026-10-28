@@ -28,6 +28,7 @@ $ins->execute(['s3', 'Annulé', '2026-09-12', 'Alice', 'MSA <b>', 4, null]);
 $ins->execute(['s4', 'Planifié', '2026-09-20', 'Bruno', 'MSA <b>', 4, null]);   // date passée : en retard
 $ins->execute(['a1', 'Réalisé', '2026-08-05', 'Alice', 'CAF', 5, 2]);           // mois précédent
 $ins->execute(['o1', 'Planifié', '2026-10-06', 'Alice', 'CAF', 4, null]);        // mois suivant
+$db->exec("UPDATE ateliers SET co_animateur = 'Alice' WHERE id = 's2'");          // co-animé (AG-037, D1)
 // Qualité (04/10/2026) : fiches bilan et avis des ateliers réalisés du mois.
 $db->prepare("UPDATE ateliers SET fiche_bilan = ? WHERE id = 's1'")->execute([json_encode(['objectif' => 'Oui', 'difficultes' => ['Connexion', 'Autre'], 'difficultes_autre' => 'Salle Martin', 'suite' => 'Nouvel atelier'], JSON_UNESCAPED_UNICODE)]);
 avis_schema($db);
@@ -60,7 +61,30 @@ verifier($code === 0 && count($m) === 1 && str_contains($m[0], 'A: sophie@exampl
 $t = $m[0] ?? '';
 verifier(str_contains($t, 'Ateliers au total : 4 (août : 1, +3)') && str_contains($t, 'Réalisés : 2 (août : 1, +1)'), 'chiffres du mois comparés au mois précédent');
 verifier(str_contains($t, 'Inscrits (ateliers réalisés) : 10') && str_contains($t, 'Présents (ateliers réalisés) : 8') && str_contains($t, 'Taux de présence : 80 % (août : 40 %)'), 'inscrits et présents des seuls ateliers réalisés, taux');
-verifier(str_contains($t, '- Alice : 1 réalisé(s) sur 2, 5 présent(s) / 6 inscrit(s)') && str_contains($t, '- CAF : 2 réalisé(s) sur 2'), 'par conseiller et par partenaire');
+verifier(str_contains($t, '- Alice : 2 réalisé(s) sur 3, 8 présent(s) / 10 inscrit(s)') && str_contains($t, '- Bruno : 1 réalisé(s) sur 2, 3 présent(s) / 4 inscrit(s)') && str_contains($t, '- CAF : 2 réalisé(s) sur 2'), 'par conseiller (co-animation comprise, AG-037) et par partenaire');
+// Concordance mail / écran « Bilans » (AG-037, D5) : mêmes données passées à
+// bilanPeriode (logic.js), les chiffres communs doivent se retrouver dans le mail.
+$lignes = $db->query("SELECT id AS _id, statut, date, conseiller, co_animateur, orienteur, commune, thematique, inscrits, presents, fiche_bilan FROM ateliers")->fetchAll(PDO::FETCH_ASSOC);
+foreach ($lignes as &$l) { $l['fiche_bilan'] = $l['fiche_bilan'] ? json_decode($l['fiche_bilan'], true) : null; foreach (['inscrits', 'presents'] as $k) $l[$k] = $l[$k] === null ? '' : (string) $l[$k]; }
+unset($l);
+$avisJs = $db->query("SELECT atelier_id, attentes, clarte, aise, autonomie FROM avis")->fetchAll(PDO::FETCH_ASSOC);
+file_put_contents("$tmp/fixture.json", json_encode(['e' => $lignes, 'a' => $avisJs], JSON_UNESCAPED_UNICODE));
+$js = 'const L=require(process.argv[1]+"/logic.js");Object.assign(global,require(process.argv[1]+"/utils.js"));'
+    . 'const f=require(process.argv[2]);const b=L.bilanPeriode(f.e,"2026-09-01","2026-09-30",f.a.map(a=>({...a,attentes:+a.attentes||null,clarte:+a.clarte||null})),"2026-10-01");'
+    . 'console.log(JSON.stringify(b));';
+exec('node -e ' . escapeshellarg($js) . ' ' . escapeshellarg(realpath(__DIR__ . '/..')) . ' ' . escapeshellarg("$tmp/fixture.json") . ' 2>&1', $sortieJs, $codeJs);
+$b = json_decode(implode('', $sortieJs), true);
+if (!is_array($b)) { verifier(false, 'concordance : bilanPeriode non exécuté (' . implode(' ', $sortieJs) . ')'); }
+else {
+    $a = $b['activite'];
+    $attendus = ["Ateliers au total : {$a['programmes']} ", "Réalisés : {$a['realises']} ", "Inscrits (ateliers réalisés) : {$a['inscrits']} ", "Présents (ateliers réalisés) : {$a['presents']} ",
+        "Taux de présence : {$a['tauxPresence']} %", "Fiches bilan remplies : {$b['fiches']['remplies']} sur {$a['realises']} ",
+        "Avis des stagiaires : {$b['avis']['n']} avis sur {$b['avis']['ateliers']} ", 'Réponse aux attentes : ' . str_replace('.', ',', (string) $b['avis']['attentes']) . '/5'];
+    foreach ($b['parConseiller'] as $c) $attendus[] = "- {$c['conseiller']} : {$c['realises']} réalisé(s) sur {$c['programmes']}, {$c['presents']} présent(s)";
+    foreach ($b['parOrienteur'] as $o) $attendus[] = "- {$o['orienteur']} : {$o['ateliers']} réalisé(s)";
+    $manque = array_values(array_filter($attendus, fn($x) => !str_contains($t, $x)));
+    verifier(count($attendus) > 10 && $manque === [], 'concordance écran « Bilans » / mail mensuel : ' . ($manque ? 'absent du mail : ' . implode(' | ', $manque) : count($attendus) . ' chiffres communs identiques'));
+}
 verifier(str_contains($t, '1 atelier(s) de septembre 2026 encore « Planifié »') && str_contains($t, '1 atelier(s) planifié(s) en octobre'), 'points d\'attention : retards, mois suivant');
 verifier(!preg_match('/Alice|Sophie|example\.org/', $sortie), 'compte rendu sans nom ni adresse');
 verifier(str_contains($t, 'Fiches bilan remplies : 1 sur 2 atelier(s) réalisé(s)') && str_contains($t, 'Objectif atteint : Oui : 1') && str_contains($t, 'Difficultés rencontrées : Connexion : 1, Autre : 1')

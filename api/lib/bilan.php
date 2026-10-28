@@ -94,9 +94,25 @@ function bilan_taux(int $presents, int $inscrits): string
     return $inscrits > 0 ? round($presents / $inscrits * 100) . ' %' : '—';
 }
 
+// Par conseiller : animé ou co-animé (AG-037, D1, 28/10/2026), comme l'écran
+// « Bilans » ; un atelier co-animé compte pour ses deux animateurs.
+function bilan_par_conseiller(PDO $db, string $de, string $a): array
+{
+    $r = bilan_chiffres($db, $de, $a, 'conseiller');
+    unset($r['—']);
+    $co = bilan_chiffres($db, $de, $a, "CASE WHEN co_animateur <> conseiller THEN co_animateur ELSE '' END");
+    unset($co['—']);
+    foreach ($co as $nom => $c) {
+        $r[$nom] ??= ['total' => 0, 'statuts' => [], 'inscrits' => 0, 'presents' => 0, 'inscrits_taux' => 0, 'presents_taux' => 0];
+        foreach (['total', 'inscrits', 'presents', 'inscrits_taux', 'presents_taux'] as $k) $r[$nom][$k] += $c[$k];
+        foreach ($c['statuts'] as $st => $n) $r[$nom]['statuts'][$st] = ($r[$nom]['statuts'][$st] ?? 0) + $n;
+    }
+    return $r;
+}
+
 $ce = bilan_chiffres($db, $debut, $fin);
 $prec = bilan_chiffres($db, $precDebut, $precFin);
-$parConseiller = bilan_chiffres($db, $debut, $fin, 'conseiller');
+$parConseiller = bilan_par_conseiller($db, $debut, $fin);
 $parPartenaire = bilan_chiffres($db, $debut, $fin, 'orienteur');
 ksort($parConseiller, SORT_STRING | SORT_FLAG_CASE);
 uasort($parPartenaire, fn($x, $y) => ($y['statuts']['Réalisé'] ?? 0) <=> ($x['statuts']['Réalisé'] ?? 0) ?: $y['total'] <=> $x['total']);
@@ -162,7 +178,7 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
     ];
     $texte = "Bilan des ateliers numériques — $libelle\n\n";
     foreach ($lignesChiffres as [$l, $a, $b]) $texte .= "$l : $a ($libPrec : $b, " . $ecart($a, $b) . ")\n";
-    $texte .= 'Taux de présence : ' . bilan_taux($ce['presents_taux'], $ce['inscrits_taux']) . " ($libPrec : " . bilan_taux($prec['presents_taux'], $prec['inscrits_taux']) . ")\n\nPar conseiller :\n";
+    $texte .= 'Taux de présence : ' . bilan_taux($ce['presents_taux'], $ce['inscrits_taux']) . " ($libPrec : " . bilan_taux($prec['presents_taux'], $prec['inscrits_taux']) . ")\n\nPar conseiller (un atelier co-animé compte pour ses deux animateurs) :\n";
     foreach ($parConseiller as $nom => $c) $texte .= "- $nom : " . $s($c, 'Réalisé') . " réalisé(s) sur {$c['total']}, {$c['presents']} présent(s) / {$c['inscrits']} inscrit(s)\n";
     $texte .= "\nPar partenaire :\n";
     foreach ($parPartenaire as $nom => $c) $texte .= "- $nom : " . $s($c, 'Réalisé') . " réalisé(s) sur {$c['total']}\n";
@@ -218,7 +234,8 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
           . ($test ? '<p style="margin:6px 0 0;font-size:12px;opacity:.8">— MAIL DE TEST —</p>' : '') . '</div>'
           . '<div style="background:#fff;padding:12px 24px 20px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px">'
           . $titre('Chiffres du mois') . $tableau(['', ucfirst($libelle), ucfirst($libPrec), 'Écart'], $chiffres)
-          . $titre('Par conseiller') . ($cons ? $tableau(['Conseiller', 'Réalisés / total', 'Présents / inscrits', 'Taux'], $cons) : '<p style="color:#718096">Aucun atelier ce mois-ci.</p>')
+          . $titre('Par conseiller') . ($cons ? $tableau(['Conseiller', 'Réalisés / total', 'Présents / inscrits', 'Taux'], $cons)
+              . '<p style="color:#718096;font-size:12px;margin-top:-10px">Un atelier co-animé compte pour chacun de ses animateurs : les lignes ne s\'additionnent pas.</p>' : '<p style="color:#718096">Aucun atelier ce mois-ci.</p>')
           . $titre('Par partenaire') . ($part ? $tableau(['Partenaire', 'Réalisés', 'Total'], $part) : '<p style="color:#718096">Aucun atelier ce mois-ci.</p>')
           . $titre('Qualité des ateliers réalisés') . $tableau(['', ucfirst($libelle)], $lignesQualite)
           . '<p style="color:#718096;font-size:12px;margin-top:-10px">Avis anonymes des stagiaires ; les remarques libres ne sont pas reprises dans ce mail (Mes bilans / Dashboard de l\'application).</p>'
