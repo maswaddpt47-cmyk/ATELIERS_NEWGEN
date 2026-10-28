@@ -48,6 +48,12 @@ if (!preg_match('/^(\d{4})-(0[1-9]|1[0-2])$/', $mois, $m)) {
     fwrite(STDERR, "bilan : mois invalide (attendu AAAA-MM)\n");
     exit(1);
 }
+// Mois terminés seulement (AG-038, choix de l'utilisateur du 28/10/2026) : un
+// mois en cours compterait les ateliers à venir, que l'écran met à part.
+if ($mois >= date('Y-m')) {
+    fwrite(STDERR, "bilan : mois $mois pas encore terminé (seuls les mois écoulés sont envoyés)\n");
+    exit(1);
+}
 
 $db = api_base();
 ateliers_colonne_duree($db);

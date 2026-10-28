@@ -8,10 +8,10 @@ soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 **Ménages (26/09 → 26/10/2026)** : époque GAS, parité, livraisons, audit Codex,
 faille PHP2Shell et essais AG-027 à AG-029, décisions verrouillées par les
 tests retirés — `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` — ouverts le 28/10/2026 : **AG-037** (fusion des
-bilans, onglet « 📈 Bilans » et mail alignés) et **AG-038** (bilan à date + bloc
-« À venir » ; Codex attendu), en ligne ; reste : contrôle à l'écran par
-l'utilisateur, **annonce pour tous** (texte à valider, id 36, entrée 27 à revoir).
+Contradiction : `AGORA.md` — **AG-037 et AG-038 en ligne** (onglet « 📈 Bilans »,
+bilan à date + « À venir », mail limité aux mois écoulés) ; Codex a amendé AG-038,
+amendements livrés le 28/10 ; **reste** : sortir les deux blocs d'AGORA (tranchés),
+contrôle à l'écran par l'utilisateur, annonce pour tous (id 36 + entrée 27, texte à valider).
 
 ---
 

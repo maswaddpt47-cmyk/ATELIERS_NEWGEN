@@ -101,6 +101,9 @@ verifier($code === 1 && $mails() === [], 'option inconnue (« test= » oublié) 
 [$code, $sortie] = $lancer('--mois=2026-09 --test=moi@example.org');
 $m = $mails();
 verifier($code === 0 && count($m) === 1 && str_contains($m[0], 'A: moi@example.org') && str_contains($m[0], '[TEST]'), 'mode test : un seul mail, à l\'adresse donnée');
+array_map('unlink', glob("$tmp/mails/*.txt") ?: []);
+[$code, $sortie] = $lancer('--mois=' . date('Y-m') . ' --test=moi@example.org');
+verifier($code === 1 && $mails() === [] && str_contains($sortie, 'pas encore terminé'), 'mois en cours : refusé, aucun envoi (AG-038)');
 [$code] = $lancer('--mois=2026-13');
 verifier($code === 1, 'mois invalide : refusé');
 
@@ -110,10 +113,10 @@ verifier($code === 1, 'mois invalide : refusé');
 // sans présents saisis → 6/8 = 75 % (et non 6/12 = 50 %) ; les lignes
 // « Inscrits » et « Présents » restent des totaux (12 et 6).
 echo "Taux de présence\n";
-$ins->execute(['t1', 'Réalisé', '2026-11-03', 'Alice', 'CAF', 8, 6]);
-$ins->execute(['t2', 'Réalisé', '2026-11-10', 'Alice', 'CAF', 4, null]);
+$ins->execute(['t1', 'Réalisé', '2026-06-03', 'Alice', 'CAF', 8, 6]);
+$ins->execute(['t2', 'Réalisé', '2026-06-10', 'Alice', 'CAF', 4, null]);
 array_map('unlink', glob("$tmp/mails/*.txt"));
-[$code, $sortie] = $lancer('--mois=2026-11');
+[$code, $sortie] = $lancer('--mois=2026-06');
 $t = ($mails())[0] ?? '';
 verifier($code === 0 && str_contains($t, 'Inscrits (ateliers réalisés) : 12') && str_contains($t, 'Présents (ateliers réalisés) : 6'), 'les lignes Inscrits / Présents restent des totaux');
 verifier(str_contains($t, 'Taux de présence : 75 %'), 'présents non saisis : hors du taux (75 %, pas 50 %)');
