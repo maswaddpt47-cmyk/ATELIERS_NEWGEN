@@ -3174,7 +3174,7 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
       CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--ok)'}},CE('b',null,CE(NombreAnime,{valeur:kpi.realises})),CE('span',null,'Réalisés'),kpi.total?CE('small',null,kpi.pct.realises+'%'):null),
       CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--err)'}},CE('b',null,CE(NombreAnime,{valeur:kpi.annules})),CE('span',null,'Annulés'),kpi.total?CE('small',null,kpi.pct.annules+'%'):null),
       CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--text-3)'},title:'Reportés et non réalisés'},CE('b',null,CE(NombreAnime,{valeur:kpi.autres})),CE('span',null,'Autres'),kpi.total?CE('small',null,kpi.pct.autres+'%'):null),
-      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--warn)'},title:'Présents / inscrits des ateliers réalisés. Taux : ateliers dont les présents sont saisis ('+kpi.presentsTaux+'/'+kpi.inscritsTaux+')'},CE('b',null,kpi.presents+'/'+kpi.inscrits),CE('span',null,'Présents'),kpi.inscritsTaux?CE('small',null,kpi.tx+'%'):null)
+      CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--warn)'},title:'Présents / inscrits des ateliers réalisés. Taux : ateliers dont les présents sont saisis ('+kpi.presentsTaux+'/'+kpi.inscritsTaux+')'},CE('b',null,CE(NombreAnime,{valeur:kpi.presents}),'/',CE(NombreAnime,{valeur:kpi.inscrits})),CE('span',null,'Présents'),kpi.inscritsTaux?CE('small',null,kpi.tx+'%'):null)
     ),
     // Alerte retards v2
     nRetard>0&&CE('div',{className:'alerte-retard-v2'},
