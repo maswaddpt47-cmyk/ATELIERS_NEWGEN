@@ -34,7 +34,7 @@
       "NextStep shared.js:2822"
     ],
     "newgen": "bd3b62ea1e/bd3b62ea1e",
-    "nextstep": "c87bea2830/c87bea2830",
+    "nextstep": "d618c8acfc/d618c8acfc",
     "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres). Revérifié le 28/10/2026 après les chiffres animés des tuiles : même composant NombreAnime dans les deux, posé sur le bandeau propre à chaque appli."
   },
   "majIndiceNav": {
