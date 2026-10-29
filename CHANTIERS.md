@@ -97,6 +97,9 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
    (suivi dans `GDINV2/CHANTIERS.md`). Dossier DSI GDINV2 : V3 à six défauts,
    synthèse et consigne V0.2 prêtes, **pas encore remises**
    (`GDINV2-BACKUP/dsi/GDIN-DSI_2026-10-29/`).
+   **Registre de sécurité V0.9** (`ateliers-backups/documents/`, 29/10) amendé :
+   audit XSS de GDINV2 au §10 et risque d'origine partagée au §9 ; V0.8 archivée.
+   À relire par l'utilisateur avant toute remise au DSI.
 3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
 4. **Depuis le PC** : coller `MD-LIB/outils/script-demarrage.sh` dans le
