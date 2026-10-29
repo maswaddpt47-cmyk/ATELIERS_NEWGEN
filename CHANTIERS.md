@@ -94,7 +94,8 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
    gardé (29/10) : fait en local chez Codex, pas encore sur GitHub. Suite :
    l'utilisateur colle le `git diff` de Codex dans une session ayant GDINV2
    en écriture ; relire (tests, textes, notes, `motif` déjà stocké dans les
-   navigateurs) avant de publier. Rapport à
+   navigateurs) avant de publier. Même session : propager l'exception Codex
+   d'`agora.md` §12 dans `GDINV2/AGORA.md:113` (29/10). Rapport à
    vérifier point par point puis à ranger dans `ateliers-backups/documents/sources/`.
    NEWGEN et NextStep : rien d'exploitable (AG-030, AG-031, registre V0.8 §10).
 3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
