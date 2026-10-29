@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **28/10/2026**. Tient aussi les restes communs à NextStep (même API,
+État au **29/10/2026**. Tient aussi les restes communs à NextStep (même API,
 même base depuis la bascule du 25/09/2026).
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
@@ -83,26 +83,18 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
 
 1. **Faille PHP2Shell (21/10/2026)** — API rouverte le 21/10 à 21 h 05 ;
    aucun indice identifié, sans pouvoir exclure une compromission (AG-026).
-   Reste :
-   - en parler au directeur : remettre le registre de sécurité **V0.8**
-     (23/10, NextStep vérifié au §10) et l'annexe A **V0.3**
-     (`ateliers-backups/documents/`, 22/10), après avoir
-     **validé la V0.3** (place laissée aux IA, ligne « relecture humaine du
-     code à proposer à la direction ») ; la V0.2 (8 pages) reste archivée
-     comme dossier de preuves ;
-   - à arbitrer : requête-témoin pour une vraie fraîcheur des journaux
-     (évolution laissée de côté par AG-029).
+   Annexe A V0.3 validée et remise au directeur avec le registre de sécurité
+   V0.8 (utilisateur, 29/10). Reste à arbitrer : requête-témoin pour une
+   vraie fraîcheur des journaux (évolution laissée de côté par AG-029).
 2. **Auditer GDINV2 pour la XSS** (même origine web que NEWGEN, 94 insertions
    `innerHTML` alimentées par un Excel importé) — dans son dépôt, avec Codex.
+   Consigne remise à l'utilisateur le 29/10 (modèle MD-LIB resserré sur la
+   XSS, rejeu local exigé) ; **en attente du rapport**, à vérifier point par
+   point puis à ranger dans `ateliers-backups/documents/sources/`.
    NEWGEN et NextStep : rien d'exploitable (AG-030, AG-031, registre V0.8 §10).
-3. **Rendez-vous DSI (préparé le 06/10)** : réponses dans
-   `ateliers-backups/documents/sources/preparation-rdv-dsi.md` ; à remettre :
-   note avant/après V0.1, registre de sécurité V0.8 et registre RGPD V0.6.
-   Avant : vérifier les deux « ⚠️ » du document (compte transférable, alerte
-   d'intrusion).
-4. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
+3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
-5. **Depuis le PC** : coller `MD-LIB/outils/script-demarrage.sh` dans le
+4. **Depuis le PC** : coller `MD-LIB/outils/script-demarrage.sh` dans le
    Setup script de l'environnement (menu de l'environnement → Edit). Il
    installe le contrôle automatique du déploiement (`MD-LIB/deploiement.md`) ;
    d'ici là, le lancer à la main après chaque push.
