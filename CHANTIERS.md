@@ -93,9 +93,10 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
    maintenant** : le retrait du `motif` et de l'import/export JSON est en ligne
    (GDINV2 `539f74b`, 29/10, déploiement ✅), exception Codex propagée dans
    `GDINV2/AGORA.md` (`464133f`). Le test e2e hostile passe désormais par un vrai
-   XLSX et a révélé une XSS préexistante dans `renderCms()` (corrigée,
-   GDINV2 `e846717`) : ne pas la donner à Codex, il doit la retrouver ou non
-   seul ; regarder aussi les `setInsightQ` (ex. `index.html:2510`, non vérifié).
+   XLSX et a révélé deux XSS préexistantes, corrigées : `renderCms()` (GDINV2
+   `e846717`) et 7 textes d'aide « ? » via `setInsightQ` (`8e483a7`, le clic
+   exécutait du code ; vérifié à la main le 29/10). Ne pas les donner à Codex,
+   il doit retrouver seul ce qui reste.
    Rapport à vérifier point par point puis à ranger dans
    `ateliers-backups/documents/sources/`.
    NEWGEN et NextStep : rien d'exploitable (AG-030, AG-031, registre V0.8 §10).
