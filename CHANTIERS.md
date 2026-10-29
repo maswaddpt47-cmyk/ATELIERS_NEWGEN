@@ -89,14 +89,15 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
 2. **Auditer GDINV2 pour la XSS** (même origine web que NEWGEN, 94 insertions
    `innerHTML` alimentées par un Excel importé) — dans son dépôt, avec Codex.
    Consigne : `ateliers-backups/documents/sources/consigne-audit-codex-gdinv2-xss.md`
-   (29/10, modèle MD-LIB resserré sur la XSS, rejeu local exigé). **À lancer après publication** du retrait du
-   `motif` et de l'import/export JSON, demandé par l'utilisateur à Codex et
-   gardé (29/10) : fait en local chez Codex, pas encore sur GitHub. Suite :
-   l'utilisateur colle le `git diff` de Codex dans une session ayant GDINV2
-   en écriture ; relire (tests, textes, notes, `motif` déjà stocké dans les
-   navigateurs) avant de publier. Même session : propager l'exception Codex
-   d'`agora.md` §12 dans `GDINV2/AGORA.md:113` (29/10). Rapport à
-   vérifier point par point puis à ranger dans `ateliers-backups/documents/sources/`.
+   (29/10, modèle MD-LIB resserré sur la XSS, rejeu local exigé). **À lancer
+   maintenant** : le retrait du `motif` et de l'import/export JSON est en ligne
+   (GDINV2 `539f74b`, 29/10, déploiement ✅), exception Codex propagée dans
+   `GDINV2/AGORA.md` (`464133f`). Le test e2e hostile passe désormais par un vrai
+   XLSX et a révélé une XSS préexistante dans `renderCms()` (corrigée,
+   GDINV2 `e846717`) : ne pas la donner à Codex, il doit la retrouver ou non
+   seul ; regarder aussi les `setInsightQ` (ex. `index.html:2510`, non vérifié).
+   Rapport à vérifier point par point puis à ranger dans
+   `ateliers-backups/documents/sources/`.
    NEWGEN et NextStep : rien d'exploitable (AG-030, AG-031, registre V0.8 §10).
 3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
