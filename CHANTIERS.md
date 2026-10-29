@@ -89,8 +89,10 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
 2. **Auditer GDINV2 pour la XSS** (même origine web que NEWGEN, 94 insertions
    `innerHTML` alimentées par un Excel importé) — dans son dépôt, avec Codex.
    Consigne remise à l'utilisateur le 29/10 (modèle MD-LIB resserré sur la
-   XSS, rejeu local exigé) ; **en attente du rapport**, à vérifier point par
-   point puis à ranger dans `ateliers-backups/documents/sources/`.
+   XSS, rejeu local exigé). **À lancer après publication** du retrait du
+   `motif` et de l'import/export JSON, demandé par l'utilisateur à Codex et
+   gardé (29/10) : fait en local chez Codex, pas encore sur GitHub. Rapport à
+   vérifier point par point puis à ranger dans `ateliers-backups/documents/sources/`.
    NEWGEN et NextStep : rien d'exploitable (AG-030, AG-031, registre V0.8 §10).
 3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
