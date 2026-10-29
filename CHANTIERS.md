@@ -86,20 +86,17 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
    Annexe A V0.3 validée et remise au directeur avec le registre de sécurité
    V0.8 (utilisateur, 29/10). Reste à arbitrer : requête-témoin pour une
    vraie fraîcheur des journaux (évolution laissée de côté par AG-029).
-2. **Auditer GDINV2 pour la XSS** (même origine web que NEWGEN, 94 insertions
-   `innerHTML` alimentées par un Excel importé) — dans son dépôt, avec Codex.
-   Consigne : `ateliers-backups/documents/sources/consigne-audit-codex-gdinv2-xss.md`
-   (29/10, modèle MD-LIB resserré sur la XSS, rejeu local exigé). **À lancer
-   maintenant** : le retrait du `motif` et de l'import/export JSON est en ligne
-   (GDINV2 `539f74b`, 29/10, déploiement ✅), exception Codex propagée dans
-   `GDINV2/AGORA.md` (`464133f`). Le test e2e hostile passe désormais par un vrai
-   XLSX et a révélé deux XSS préexistantes, corrigées : `renderCms()` (GDINV2
-   `e846717`) et 7 textes d'aide « ? » via `setInsightQ` (`8e483a7`, le clic
-   exécutait du code ; vérifié à la main le 29/10). Ne pas les donner à Codex,
-   il doit retrouver seul ce qui reste.
-   Rapport à vérifier point par point puis à ranger dans
-   `ateliers-backups/documents/sources/`.
-   NEWGEN et NextStep : rien d'exploitable (AG-030, AG-031, registre V0.8 §10).
+2. **GDINV2 — audit XSS fait le 29/10/2026** (Codex, rapport tel quel +
+   vérification : `ateliers-backups/documents/sources/audit-codex-gdinv2-xss-2026-10-29.md`).
+   Trois défauts de plus (thématiques non échappées dans le bilan du Rapport et
+   du Diapo rapport), reproduits et corrigés (GDINV2 `46a82c7`, en ligne) ;
+   aucun autre chemin trouvé. **Pour NEWGEN et NextStep** : Codex note que
+   l'origine `maswaddpt47-cmyk.github.io` est **partagée** (le `localStorage`
+   des applications voisines, jeton de planification compris, est lisible par
+   une XSS de GDINV2). Décision d'origine ou de fermeture de Pages à trancher
+   (suivi dans `GDINV2/CHANTIERS.md`). Dossier DSI GDINV2 : V3 à six défauts,
+   synthèse et consigne V0.2 prêtes, **pas encore remises**
+   (`GDINV2-BACKUP/dsi/GDIN-DSI_2026-10-29/`).
 3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »).
 4. **Depuis le PC** : coller `MD-LIB/outils/script-demarrage.sh` dans le
