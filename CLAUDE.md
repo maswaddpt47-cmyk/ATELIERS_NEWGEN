@@ -47,6 +47,7 @@ git checkout main && git merge <branche> --no-ff && git push origin main
 | `node --test utils.test.js` | `utils.js` — dates, ICS, communes |
 | `node --test logic.test.js` | `logic.js` — KPI, validation, filtres, matériel |
 | `node --test contract.test.js` | format des données envoyées à l'API |
+| `node --test veilleur.test.js` | cadence du veilleur d'intégrité (`veilleur.yml`, AG-039) : faux `gh`, aucune attente |
 | `npx playwright test` | tests navigateur, en parallèle (`e2e/`, ~45 s) : |
 | ↳ `e2e/sandbox.spec.js` | `utils.js`+`logic.js` chargent dans un navigateur |
 | ↳ `e2e/smoke.spec.js` | les deux pages s'ouvrent, chaque onglet répond, sans erreur JS |
@@ -63,6 +64,7 @@ local, sinon `npx playwright install chromium`).
   attrape la casse au chargement (point-virgule manquant, IIFE cassée) qui
   laisse les deux pages blanches alors que les suites Node passent.
 - `utils.js`, `logic.js` ou le format entry modifiés → les trois suites Node.
+- `veilleur.yml` modifié → **`veilleur.test.js`** (il extrait et exécute le script réel).
 - `gasAppel`, `gasUnAppel`, `gasLectureDoublee` ou une constante `GAS_*`
   modifiée → **`e2e/reseau.spec.js`**. Il verrouille notamment qu'une
   écriture n'est jamais doublée.

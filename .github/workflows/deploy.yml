@@ -40,6 +40,10 @@ jobs:
       - name: Tests contrat
         run: node --test contract.test.js
 
+      # Cadence du veilleur d'intégrité (AG-039) : script réel, faux gh, aucune attente.
+      - name: Tests veilleur
+        run: node --test veilleur.test.js
+
       - name: Garde-fou cache-busting
         run: node scripts/check-cache-busting.js "${{ github.event.before }}" "${{ github.sha }}"
 
