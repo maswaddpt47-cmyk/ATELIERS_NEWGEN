@@ -180,12 +180,17 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   témoin absent = IMPOSSIBLE, jour clos vide = IMPOSSIBLE, aucune tolérance
   rétroactive pour le 31/10 ; tests : témoin présent, absent, ancien, marque
   différente, délai d'écriture des journaux, anomalie réelle restant rouge.
-  **Piège** : tant que le veilleur est désactivé, l'étape « Relancer le veilleur »
-  du contrôle programmé (`integrite-api.yml:263-270`) échoue à chaque heure
-  (hypothèse non vérifiée : `gh workflow run` sur un workflow désactivé) : un
-  contrôle **programmé** ne peut donc pas revenir au vert ; vérifier le retour au
-  vert par un lancement **manuel** (l'étape est sautée hors `schedule`). La
-  pastille rouge « ! » de 💾 Sauvegardes reste affichée tant que le veilleur est
+  **Constaté le 02/11/2026 à 19:18** (contrôle programmé n° 3886, seul passage
+  programmé depuis 15:02 : la programmation n'est pas horaire) : même échec
+  IMPOSSIBLE sur le 31/10 ; l'étape « Relancer le veilleur s'il est arrêté »
+  (`integrite-api.yml:263-270`) est **verte** : « veilleur actif (1) », car le run
+  n° 3654 resté « Queued » (ancien code, non annulable, API 409) compte comme un
+  veilleur actif. Une hypothèse du 02/11 matin (« l'étape échoue chaque heure,
+  le programmé ne peut pas revenir au vert ») était fausse. **Non vérifié** : ce
+  que fera l'étape si ce run disparaît (elle tenterait de relancer un veilleur
+  désactivé). Retour au vert attendu le 03/11 (fenêtre de 2 jours) : s'il n'a
+  pas lieu au contrôle programmé, lancer le contrôle à la main. La pastille
+  rouge « ! » de 💾 Sauvegardes reste affichée tant que le veilleur est
   éteint (`etatVeille` exige un veilleur actif).
 - **Correctif PHP d'Alwaysdata : redémarrer le site** (Web → Sites →
   Redémarrer ; 21/10, `php -v` en SSH disait 8.4.27, l'API tournait en
