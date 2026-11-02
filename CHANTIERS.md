@@ -1,7 +1,9 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **29/10/2026**. Tient aussi les restes communs à NextStep (même API,
-même base depuis la bascule du 25/09/2026).
+État au **02/11/2026**, base `main` (`3d33590`). Tient aussi les restes
+communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
+Depuis le 29/10 : règles MD-LIB 48 à 59 propagées dans `CLAUDE.md` (30/10 →
+01/11) et frise du parc (02/11) ; rien d'autre côté code.
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
@@ -101,7 +103,7 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
    audit XSS de GDINV2 au §10 et risque d'origine partagée au §9 ; V0.8 archivée.
    À relire par l'utilisateur avant toute remise au DSI.
 3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
-   journal Admin (« bilanMensuel »).
+   journal Admin (« bilanMensuel »). Date passée au 02/11, **non vérifié**.
 4. **Depuis le PC** : coller `MD-LIB/outils/script-demarrage.sh` dans le
    Setup script de l'environnement (menu de l'environnement → Edit). Il
    installe le contrôle automatique du déploiement (`MD-LIB/deploiement.md`) ;
@@ -274,7 +276,10 @@ appel superflu, `sw.js` de désinscription.
   mobile » = ordinateurs du stock), à l'heure près (AG-022) : prêt d'un jour
   sur `[début, fin + 30 min)`, atelier sans horaire sur sa demi-journée ou la
   journée ; un conseiller compte une fois, au max de ses quantités
-  (`logic.test.js`). Prêt sur plusieurs jours : journées entières, du
+  (`logic.test.js`). **Confirmé le 02/11/2026** : les séances de l'après-midi
+  d'un même conseiller puisent dans les ordinateurs du matin (5 + 2 + 2 = 5, pas
+  9) ; la frise du parc marque ces séances d'un repère en pointillé « ↳ 2 »
+  (rendu seul, `bfa45f2` NextStep, `3d33590` NEWGEN). Prêt sur plusieurs jours : journées entières, du
   prélèvement à la veille du retour (AG-002) — **rouvrir** seulement si une
   alerte sonne sur un créneau réellement libre.
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS` `newgen` / `nextstep`) :
