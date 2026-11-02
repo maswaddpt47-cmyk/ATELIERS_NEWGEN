@@ -151,6 +151,17 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   Sauvegardes. Arrêt durable : Actions → Veilleur intégrité → Disable
   workflow. **Jamais vus en vrai** : la relance par le filet, la pastille
   rouge « ! ». Le jour en cours n'est pas compté (AG-029).
+  **Veilleur DÉSACTIVÉ à la main le 02/11/2026** (utilisateur) : depuis le
+  31/10 à 23:44 le contrôle échoue en « IMPOSSIBLE : aucune requête
+  journalisée le 2026-10-31 » (samedi sans requête ; aucune ligne ALERTE, comptes
+  conformes) et chaque échec relance un veilleur aussitôt : ≈ 3 600 passages en
+  échec (runs 281 → 3884), un toutes les 35 s. **Hypothèse non vérifiée** : le
+  contrôle se rétablit au 03/11 (fenêtre de 2 jours, début 01/11 = 11 lignes).
+  **À faire** : après le 1er contrôle programmé vert du 03/11, **réactiver**
+  « Veilleur intégrité » (Actions → Enable workflow). Tolérer un jour sans
+  requête = réglage de sécurité, donc bloc AGORA (Codex) avant tout changement.
+  La pastille rouge « ! » de 💾 Sauvegardes reste affichée tant que le
+  veilleur est éteint (`etatVeille` exige un veilleur actif).
 - **Correctif PHP d'Alwaysdata : redémarrer le site** (Web → Sites →
   Redémarrer ; 21/10, `php -v` en SSH disait 8.4.27, l'API tournait en
   8.4.26). Version servie : `diagnostic-api.yml` (« php (web) »).
