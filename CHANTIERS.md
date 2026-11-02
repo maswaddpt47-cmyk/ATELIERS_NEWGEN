@@ -154,14 +154,32 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   **Veilleur DÉSACTIVÉ à la main le 02/11/2026** (utilisateur) : depuis le
   31/10 à 23:44 le contrôle échoue en « IMPOSSIBLE : aucune requête
   journalisée le 2026-10-31 » (samedi sans requête ; aucune ligne ALERTE, comptes
-  conformes) et chaque échec relance un veilleur aussitôt : ≈ 3 600 passages en
-  échec (runs 281 → 3884), un toutes les 35 s. **Hypothèse non vérifiée** : le
-  contrôle se rétablit au 03/11 (fenêtre de 2 jours, début 01/11 = 11 lignes).
-  **À faire** : après le 1er contrôle programmé vert du 03/11, **réactiver**
-  « Veilleur intégrité » (Actions → Enable workflow). Tolérer un jour sans
-  requête = réglage de sécurité, donc bloc AGORA (Codex) avant tout changement.
-  La pastille rouge « ! » de 💾 Sauvegardes reste affichée tant que le
-  veilleur est éteint (`etatVeille` exige un veilleur actif).
+  conformes) et chaque échec relançait un veilleur aussitôt : 3 603 passages en
+  échec (runs 281 → 3884), un toutes les ≈ 34 s (AG-039).
+  **Étape 1 livrée le 02/11/2026** (décision de l'utilisateur, AG-039) : cadence
+  corrigée dans `veilleur.yml` — toute relève après un échec impose `attente` =
+  `intervalle` au successeur (lancement refusé et historique illisible compris),
+  jamais moins d'`intervalle` depuis le dernier lancement du contrôle, un contrôle
+  déjà en cours est suivi, `seuil` transmis ; alerte de rupture inchangée (dernier
+  succès). 11 essais sur faux `gh` (`veilleur.test.js`, bloquants en CI),
+  chacun vérifié par mutation. **Pas démontré en réel** : aucun passage réel
+  depuis la correction. **Le veilleur reste désactivé : sa réactivation exige
+  l'accord explicite de l'utilisateur**, après vérification (un retour au vert le
+  03/11 ne prouve pas la correction de la boucle).
+  **Étape 2, après le 03/11, intervention distincte** : requête-témoin. Contrat de
+  Codex (AG-039) : GET sur le seul `/api/index.php?action=logLogin`, marque neuve
+  par tentative cherchée dans les journaux **bruts** (le parseur actuel efface les
+  paramètres, `integrite-api.yml:193-197`), HTTP 200 + JSON `ok:true` vérifiés,
+  témoin absent = IMPOSSIBLE, jour clos vide = IMPOSSIBLE, aucune tolérance
+  rétroactive pour le 31/10 ; tests : témoin présent, absent, ancien, marque
+  différente, délai d'écriture des journaux, anomalie réelle restant rouge.
+  **Piège** : tant que le veilleur est désactivé, l'étape « Relancer le veilleur »
+  du contrôle programmé (`integrite-api.yml:263-270`) échoue à chaque heure
+  (hypothèse non vérifiée : `gh workflow run` sur un workflow désactivé) : un
+  contrôle **programmé** ne peut donc pas revenir au vert ; vérifier le retour au
+  vert par un lancement **manuel** (l'étape est sautée hors `schedule`). La
+  pastille rouge « ! » de 💾 Sauvegardes reste affichée tant que le veilleur est
+  éteint (`etatVeille` exige un veilleur actif).
 - **Correctif PHP d'Alwaysdata : redémarrer le site** (Web → Sites →
   Redémarrer ; 21/10, `php -v` en SSH disait 8.4.27, l'API tournait en
   8.4.26). Version servie : `diagnostic-api.yml` (« php (web) »).
