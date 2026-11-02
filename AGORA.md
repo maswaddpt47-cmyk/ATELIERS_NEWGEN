@@ -100,7 +100,16 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-*Aucun bloc ouvert au 28/10/2026.*
+## AG-039 — Contrôle d'intégrité : jour sans requête et boucle du veilleur — ouvert le 02/11/2026
+**Auteur** : session du 02/11/2026 (trailer `Claude-Session: …01Sptc2cBykmfijwHPT5fJHv`) — lu sur `48d674e`
+**Proposition** : (1) **requête-témoin** : à chaque passage, `integrite-api.yml` fait un `GET` sans donnée sur l'API publique avec une marque reconnaissable, puis exige de retrouver cette marque dans les journaux HTTP ; un jour clos vide redevient alors un vrai « IMPOSSIBLE » (journaux absents ou contrôle arrêté), et non un jour calme. (2) **veilleur** : après un échec, le successeur ne relance pas un passage avant l'intervalle — l'âge se mesure sur le dernier passage, réussi ou non, pas seulement sur le dernier réussi.
+**Critère déclencheur** : 5 — contredit AG-026 (« jour sans requête = IMPOSSIBLE ») et AG-029 (« requête-témoin non faite », laissée de côté) ; sécurité : contradicteur Codex (`agora.md` §12). Pas le critère 7 : aucun chiffre affiché.
+**Ce que ça engage** : une requête de plus par heure sur l'API en production (visible dans les journaux de l'application ? à vérifier), une marque que n'importe qui peut forger ; une modification du seul contrôle de sécurité du serveur, qui est en panne depuis le 31/10 à 23:44.
+**Non vérifié par l'auteur** : (a) la cause : lue dans le rapport du run `41422485000` (« 2026-10-31 : 0 », « 2026-11-01 : 11 »), **jamais dans les journaux Alwaysdata** — samedi réellement sans requête ou journaux purgés, je ne sais pas ; (b) si des week-ends passés avaient des lignes (non mesuré, le contrôle n'existe que depuis le 22/10) ; (c) que le contrôle redevient vert le 03/11 (hypothèse : fenêtre de 2 jours, début 01/11) ; (d) qui produit les 11 lignes du 01/11 ; (e) si une marque dans l'URL ou l'en-tête user-agent passe dans le format des journaux reconnu (`integrite-api.yml:200-202`) ; (f) l'effet du `GET` témoin sur « chemins appelés hors pages connues » (`:220-221`) et sur les limites de connexion de l'API.
+**Si personne ne répond, je fais quoi ?** Rien dans le code : le veilleur reste éteint jusqu'à un premier contrôle programmé vert (le 03/11 si l'hypothèse (c) tient), puis l'utilisateur le réactive (`CHANTIERS.md`). La boucle revient au prochain jour sans requête (week-end, férié) : le risque reste écrit, pas corrigé.
+**Où regarder** : `.github/workflows/integrite-api.yml:203-218` (couverture par jour clos) ; `.github/workflows/veilleur.yml:85-93` (rupture mesurée sur le dernier succès), `:115` et `:117` (échec → `echec` → relève immédiate : le successeur, sans succès récent, relance aussitôt un passage) ; rapport du run `41422485000` ; AG-026, AG-029 (tableau ci-dessous).
+
+**Constat chiffré** (runs GitHub, pas d'interprétation) : dernier contrôle réussi `41249518114` le 31/10 à 22:44 UTC (run n° 281) ; dernier échec lu `41422485000` le 02/11 à 09:39 UTC (run n° 3884) : 3 603 passages en échec en environ 34 h (un toutes les ≈ 34 s : 122 400 s ÷ 3 603), chacun relancé par un successeur du veilleur. Veilleur désactivé à la main par l'utilisateur le 02/11 vers 10:40 (heure de Paris) ; aucun nouveau run créé depuis.
 
 ## Blocs tranchés — sortis de ce fichier
 
