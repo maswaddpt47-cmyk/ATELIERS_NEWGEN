@@ -162,8 +162,15 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   jamais moins d'`intervalle` depuis le dernier lancement du contrôle, un contrôle
   déjà en cours est suivi, `seuil` transmis ; alerte de rupture inchangée (dernier
   succès). 11 essais sur faux `gh` (`veilleur.test.js`, bloquants en CI),
-  chacun vérifié par mutation. **Pas démontré en réel** : aucun passage réel
-  depuis la correction. **Le veilleur reste désactivé : sa réactivation exige
+  chacun vérifié par mutation. **Essai réel du 02/11/2026 à 15:02 (Paris)**,
+  lancé par l'utilisateur avec `passages=1` : le veilleur n° 3655 lance un seul
+  contrôle (n° 3885, échec IMPOSSIBLE attendu), demande sa relève, le n° 3656
+  démarre et journalise « attente imposée après un échec : 60 min » ; **aucun
+  autre contrôle lancé** pendant les 7 min d'observation (ancien code : un toutes
+  les ≈ 34 s). Annulation du n° 3656 essayée en réel : sortie propre, « veilleur
+  annulé : pas de relève ». **Non observé** : le second passage, 60 min plus tard,
+  donc la chaîne sur plusieurs heures. Le run n° 3654 (ancien code) reste
+  « Queued », non annulable (API : 409). **Le veilleur reste désactivé : sa réactivation exige
   l'accord explicite de l'utilisateur**, après vérification (un retour au vert le
   03/11 ne prouve pas la correction de la boucle).
   **Étape 2, après le 03/11, intervention distincte** : requête-témoin. Contrat de
