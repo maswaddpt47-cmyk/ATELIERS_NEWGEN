@@ -109,11 +109,6 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
 
 **Pour Claude**
 
--1. **Modifier un ticket envoyé** (demande de l'utilisateur, 03/11/2026) :
-   toute l'équipe, tous les champs saisis (type, onglet, gêne, titre,
-   description), tant que l'Admin n'a pas changé le statut (« Nouveau »).
-   Trace à confirmer par l'utilisateur. Nouvelle action d'écriture et colonne
-   au schéma : bloc AGORA (critère 1, droits d'écriture → Codex) avant le code.
 
 0. **Bac à sable NextStep** (AG-033, en ligne le 27/10) : à éprouver — pages
    NextStep dans les contrôles de `coupure-urgence.yml` puis coupure réelle ;
@@ -339,6 +334,11 @@ appel superflu, `sw.js` de désinscription.
   valeurs, ni échelles, ni filtres, ni échappement HTML.
 - **Démonstration (24/10)** : faux ateliers sur deux années, liens du bandeau ;
   aucun peuplement sans le garde-fou `bac_a_sable=true`.
+- **Tickets modifiables (03/11/2026, AG-041, en ligne)** : toute l'équipe,
+  champs saisis (type, gêne, onglet, titre, description), tant que le statut est
+  « Nouveau » ; ni mention « modifié », ni mail, ni journal (décisions de
+  l'utilisateur). Vérification de Codex attendue (AG-041 ; il suffit de lui dire
+  « pull », consigne dans `AGENTS.md`).
 - **Corbeille** : un conseiller ne voit que ses ateliers animés ou co-animés
   (AG-034) ; l'Admin voit tout, sans suivre le sélecteur de conseiller (choix du
   27/10) ; purge définitive réservée admin/superviseur (AG-024). Testés.
