@@ -177,7 +177,7 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   « Queued », non annulable (API : 409). **Le veilleur reste désactivé : sa réactivation exige
   l'accord explicite de l'utilisateur**, après vérification (un retour au vert le
   03/11 ne prouve pas la correction de la boucle).
-  **Étape 2 livrée le 03/11/2026** (décision de l'utilisateur) : requête-témoin dans `integrite-api.yml`, 12 essais `integrite.test.js` (bloquants en CI) vérifiés par 9 mutations ; **essai réel à faire** (lancement manuel du contrôle). Rappel du contrat de
+  **Étape 2 livrée le 03/11/2026** (décision de l'utilisateur) : requête-témoin dans `integrite-api.yml`, 12 essais `integrite.test.js` (bloquants en CI) vérifiés par 9 mutations ; **essai réel concluant le 03/11/2026 à 17:11** (contrôle n° 3889 lancé à la main : témoin envoyé, HTTP 200, `ok:true`, retrouvé dans les journaux en 1 lecture, « aucune anomalie »). Vérification unique de la livraison par Codex : AG-040. Rappel du contrat de
   Codex (AG-039) : GET sur le seul `/api/index.php?action=logLogin`, marque neuve
   par tentative cherchée dans les journaux **bruts** (le parseur actuel efface les
   paramètres, `integrite-api.yml:193-197`), HTTP 200 + JSON `ok:true` vérifiés,
