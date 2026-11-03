@@ -44,6 +44,10 @@ jobs:
       - name: Tests veilleur
         run: node --test veilleur.test.js
 
+      # Requête-témoin du contrôle d'intégrité (AG-039) : scripts réels, faux curl, faux journaux.
+      - name: Tests intégrité
+        run: node --test integrite.test.js
+
       - name: Garde-fou cache-busting
         run: node scripts/check-cache-busting.js "${{ github.event.before }}" "${{ github.sha }}"
 
