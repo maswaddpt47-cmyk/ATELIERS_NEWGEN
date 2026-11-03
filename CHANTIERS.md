@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **02/11/2026**, base `main` (`3d33590`). Tient aussi les restes
+État au **03/11/2026**, base `main` (`ac1da68`). Tient aussi les restes
 communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
 Depuis le 29/10 : règles MD-LIB 48 à 59 propagées dans `CLAUDE.md` (30/10 →
 01/11) et frise du parc (02/11) ; rien d'autre côté code.
@@ -188,8 +188,12 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   veilleur actif. Une hypothèse du 02/11 matin (« l'étape échoue chaque heure,
   le programmé ne peut pas revenir au vert ») était fausse. **Non vérifié** : ce
   que fera l'étape si ce run disparaît (elle tenterait de relancer un veilleur
-  désactivé). Retour au vert attendu le 03/11 (fenêtre de 2 jours) : s'il n'a
-  pas lieu au contrôle programmé, lancer le contrôle à la main. La pastille
+  désactivé). **Retour au vert constaté le 03/11/2026** : contrôles programmés
+  n° 3887 (02:33) et n° 3888 (10:28, heure de Paris), fenêtre commençant le 01/11
+  (11 et 106 lignes), « aucune anomalie », comptes conformes — conforme à
+  l'hypothèse de la fenêtre de 2 jours ; **cela ne prouve pas** que la cause est
+  traitée : un jour sans aucune requête (week-end, férié) refera échouer le
+  contrôle, jusqu'à la requête-témoin (étape 2). La pastille
   rouge « ! » de 💾 Sauvegardes reste affichée tant que le veilleur est
   éteint (`etatVeille` exige un veilleur actif).
 - **Correctif PHP d'Alwaysdata : redémarrer le site** (Web → Sites →
