@@ -62,8 +62,13 @@ case "$url" in
 esac
 `;
 
+// APPARITION : run du contrôle ajouté à l'historique pendant la première
+// attente d'au moins 1000 s (lancement concurrent, AG-040).
 const FAUX_SLEEP = `#!/bin/bash
 echo "sleep $1" >> "$LOG"
+if [ -n "\${APPARITION:-}" ] && [ -f "$APPARITION" ] && [ "$1" -ge 1000 ]; then
+  jq --slurpfile r "$APPARITION" '.runs += $r' "$SCENARIO" > "$SCENARIO.tmp" && mv "$SCENARIO.tmp" "$SCENARIO"; rm -f "$APPARITION"
+fi
 [ "$SLEEP_REEL" = 1 ] && exec /bin/sleep 5
 exit 0
 `;
@@ -87,9 +92,10 @@ function monter(scenario) {
   return { dir, env, log, scenario: sc };
 }
 
-function lancer(scenario, envPlus) {
+function lancer(scenario, envPlus, apparition) {
   const m = monter(scenario);
   Object.assign(m.env, envPlus || {});
+  if (apparition) { const f = path.join(m.dir, 'apparition.json'); fs.writeFileSync(f, JSON.stringify(apparition)); m.env.APPARITION = f; }
   const r = spawnSync('bash', ['-c', SCRIPT], { env: m.env, encoding: 'utf8', timeout: 20000 });
   const journal = fs.readFileSync(m.log, 'utf8').split('\n').filter(Boolean);
   return Object.assign(m, { code: r.status, out: (r.stdout || '') + (r.stderr || ''), journal });
@@ -224,4 +230,40 @@ test('le YAML déclare l\'entrée `attente`, la variable ATTENTE et propage le s
   assert.match(SCRIPT, /-f seuil="\$SEUIL"/);
   assert.match(SCRIPT, /-f attente="\$\{1:-0\}"/);
   assert.match(SCRIPT, /echec\(\)\{ echo "::error::\$\*"; releve "\$INTERVALLE"; exit 1; \}/);
+});
+
+// --- AG-040 (Codex, 03/11/2026) : deux écarts démontrés ---------------------
+test('successeur à attente imposée dont l\'historique reste illisible : il attend avant sa relève, sans lancer', () => {
+  const r = lancer({ erreur_succes: true }, { ATTENTE: '60' });
+  assert.equal(r.code, 1, r.out);
+  const rel = r.journal.findIndex(l => /^gh workflow run veilleur\.yml/.test(l));
+  assert.ok(rel >= 0, 'une relève est demandée');
+  assert.deepEqual(dormirAvant(r.journal, rel), [3600], 'l\'attente de 60 min précède la relève');
+  assert.equal(lancementControle(r.journal), -1);
+});
+
+test('contrôle apparu pendant l\'attente de cadence : suivi, pas doublé', () => {
+  const r = lancer(
+    { dernier_succes: iso(-30 * 60), runs: [{ id: 5, status: 'completed', conclusion: 'success', created_at: iso(-10) }] },
+    {},
+    { id: 777, status: 'in_progress', conclusion: null, status_final: 'completed', conclusion_finale: 'success', created_at: iso(0) },
+  );
+  assert.equal(r.code, 0, r.out);
+  assert.equal(lancementControle(r.journal), -1, 'aucun nouveau contrôle');
+  assert.match(r.out, /contrôle 777 déjà en cours/);
+  assert.ok(r.journal.filter(l => /runs\?per_page=10/.test(l)).length >= 2, 'l\'état est relu après l\'attente');
+});
+
+test('contrôle terminé apparu pendant l\'attente : le délai repart de ce lancement, puis un seul lancement', () => {
+  const r = lancer(
+    { dernier_succes: iso(-30 * 60), runs: [{ id: 5, status: 'completed', conclusion: 'success', created_at: iso(-10) }] },
+    {},
+    { id: 778, status: 'completed', conclusion: 'success', created_at: iso(0) },
+  );
+  assert.equal(r.code, 0, r.out);
+  const l = lancementControle(r.journal);
+  assert.ok(l >= 0, r.out);
+  const attentes = dormirAvant(r.journal, l).filter(s => s >= 1000);
+  assert.equal(attentes.length, 2, 'deux attentes : une pour le n° 5, une pour le n° 778 — vu ' + JSON.stringify(attentes));
+  assert.equal(r.journal.filter(x => /^gh workflow run integrite-api\.yml/.test(x)).length, 1);
 });

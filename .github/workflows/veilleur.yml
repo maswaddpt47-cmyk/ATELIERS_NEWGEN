@@ -99,6 +99,11 @@ jobs:
           # Tout échec espace le successeur : plus de relance immédiate (AG-039).
           echec(){ echo "::error::$*"; releve "$INTERVALLE"; exit 1; }
 
+          # Attente imposée par la relève d'un échec (AG-039), AVANT toute lecture
+          # qui peut provoquer une relève (AG-040, Codex, écart 1 : un historique
+          # illisible relançait sinon un successeur aussitôt, sans attendre).
+          if [ "$ATTENTE" -gt 0 ]; then echo "attente imposée après un échec : $ATTENTE min"; dormir $(( ATTENTE * 60 )); fi
+
           # Rupture : âge du dernier contrôle réussi (contrôle seul, sans autre
           # étape d'alerte dans le même workflow).
           rupture=""
@@ -111,30 +116,34 @@ jobs:
             [ "$age" -le "$SEUIL" ] || rupture="surveillance interrompue : aucun contrôle réussi pendant $age min (dernier le $(heure "$(date -d "$d" +%s)"))"
           fi
 
-          # Attente imposée par la relève d'un échec (AG-039), avant le premier
-          # passage et avant de fixer l'horaire des suivants.
-          if [ "$ATTENTE" -gt 0 ]; then echo "attente imposée après un échec : $ATTENTE min"; dormir $(( ATTENTE * 60 )); fi
-
           debut=$(date +%s)
           for i in $(seq 1 "$PASSAGES"); do
             prevu=$(( debut + (i - 1) * INTERVALLE * 60 ))
             attente=$(( prevu - $(date +%s) )); [ "$attente" -gt 0 ] && dormir "$attente"
-            # Contrôle déjà en cours (lancé par le filet, à la main ou par un
-            # veilleur précédent) : on le suit, on n'en lance pas un autre.
-            id=$(gh api "repos/$R/actions/workflows/$CIBLE/runs?per_page=10" --jq '[.workflow_runs[] | select(.status != "completed")] | sort_by(.created_at) | .[-1].id // ""') \
-              || echec "passage $i : historique des contrôles illisible"
+            # Avant de lancer : un contrôle déjà en cours (filet, lancement à la
+            # main, veilleur précédent) est suivi ; sinon, jamais moins
+            # d'INTERVALLE min depuis le dernier lancement, réussi ou non. L'état
+            # est relu après chaque attente (AG-040, Codex, écart 2 : un contrôle
+            # apparu pendant l'attente était doublé). Une attente déjà faite pour
+            # un même dernier lancement ne se refait pas. Réduit la fenêtre de
+            # concurrence avec le cron ou un lancement manuel, sans la fermer :
+            # ce n'est pas un verrou.
+            attendu_pour=""
+            while :; do
+              id=$(gh api "repos/$R/actions/workflows/$CIBLE/runs?per_page=10" --jq '[.workflow_runs[] | select(.status != "completed")] | sort_by(.created_at) | .[-1].id // ""') \
+                || echec "passage $i : historique des contrôles illisible"
+              [ -n "$id" ] && break
+              d=$(gh api "repos/$R/actions/workflows/$CIBLE/runs?per_page=1" --jq '.workflow_runs[0].created_at // ""') \
+                || echec "passage $i : historique des contrôles illisible"
+              [ -z "$d" ] || [ "$d" = "$attendu_pour" ] && break
+              attente=$(( $(date -d "$d" +%s) + INTERVALLE * 60 - $(date +%s) ))
+              [ "$attente" -gt 0 ] || break
+              echo "passage $i : dernier lancement du contrôle le $(heure "$(date -d "$d" +%s)"), attente de $(( (attente + 59) / 60 )) min"
+              dormir "$attente"; attendu_pour="$d"
+            done
             if [ -n "$id" ]; then
               echo "passage $i : contrôle $id déjà en cours, suivi sans en lancer un autre"
             else
-              # Espacement : jamais moins d'INTERVALLE min depuis le dernier
-              # lancement du contrôle, réussi ou non (sans ça, un échec relançait
-              # un passage aussitôt).
-              d=$(gh api "repos/$R/actions/workflows/$CIBLE/runs?per_page=1" --jq '.workflow_runs[0].created_at // ""') \
-                || echec "passage $i : historique des contrôles illisible"
-              if [ -n "$d" ]; then
-                attente=$(( $(date -d "$d" +%s) + INTERVALLE * 60 - $(date +%s) ))
-                if [ "$attente" -gt 0 ]; then echo "passage $i : dernier lancement du contrôle le $(heure "$(date -d "$d" +%s)"), attente de $(( (attente + 59) / 60 )) min"; dormir "$attente"; fi
-              fi
               avant=$(date -u +%Y-%m-%dT%H:%M:%SZ)
               gh workflow run "$CIBLE" -R "$R" --ref main || echec "passage $i : lancement du contrôle refusé par GitHub"
               # Retrouver l'exécution lancée (5 min au plus pour démarrer).
