@@ -109,6 +109,12 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
 
 **Pour Claude**
 
+-1. **Modifier un ticket envoyé** (demande de l'utilisateur, 03/11/2026) :
+   toute l'équipe, tous les champs saisis (type, onglet, gêne, titre,
+   description), tant que l'Admin n'a pas changé le statut (« Nouveau »).
+   Trace à confirmer par l'utilisateur. Nouvelle action d'écriture et colonne
+   au schéma : bloc AGORA (critère 1, droits d'écriture → Codex) avant le code.
+
 0. **Bac à sable NextStep** (AG-033, en ligne le 27/10) : à éprouver — pages
    NextStep dans les contrôles de `coupure-urgence.yml` puis coupure réelle ;
    requêtes vers `api-sandbox` vues au navigateur ; avis fictif par le QR.
@@ -171,7 +177,7 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   « Queued », non annulable (API : 409). **Le veilleur reste désactivé : sa réactivation exige
   l'accord explicite de l'utilisateur**, après vérification (un retour au vert le
   03/11 ne prouve pas la correction de la boucle).
-  **Étape 2, après le 03/11, intervention distincte** : requête-témoin. Contrat de
+  **Étape 2 livrée le 03/11/2026** (décision de l'utilisateur) : requête-témoin dans `integrite-api.yml`, 12 essais `integrite.test.js` (bloquants en CI) vérifiés par 9 mutations ; **essai réel à faire** (lancement manuel du contrôle). Rappel du contrat de
   Codex (AG-039) : GET sur le seul `/api/index.php?action=logLogin`, marque neuve
   par tentative cherchée dans les journaux **bruts** (le parseur actuel efface les
   paramètres, `integrite-api.yml:193-197`), HTTP 200 + JSON `ok:true` vérifiés,
