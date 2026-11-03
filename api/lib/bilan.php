@@ -7,7 +7,9 @@
 //   php ~/www/api/lib/bilan.php --test=adresse     un seul mail [TEST] à
 //                                                  cette adresse, rien d'autre
 //
-// Lancé le 1er de chaque mois par une tâche planifiée Alwaysdata.
+// Lancé le 5 de chaque mois par une tâche planifiée Alwaysdata (cron `0 8 5 * *`,
+// décalé du 1er au 5 le 03/11/2026 à la demande de l'utilisateur : laisser aux
+// conseillers le temps de mettre à jour leurs ateliers du mois écoulé).
 //
 // Destinataires : comptes « superviseur » actifs ayant une adresse dans
 // Listes → mails. Contenu : chiffres du mois comparés au mois précédent, par

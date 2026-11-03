@@ -25,7 +25,7 @@ NextStep (équipe) et NEWGEN (utilisateur) : **même API PHP chez Alwaysdata**
   second import écraserait les saisies.
 - Tâches planifiées : rappels d'ateliers en retard **08:00** chaque jour
   (`api/lib/rappels.php`, interrupteur `rappels_actifs`) ; **bilan mensuel** à
-  la superviseure le 1er du mois à 08:00 (`api/lib/bilan.php`).
+  la superviseure le **5** du mois à 08:00 (`api/lib/bilan.php`, cron `0 8 5 * *`, décalé du 1er le 03/11/2026).
 - Sauvegardes : natives Alwaysdata (**3 jours**) ; copie de nuit 03:00 dans
   `~/sauvegardes/` (30 j, restauration prouvée par
   `api-tests/sauvegarde.test.php`) ; copie **chiffrée** hors site 04:15
@@ -102,19 +102,6 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
    **Registre de sécurité V0.9** (`ateliers-backups/documents/`, 29/10) amendé :
    audit XSS de GDINV2 au §10 et risque d'origine partagée au §9 ; V0.8 archivée.
    À relire par l'utilisateur avant toute remise au DSI.
-2bis. **Décision à trancher (03/11/2026) — bilan mensuel envoyé le 5 au lieu du
-   1er** (demande de l'utilisateur) : la date est réglée dans la **tâche
-   planifiée Alwaysdata** (hors dépôt, `bilan.php:10`) : à changer par lui. Le
-   code ne dépend pas du jour, **sauf** « atelier(s) planifié(s) en <mois> »
-   (`bilan.php:126-131`) : tout le mois en cours, donc le 5 il compterait
-   des ateliers du 1er au 4 encore « Planifié » (passés) comme « à venir » et
-   ignorerait ceux déjà réalisés. À définir avec l'utilisateur (critère 7 :
-   bloc AGORA, Codex, avant tout code si la définition change). Textes à
-   mettre à jour **après** le changement réel de la tâche : `NOUVEAUTES` n° 30
-   (`shared.js:6853`, NEWGEN et NextStep), `bilan.php:10`, ce fichier (§ tâches
-   planifiées).
-3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
-   journal Admin (« bilanMensuel »). Date passée au 02/11, **non vérifié**.
 4. **Depuis le PC** : coller `MD-LIB/outils/script-demarrage.sh` dans le
    Setup script de l'environnement (menu de l'environnement → Edit). Il
    installe le contrôle automatique du déploiement (`MD-LIB/deploiement.md`) ;
@@ -244,6 +231,15 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   Conseillers) éteint le 27/10, **rallumé le 28/10/2026**, équipe prévenue par
   une démonstration le même jour ; ateliers datés du 01/11/2026 ou après seulement. Fenêtre au passage en « Réalisé » (volet,
   formulaire) : n'annonce le mail que s'il partira (`rappelFichePrevu`).
+- **Bilan mensuel envoyé le 5 du mois (demande de l'utilisateur, 03/11/2026)** :
+  tâche Alwaysdata passée à `0 8 5 * *` (**déclaré par l'utilisateur, non
+  vérifié**) ; premier envoi sous ce régime le 05/12 (celui du 05/11 est ignoré,
+  octobre étant déjà parti le 01/11 : un bilan par mois et par destinataire).
+  « Atelier(s) planifié(s) en <mois> » garde tout le mois en cours (option 2,
+  aucun calcul changé) : le 5, il peut compter des ateliers du 1er au 4 déjà
+  passés mais restés « Planifié » et ignorer ceux déjà réalisés. À rouvrir
+  (bloc AGORA, critère 7) si cela gêne. Le bilan du 01/11/2026 a bien été envoyé
+  (journal vu par l'utilisateur : « bilanMensuel », 08:01, succès).
 - **Écarté du CR « option 1 »** : PWA (AG-012), nouveau modèle de données,
   PHPWord/TCPDF.
 - **Plus de démarche auprès de la DPD ni des Archives départementales
