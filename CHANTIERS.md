@@ -102,6 +102,17 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
    **Registre de sécurité V0.9** (`ateliers-backups/documents/`, 29/10) amendé :
    audit XSS de GDINV2 au §10 et risque d'origine partagée au §9 ; V0.8 archivée.
    À relire par l'utilisateur avant toute remise au DSI.
+2bis. **Décision à trancher (03/11/2026) — bilan mensuel envoyé le 5 au lieu du
+   1er** (demande de l'utilisateur) : la date est réglée dans la **tâche
+   planifiée Alwaysdata** (hors dépôt, `bilan.php:10`) : à changer par lui. Le
+   code ne dépend pas du jour, **sauf** « atelier(s) planifié(s) en <mois> »
+   (`bilan.php:126-131`) : tout le mois en cours, donc le 5 il compterait
+   des ateliers du 1er au 4 encore « Planifié » (passés) comme « à venir » et
+   ignorerait ceux déjà réalisés. À définir avec l'utilisateur (critère 7 :
+   bloc AGORA, Codex, avant tout code si la définition change). Textes à
+   mettre à jour **après** le changement réel de la tâche : `NOUVEAUTES` n° 30
+   (`shared.js:6853`, NEWGEN et NextStep), `bilan.php:10`, ce fichier (§ tâches
+   planifiées).
 3. **01/11/2026** : premier envoi réel du bilan mensuel — le vérifier dans le
    journal Admin (« bilanMensuel »). Date passée au 02/11, **non vérifié**.
 4. **Depuis le PC** : coller `MD-LIB/outils/script-demarrage.sh` dans le
@@ -193,7 +204,13 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   (11 et 106 lignes), « aucune anomalie », comptes conformes — conforme à
   l'hypothèse de la fenêtre de 2 jours ; **cela ne prouve pas** que la cause est
   traitée : un jour sans aucune requête (week-end, férié) refera échouer le
-  contrôle, jusqu'à la requête-témoin (étape 2). La pastille
+  contrôle, jusqu'à la requête-témoin (étape 2). Tuile « Contrôle d'intégrité » vue à 16:34 : rouge parce que
+  le dernier succès a plus de 2 h (le programmé ne tourne que toutes les ≈ 8 h),
+  elle affiche 02:33 alors que le n° 3888 (10:28) est vert : la liste filtrée
+  `status=success` de l'API GitHub, lue par la tuile et par le veilleur, ne
+  contient pas le n° 3888 (hypothèse non vérifiée : décalage de l'index de
+  GitHub) ; elle dit aussi « Veilleur en service » alors qu'il est désactivé :
+  le run n° 3654 en file compte comme actif. La pastille
   rouge « ! » de 💾 Sauvegardes reste affichée tant que le veilleur est
   éteint (`etatVeille` exige un veilleur actif).
 - **Correctif PHP d'Alwaysdata : redémarrer le site** (Web → Sites →
