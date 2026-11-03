@@ -326,7 +326,9 @@ calcul ou chiffre affiché : critère 7, toujours.**
 (exception assumée au workflow de branche de la section 1 — c'est du texte,
 ça ne peut rien casser), puis annoncer en une ligne, sur le modèle du
 signalement RGPD : `⚖️ AGORA : critère N — <sujet>. Bloc AG-00N commité.`
-avec la phrase à coller dans l'autre session, **libellé de session compris**
+(**bloc pour Codex : dire « pull » à Codex suffit**, son `AGENTS.md` le fait
+répondre, décision du 03/11/2026 ; l'annonce reste due) ou, pour une session
+Claude, la phrase à coller dans l'autre session, **libellé de session compris**
 (« …réponds à AG-00N, tu es la session B ») : les deux comptes poussant sous
 la même identité GitHub, c'est la seule chose qui distingue les auteurs. **Soumettre d'office sans
 demander l'autorisation, et ne jamais bloquer dessus** : rien ne garantit

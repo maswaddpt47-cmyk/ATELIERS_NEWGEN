@@ -23,7 +23,10 @@ justification de la règle : utile à lire, **non requis pour répondre**.)
 **Blocs de sécurité, de mots de passe ou de données personnelles : le
 contradicteur est Codex (OpenAI)**, pas une session Claude (décision du
 06/10/2026 : 0 « contredit » sur 23 blocs entre Claude, quand Codex a trouvé
-en une passe ce que Claude avait manqué). **Depuis le 21/10/2026 (décision de
+en une passe ce que Claude avait manqué). **Depuis le 03/11/2026 (décision de l'utilisateur), il suffit de dire « pull » à
+Codex** : son `AGENTS.md` lui dit de répondre aux blocs ouverts dont la ligne
+**Contradicteur** dit « Codex ». La session qui ouvre un bloc le dit quand même
+à l'utilisateur, en une ligne, dès qu'il est en ligne. **Depuis le 21/10/2026 (décision de
 l'utilisateur), Codex inscrit lui-même sa réponse** : l'utilisateur ouvre Codex
 avec l'accès en écriture, réflexion au plus haut, et colle : « pull, lis
 AGORA.md, réponds à AG-0NN selon le gabarit, avec fichier:ligne. Ajoute ta
@@ -80,6 +83,7 @@ contredire — il rend un service de politesse qui donne une fausse garantie.
 **Auteur** : session <libellé donné par l'utilisateur> — lu sur `<sha court>`
 **Proposition** : trois lignes maximum.
 **Critère déclencheur** : n° et lequel (section 8 du CLAUDE.md).
+**Contradicteur** : Codex | session B
 **Ce que ça engage** : ce qui serait coûteux à défaire.
 **Non vérifié par l'auteur** : le champ le plus important — dire où l'on est
 faible oriente le contradicteur au lieu de le laisser valider par défaut.
@@ -129,6 +133,7 @@ bloc n'avait pas lieu d'être.
 ## AG-041 — Modifier un ticket envoyé (toute l'équipe, tant qu'il est « Nouveau ») — ouvert le 03/11/2026
 **Auteur** : session du 02-03/11/2026 (trailer `Claude-Session: …01Sptc2cBykmfijwHPT5fJHv`) — lu sur `dc9b9ac`
 **Proposition** : nouvelle action `modifierTicket` ouverte à tout compte connecté (`API_ACTIONS_CONSEILLER`) : type, gêne (Bug seul), onglet, titre, description, mêmes validations que `creerTicket` ; acceptée **seulement si le statut est « Nouveau »** (`UPDATE … WHERE statut = 'Nouveau'`, refus explicite sinon) ; ni mention « modifié », ni mail, ni ligne de journal. Décisions de l'utilisateur du 03/11/2026 : toute l'équipe, tous les champs saisis, jusqu'au changement de statut par l'Admin, pas de mention. Bouton « ✏️ Modifier » dans le ticket déplié, formulaire de création réutilisé, NEWGEN et NextStep.
+**Contradicteur** : Codex
 **Critère déclencheur** : 1 (nouveau contrat d'écriture entre les applis et l'API) et droits d'écriture (sécurité : Codex). Enrichissement : bloc au moment du choix, version testée livrée, vérification une fois (règle 45 du `CLAUDE.md`).
 **Ce que ça engage** : un agent peut réécrire le ticket d'un collègue **sans trace** (choix de l'utilisateur), et le ticket reste affiché au nom de son auteur d'origine ; le mail envoyé à l'Admin à la création garde l'ancien texte ; `modifierTicket` entre dans `GAS_ACTIONS_ECRITURE` (jamais doublée).
 **Non vérifié par l'auteur** : (a) une réponse de l'Admin **sans** changement de statut laisse le ticket « Nouveau », donc modifiable après la réponse (règle de l'utilisateur appliquée à la lettre) ; (b) l'Admin qui change le statut entre la lecture et l'écriture : l'écriture conditionnelle ne modifie rien et le refus est rendu, à prouver par test ; (c) une page restée ouverte n'appelle pas la nouvelle action (pas de changement de format, règle 31) ; (d) le texte modifié est rendu comme à la création (texte React, jamais du HTML), non audité de nouveau ; (e) les tests de l'API exigent une base MariaDB dans la session.
