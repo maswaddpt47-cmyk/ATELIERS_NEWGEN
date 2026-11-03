@@ -337,8 +337,11 @@ appel superflu, `sw.js` de désinscription.
 - **Tickets modifiables (03/11/2026, AG-041, en ligne)** : toute l'équipe,
   champs saisis (type, gêne, onglet, titre, description), tant que le statut est
   « Nouveau » ; ni mention « modifié », ni mail, ni journal (décisions de
-  l'utilisateur). Vérification de Codex attendue (AG-041 ; il suffit de lui dire
-  « pull », consigne dans `AGENTS.md`).
+  l'utilisateur). **Confirmé par Codex le 03/11/2026** (AG-041, sans amendement :
+  droits, champs, absence de mail et de journal, rendu en texte ; course
+  « l'Admin change le statut pendant la modification » rejouée sur base jetable :
+  refus, ticket intact). Reste : validation à l'écran par l'utilisateur, et AG-041
+  à trancher. Premier « pull » de Codex selon `AGENTS.md` : il a répondu seul.
 - **Corbeille** : un conseiller ne voit que ses ateliers animés ou co-animés
   (AG-034) ; l'Admin voit tout, sans suivre le sélecteur de conseiller (choix du
   27/10) ; purge définitive réservée admin/superviseur (AG-024). Testés.
