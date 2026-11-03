@@ -9,6 +9,11 @@
 //                  l'utilisateur : voir ceux des collègues évite les doublons).
 //   repondreTicket admin/superviseur (API_ACTIONS_ADMIN, journalisé avec _id
 //                  pour cible, jamais le texte) : statut, réponse, doublon.
+//   modifierTicket tout conseiller connecté (décision de l'utilisateur,
+//                  03/11/2026, AG-041) : type, gêne, onglet, titre,
+//                  description, mêmes validations qu'à la création, tant que
+//                  le statut est « Nouveau » (refus dès que l'Admin l'a
+//                  changé). Ni mention « modifié », ni mail, ni journal.
 //
 // Dates en heure de Paris (date() PHP), jamais NOW() : le serveur MySQL peut
 // être en UTC (CHANTIERS, « Dates du jour »).
@@ -82,6 +87,35 @@ function action_creer_ticket(PDO $db, array $p, array $session): array
     $nouveau = $s->rowCount() === 1;
     $mails = $nouveau ? tickets_prevenir($db, $t) : 0;
     return ['ok' => true, 'ticket' => ticket_lire($db, $id), 'nouveau' => $nouveau, 'mails' => $mails];
+}
+
+// Modification d'un ticket encore « Nouveau » (AG-041). L'écriture est
+// conditionnelle (WHERE statut = 'Nouveau') : si l'Admin change le statut
+// entre la lecture et l'écriture, rien n'est modifié et le refus est rendu.
+// Site, version, appareil, auteur et date restent ceux de la création.
+function action_modifier_ticket(PDO $db, array $p): array
+{
+    tickets_schema($db);
+    $id = (string) ($p['_id'] ?? '');
+    $t = ticket_lire($db, $id);
+    if ($t === null) return ['ok' => false, 'error' => 'Ticket introuvable'];
+    $refus = ['ok' => false, 'error' => 'Ce ticket a déjà été pris en charge par l\'administrateur : il ne peut plus être modifié.'];
+    if ($t['statut'] !== 'Nouveau') return $refus;
+    $type = (string) ($p['type'] ?? '');
+    if (!in_array($type, TICKET_TYPES, true)) return ['ok' => false, 'error' => 'Type invalide'];
+    $titre = ticket_texte($p, 'titre', 120);
+    $description = ticket_texte($p, 'description', 2000);
+    if ($titre === '' || $description === '') return ['ok' => false, 'error' => 'Titre et description requis'];
+    $gene = $type === 'Bug' && in_array($p['gene'] ?? '', TICKET_GENES, true) ? (string) $p['gene'] : '';
+    $onglet = ticket_texte($p, 'onglet', 40);
+    $db->prepare("UPDATE tickets SET type = ?, gene = ?, onglet = ?, titre = ?, description = ? WHERE id = ? AND statut = 'Nouveau'")
+       ->execute([$type, $gene, $onglet, $titre, $description, $id]);
+    // rowCount ne suffit pas (0 aussi quand rien ne change) : on relit.
+    $apres = ticket_lire($db, $id);
+    if ($apres === null) return ['ok' => false, 'error' => 'Ticket introuvable'];
+    $voulu = ['type' => $type, 'gene' => $gene, 'onglet' => $onglet, 'titre' => $titre, 'description' => $description];
+    foreach ($voulu as $k => $v) if ((string) $apres[$k] !== $v) return $refus;
+    return ['ok' => true, 'ticket' => $apres];
 }
 
 // Destinataires : comptes admin/superviseur à accès Admin actif, croisés avec

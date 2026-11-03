@@ -461,6 +461,26 @@ verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'repondre
 appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_essai_3', 'type' => 'Amélioration', 'titre' => 'Même chose', 'description' => 'd']);
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_essai_3', 'doublon_de' => 'tk_essai_1']);
 verifier(($r['ok'] ?? false) && $r['ticket']['statut'] === 'Non retenu' && $r['ticket']['clos_le'] !== null && $r['ticket']['doublon_de'] === 'tk_essai_1', 'doublon : clos, rattaché à l\'original');
+// Modification par l'équipe tant que le ticket est « Nouveau » (AG-041, 03/11/2026).
+$avant = $nbMails();
+appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_essai_5', 'type' => 'Bug', 'gene' => 'gênant', 'onglet' => 'Historique', 'titre' => 'Envoi à la Comm', 'description' => 'd', 'appareil' => 'PC', 'site' => 'nextstep']);
+$avant = $nbMails();
+$mod = ['_id' => 'tk_essai_5', 'type' => 'Amélioration', 'gene' => 'bloquant', 'onglet' => 'Calendrier', 'titre' => 'Envoi mensuel à la Comm', 'description' => str_repeat('y', 2500), 'auteur' => 'Usurpateur', 'site' => 'newgen', 'statut' => 'Résolu'];
+verifier(appel(['action' => 'modifierTicket'], $mod)['auth'] ?? false, 'modifier un ticket sans jeton : refusé');
+$r = appel(['action' => 'modifierTicket'], $T + $mod);
+verifier(($r['ok'] ?? false) && $r['ticket']['type'] === 'Amélioration' && $r['ticket']['gene'] === '' && $r['ticket']['onglet'] === 'Calendrier'
+    && $r['ticket']['titre'] === 'Envoi mensuel à la Comm' && mb_strlen($r['ticket']['description']) === 2000, 'modification par l\'auteur : champs saisis remplacés, gêne effacée hors Bug, description bornée');
+verifier($r['ticket']['auteur'] === 'Nouveau Venu' && $r['ticket']['site'] === 'nextstep' && $r['ticket']['appareil'] === 'PC' && $r['ticket']['statut'] === 'Nouveau', 'modification : auteur, site, appareil et statut inchangés (champs non modifiables ignorés)');
+$r = appel(['action' => 'modifierTicket'], $A + ['_id' => 'tk_essai_5', 'type' => 'Bug', 'gene' => 'mineur', 'onglet' => '', 'titre' => 'Repris par un collègue', 'description' => 'd2']);
+verifier(($r['ok'] ?? false) && $r['ticket']['titre'] === 'Repris par un collègue' && $r['ticket']['gene'] === 'mineur' && $r['ticket']['auteur'] === 'Nouveau Venu', 'modification par un autre membre de l\'équipe : acceptée, auteur d\'origine gardé');
+verifier((appel(['action' => 'modifierTicket'], $T + ['_id' => 'tk_essai_5', 'type' => 'Inconnu', 'titre' => 't', 'description' => 'd'])['ok'] ?? true) === false
+    && (appel(['action' => 'modifierTicket'], $T + ['_id' => 'tk_essai_5', 'type' => 'Bug', 'titre' => ' ', 'description' => 'd'])['ok'] ?? true) === false
+    && $db->query("SELECT titre FROM tickets WHERE id = 'tk_essai_5'")->fetchColumn() === 'Repris par un collègue', 'modification : type inconnu ou titre vide refusés, ticket intact');
+verifier(($r = appel(['action' => 'modifierTicket'], $T + ['_id' => 'tk_essai_1', 'type' => 'Bug', 'titre' => 'Réécrit', 'description' => 'd']))['ok'] === false && str_contains($r['error'] ?? '', 'pris en charge')
+    && $db->query("SELECT titre FROM tickets WHERE id = 'tk_essai_1'")->fetchColumn() === 'Le <b>calendrier</b> plante', 'ticket dont l\'Admin a changé le statut : modification refusée, ticket intact');
+verifier((appel(['action' => 'modifierTicket'], $T + ['_id' => 'tk_inexistant', 'type' => 'Bug', 'titre' => 't', 'description' => 'd'])['error'] ?? '') === 'Ticket introuvable', 'modification d\'un ticket inexistant : refusée');
+verifier($nbMails() === $avant && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'modifierTicket'")->fetchColumn() === 0, 'modification : ni mail ni journal (décision de l\'utilisateur)');
+$db->exec("DELETE FROM tickets WHERE id = 'tk_essai_5'");   // hors des comptages de purge qui suivent (RGPD-19)
 appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_essai_4', 'type' => 'Bug', 'titre' => 'Test', 'description' => 'd']);
 appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_essai_3', 'doublon_de' => 'tk_essai_4']);
 verifier(str_contains(appel(['action' => 'supprimerTicket'], $T + ['_id' => 'tk_essai_4'])['error'] ?? '', 'administrateurs'), 'supprimer un ticket : réservé aux administrateurs');
