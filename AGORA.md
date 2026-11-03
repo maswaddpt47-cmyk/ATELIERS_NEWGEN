@@ -100,7 +100,15 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-*Aucun bloc ouvert au 02/11/2026.*
+## AG-040 — Vérifier la livraison d'AG-039 (cadence du veilleur, requête-témoin) — ouvert le 03/11/2026
+**Auteur** : session du 02-03/11/2026 (trailer `Claude-Session: …01Sptc2cBykmfijwHPT5fJHv`) — lu sur `6d804a0`
+**Proposition** : vérifier **une fois** la livraison des deux étapes tranchées dans AG-039 (règle 45 du `CLAUDE.md`, MD-LIB règle 58) et ne corriger que les écarts démontrés : (1) cadence du veilleur (`d425e3f`) ; (2) requête-témoin du contrôle (`0449b03`).
+**Critère déclencheur** : sécurité (contradicteur Codex, `agora.md` §12) ; vérification après livraison d'un amendement retenu.
+**Ce que ça engage** : le seul contrôle de sécurité du serveur et sa relance ; le veilleur reste **désactivé** jusqu'à l'accord explicite de l'utilisateur.
+**Non vérifié par l'auteur** : (a) le second passage du veilleur une heure après un échec (essai réel du 02/11 : un passage, puis « attente imposée après un échec : 60 min », annulé à 7 min) ; (b) la liste filtrée `status=success` de l'API GitHub, lue par la rupture du veilleur et par la tuile Sauvegardes, ne contenait pas le contrôle n° 3888 (vert) plusieurs heures après sa fin : décalage d'index supposé, non prouvé ; (c) le run n° 3654 (ancien code) reste « Queued », non annulable (API 409), et compte comme veilleur actif pour le filet et la tuile ; (d) le délai d'écriture des journaux Alwaysdata au-delà de 80 s ; (e) les essais utilisent un format de journal fictif (`integrite.test.js`), le format réel n'est éprouvé que par le contrôle n° 3889 du 03/11 (témoin retrouvé en 1 lecture) ; (f) le comportement pendant une coupure d'urgence (témoin en 403 → IMPOSSIBLE, voulu mais non essayé).
+**Si personne ne répond, je fais quoi ?** Rien de plus : le veilleur reste désactivé, le contrôle programmé tourne seul ; l'utilisateur décide de la réactivation.
+**Où regarder** : `.github/workflows/veilleur.yml` (attente, espacement, contrôle en cours, relève) ; `.github/workflows/integrite-api.yml:89-101` (envoi du témoin), `:265-289` (recherche dans les journaux bruts), `:295` (verdict si non envoyé) ; `veilleur.test.js` (11 essais), `integrite.test.js` (12 essais), vérifiés par mutation (7 et 9 variantes cassées) ; runs n° 3655-3656 (veilleur) et n° 3889 (contrôle).
+
 
 ## Blocs tranchés — sortis de ce fichier
 
