@@ -130,6 +130,23 @@ bloc n'avait pas lieu d'être.
 
 **Limites et décision restante** : les replays supplémentaires utilisent le script réel et les faux outils existants, sans attente réelle d'une heure ni appel GitHub/Alwaysdata. Le faux outil est adapté en mémoire pour le second cas ; aucun fichier de code ou de test n'est modifié. Les mutations annoncées par l'auteur ne sont pas rejouées. Le contrôle réel n° 3889, l'index des succès, le run n° 3654 bloqué et les délais de journaux sont rapportés par le bloc, non revérifiés ici. Le filet compte effectivement tout statut non terminé comme actif (`.github/workflows/integrite-api.yml:322-324`) : sa capacité de reprise reste donc non établie tant que ce run ancien compte comme actif. Le refus HTTP 403 est couvert par le faux `curl`, pas par une coupure réelle. **Garder le veilleur désactivé ; aucune réactivation ni modification du contrôle n'est autorisée par cette réponse.** Après correction ciblée, éprouver la reprise opérationnelle et laisser la réactivation à l'accord explicite de l'utilisateur.
 
+## AG-047 — Champ « Ouvert à tous » (Oui / Non) sur chaque atelier, et filtre sur tous les sites — ouvert le 04/11/2026
+**Auteur** : session du 04/11/2026 (trailer `Claude-Session: …ws7pLmg`) — lu sur `main` `0e0a488`, **avant tout code**
+**Proposition** (demande de l'utilisateur du 04/11/2026) : nouvelle donnée `ouvert_a_tous` (« Oui » / « Non ») sur chaque atelier, **obligatoire**, et un filtre « Ouvert à tous : Tous / Oui / Non ».
+**Contradicteur** : Codex
+**Critère déclencheur** : 1 (schéma de données, contrat `shared.js` ↔ API) et 7 (un filtre change les nombres affichés).
+**Choix à contredire** :
+- **Stockage** : colonne `ouvert_a_tous` de `ateliers`, valeurs `Oui` / `Non` (rien d'autre), ajoutée au démarrage comme `duree` (`api/lib/api.php:325`) ; **les ateliers existants valent `Non`** (choix de l'utilisateur), sans autre reconstruction.
+- **Formulaire ✏️ Nouveau** (NEWGEN et NextStep) : deux boutons Oui / Non **sans présélection** (choix de l'utilisateur) ; enregistrement refusé sans choix. Modification et duplication gardent la valeur ; un cycle (plusieurs séances) prend la même valeur pour toutes.
+- **Import Outlook** : un choix Oui / Non **obligatoire sur l'écran d'import**, valable pour tous les ateliers importés en une fois (option 1 choisie par l'utilisateur).
+- **Pages déjà ouvertes** (règle 40) : une **création** sans le champ est refusée par l'API avec « rechargez la page » ; une **modification** sans le champ garde la valeur enregistrée (l'API remplace aujourd'hui la ligne entière, `api/lib/ecriture.php:144`).
+- **Filtre** « Ouvert à tous : Tous / Oui / Non » dans l'Historique des deux applis et sur la page TS ; `tsAteliers` renvoie le champ (`TS_CHAMPS`, `api/lib/ts.php:30`). Exports XLSX/PDF de l'Historique : colonne ajoutée.
+- **Chiffres** (règle 57) : aucun indicateur ni bilan ne compte ce champ pour l'instant ; le filtre ne change que la liste et son compteur « N ateliers affichés ».
+**Ce que ça engage** : une colonne de plus dans la base, les sauvegardes et la restauration ; les ateliers d'avant le 04/11 sont tous « Non » tant qu'on ne les corrige pas.
+**Non vérifié par l'auteur** : les autres chemins d'écriture d'un atelier (`saveMany`, restauration de la Corbeille, migration des durées) — à recenser avant le code.
+**Si personne ne répond, je fais quoi ?** Je livre la version testée sur `main` ; l'utilisateur l'essaie ; Codex vérifie une fois.
+**Où regarder** : `api/lib/schema.sql`, `api/lib/api.php` (`API_CHAMPS_ATELIER`, colonnes ajoutées au démarrage), `api/lib/ecriture.php`, `api/lib/ts.php`, `shared.js` (formulaire, `VueHistorique`, import Outlook), `ts.html`.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
