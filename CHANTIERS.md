@@ -1,41 +1,40 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026, 19:10 (heure de Paris)**, base `main` : NEWGEN `36db64f`,
-NextStep `b076d21` (déploiements et parité verts). Tient aussi les restes
+État au **04/11/2026, 20:00 (heure de Paris)**, base `main` : NEWGEN `7312ced`,
+NextStep `b2b601e` (déploiements et parité verts). Tient aussi les restes
 communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
 
-**À reprendre en premier (passation du 04/11/2026, fin de session)** :
-1. **Livré sur `main` le 04/11/2026** (NEWGEN `36db64f`, NextStep `b076d21`, déploiements verts) : tickets (message
-   explicite, amendements de Codex à AG-045, libellés « pas de mail » exacts), rattrapage TS unique (AG-043, **confirmé
-   par Codex**), page TS : tuile, titre « Agenda des ateliers collectifs… », première connexion sans code (AG-046) avec
-   ses amendements (oubli promu, 30 jours, comptes d'avant la livraison). Pas de nouvelle relecture de Codex (règle 58 précisée le 04/11/2026 : une seule vérification ; l'audit trimestriel reprendra). **Essais réels de l'utilisateur à faire** : création d'un compte TS et première connexion, puis reconnexion avec code ; mail au demandeur d'un ticket reçu. Consigne de l'utilisateur du 04/11/2026 : **travailler sur `main`,
-   plus sur `sandbox`.** **Réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée.**
-2. **Registres mis à jour le 04/11/2026** (`ateliers-backups` `10668ab`) : sécurité **V0.10**, RGPD **V0.7** (fiche T7 page TS,
-   mails des tickets, anomalies validées, audits Codex du 04/11) ; V0.9 et V0.6, remises, archivées. Nouveaux écarts RGPD
-   n° 12 à 14 (durée des comptes TS utilisés, information TS incomplète, avis du DPO avant diffusion de l'adresse TS).
-3. **Ménage des `CLAUDE.md`** de NEWGEN et NextStep (`MD-LIB/CLAUDE.md`, « Ménage au
-   prochain pull ») : liste avant/après à présenter, accord avant commit.
-4. **Codex** : AG-043 et AG-044 confirmés, amendements d'AG-045 et AG-046 livrés (point 1). Les blocs AG-042 à
-   AG-046 sortent d'`AGORA.md` quand l'utilisateur les tranche. **AG-040** reste à trancher par l'utilisateur.
-5. **Page des travailleurs sociaux** : en ligne, **URL non diffusée** aux travailleurs
-   sociaux (attendre la relecture de Codex puis l'accord de l'utilisateur) ; pas de
-   code de connexion pour les comptes Admin/superviseur (décision du 04/11).
-6. **Veilleur désactivé** (AG-039/040) : essai réel de reprise puis accord explicite
-   de l'utilisateur avant réactivation.
-7. **Méthode** (règles 63 à 65 de MD-LIB) : jamais `git pull` sur `main`, mais
-   `git fetch origin main` puis `git merge --ff-only origin/main` ; avant tout push
-   sur `main`, `git diff --stat origin/main HEAD` ne montre que le voulu ; NextStep
-   d'abord ; une CI rouge sur l'API = rien en production.
-8. **Ménage de ce fichier dû** (plus de 300 lignes) : retirer les tâches finies, garder
-   les invariants (`scripts/check-chantiers.sh`).
+**À reprendre en premier (passation du 04/11/2026)** :
+1. **Essais réels de l'utilisateur** (livraison du 04/11 : tuile et titre de la page TS,
+   première connexion TS sans code, message et mail des tickets) : créer un compte TS,
+   première connexion, puis reconnexion avec code ; recevoir le mail d'un ticket.
+   **Réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée.**
+2. **Veilleur** (AG-040) : corrections de Codex faites le 03/11, **réactivation décidée par
+   l'utilisateur le 04/11**. Il le réactive lui-même (Actions → Veilleur intégrité → Enable
+   workflow : aucun outil de Claude ne le fait). Puis essai réel (règle 61) : un veilleur
+   `simuler_refus=true`, `passages=1` doit échouer et laisser un successeur qui attend 60 min
+   sans rien relancer, puis lance un vrai contrôle. ⚠️ Le run n° 3654 (ancien code) est encore
+   « en file », non annulable (409) ; le premier veilleur lancé dans le même groupe de
+   concurrence devrait le remplacer (hypothèse non vérifiée).
+3. **Origine web partagée avec GDINV2** (registre de sécurité V0.10 §9) : séparation proposée
+   le 04/11 (pages servies par Alwaysdata sur une adresse propre, anciennes adresses
+   redirigées), **en attente** : l'utilisateur crée le site, puis bloc AGORA pour Codex.
+4. **Registres** sécurité V0.10 et RGPD V0.7 (`ateliers-backups` `10668ab`) : à relire par
+   l'utilisateur avant remise. Écarts RGPD n° 12 à 14 (durée des comptes TS utilisés, mention
+   d'information de la page TS, avis du DPO avant diffusion de l'adresse TS).
+5. **Page TS** : en ligne, **adresse non diffusée** (après les essais et l'écart n° 14).
+6. **Ménage des `CLAUDE.md`** de NEWGEN et NextStep (« Ménage au prochain pull » de MD-LIB) :
+   liste avant/après présentée à l'utilisateur, commit à son accord.
+7. **Méthode** (règles 55, 58, 63 à 65 de MD-LIB) : `git fetch` puis `merge --ff-only`, jamais
+   `git pull` sur `main` ; `git diff --stat origin/main HEAD` avant tout push ; NextStep
+   d'abord ; mutations groupées ; une seule vérification de Codex par livraison.
+
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
-**Ménages (26/09 → 26/10/2026)** : époque GAS, parité, livraisons, audit Codex,
-faille PHP2Shell et essais AG-027 à AG-029, décisions verrouillées par les
-tests retirés — `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` — **aucun bloc ouvert au 28/10/2026** (AG-038, dernier,
-tranché et validé à l'écran le 28/10).
+**Ménages (26/09 → 04/11/2026)** : époque GAS, parité, livraisons, audits Codex,
+PHP2Shell, veilleur (AG-028 à AG-040), page TS (AG-042 à AG-046) — `git log -p CHANTIERS.md`.
+Contradiction : `AGORA.md` — **AG-040 seul ouvert** au 04/11/2026.
 
 ---
 
@@ -107,29 +106,8 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
 
 **Actions de l'utilisateur**
 
-1. **Faille PHP2Shell (21/10/2026)** — API rouverte le 21/10 à 21 h 05 ;
-   aucun indice identifié, sans pouvoir exclure une compromission (AG-026).
-   Annexe A V0.3 validée et remise au directeur avec le registre de sécurité
-   V0.8 (utilisateur, 29/10). Reste à arbitrer : requête-témoin pour une
-   vraie fraîcheur des journaux (évolution laissée de côté par AG-029).
-2. **GDINV2 — audit XSS fait le 29/10/2026** (Codex, rapport tel quel +
-   vérification : `ateliers-backups/documents/sources/audit-codex-gdinv2-xss-2026-10-29.md`).
-   Trois défauts de plus (thématiques non échappées dans le bilan du Rapport et
-   du Diapo rapport), reproduits et corrigés (GDINV2 `46a82c7`, en ligne) ;
-   aucun autre chemin trouvé. **Pour NEWGEN et NextStep** : Codex note que
-   l'origine `maswaddpt47-cmyk.github.io` est **partagée** (le `localStorage`
-   des applications voisines, jeton de planification compris, est lisible par
-   une XSS de GDINV2). Décision d'origine ou de fermeture de Pages à trancher
-   (suivi dans `GDINV2/CHANTIERS.md`). Dossier DSI GDINV2 : V3 à six défauts,
-   synthèse et consigne V0.2 prêtes, **pas encore remises**
-   (`GDINV2-BACKUP/dsi/GDIN-DSI_2026-10-29/`).
-   **Registre de sécurité V0.9** (`ateliers-backups/documents/`, 29/10) amendé :
-   audit XSS de GDINV2 au §10 et risque d'origine partagée au §9 ; V0.8 archivée.
-   À relire par l'utilisateur avant toute remise au DSI.
-4. **Depuis le PC** : coller `MD-LIB/outils/script-demarrage.sh` dans le
-   Setup script de l'environnement (menu de l'environnement → Edit). Il
-   installe le contrôle automatique du déploiement (`MD-LIB/deploiement.md`) ;
-   d'ici là, le lancer à la main après chaque push.
+1. **GDINV2** : dossier DSI V3 (six défauts), synthèse et consigne V0.2 prêtes, **pas encore
+   remises** (`GDINV2-BACKUP/dsi/GDIN-DSI_2026-10-29/`) ; suivi dans `GDINV2/CHANTIERS.md`.
 
 **Pour Claude**
 
@@ -137,23 +115,15 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
 0. **Bac à sable NextStep** (AG-033, en ligne le 27/10) : à éprouver — pages
    NextStep dans les contrôles de `coupure-urgence.yml` puis coupure réelle ;
    requêtes vers `api-sandbox` vues au navigateur ; avis fictif par le QR.
-1. **Planning en essai** (depuis le 03/10, à côté de l'Agenda) : relecture
-   des compteurs d'onglets (Admin → Connexions) prévue le 20/10, **pas encore
-   faite** ; l'utilisateur veut retirer l'Agenda (le Calendrier est coupé
-   matin / après-midi comme lui depuis le 13/10). Reste à trancher si le
-   Calendrier garde sa place à côté de la vue Mois (par défaut). Sur
-   téléphone, seuls lundi et mardi tiennent à l'écran (07/10).
-2. **Mention d'information RGPD des agents** : texte proposé le 03/10, **mis
-   en pause par l'utilisateur** — ne pas relancer sans sa demande.
-3. **Supports par atelier (pptx, docx…) — mis de côté le 04/10** : supports
+1. **Supports par atelier (pptx, docx…) — mis de côté le 04/10** : supports
    sur un **réseau interne** ; une page https ne peut pas ouvrir un lien
    `file://` (hypothèse à vérifier sur un poste CD47) : il faudrait
    SharePoint/OneDrive ou un dépôt chez Alwaysdata. Bloc AGORA au choix du
    stockage (critère 1).
-4. **Réimport Outlook** : un rendez-vous simple importé **avant** le 03/10 et
+2. **Réimport Outlook** : un rendez-vous simple importé **avant** le 03/10 et
    déplacé depuis n'est pas reconnu (apparaît nouveau + supprimé). Options 2
    (calendrier publié) et 3 (Microsoft 365) écartées pour l'instant : DPO / DSI.
-5. **Thématique « TBD »** (sans urgence) : visible dans les statistiques.
+3. **Thématique « TBD »** (sans urgence) : visible dans les statistiques.
 
 **Audit trimestriel** : routine `trig_01J6ZMsLHKbgXAQsRYgQL16q` (6 dépôts,
 prochaine le 01/01/2027), créée dans l'interface : **Claude ne peut pas la
@@ -165,81 +135,23 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
 
 ## À ne pas réapprendre — Alwaysdata et déploiement
 
-- **Coupure d'urgence** (AG-027) : Actions → `coupure-urgence.yml`, « couper »
-  / « rouvrir », cible `tout` ou `bac-a-sable`, depuis le téléphone (9 à 13 s,
-  essai réel du 21/10). Secours SSH : `echo 'Require all denied' > www/.htaccess`
-  (403), `rm` pour rouvrir.
-- **Veilleur du contrôle d'intégrité** (AG-028, en service depuis le 23/10) :
-  un contrôle par heure, tuile « Contrôle d'intégrité » dans Admin →
-  Sauvegardes. Arrêt durable : Actions → Veilleur intégrité → Disable
-  workflow. **Jamais vus en vrai** : la relance par le filet, la pastille
-  rouge « ! ». Le jour en cours n'est pas compté (AG-029).
-  **Veilleur DÉSACTIVÉ à la main le 02/11/2026** (utilisateur) : depuis le
-  31/10 à 23:44 le contrôle échoue en « IMPOSSIBLE : aucune requête
-  journalisée le 2026-10-31 » (samedi sans requête ; aucune ligne ALERTE, comptes
-  conformes) et chaque échec relançait un veilleur aussitôt : 3 603 passages en
-  échec (runs 281 → 3884), un toutes les ≈ 34 s (AG-039).
-  **Étape 1 livrée le 02/11/2026** (décision de l'utilisateur, AG-039) : cadence
-  corrigée dans `veilleur.yml` — toute relève après un échec impose `attente` =
-  `intervalle` au successeur (lancement refusé et historique illisible compris),
-  jamais moins d'`intervalle` depuis le dernier lancement du contrôle, un contrôle
-  déjà en cours est suivi, `seuil` transmis ; alerte de rupture inchangée (dernier
-  succès). 11 essais sur faux `gh` (`veilleur.test.js`, bloquants en CI),
-  chacun vérifié par mutation. **Essai réel du 02/11/2026 à 15:02 (Paris)**,
-  lancé par l'utilisateur avec `passages=1` : le veilleur n° 3655 lance un seul
-  contrôle (n° 3885, échec IMPOSSIBLE attendu), demande sa relève, le n° 3656
-  démarre et journalise « attente imposée après un échec : 60 min » ; **aucun
-  autre contrôle lancé** pendant les 7 min d'observation (ancien code : un toutes
-  les ≈ 34 s). Annulation du n° 3656 essayée en réel : sortie propre, « veilleur
-  annulé : pas de relève ». **Non observé** : le second passage, 60 min plus tard,
-  donc la chaîne sur plusieurs heures. Le run n° 3654 (ancien code) reste
-  « Queued », non annulable (API : 409). **Le veilleur reste désactivé : sa réactivation exige
-  l'accord explicite de l'utilisateur**, après vérification (un retour au vert le
-  03/11 ne prouve pas la correction de la boucle).
-  **Étape 2 livrée le 03/11/2026** (décision de l'utilisateur) : requête-témoin dans `integrite-api.yml`, 12 essais `integrite.test.js` (bloquants en CI) vérifiés par 9 mutations ; **essai réel concluant le 03/11/2026 à 17:11** (contrôle n° 3889 lancé à la main : témoin envoyé, HTTP 200, `ok:true`, retrouvé dans les journaux en 1 lecture, « aucune anomalie »). Vérification unique de la livraison par Codex : **AG-040, amendé le
-  03/11/2026** — témoin sans écart ; deux écarts démontrés dans le veilleur
-  (historique illisible lu avant l'attente imposée ; contrôle en cours cherché
-  avant l'attente de cadence, puis lancé sans relecture) **corrigés le
-  03/11/2026** (3 essais de plus, 14 en tout, échouant sur la version d'avant).
-  Reste, avant toute réactivation : essai réel de la reprise, puis **accord
-  explicite de l'utilisateur**. Codex rappelle que le run n° 3654 bloqué rend la
-  reprise par le filet non établie. Rappel du contrat de
-  Codex (AG-039) : GET sur le seul `/api/index.php?action=logLogin`, marque neuve
-  par tentative cherchée dans les journaux **bruts** (le parseur actuel efface les
-  paramètres, `integrite-api.yml:193-197`), HTTP 200 + JSON `ok:true` vérifiés,
-  témoin absent = IMPOSSIBLE, jour clos vide = IMPOSSIBLE, aucune tolérance
-  rétroactive pour le 31/10 ; tests : témoin présent, absent, ancien, marque
-  différente, délai d'écriture des journaux, anomalie réelle restant rouge.
-  **Constaté le 02/11/2026 à 19:18** (contrôle programmé n° 3886, seul passage
-  programmé depuis 15:02 : la programmation n'est pas horaire) : même échec
-  IMPOSSIBLE sur le 31/10 ; l'étape « Relancer le veilleur s'il est arrêté »
-  (`integrite-api.yml:263-270`) est **verte** : « veilleur actif (1) », car le run
-  n° 3654 resté « Queued » (ancien code, non annulable, API 409) compte comme un
-  veilleur actif. Une hypothèse du 02/11 matin (« l'étape échoue chaque heure,
-  le programmé ne peut pas revenir au vert ») était fausse. **Non vérifié** : ce
-  que fera l'étape si ce run disparaît (elle tenterait de relancer un veilleur
-  désactivé). **Retour au vert constaté le 03/11/2026** : contrôles programmés
-  n° 3887 (02:33) et n° 3888 (10:28, heure de Paris), fenêtre commençant le 01/11
-  (11 et 106 lignes), « aucune anomalie », comptes conformes — conforme à
-  l'hypothèse de la fenêtre de 2 jours ; **cela ne prouve pas** que la cause est
-  traitée : un jour sans aucune requête (week-end, férié) refera échouer le
-  contrôle, jusqu'à la requête-témoin (étape 2). Tuile « Contrôle d'intégrité » vue à 16:34 : rouge parce que
-  le dernier succès a plus de 2 h (le programmé ne tourne que toutes les ≈ 8 h),
-  elle affiche 02:33 alors que le n° 3888 (10:28) est vert : la liste filtrée
-  `status=success` de l'API GitHub, lue par la tuile et par le veilleur, ne
-  contient pas le n° 3888 (hypothèse non vérifiée : décalage de l'index de
-  GitHub) ; elle dit aussi « Veilleur en service » alors qu'il est désactivé :
-  le run n° 3654 en file compte comme actif. La pastille
-  rouge « ! » de 💾 Sauvegardes reste affichée tant que le veilleur est
-  éteint (`etatVeille` exige un veilleur actif).
-- **Correctif PHP d'Alwaysdata : redémarrer le site** (Web → Sites →
-  Redémarrer ; 21/10, `php -v` en SSH disait 8.4.27, l'API tournait en
-  8.4.26). Version servie : `diagnostic-api.yml` (« php (web) »).
-- **SSH par clé seule depuis le 21/10/2026** : les workflows passent par clé ;
-  pour une intervention à la main, réactiver le mot de passe puis le
-  désactiver (procédure de restauration V0.3, section 3).
-- Un secret GitHub ne part au serveur qu'au **déploiement suivant** : après
-  toute modification, relancer « Déploiement API Alwaysdata ».
+- **Coupure d'urgence** (AG-027) : Actions → `coupure-urgence.yml`, cible `tout` ou
+  `bac-a-sable` (9 à 13 s) ; secours SSH : `echo 'Require all denied' > www/.htaccess`.
+- **Veilleur du contrôle d'intégrité** (AG-028) : un contrôle par heure, tuile dans Admin →
+  Sauvegardes ; arrêt durable : Disable workflow. **Jamais vus en vrai** : relance par le filet,
+  pastille « ! ». Le jour en cours n'est pas compté (AG-029).
+  **Boucle du 31/10-02/11** (3 603 échecs en 34 h) : un jour sans requête faisait échouer le
+  contrôle, et chaque échec relançait un veilleur aussitôt. Corrigé (AG-039/040) : relève après
+  échec avec `attente` = `intervalle`, jamais moins d'`intervalle` depuis le dernier lancement,
+  contrôle en cours suivi, état relu après chaque attente, alerte sur le dernier **succès** ;
+  requête-témoin dans `integrite-api.yml` (contrat de Codex : GET `logLogin`, marque neuve
+  cherchée dans les journaux **bruts**, témoin absent = IMPOSSIBLE). Tests :
+  `veilleur.test.js` (14), `integrite.test.js` (12), bloquants en CI. Tuile : lit la liste
+  `status=success` de GitHub, qui peut omettre un run récent (hypothèse non vérifiée) ;
+  « Veilleur en service » tant qu'un run est en file (le n° 3654).
+- **Correctif PHP : redémarrer le site** (Web → Sites ; version servie : `diagnostic-api.yml`).
+  **SSH par clé seule** depuis le 21/10 (mot de passe à réactiver puis couper pour une
+  intervention à la main). Un secret GitHub ne part qu'au **déploiement suivant**.
 - Utilisateur MySQL **sensible à la casse** (`…_michel`). Hôtes
   `mysql-<compte>.alwaysdata.net`, `ssh-<compte>.alwaysdata.net`, site dans
   `~/www/` ; `api/lib/` fermé par `.htaccess` (403 vérifié à chaque déploiement).
@@ -255,29 +167,26 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   identifiant `ateliers-numeriques`). Une commande courte à la fois, **sans
   `~`**, majuscules exactes. Déchiffrer une copie hors site exige un PC perso.
 - **Tests PHP en session** : MariaDB s'arrête parfois (`Connection refused`) ;
-  `service mariadb start`, mot de passe root `root`.
+  `service mariadb start`, mot de passe root `testmdp` (script de démarrage « Micky »).
 
 ## Décisions de l'utilisateur à ne pas « corriger »
 
+- **Planning et Calendrier (04/11/2026)** : on garde l'existant (Calendrier à côté de la vue
+  Mois), sujet sorti des chantiers. Sur téléphone, seuls lundi et mardi tiennent à l'écran.
 - **Fiches bilan** : interrupteur « 📋 Fiches bilan vides » (Admin → Listes →
   Conseillers) éteint le 27/10, **rallumé le 28/10/2026**, équipe prévenue par
   une démonstration le même jour ; ateliers datés du 01/11/2026 ou après seulement. Fenêtre au passage en « Réalisé » (volet,
   formulaire) : n'annonce le mail que s'il partira (`rappelFichePrevu`).
-- **Bilan mensuel envoyé le 5 du mois (demande de l'utilisateur, 03/11/2026)** :
-  tâche Alwaysdata passée à `0 8 5 * *` (**déclaré par l'utilisateur, non
-  vérifié**) ; premier envoi sous ce régime le 05/12 (celui du 05/11 est ignoré,
-  octobre étant déjà parti le 01/11 : un bilan par mois et par destinataire).
-  « Atelier(s) planifié(s) en <mois> » garde tout le mois en cours (option 2,
-  aucun calcul changé) : le 5, il peut compter des ateliers du 1er au 4 déjà
-  passés mais restés « Planifié » et ignorer ceux déjà réalisés. À rouvrir
-  (bloc AGORA, critère 7) si cela gêne. Le bilan du 01/11/2026 a bien été envoyé
-  (journal vu par l'utilisateur : « bilanMensuel », 08:01, succès).
+- **Bilan mensuel le 5 du mois** (03/11/2026, cron `0 8 5 * *` déclaré par l'utilisateur,
+  non vérifié) : premier envoi le 05/12 ; « planifiés en <mois> » garde tout le mois (le 5, peut
+  compter des ateliers du 1er au 4 restés « Planifié ») — bloc AGORA critère 7 si cela gêne.
 - **Écarté du CR « option 1 »** : PWA (AG-012), nouveau modèle de données,
   PHPWord/TCPDF.
 - **Plus de démarche auprès de la DPD ni des Archives départementales
   (16/10/2026)** : ni mail, ni tableau de gestion, ni visa d'élimination. Les
-  écarts du registre RGPD V0.6 (n° 1, 2, 3, 5, 6, 7, 9 à 11) restent ouverts
-  dans le registre.
+  écarts du registre RGPD (V0.7 : n° 1, 2, 3, 5, 6, 7, 9 à 14) restent ouverts
+  dans le registre. **Mention d'information des agents (écart n° 3) : classée sans suite
+  le 04/11/2026** (utilisateur) — ne pas la reproposer sans fait nouveau.
 - **Risques acceptés (audit du 01/10, décidé le 02/10)** :
   `StrictHostKeyChecking=accept-new` ; blocage de 15 min après 5 échecs par
   compte, sans compter l'IP ; SheetJS 0.18.5 (failles à la lecture seulement,
@@ -292,13 +201,9 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   pouvoirs quasi admin et n'apparaît pas dans la liste de connexion d'Index.
 - **Déconnexion d'Index après 30 min** d'inactivité, jamais pendant une
   saisie ; la mémoire de saisie entre onglets (25/10) ne change pas le délai.
-- **Interfaces (26/09)**, à ne pas défaire : volet latéral commun
-  `PanneauAtelier` (alerte de conflit non bloquante) ; filtre public de
-  l'Historique à choix multiples, « Tout afficher » ; « Effacer » vide tout,
-  statut compris ; liste de connexion Admin limitée aux comptes à accès Admin.
-- **Vues (05-06/10, sans annonce)** : frise à une ligne par conseiller ;
-  `ChoixDate` compact ; « ⚠️ ordi » clignotant ; « PIX » dans la fiche bilan ;
-  chevron « › » de la barre du bas de NEWGEN (`majIndiceNav`, écart voulu).
+- **Interfaces** : volet `PanneauAtelier` commun ; filtre public de l'Historique à choix
+  multiples ; « Effacer » vide tout ; frise à une ligne par conseiller ; « ⚠️ ordi » clignotant ;
+  chevron « › » de NEWGEN (écart voulu).
 - **Avis des stagiaires (04-06/10)** : anonymes, sans âge ni recontact tant que
   le DPO n'a pas validé ; un avis par appareil, pas plus que de présents (à
   défaut d'inscrits) ; réservés à l'animateur et au co-animateur (filtre API),
@@ -358,27 +263,21 @@ appel superflu, `sw.js` de désinscription.
   valeurs, ni échelles, ni filtres, ni échappement HTML.
 - **Démonstration (24/10)** : faux ateliers sur deux années, liens du bandeau ;
   aucun peuplement sans le garde-fou `bac_a_sable=true`.
-- **Tickets modifiables (03/11/2026, AG-041, en ligne)** : toute l'équipe,
-  champs saisis (type, gêne, onglet, titre, description), tant que le statut est
-  « Nouveau » ; ni mention « modifié », ni mail, ni journal (décisions de
-  l'utilisateur). **Validé à l'écran par l'utilisateur le 04/11/2026, pas d'annonce `NOUVEAUTES` (sa décision).** Confirmé par Codex le 03/11/2026 (AG-041, sans amendement :
-  droits, champs, absence de mail et de journal, rendu en texte ; course
-  « l'Admin change le statut pendant la modification » rejouée sur base jetable :
-  refus, ticket intact). Premier « pull » de Codex selon `AGENTS.md` : il a répondu seul.
+- **Tickets modifiables (AG-041, confirmé par Codex, validé à l'écran le 04/11)** : toute
+  l'équipe, champs saisis, tant que le statut est « Nouveau » ; ni mention, ni mail, ni journal.
+- **Page TS et tickets (AG-042 à AG-046, confirmés par Codex le 04/11)** : jeton TS limité à ses
+  actions ; code par mail sauf première connexion (jamais pour un « oubli », même promu, ni
+  au-delà de 30 jours, ni pour un compte d'avant le 04/11) ; rattrapages uniques
+  (`ts_rattrapage_unique`) ; tickets : condition sur l'ancien état en `BINARY` pour tout appel,
+  « Réponse de » = répondant enregistré, chaque « pas de mail » dit sa raison.
 - **Corbeille** : un conseiller ne voit que ses ateliers animés ou co-animés
   (AG-034) ; l'Admin voit tout, sans suivre le sélecteur de conseiller (choix du
   27/10) ; purge définitive réservée admin/superviseur (AG-024). Testés.
-- **Matériel** : `periodePretMateriel` retombe sur la date de l'atelier sans
-  dates de prêt (22/09). Seul le stock d'ordinateurs compte (05/10 : « Classe
-  mobile » = ordinateurs du stock), à l'heure près (AG-022) : prêt d'un jour
-  sur `[début, fin + 30 min)`, atelier sans horaire sur sa demi-journée ou la
-  journée ; un conseiller compte une fois, au max de ses quantités
-  (`logic.test.js`). **Confirmé le 02/11/2026** : les séances de l'après-midi
-  d'un même conseiller puisent dans les ordinateurs du matin (5 + 2 + 2 = 5, pas
-  9) ; la frise du parc marque ces séances d'un repère en pointillé « ↳ 2 »
-  (rendu seul, `bfa45f2` NextStep, `3d33590` NEWGEN). Prêt sur plusieurs jours : journées entières, du
-  prélèvement à la veille du retour (AG-002) — **rouvrir** seulement si une
-  alerte sonne sur un créneau réellement libre.
+- **Matériel** : seul le stock d'ordinateurs compte (« Classe mobile » = ordinateurs du stock),
+  à l'heure près (AG-022) ; un conseiller compte une fois, au max de ses quantités : les séances
+  de l'après-midi puisent dans les ordinateurs du matin (5 + 2 + 2 = 5), repère « ↳ 2 » sur la
+  frise ; prêt sur plusieurs jours = journées entières (AG-002) ; sans dates de prêt, date de
+  l'atelier (`logic.test.js`). **Rouvrir** seulement sur une alerte d'un créneau réellement libre.
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS` `newgen` / `nextstep`) :
   origine `maswaddpt47-cmyk.github.io` partagée, `localStorage` non cloisonné
   par chemin. **Couche réseau client gardée** : elle sert sur une vraie
