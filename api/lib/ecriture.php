@@ -538,6 +538,8 @@ function api_apres_changement_mdp(PDO $db, string $nom, ?string $garder): void
     reinit_schema($db);
     $db->prepare('UPDATE reinitialisations SET utilise = 1 WHERE conseiller = ?')->execute([$nom]);
     $db->prepare('DELETE FROM sessions WHERE conseiller = ? AND jeton_hash <> ?')->execute([$nom, (string) $garder]);
+    // Sa session de la page TS (AG-042) tombe aussi.
+    $db->prepare('DELETE FROM sessions WHERE conseiller = ?')->execute(['ts:' . $nom]);
 }
 
 function api_changer_mdp(PDO $db, string $nom, string $mdp, ?string $garder = null): array

@@ -11,6 +11,7 @@
 
 require __DIR__ . '/outils.php';
 require_once __DIR__ . '/../api/lib/ecriture.php';
+require_once __DIR__ . '/../api/lib/api.php';
 
 $mysql = getenv('ATELIERS_TEST_MYSQL');
 if (!$mysql) { echo "(API non testée : ATELIERS_TEST_MYSQL non défini)\n"; exit(0); }
@@ -693,6 +694,94 @@ verifier(($e['ok'] ?? false) && count($m) === 5 && str_contains(end($m), 'A: nou
     'envoi du lien par l\'Admin : mail parti, lien après le #');
 $sans = appel(['action' => 'envoyerLienReinit'], $A + ['conseiller' => 'Conseiller Test', 'retour' => $RETOUR]);
 verifier(!($sans['ok'] ?? true) && str_contains($sans['error'] ?? '', 'Aucune adresse') && count($mails()) === 5, 'envoi du lien par l\'Admin : sans adresse, le dire (provisoire en secours)');
+
+// ── Page des travailleurs sociaux (AG-042, 04/11/2026) ────────────────────
+echo "\nAPI — page des travailleurs sociaux\n";
+array_map('unlink', glob("$dossierMails/*.txt"));
+$db->exec("UPDATE config SET valeur = '" . json_encode(['Nouveau Venu' => 'nouveau.venu@example.org', 'Conseiller Test' => 'admin.test@example.org']) . "' WHERE cle = 'emails'");
+$db->exec("INSERT INTO ateliers (id, statut, date, orienteur, commune, lieu, thematique, public, conseiller, co_animateur, residence, remarques, inscrits)
+    VALUES ('ts_futur', 'Planifié', CURDATE() + INTERVAL 3 DAY, 'CCAS Agen', 'Agen', 'MDS', 'Mail', 'Seniors', 'Conseiller Test', '', '', 'remarque secrète', 7),
+           ('ts_jour', 'Planifié', CURDATE(), 'Orienteur', 'Nérac', 'Mairie', 'Smartphone', 'Tous publics', 'Conseiller Test', '', '', '', NULL),
+           ('ts_passe', 'Planifié', CURDATE() - INTERVAL 1 DAY, 'O', 'Agen', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL),
+           ('ts_realise', 'Réalisé', CURDATE() + INTERVAL 5 DAY, 'O', 'Agen', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL)");
+verifier(appel(['action' => 'tsDemandeAcces'], ['email' => 'pas-une-adresse'])['ok'] === false, 'demande : adresse invalide refusée');
+verifier(appel(['action' => 'tsDemandeAcces'], ['email' => 'robot@example.org', 'url' => 'http://spam'])['ok'] === true
+    && !$db->query("SELECT COUNT(*) FROM demandes_ts WHERE email = 'robot@example.org'")->fetchColumn(), 'demande : champ piège rempli, rien enregistré');
+verifier(appel(['action' => 'tsDemandeAcces', 'site' => 'nextstep'], ['email' => ' TS.Un@Example.org '])['ok'] === true
+    && $db->query("SELECT site FROM demandes_ts WHERE email = 'ts.un@example.org'")->fetchColumn() === 'nextstep', 'demande : enregistrée en minuscules, site noté');
+$m = $mails();
+verifier(count($m) === 1 && str_contains($m[0], 'A: admin.test@example.org') && str_contains($m[0], 'ts.un@example.org'), 'demande : mail aux seuls admins');
+verifier(appel(['action' => 'tsDemandeAcces'], ['email' => 'ts.un@example.org'])['ok'] === true && count($mails()) === 1, 'demande en double : même réponse, pas de second mail');
+$insD = $db->prepare("INSERT INTO demandes_ts (email, demande_le) VALUES (?, NOW())");
+for ($i = 1; $i < TS_DEMANDES_MAX; $i++) $insD->execute(["d$i@example.org"]);
+verifier(str_contains(appel(['action' => 'tsDemandeAcces'], ['email' => 'trente-et-un@example.org'])['error'] ?? '', 'Trop de demandes') && count($mails()) === 1, 'plafond de ' . TS_DEMANDES_MAX . ' demandes en attente : refus sans mail');
+$db->exec("DELETE FROM demandes_ts WHERE email LIKE 'd%@example.org'");
+$db->exec("INSERT INTO demandes_ts (email, demande_le) VALUES ('vieille@example.org', NOW() - INTERVAL 91 DAY)");
+
+$TL = appel(['action' => 'tsListe'], $A);
+verifier(($TL['ok'] ?? false) && array_column($TL['demandes'], 'email') === ['ts.un@example.org'], 'liste Admin : demandes de plus de 90 jours purgées');
+verifier(appel(['action' => 'tsListe'], ['token' => $nv['token']])['ok'] === false, 'liste Admin : refusée à un conseiller');
+$cree = appel(['action' => 'tsCreerCompte'], $A + ['email' => 'ts.un@example.org']);
+verifier(($cree['ok'] ?? false) && strlen($cree['newPassword'] ?? '') === 12 && !$db->query("SELECT COUNT(*) FROM demandes_ts")->fetchColumn(), 'création : mot de passe provisoire, demande retirée');
+verifier(appel(['action' => 'tsCreerCompte'], $A + ['email' => 'ts.un@example.org'])['ok'] === false, 'création en double refusée');
+verifier(!in_array('ts.un@example.org', array_column(appel(['action' => 'getComptes'])['comptes'], 'conseiller'), true), 'un compte TS n\'apparaît jamais dans getComptes');
+$jr = $db->query("SELECT conseiller, ref FROM journal WHERE action = 'tsCreerCompte' ORDER BY horodatage DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+verifier($jr === ['conseiller' => 'Conseiller Test', 'ref' => 'ts.un@example.org'], 'création journalisée (auteur, cible)');
+
+$inconnu = appel(['action' => 'tsConnexion'], ['identifiant' => 'personne@example.org', 'password' => 'x']);
+$faux = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@example.org', 'password' => 'x']);
+verifier(($inconnu['error'] ?? '') === TS_ERREUR_CONNEXION && ($faux['error'] ?? '') === TS_ERREUR_CONNEXION, 'connexion : même message, compte connu ou non');
+verifier(appel(['action' => 'tsConnexion', 'identifiant' => 'ts.un@example.org', 'password' => $cree['newPassword']])['ok'] === false, 'connexion : mot de passe dans l\'URL ignoré');
+$ts = appel(['action' => 'tsConnexion'], ['identifiant' => 'TS. Un@Example.org', 'password' => $cree['newPassword']]);
+verifier(($ts['ok'] ?? false) && ($ts['doit_changer'] ?? false) === true, 'connexion TS (adresse avec espace et majuscules du clavier) : provisoire signalé');
+$T = ['token' => $ts['token'] ?? ''];
+verifier(($ts_a = appel(['action' => 'tsAteliers'], $T))['ok'] === false && ($ts_a['doit_changer'] ?? false), 'provisoire : ateliers refusés tant qu\'il n\'est pas changé');
+verifier(appel(['action' => 'tsChangerMdp'], $T + ['password' => 'court'])['ok'] === false, 'changement : politique de mot de passe');
+verifier(appel(['action' => 'tsChangerMdp'], $T + ['password' => 'Travail-Social-47!'])['ok'] === true, 'changement du provisoire sans l\'actuel');
+verifier(appel(['action' => 'tsChangerMdp'], $T + ['password' => 'Autre-Social-47!!'])['ok'] === false, 'second changement : l\'actuel exigé');
+foreach (['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'delete', 'getTickets', 'creerTicket', 'selfSetPassword', 'tsListe', 'tsCreerCompte', 'getComptes'] as $act) {
+    $r = appel(['action' => $act], $T + ['email' => 'x@example.org']);
+    if ($act === 'getComptes') { verifier(!isset($r['comptes'][0]['role']), 'jeton TS : getComptes réduit à la liste publique'); continue; }
+    verifier(($r['ok'] ?? true) === false, "jeton TS : $act refusé");
+}
+verifier(appel(['action' => 'tsAteliers'], $A)['ok'] === false, 'tsAteliers refusé à un jeton conseiller/admin');
+$r = appel(['action' => 'tsAteliers'], $T);
+$ids = array_map(fn($a) => $a['thematique'] . '@' . $a['commune'], $r['ateliers'] ?? []);
+verifier(($r['ok'] ?? false) && in_array('Mail@Agen', $ids, true) && in_array('Smartphone@Nérac', $ids, true), 'ateliers : Planifié du jour et à venir');
+$futurs = $db->query("SELECT COUNT(*) FROM ateliers WHERE statut = 'Planifié' AND date >= CURDATE()")->fetchColumn();
+verifier(count($r['ateliers'] ?? []) === (int) $futurs && !array_filter($r['ateliers'], fn($a) => $a['statut'] !== 'Planifié' || $a['date'] < date('Y-m-d')), 'ateliers : ni passés, ni autres statuts (' . count($r['ateliers'] ?? []) . ')');
+verifier(array_keys($r['ateliers'][0] ?? []) === TS_CHAMPS, 'ateliers : 7 champs seulement (ni conseiller, ni remarques, ni inscrits)');
+verifier(!str_contains(json_encode($r), 'remarque secrète'), 'ateliers : la remarque ne sort pas');
+$db->exec("UPDATE config SET valeur = '" . json_encode(['ts_public:Seniors' => false, 'ts_public:Tous publics' => true, 'saisie' => true], JSON_UNESCAPED_UNICODE) . "' WHERE cle = 'visibility'");
+$r2 = appel(['action' => 'tsAteliers'], $T);
+$pubs = array_unique(array_column($r2['ateliers'] ?? [], 'public'));
+verifier(($r2['ok'] ?? false) && !in_array('Seniors', $pubs, true) && in_array('Tous publics', $pubs, true)
+    && count($r2['ateliers']) === count($r['ateliers']) - count(array_filter($r['ateliers'], fn($a) => $a['public'] === 'Seniors')),
+    'public éteint (Seniors) : ses ateliers ne sortent pas, les autres restent');
+$tous = array_values(array_unique(array_filter(array_map(fn($a) => trim($a['public']), $r['ateliers']))));
+$db->exec("UPDATE config SET valeur = '" . json_encode(array_fill_keys(array_map(fn($p) => "ts_public:$p", $tous), 'false'), JSON_UNESCAPED_UNICODE) . "' WHERE cle = 'visibility'");
+$r3 = appel(['action' => 'tsAteliers'], $T);
+verifier(($r3['ok'] ?? false) && !array_filter($r3['ateliers'] ?? [], fn($a) => trim($a['public']) !== ''), 'tous les publics éteints : plus aucun atelier avec un public');
+$db->exec("UPDATE config SET valeur = '{}' WHERE cle = 'visibility'");
+
+verifier(appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@example.org', 'actif' => '0'])['ok'] === true
+    && appel(['action' => 'tsAteliers'], $T)['ok'] === false, 'désactivation : la session tombe aussitôt');
+verifier(appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@example.org', 'password' => 'Travail-Social-47!'])['error'] === TS_ERREUR_CONNEXION, 'compte désactivé : même message d\'échec');
+appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@example.org', 'actif' => '1']);
+$re = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@example.org']);
+verifier(($re['ok'] ?? false) && appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@example.org', 'password' => $re['newPassword']])['doit_changer'] === true, 'réinitialisation : nouveau provisoire');
+for ($i = 0; $i < API_ECHECS_MAX; $i++) appel(['action' => 'tsConnexion'], ['identifiant' => 'bloque@example.org', 'password' => 'x']);
+verifier(str_contains(appel(['action' => 'tsConnexion'], ['identifiant' => 'bloque@example.org', 'password' => 'x'])['error'] ?? '', 'Trop de tentatives'), 'blocage après ' . API_ECHECS_MAX . ' échecs, même pour une adresse inconnue');
+
+$adm = appel(['action' => 'tsConnexion'], ['identifiant' => 'Conseiller Test', 'password' => 'secret-test']);
+verifier(($adm['ok'] ?? false) && !isset($adm['doit_changer']), 'admin : connexion à la page TS avec ses accès');
+verifier(appel(['action' => 'tsAteliers'], ['token' => $adm['token']])['ok'] === true && appel(['action' => 'getAll'], ['token' => $adm['token']])['ok'] === false, 'admin sur la page TS : lecture TS seule, getAll refusé');
+verifier(appel(['action' => 'tsChangerMdp'], ['token' => $adm['token'], 'password' => 'Autre-Social-47!!'])['ok'] === false, 'admin sur la page TS : pas de changement de mot de passe ici');
+verifier(appel(['action' => 'tsConnexion'], ['identifiant' => 'Nouveau Venu', 'password' => 'Nouveau-Mdp-2026!'])['error'] === TS_ERREUR_CONNEXION, 'conseiller (rôle user) : refusé sur la page TS');
+verifier(appel(['action' => 'tsSupprimer'], $A + ['email' => 'ts.un@example.org'])['ok'] === true
+    && !$db->query("SELECT COUNT(*) FROM comptes_ts")->fetchColumn() && !$db->query("SELECT COUNT(*) FROM sessions WHERE conseiller LIKE 'ts:ts.un%'")->fetchColumn(), 'suppression : compte et sessions effacés');
+$db->exec("DELETE FROM ateliers WHERE id LIKE 'ts\\_%'");
+
 array_map('unlink', glob("$dossierMails/*.txt")); @rmdir($dossierMails);
 
 $db->exec("UPDATE sessions SET expire = NOW() - INTERVAL 1 SECOND");
