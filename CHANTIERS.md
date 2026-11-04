@@ -29,7 +29,7 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    (`sandbox` NEWGEN `2f20d81`, déploiement vert le 04/11/2026), pas sur `main`** ; **Codex a confirmé les trois correctifs le 04/11/2026** (aucun amendement de plus, pas de test de deux requêtes réellement simultanées ni sur le MySQL d'Alwaysdata). **Reste** : essai de l'utilisateur (Codex relit la
    branche `sandbox`, pas `main` ; rien à changer dans NextStep), puis
    `main` des deux dépôts (la branche porte aussi une entrée CHANTIERS : garder
-   celle-ci au merge) ; clore AG-042 dans `AGORA.md` ; registre RGPD (e-mails TS) dans `ateliers-backups` ; pas de « mot de passe
+   celle-ci au merge) ; clore AG-042 dans `AGORA.md` ; **AG-043 ouvert le 04/11/2026** (domaine `@lotetgaronne.fr`, compte créé à la demande avec mot de passe par mail, mot de passe oublié, rubrique « Connexions TS » dans l'Admin, arrivée sur la connexion, bandeau du bac à sable ; code sur `sandbox` des deux dépôts, réponse de Codex attendue ; **2FA non décidée**, voir `AGORA.md`) ; registre RGPD (e-mails TS) dans `ateliers-backups` ; pas de « mot de passe
    oublié » TS en v1. **Après la page TS** : ménage du `CLAUDE.md` (MD-LIB/CLAUDE.md,
    « Ménage au prochain pull ») de NEWGEN et NextStep, liste avant/après à
    présenter à l'utilisateur.
