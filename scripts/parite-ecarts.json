@@ -33,8 +33,8 @@
       "NEWGEN shared.js:3026",
       "NextStep shared.js:2842"
     ],
-    "newgen": "4aca8aa733/4aca8aa733",
-    "nextstep": "245c165aa6/245c165aa6",
+    "newgen": "9930018b22/9930018b22",
+    "nextstep": "0b78d873c4/0b78d873c4",
     "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres). Revérifié le 28/10/2026 après les chiffres animés des tuiles : même composant NombreAnime dans les deux, posé sur le bandeau propre à chaque appli. Revérifié le 04/11/2026 après AG-047 (filtre « Ouvert à tous » et colonne des exports) : même filtre et même portée dans les deux, posé dans les filtres propres à chaque design. Revérifié le 04/11/2026 : badge « Ouvert à tous » sur la tuile, à côté du type de public, dans les deux."
   },
   "majIndiceNav": {
