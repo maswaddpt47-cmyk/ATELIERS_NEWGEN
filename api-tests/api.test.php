@@ -48,7 +48,7 @@ file_put_contents($cfg, '<?php return ' . var_export(['db_hote' => $hote, 'db_no
 $port = 8700 + random_int(0, 99);
 $srv = proc_open([PHP_BINARY, '-S', "127.0.0.1:$port", '-t', __DIR__ . '/../api'],
     [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $tubes, null,
-    ['ATELIERS_API_CONFIG' => $cfg, 'ATELIERS_MAIL_TEST_DIR' => $dossierMails, 'ATELIERS_SAUVEGARDE_DIR' => $dossierSauv] + getenv());
+    ['ATELIERS_API_CONFIG' => $cfg, 'ATELIERS_MAIL_TEST_DIR' => $dossierMails, 'ATELIERS_SAUVEGARDE_DIR' => $dossierSauv, 'PHP_CLI_SERVER_WORKERS' => '8'] + getenv());
 register_shutdown_function(function () use ($srv, $cfg, $db) {
     proc_terminate($srv);
     @unlink($cfg);
@@ -695,6 +695,26 @@ verifier(($e['ok'] ?? false) && count($m) === 5 && str_contains(end($m), 'A: nou
 $sans = appel(['action' => 'envoyerLienReinit'], $A + ['conseiller' => 'Conseiller Test', 'retour' => $RETOUR]);
 verifier(!($sans['ok'] ?? true) && str_contains($sans['error'] ?? '', 'Aucune adresse') && count($mails()) === 5, 'envoi du lien par l\'Admin : sans adresse, le dire (provisoire en secours)');
 
+// Appels réellement simultanés (serveur à plusieurs processus) : chaque élément [get, post].
+function appels_paralleles(array $reqs, ?callable $pendant = null): array
+{
+    global $port;
+    $mh = curl_multi_init(); $hs = [];
+    foreach ($reqs as $i => [$get, $post]) {
+        $ch = curl_init("http://127.0.0.1:$port/index.php?" . http_build_query($get));
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query($post), CURLOPT_TIMEOUT => 20]);
+        curl_multi_add_handle($mh, $ch); $hs[$i] = $ch;
+    }
+    $fait = false;
+    do {
+        curl_multi_exec($mh, $run); curl_multi_select($mh, 0.05);
+        if ($pendant && !$fait) { usleep(600000); $pendant(); $fait = true; }   // laisse les requêtes atteindre la base, puis agit
+    } while ($run > 0);
+    $res = [];
+    foreach ($hs as $i => $ch) { $res[$i] = json_decode((string) curl_multi_getcontent($ch), true); curl_multi_remove_handle($mh, $ch); }
+    return $res;
+}
+
 // Connexion TS complète (AG-043 : 2FA) : mot de passe, puis code lu dans le dernier mail.
 // Le délai d'une minute entre deux défis est levé pour pouvoir enchaîner les essais.
 function ts_connexion(string $id, string $mdp, ?array &$etape1 = null): array
@@ -927,6 +947,37 @@ $qe = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.f
 rename("$dossierMails.sav", $dossierMails);
 verifier(($qe['ok'] ?? true) === false && str_contains($qe['error'] ?? '', 'Envoi du code impossible') && !$db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'ts.un@lotetgaronne.fr' AND defi_hash IS NOT NULL")->fetchColumn()
     && !$db->query("SELECT COUNT(*) FROM envois_ts WHERE type = 'code'")->fetchColumn(), '2FA : mail du code non parti, défi effacé et envoi non compté');
+
+// Codex (2e relecture) n° 1 : cinq codes faux SIMULTANÉS comptent pour cinq (défi inutilisable, blocage appliqué).
+$resetCode(); $db->exec("DELETE FROM tentatives WHERE conseiller = 'ts:ts.un@lotetgaronne.fr'");
+$ec = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $rr2['newPassword']]); $cc = $codeDuDernierMail();
+$mauvais = $cc === '123456' ? '654321' : '123456';
+$par = appels_paralleles(array_fill(0, TS_CODE_ESSAIS, [['action' => 'tsCode'], ['defi' => $ec['defi'], 'code' => $mauvais]]));
+$bloque = $db->query("SELECT bloque_jusqua FROM tentatives WHERE conseiller = 'ts:ts.un@lotetgaronne.fr'")->fetchColumn();
+verifier(count(array_filter($par, fn($r) => ($r['ok'] ?? true) === false)) === TS_CODE_ESSAIS && $bloque && strtotime($bloque) > time()
+    && !$db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'ts.un@lotetgaronne.fr' AND defi_hash IS NOT NULL")->fetchColumn(), 'concurrence : ' . TS_CODE_ESSAIS . ' codes faux simultanés = ' . TS_CODE_ESSAIS . ' échecs comptés, blocage appliqué, défi effacé');
+verifier(appel(['action' => 'tsCode'], ['defi' => $ec['defi'], 'code' => $cc])['ok'] === false, 'concurrence : le bon code ne passe plus après les cinq codes faux');
+$db->exec("DELETE FROM tentatives WHERE conseiller = 'ts:ts.un@lotetgaronne.fr'");
+// n° 2 : un changement de mot de passe en cours (ligne verrouillée) pendant la validation du bon code : la validation attend, puis est refusée.
+$resetCode(); $ed = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $rr2['newPassword']]); $cd = $codeDuDernierMail();
+$autre2 = new PDO("mysql:host=$hote;dbname=ateliers_test_api;charset=utf8mb4", $util, $mdp, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$autre2->beginTransaction();
+$autre2->exec("UPDATE comptes_ts SET hash = 'mot-de-passe-change-en-cours' WHERE email = 'ts.un@lotetgaronne.fr'");   // changement de mot de passe concurrent (le défi reste en place)
+$simul = appels_paralleles([[['action' => 'tsCode'], ['defi' => $ed['defi'], 'code' => $cd]]], function () use ($autre2) { $autre2->commit(); });
+verifier(($simul[0]['ok'] ?? true) === false && !isset($simul[0]['token']), 'concurrence : aucun jeton rendu à une validation concurrente d\'un reset');
+// Un reset juste après la connexion complète ferme la session qui vient d'être ouverte.
+$rp = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']);
+$vv = ts_connexion('ts.un@lotetgaronne.fr', $rp['newPassword']);
+appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']);
+verifier(($vv['token'] ?? '') !== '' && appel(['action' => 'tsAteliers'], ['token' => $vv['token']])['ok'] === false, 'reset après la connexion complète : la session ouverte est fermée');
+// n° 3 : migration d'une base ancienne (colonnes absentes) : un compte déjà utilisé puis réinitialisé n'est jamais purgé.
+$db->exec("ALTER TABLE comptes_ts DROP COLUMN mdp_change_le, DROP COLUMN defi_mdp, DROP COLUMN defi_oubli");
+$db->exec("INSERT INTO comptes_ts (email, hash, actif, doit_changer, cree_le) VALUES ('ancien.reinit@lotetgaronne.fr', NULL, 1, 1, NOW() - INTERVAL 40 DAY)");
+appel(['action' => 'tsDemandeAcces'], ['email' => 'declencheur@lotetgaronne.fr']);   // déclenche la migration puis la purge
+verifier($db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'ancien.reinit@lotetgaronne.fr'")->fetchColumn() == 1
+    && $db->query("SELECT mdp_change_le IS NOT NULL FROM comptes_ts WHERE email = 'ancien.reinit@lotetgaronne.fr'")->fetchColumn() == 1, 'migration : un compte ancien à historique inconnu (déjà utilisé puis réinitialisé) est préservé de la purge');
+$db->exec("DELETE FROM comptes_ts WHERE email IN ('ancien.reinit@lotetgaronne.fr', 'declencheur@lotetgaronne.fr')");
+$db->exec("DELETE FROM envois_ts");
 
 // Codex n° 1 : le provisoire d'« oubli » n'est promu qu'après le code, sur l'empreinte vérifiée ; anciennes sessions fermées.
 $db->exec("UPDATE comptes_ts SET hash = NULL WHERE email = 'ts.un@lotetgaronne.fr'");

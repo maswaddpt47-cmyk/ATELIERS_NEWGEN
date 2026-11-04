@@ -58,8 +58,10 @@ function ts_schema(PDO $db): void
     }
     if (!$db->query("SHOW COLUMNS FROM comptes_ts LIKE 'defi_mdp'")->fetch()) {
         $db->exec('ALTER TABLE comptes_ts ADD COLUMN defi_oubli TINYINT NOT NULL DEFAULT 0, ADD COLUMN defi_mdp VARCHAR(255) NULL, ADD COLUMN mdp_change_le DATETIME NULL');
-        // Comptes déjà passés par le changement de mot de passe : ils ont terminé leur premier accès.
-        $db->exec('UPDATE comptes_ts SET mdp_change_le = NOW() WHERE doit_changer = 0');
+        // Comptes préexistants : le drapeau doit_changer ne prouve pas « jamais utilisé » (un compte utilisé
+        // puis réinitialisé l'a aussi). Historique inconnu : tous préservés de la purge des premiers accès
+        // jamais terminés ; seuls les comptes créés après cette migration sont suivis exactement.
+        $db->exec('UPDATE comptes_ts SET mdp_change_le = NOW() WHERE mdp_change_le IS NULL');
     }
     $ok = true;
 }
@@ -301,12 +303,21 @@ function action_ts_connexion(PDO $db, array $p): array
     return ts_ouvrir_session($db, $id, $role, false, (string) ($p['userAgent'] ?? ''));
 }
 
-function ts_ouvrir_session(PDO $db, string $id, string $role, bool $doitChanger, string $ua): array
+// Insère la session et rend son jeton (sans journal). Pour un compte TS, appelée DANS la transaction
+// qui consomme le défi : un changement de mot de passe concurrent attend la fin de la transaction, puis
+// ferme cette session au lieu de la laisser s'ouvrir après sa révocation.
+function ts_creer_session(PDO $db, string $id): string
 {
     $jeton = bin2hex(random_bytes(32));
     $db->exec('DELETE FROM sessions WHERE expire < NOW()');
     $db->prepare('INSERT INTO sessions (jeton_hash, conseiller, role, expire) VALUES (?, ?, ?, ?)')
        ->execute([hash('sha256', $jeton), TS_PREFIXE . $id, 'ts', date('Y-m-d H:i:s', time() + API_JETON_DUREE_S)]);
+    return $jeton;
+}
+
+function ts_ouvrir_session(PDO $db, string $id, string $role, bool $doitChanger, string $ua): array
+{
+    $jeton = ts_creer_session($db, $id);
     api_journal($db, 'loginTs', $id, '', $role === 'ts' ? 'ts' : $role, 1, 0, $ua, 'ts');
     $r = ['ok' => true, 'token' => $jeton];
     if ($doitChanger) $r['doit_changer'] = true;
@@ -376,9 +387,12 @@ function action_ts_code(PDO $db, array $p): array
         return ['ok' => false, 'error' => TS_ERREUR_CODE];
     }
     if (!hash_equals($c['code_hash'], hash('sha256', $code . ':' . $id))) {
-        $essais = (int) $c['code_essais'] + 1;
-        if ($essais >= TS_CODE_ESSAIS) $db->prepare($efface)->execute([$id, $hDefi]);
-        else $db->prepare('UPDATE comptes_ts SET code_essais = ? WHERE email = ? AND defi_hash = ?')->execute([$essais, $id, $hDefi]);
+        // Compteur de ce défi incrémenté de façon atomique (cinq codes faux simultanés comptent pour cinq).
+        $db->prepare('UPDATE comptes_ts SET code_essais = code_essais + 1 WHERE email = ? AND defi_hash = ?')->execute([$id, $hDefi]);
+        $n = $db->prepare('SELECT code_essais FROM comptes_ts WHERE email = ? AND defi_hash = ?');
+        $n->execute([$id, $hDefi]);
+        $essais = $n->fetchColumn();
+        if ($essais === false || (int) $essais >= TS_CODE_ESSAIS) $db->prepare($efface)->execute([$id, $hDefi]);
         api_echec_mdp($db, $cle, (string) ($p['userAgent'] ?? ''), 'ts');
         return ['ok' => false, 'error' => TS_ERREUR_CODE];
     }
@@ -398,13 +412,17 @@ function action_ts_code(PDO $db, array $p): array
             if ($pr->rowCount() !== 1) { $db->rollBack(); return ['ok' => false, 'error' => TS_ERREUR_CODE]; }
             ts_fermer_sessions($db, $id);   // avant d'ouvrir celle qui fera le changement forcé
         }
+        $jeton = ts_creer_session($db, $id);   // dans la transaction : un reset concurrent la fermera
         $db->commit();
     } catch (Throwable $e) {
         if ($db->inTransaction()) $db->rollBack();
         throw $e;
     }
     $db->prepare('DELETE FROM tentatives WHERE conseiller = ?')->execute([$cle]);
-    return ts_ouvrir_session($db, $id, 'ts', $oubli || (int) $c['doit_changer'] === 1, (string) ($p['userAgent'] ?? ''));
+    api_journal($db, 'loginTs', $id, '', 'ts', 1, 0, (string) ($p['userAgent'] ?? ''), 'ts');
+    $r = ['ok' => true, 'token' => $jeton];
+    if ($oubli || (int) $c['doit_changer'] === 1) $r['doit_changer'] = true;
+    return $r;
 }
 
 // ── Session TS ────────────────────────────────────────────────────────────

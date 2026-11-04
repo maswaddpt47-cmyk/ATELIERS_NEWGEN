@@ -265,12 +265,17 @@ function api_blocage(PDO $db, string $nom): ?string
 // faux au changement) : même compteur, même blocage.
 function api_echec_mdp(PDO $db, string $nom, string $ua, string $source): void
 {
+    // Incrément atomique (Codex, AG-043) : cinq échecs simultanés comptent pour cinq, pas pour un
+    // (l'ancienne lecture puis écriture en perdait). Le blocage s'applique au seuil.
+    $db->prepare('INSERT INTO tentatives (conseiller, nb, bloque_jusqua) VALUES (?, 1, NULL) ON DUPLICATE KEY UPDATE nb = nb + 1')->execute([$nom]);
     $t = $db->prepare('SELECT nb FROM tentatives WHERE conseiller = ?');
     $t->execute([$nom]);
-    $nb = (int) $t->fetchColumn() + 1;
-    $bloque = null;
-    if ($nb >= API_ECHECS_MAX) { $bloque = date('Y-m-d H:i:s', time() + API_BLOCAGE_S); $nb = 0; }
-    $db->prepare('REPLACE INTO tentatives (conseiller, nb, bloque_jusqua) VALUES (?, ?, ?)')->execute([$nom, $nb, $bloque]);
+    $nb = (int) $t->fetchColumn();
+    if ($nb >= API_ECHECS_MAX) {
+        $bloque = date('Y-m-d H:i:s', time() + API_BLOCAGE_S);
+        $db->prepare('UPDATE tentatives SET nb = 0, bloque_jusqua = ? WHERE conseiller = ?')->execute([$bloque, $nom]);
+        $nb = 0;
+    }
     api_journal($db, 'loginFail', $nom, '', '', 0, $nb, $ua, $source);
 }
 
