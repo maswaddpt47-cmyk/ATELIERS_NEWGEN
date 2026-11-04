@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026, 22:08 (heure de Paris)**, bases `main` : NEWGEN `a9a9ffa`,
+État au **04/11/2026, 22:20 (heure de Paris)**, bases `main` : NEWGEN `bb0947b`,
 NextStep `cb9985e`. Dernière livraison fonctionnelle relue :
 NEWGEN `36db64f` / NextStep `b076d21` (tests, déploiements et parité verts).
 Tient aussi les restes communs à NextStep (même API, même base).
@@ -24,13 +24,17 @@ Anciens brouillons Codex locaux non publiés : repartir de `main` à jour.
    Oui / Non obligatoire sans présélection dans ✏️ Nouveau (NEWGEN et NextStep), existants = Non, choix
    unique obligatoire à l'import Outlook, création sans le champ refusée (« rechargez »), modification
    sans le champ = valeur gardée ; filtre Tous / Oui / Non dans l'Historique des deux applis et sur la
-   page TS ; colonne dans les exports. Lire la réponse de Codex à AG-047 avant de coder ; ~1 h 30.
+   page TS ; colonne dans les exports. **Codex a répondu le 04/11 (amendé, `bb0947b`)** : restauration
+   de la Corbeille d'avant le champ = `Non` (pas de refus) ; migration avant les transactions et
+   avant la 1ʳᵉ lecture TS ; filtre appliqué à la liste et aux exports **sans toucher les tuiles ni
+   les KPI** ; Outlook : choix commun aux seules créations, existants gardés ; PDF Historique
+   n'existe que sur NEWGEN. **À trancher par l'utilisateur avant de coder** ; ~1 h 30.
 
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
 **Ménages (26/09 → 04/11/2026)** : récit dans `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` — **AG-047 seul ouvert** au 04/11/2026.
+Contradiction : `AGORA.md` — **AG-047 seul ouvert** au 04/11/2026 (réponse de Codex reçue, à trancher).
 
 ---
 
