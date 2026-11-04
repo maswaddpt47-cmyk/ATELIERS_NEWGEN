@@ -8,8 +8,7 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
 1. **Livré sur `main` le 04/11/2026** (NEWGEN `36db64f`, NextStep `b076d21`, déploiements verts) : tickets (message
    explicite, amendements de Codex à AG-045, libellés « pas de mail » exacts), rattrapage TS unique (AG-043, **confirmé
    par Codex**), page TS : tuile, titre « Agenda des ateliers collectifs… », première connexion sans code (AG-046) avec
-   ses amendements (oubli promu, 30 jours, comptes d'avant la livraison). **Relecture de Codex des derniers correctifs
-   (AG-045 libellés, AG-046 reprise) à demander.** Consigne de l'utilisateur du 04/11/2026 : **travailler sur `main`,
+   ses amendements (oubli promu, 30 jours, comptes d'avant la livraison). Pas de nouvelle relecture de Codex (règle 58 précisée le 04/11/2026 : une seule vérification ; l'audit trimestriel reprendra). **Essais réels de l'utilisateur à faire** : création d'un compte TS et première connexion, puis reconnexion avec code ; mail au demandeur d'un ticket reçu. Consigne de l'utilisateur du 04/11/2026 : **travailler sur `main`,
    plus sur `sandbox`.** **Réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée.**
 2. **Registres dans `ateliers-backups`** (dépôt privé, cloné lecture seule dans
    `/home/user/ateliers-backups` la session précédente ; sources HTML
