@@ -26,7 +26,7 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    `GET_LOCK` + `INSERT IGNORE` (mail seulement si la ligne est créée) ; jour de Paris
    par `date('Y-m-d')`, plus `CURDATE()`. 3 tests ajoutés (`api-tests/api.test.php`),
    chacun cassé volontairement (échec constaté). Correctif **au bac à sable
-   (`sandbox` NEWGEN `2f20d81`, déploiement vert le 04/11/2026), pas sur `main`**. **Reste** : essai de l'utilisateur (Codex relit la
+   (`sandbox` NEWGEN `2f20d81`, déploiement vert le 04/11/2026), pas sur `main`** ; **Codex a confirmé les trois correctifs le 04/11/2026** (aucun amendement de plus, pas de test de deux requêtes réellement simultanées ni sur le MySQL d'Alwaysdata). **Reste** : essai de l'utilisateur (Codex relit la
    branche `sandbox`, pas `main` ; rien à changer dans NextStep), puis
    `main` des deux dépôts (la branche porte aussi une entrée CHANTIERS : garder
    celle-ci au merge) ; clore AG-042 dans `AGORA.md` ; registre RGPD (e-mails TS) dans `ateliers-backups` ; pas de « mot de passe
