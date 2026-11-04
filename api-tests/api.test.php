@@ -462,6 +462,53 @@ verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'repondre
 appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_essai_3', 'type' => 'Amélioration', 'titre' => 'Même chose', 'description' => 'd']);
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_essai_3', 'doublon_de' => 'tk_essai_1']);
 verifier(($r['ok'] ?? false) && $r['ticket']['statut'] === 'Non retenu' && $r['ticket']['clos_le'] !== null && $r['ticket']['doublon_de'] === 'tk_essai_1', 'doublon : clos, rattaché à l\'original');
+// Mail au demandeur quand l'Admin change le statut ou répond (AG-045, 04/11/2026).
+$dernierMail = function () use ($dossierMails) { $f = glob("$dossierMails/*.txt"); sort($f); return $f ? file_get_contents(end($f)) : ''; };
+appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_mail_1', 'type' => 'Question', 'titre' => 'Où voir mes ateliers ?', 'description' => 'd', 'site' => 'nextstep']);
+$avant = $nbMails();
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'En cours', 'reponse' => "Dans l'onglet Planning.\nBonne journée"]);
+$m = $dernierMail();
+verifier(($r['mail'] ?? '') === 'envoye' && ($r['mail_a'] ?? '') === 'Nouveau Venu' && $nbMails() === $avant + 1 && str_starts_with($m, 'A: nouveau.venu@example.org')
+    && str_contains($m, 'Où voir mes ateliers ?') && str_contains($m, 'En cours') && str_contains($m, "Dans l'onglet Planning.") && str_contains($m, 'Conseiller Test'), 'ticket : le demandeur reçoit un mail (titre, statut, réponse, nom du répondant)');
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'En cours', 'reponse' => "Dans l'onglet Planning.\nBonne journée"]);
+verifier(($r['mail'] ?? '') === 'inutile' && $nbMails() === $avant + 1, 'ticket : même validation rejouée, aucun second mail');
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'Résolu', 'reponse' => "Dans l'onglet Planning.\nBonne journée"]);
+verifier(($r['mail'] ?? '') === 'envoye' && $nbMails() === $avant + 2 && str_contains($dernierMail(), 'Résolu'), 'ticket : changement de statut seul, mail envoyé');
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'Résolu', 'reponse' => '']);
+verifier(($r['mail'] ?? '') === 'inutile' && $nbMails() === $avant + 2, 'ticket : réponse effacée sans autre changement, pas de mail');
+// L'auteur répond à son propre ticket : pas de mail.
+appel(['action' => 'creerTicket'], $A + ['_id' => 'tk_mail_2', 'type' => 'Bug', 'titre' => 'Ticket de l\'Admin', 'description' => 'd']);
+$avant2 = $nbMails();
+verifier((appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_2', 'statut' => 'Vu', 'reponse' => 'ok'])['mail'] ?? '') === 'inutile' && $nbMails() === $avant2, 'ticket : l\'auteur qui répond à son propre ticket n\'est pas prévenu');
+// Sans adresse enregistrée.
+$emailsAvant = $db->query("SELECT valeur FROM config WHERE cle = 'emails'")->fetchColumn();
+$db->exec("REPLACE INTO config (cle, valeur) VALUES ('emails', '" . json_encode(['Conseiller Test' => ['email' => 'admin@example.org']]) . "')");
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'En cours']);
+verifier(($r['mail'] ?? '') === 'sans_adresse' && ($r['mail_a'] ?? '') === 'Nouveau Venu' && $nbMails() === $avant2 && ($r['ticket']['statut'] ?? '') === 'En cours', 'ticket : auteur sans adresse, le dire, mais enregistrer quand même');
+$db->prepare("REPLACE INTO config (cle, valeur) VALUES ('emails', ?)")->execute([$emailsAvant]);
+// Interrupteur global : éteint, aucun mail ; l'Admin le voit, pas le conseiller ; rallumé, ça repart. Sans lien avec rappels_actifs.
+verifier(appel(['action' => 'getTickets'], $A)['mail_demandeur'] === true && !array_key_exists('mail_demandeur', appel(['action' => 'getTickets'], $T)), 'ticket : interrupteur du mail au demandeur allumé par défaut, visible de l\'Admin seulement');
+appel(['action' => 'setConfig'], $A + ['key' => 'tickets_mail_demandeur', 'value' => 'false']);
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'Vu']);
+verifier(($r['mail'] ?? '') === 'desactive' && $nbMails() === $avant2 && appel(['action' => 'getTickets'], $A)['mail_demandeur'] === false, 'ticket : interrupteur éteint, aucun mail, l\'Admin le voit éteint');
+appel(['action' => 'setConfig'], $A + ['key' => 'tickets_mail_demandeur', 'value' => 'true']);
+$db->exec("REPLACE INTO config (cle, valeur) VALUES ('rappels_actifs', '" . json_encode(['Nouveau Venu' => false]) . "')");
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'En cours']);
+verifier(($r['mail'] ?? '') === 'envoye' && $nbMails() === $avant2 + 1, 'ticket : l\'interrupteur individuel des rappels n\'empêche pas le mail de réponse');
+$db->exec("DELETE FROM config WHERE cle = 'rappels_actifs'");
+// Doublon : rattaché, mail qui le dit. Ticket anonymisé : pas de mail.
+appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_mail_3', 'type' => 'Question', 'titre' => 'Même question', 'description' => 'd']);
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_3', 'doublon_de' => 'tk_mail_1']);
+verifier(($r['mail'] ?? '') === 'envoye' && str_contains($dernierMail(), 'rattachée') && str_contains($dernierMail(), 'Non retenu'), 'ticket : doublon, le mail dit qu\'il est rattaché');
+$db->exec("UPDATE tickets SET auteur = '—' WHERE id = 'tk_mail_3'");
+$avant3 = $nbMails();
+verifier((appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_3', 'statut' => 'Vu'])['mail'] ?? '') === 'inutile' && $nbMails() === $avant3, 'ticket : auteur anonymisé, pas de mail');
+// Échec d'envoi : l'enregistrement reste.
+rename($dossierMails, "$dossierMails.sav");
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'Vu']);
+rename("$dossierMails.sav", $dossierMails);
+verifier(($r['mail'] ?? '') === 'echec' && ($r['ticket']['statut'] ?? '') === 'Vu' && $db->query("SELECT statut FROM tickets WHERE id = 'tk_mail_1'")->fetchColumn() === 'Vu', 'ticket : mail non parti, statut quand même enregistré, l\'échec est dit');
+$db->exec("DELETE FROM tickets WHERE id LIKE 'tk_mail\\_%'");
 // Modification par l'équipe tant que le ticket est « Nouveau » (AG-041, 03/11/2026).
 $avant = $nbMails();
 appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_essai_5', 'type' => 'Bug', 'gene' => 'gênant', 'onglet' => 'Historique', 'titre' => 'Envoi à la Comm', 'description' => 'd', 'appareil' => 'PC', 'site' => 'nextstep']);

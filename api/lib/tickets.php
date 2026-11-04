@@ -9,6 +9,10 @@
 //                  l'utilisateur : voir ceux des collègues évite les doublons).
 //   repondreTicket admin/superviseur (API_ACTIONS_ADMIN, journalisé avec _id
 //                  pour cible, jamais le texte) : statut, réponse, doublon.
+//                  Mail à l'AUTEUR du ticket quand le statut ou la réponse a
+//                  changé (AG-045, 04/11/2026) : sauf s'il répond lui-même, si
+//                  le ticket est anonymisé, sans adresse ou interrupteur
+//                  `tickets_mail_demandeur` éteint ; l'API dit ce qui s'est passé.
 //   modifierTicket tout conseiller connecté (décision de l'utilisateur,
 //                  03/11/2026, AG-041) : type, gêne, onglet, titre,
 //                  description, mêmes validations qu'à la création, tant que
@@ -35,6 +39,16 @@ const TICKET_OUVERT_MOIS = 24;
 const TICKET_URL_ADMIN = [
     'newgen'   => 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/admin.html',
     'nextstep' => 'https://maswaddpt47-cmyk.github.io/ateliers-cd47_NextStep/admin.html',
+];
+
+// Page de l'application où l'auteur retrouve sa contribution (onglet Contribuer).
+const TICKET_URL_APP = [
+    'newgen'   => 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/index.html',
+    'nextstep' => 'https://maswaddpt47-cmyk.github.io/ateliers-cd47_NextStep/index.html',
+];
+const TICKET_URL_APP_BAC = [
+    'newgen'   => 'https://ateliers-numeriques.alwaysdata.net/sandbox/index.html',
+    'nextstep' => 'https://ateliers-numeriques.alwaysdata.net/sandbox/nextstep/index.html',
 ];
 
 function tickets_schema(PDO $db): void
@@ -158,6 +172,47 @@ function tickets_prevenir(PDO $db, array $t): int
     return $n;
 }
 
+// Interrupteur global (AG-045) : absent = allumé. Sans lien avec `rappels_actifs` (individuel).
+function tickets_mail_actif(PDO $db): bool
+{
+    $v = strtolower(trim((string) (api_config_base($db)['tickets_mail_demandeur'] ?? '')));
+    return !in_array($v, ['false', '0'], true);
+}
+
+// Prévient l'auteur d'un ticket que son statut ou la réponse a changé. Rend l'état exact de l'envoi :
+// 'envoye', 'echec', 'sans_adresse', 'desactive' ou 'inutile' (rien n'a changé, l'auteur répond lui-même,
+// ticket anonymisé). Un échec d'envoi n'annule jamais l'enregistrement.
+function tickets_prevenir_auteur(PDO $db, array $avant, array $apres, string $parQui): string
+{
+    $statutChange = $apres['statut'] !== $avant['statut'];
+    $reponseChangee = (string) $apres['reponse'] !== (string) $avant['reponse'] && (string) $apres['reponse'] !== '';
+    if (!$statutChange && !$reponseChangee) return 'inutile';
+    $auteur = (string) $avant['auteur'];
+    if ($auteur === '' || $auteur === '—' || $auteur === $parQui) return 'inutile';
+    if (!tickets_mail_actif($db)) return 'desactive';
+    $emails = api_json(api_config_base($db)['emails'] ?? '', []);
+    $e = is_array($emails) ? ($emails[$auteur] ?? '') : '';
+    $adresse = trim((string) (is_array($e) ? ($e['email'] ?? '') : $e));
+    if (!filter_var($adresse, FILTER_VALIDATE_EMAIL)) return 'sans_adresse';
+
+    $h = fn($x) => htmlspecialchars((string) $x, ENT_QUOTES, 'UTF-8');
+    $bac = (api_config()['bac_a_sable'] ?? false) === true;
+    $url = ($bac ? TICKET_URL_APP_BAC : TICKET_URL_APP)[$apres['site']] ?? ($bac ? TICKET_URL_APP_BAC : TICKET_URL_APP)['nextstep'];
+    $sujet = 'Votre contribution « ' . $apres['titre'] . ' » : ' . $apres['statut'];
+    $doublon = (string) $apres['doublon_de'] !== '' ? "Elle a été rattachée à une contribution déjà existante.
+" : '';
+    $texte = "Bonjour,\n\nVotre contribution « {$apres['titre']} » est maintenant : {$apres['statut']}.\n" . $doublon;
+    if ((string) $apres['reponse'] !== '') $texte .= "\nRéponse de $parQui :\n{$apres['reponse']}\n";
+    $texte .= "\nLa retrouver dans l'application, onglet Contribuer : $url\n";
+    $html = '<div style="font-family:sans-serif;max-width:640px"><p>Bonjour,</p>'
+          . '<p>Votre contribution <strong>« ' . $h($apres['titre']) . ' »</strong> est maintenant : <strong>' . $h($apres['statut']) . '</strong>.</p>'
+          . ($doublon !== '' ? '<p>' . $h(trim($doublon)) . '</p>' : '')
+          . ((string) $apres['reponse'] !== '' ? '<p style="margin:0 0 4px;color:#718096;font-size:13px">Réponse de ' . $h($parQui) . ' :</p>'
+              . '<p style="white-space:pre-wrap;background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">' . $h($apres['reponse']) . '</p>' : '')
+          . '<p><a href="' . $h($url) . '" style="color:#1e3a8a;font-weight:700">La retrouver dans l\'application, onglet Contribuer</a></p></div>';
+    try { return mail_envoyer($adresse, $sujet, $texte, $html) ? 'envoye' : 'echec'; } catch (Throwable $e) { return 'echec'; }
+}
+
 function ticket_lire(PDO $db, string $id): ?array
 {
     $s = $db->prepare('SELECT * FROM tickets WHERE id = ?');
@@ -170,7 +225,9 @@ function action_get_tickets(PDO $db, array $session): array
 {
     tickets_schema($db);
     $l = $db->query('SELECT * FROM tickets ORDER BY cree_le DESC LIMIT 500')->fetchAll(PDO::FETCH_ASSOC);
-    return ['ok' => true, 'tickets' => $l, 'moi' => $session['conseiller']];
+    $r = ['ok' => true, 'tickets' => $l, 'moi' => $session['conseiller']];
+    if (api_acces_admin($db, $session)) $r['mail_demandeur'] = tickets_mail_actif($db);   // interrupteur affiché à l'Admin seulement
+    return $r;
 }
 
 function action_repondre_ticket(PDO $db, array $p, array $session): array
@@ -193,7 +250,9 @@ function action_repondre_ticket(PDO $db, array $p, array $session): array
     $closLe = in_array($statut, TICKET_STATUTS_CLOS, true) ? ($t['clos_le'] ?: $maintenant) : null;
     $db->prepare('UPDATE tickets SET statut = ?, reponse = ?, repondu_le = ?, repondu_par = ?, doublon_de = ?, clos_le = ? WHERE id = ?')
        ->execute([$statut, $reponse, $reponduLe, $reponduPar, $doublon, $closLe, $id]);
-    return ['ok' => true, 'ticket' => ticket_lire($db, $id)];
+    $ticket = ticket_lire($db, $id);
+    $mail = tickets_prevenir_auteur($db, $t, $ticket, (string) $session['conseiller']);
+    return ['ok' => true, 'ticket' => $ticket, 'mail' => $mail, 'mail_a' => $mail === 'inutile' ? '' : (string) $t['auteur']];
 }
 
 // Suppression définitive (test, envoi par erreur), réservée à l'admin et à la
