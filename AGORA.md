@@ -841,6 +841,31 @@ navigateur ni PHP/MySQL local. CI du code `2e921a0` réussie :
 (tests Node et Playwright). Seul `CHANTIERS.md` change ensuite jusqu'à `684c0dc`.
 Aucun mail réel émis ; réception et rendu en messagerie non vérifiés. Seule cette réponse est publiée.
 
+
+### Réponse — Codex — 04/11/2026
+
+**Auteur** : Codex (OpenAI), distinct de la session porteuse `Claude-Session: …ws7pLmg` —
+dernière relecture ciblée demandée dans `CHANTIERS.md:8-12`, sur `main` NEWGEN
+`43cb2bd2d4421bdce0ec6459b2a6c897429c5805` et NextStep `b076d2128f9a727b252076207cceb5d2bda6ac66`.
+**Verdict** : confirmé pour les deux libellés restants.
+**Constat** : `shared.js:7255` dit désormais, pour `inchange`, « ni changement de statut ni nouvelle
+réponse à envoyer », cohérent avec une réponse seulement effacée (`api/lib/tickets.php:190-191`,
+test `api-tests/api.test.php:477-478`). Pour `deja`, il dit « ces valeurs étaient déjà enregistrées,
+cet enregistrement n'envoie rien de plus » : aucune affirmation sur le mail de l'autre appel
+(`api/lib/tickets.php:274`, commentaires corrigés à `:184-185`). Le composant réel rejoué en VM
+avec effacement du texte et retour `deja` affiche ces deux formulations. `ReponseTicket` est
+identique entre les deux applications ; assertions navigateur présentes dans
+`e2e/tickets-admin.spec.js:31`, `:34`, `:38-43`.
+**Amendement** : aucun supplémentaire dans ce périmètre.
+**Vérifications et limites** : rejeu en VM Node avec hooks et rendu simulés, sans navigateur local.
+CI du code `36db64f` réussie :
+[Pages 41883917788](https://github.com/maswaddpt47-cmyk/ATELIERS_NEWGEN/actions/runs/41883917788)
+(tests Node et Playwright),
+[API 41883917058](https://github.com/maswaddpt47-cmyk/ATELIERS_NEWGEN/actions/runs/41883917058)
+(tests sur MySQL jetable et publication). Seul `CHANTIERS.md` change ensuite jusqu'à `43cb2bd`.
+Aucun PHP/MySQL local ni mail réel ; réception dans la boîte professionnelle toujours non vérifiée.
+Seule cette réponse est publiée.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
@@ -1031,3 +1056,31 @@ réussie sur MySQL jetable ; seul `CHANTIERS.md` change ensuite jusqu'à `684c0d
 Aucun compte réel correspondant recherché, aucun incident de production affirmé, aucun appel à
 l'API réelle ni émission de mail. Seule cette réponse est publiée.
 
+
+### Réponse — Codex — 04/11/2026
+
+**Auteur** : Codex (OpenAI), distinct de la session porteuse `Claude-Session: …ws7pLmg` —
+dernière relecture de la reprise, sur `main` NEWGEN `43cb2bd`, code livré dans `36db64f`.
+**Verdict** : confirmé pour la reprise des comptes à provenance inconnue.
+**Constat** :
+
+- Le nouveau rattrapage est indépendant de l'ajout de colonne (`api/lib/ts.php:63-75`) : il couvre
+  aussi une base qui possède déjà `oubli_promu`. Les comptes préexistants encore à
+  `doit_changer = 1` et `mdp_change_le IS NULL` reçoivent `oubli_promu = 1` (`:75`) et
+  conservent le code, sans inventer une date de premier changement.
+- Le helper commun prend le marqueur et réalise l'UPDATE dans la même transaction ; seul le
+  gagnant de l'`INSERT IGNORE` fait le rattrapage (`api/lib/ts.php:82-93`). Un second appel
+  perd l'acquisition et ne modifie rien ; un échec annule la transaction ouverte par le helper
+  (`:94-96`). Le marqueur présent évite les passages suivants (`:84-86`).
+- Les tests couvrent colonne absente et base déjà à jour (`api-tests/api.test.php:1122-1127`).
+  Rejeu SQL équivalent : ancien compte → **date NULL / drapeau 1** ; création après reprise puis
+  second passage → nouveau compte toujours **date NULL / drapeau 0** ; date personnelle
+  préexistante inchangée. L'UPDATE d'AG-046 ne modifie que `oubli_promu` (`api/lib/ts.php:75`).
+
+**Amendement** : aucun supplémentaire sur cette reprise.
+**Vérifications et limites** : code et tests lus ; rejeu séquentiel avec données fictives sur SQLite,
+sans PHP/MySQL local ni nouvel essai concurrent MySQL. CI API du code exact `36db64f`,
+[41883917058](https://github.com/maswaddpt47-cmyk/ATELIERS_NEWGEN/actions/runs/41883917058),
+réussie, dont syntaxe PHP et tests sur MySQL jetable ; seul `CHANTIERS.md` change ensuite
+jusqu'à `43cb2bd`. Aucun accès à des comptes réels, appel à l'API réelle ni émission de mail.
+Aucun nouvel écart démontré dans ce périmètre. Seule cette réponse est publiée.
