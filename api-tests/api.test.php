@@ -752,9 +752,17 @@ $futurs = $db->query("SELECT COUNT(*) FROM ateliers WHERE statut = 'Planifié' A
 verifier(count($r['ateliers'] ?? []) === (int) $futurs && !array_filter($r['ateliers'], fn($a) => $a['statut'] !== 'Planifié' || $a['date'] < date('Y-m-d')), 'ateliers : ni passés, ni autres statuts (' . count($r['ateliers'] ?? []) . ')');
 verifier(array_keys($r['ateliers'][0] ?? []) === TS_CHAMPS, 'ateliers : 7 champs seulement (ni conseiller, ni remarques, ni inscrits)');
 verifier(!str_contains(json_encode($r), 'remarque secrète'), 'ateliers : la remarque ne sort pas');
-verifier(($r['filtrePublic'] ?? null) === false, 'filtre public : éteint par défaut');
-$db->exec("UPDATE config SET valeur = '{\"ts_filtre_public\":true}' WHERE cle = 'visibility'");
-verifier(appel(['action' => 'tsAteliers'], $T)['filtrePublic'] === true, 'filtre public : suit l\'interrupteur de Visibilité');
+verifier(($r['filtrePublic'] ?? null) === true, 'menu « type de public » : proposé quand des ateliers affichés ont un public');
+$db->exec("UPDATE config SET valeur = '" . json_encode(['ts_public:Seniors' => false, 'ts_public:Tous publics' => true, 'saisie' => true], JSON_UNESCAPED_UNICODE) . "' WHERE cle = 'visibility'");
+$r2 = appel(['action' => 'tsAteliers'], $T);
+$pubs = array_unique(array_column($r2['ateliers'] ?? [], 'public'));
+verifier(($r2['ok'] ?? false) && !in_array('Seniors', $pubs, true) && in_array('Tous publics', $pubs, true)
+    && count($r2['ateliers']) === count($r['ateliers']) - count(array_filter($r['ateliers'], fn($a) => $a['public'] === 'Seniors')),
+    'public éteint (Seniors) : ses ateliers ne sortent pas, les autres restent');
+$tous = array_values(array_unique(array_filter(array_map(fn($a) => trim($a['public']), $r['ateliers']))));
+$db->exec("UPDATE config SET valeur = '" . json_encode(array_fill_keys(array_map(fn($p) => "ts_public:$p", $tous), 'false'), JSON_UNESCAPED_UNICODE) . "' WHERE cle = 'visibility'");
+$r3 = appel(['action' => 'tsAteliers'], $T);
+verifier(($r3['filtrePublic'] ?? null) === false && !array_filter($r3['ateliers'] ?? [], fn($a) => trim($a['public']) !== ''), 'tous les publics éteints : ni ateliers avec public, ni menu');
 $db->exec("UPDATE config SET valeur = '{}' WHERE cle = 'visibility'");
 
 verifier(appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@example.org', 'actif' => '0'])['ok'] === true

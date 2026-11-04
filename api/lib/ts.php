@@ -182,9 +182,27 @@ function action_ts_ateliers(PDO $db, array $session): array
     if ($qui['doit_changer']) return ['ok' => false, 'error' => 'Mot de passe provisoire à changer', 'doit_changer' => true];
     $cols = implode(', ', array_map(fn($c) => "`$c`", TS_CHAMPS));
     $l = $db->query("SELECT $cols FROM ateliers WHERE statut = 'Planifié' AND date >= CURDATE() ORDER BY date, horaire")->fetchAll(PDO::FETCH_ASSOC);
+    // Un interrupteur par type de public (Admin → Visibilité — Page TS,
+    // décision de l'utilisateur du 04/11/2026) : clé « ts_public:<type> » de la
+    // config « visibility ». Éteint = les ateliers de ce public ne partent pas
+    // vers la page. Absent = visible (un type ajouté plus tard n'est pas caché
+    // par surprise). Clés à plat : visibiliteEffective (utils.js) réduit
+    // chaque valeur à un booléen, un objet imbriqué serait écrasé.
     $vis = api_json(api_config_base($db)['visibility'] ?? '', []);
-    $filtre = is_array($vis) && array_key_exists('ts_filtre_public', $vis) && !in_array($vis['ts_filtre_public'], [false, 0, '', null, 'false', 'FALSE'], true);
+    $l = array_values(array_filter($l, fn($a) => !ts_public_cache($vis, (string) $a['public'])));
+    // Menu de filtre : dès qu'un atelier affiché porte un type de public.
+    $filtre = (bool) array_filter($l, fn($a) => trim((string) $a['public']) !== '');
     return ['ok' => true, 'ateliers' => $l, 'filtrePublic' => $filtre];
+}
+
+// Type de public éteint pour la page TS ? Même lecture que visibiliteEffective
+// (utils.js) : false, 0, '' ou 'false' = éteint ; absent = allumé.
+function ts_public_cache(mixed $vis, string $public): bool
+{
+    $cle = 'ts_public:' . trim($public);
+    if (!is_array($vis) || trim($public) === '' || !array_key_exists($cle, $vis)) return false;
+    $v = $vis[$cle];
+    return $v === false || $v === 0 || $v === '' || $v === null || strtolower((string) $v) === 'false';
 }
 
 // Change le mot de passe du compte TS de la session. Le mot de passe actuel
