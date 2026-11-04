@@ -200,9 +200,25 @@ CREATE TABLE IF NOT EXISTS comptes_ts (
   defi_hash    VARCHAR(64)  NULL,     -- du jeton de défi rendu au navigateur,
   code_expire  DATETIME     NULL,     -- valable 10 min,
   code_essais  TINYINT      NOT NULL DEFAULT 0,   -- codes faux déjà tentés
+  defi_oubli   TINYINT      NOT NULL DEFAULT 0,   -- le défi vient du provisoire d'« oubli » (promu après le code),
+  defi_mdp     VARCHAR(255) NULL,     -- empreinte de mot de passe vérifiée à l'étape 1, revérifiée à l'étape 2
+  mdp_change_le DATETIME    NULL,     -- 1er changement de mot de passe : NULL = premier accès jamais terminé
   PRIMARY KEY (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Registre des envois de mails de la page TS (AG-043) : une ligne par envoi, pour les
+-- quotas sur 24 h (création, oubli, code). Purgé à 7 jours. Adresses de l'équipe du Département.
+CREATE TABLE IF NOT EXISTS envois_ts (
+  id        BIGINT      NOT NULL AUTO_INCREMENT,
+  envoye_le DATETIME    NOT NULL,
+  type      VARCHAR(10) NOT NULL,
+  email     VARCHAR(97) NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_envoye (envoye_le),
+  KEY idx_email_type (email, type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- (Inutilisée depuis AG-043 : remplacée par envois_ts ; gardée pour les bases existantes.)
 -- Demandes d'accès déposées sur la page TS, purgées à 90 jours (AG-042).
 CREATE TABLE IF NOT EXISTS demandes_ts (
   email      VARCHAR(97) NOT NULL,

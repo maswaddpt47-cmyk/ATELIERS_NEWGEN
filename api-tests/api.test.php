@@ -700,7 +700,9 @@ verifier(!($sans['ok'] ?? true) && str_contains($sans['error'] ?? '', 'Aucune ad
 function ts_connexion(string $id, string $mdp, ?array &$etape1 = null): array
 {
     global $db, $dossierMails;
-    $db->prepare('UPDATE comptes_ts SET code_expire = NULL WHERE email = ?')->execute([mb_strtolower(preg_replace('/\s+/', '', $id))]);
+    $norm = mb_strtolower(preg_replace('/\s+/', '', $id));
+    $db->prepare('UPDATE comptes_ts SET code_expire = NULL WHERE email = ?')->execute([$norm]);
+    $db->prepare("DELETE FROM envois_ts WHERE type = 'code' AND email = ?")->execute([$norm]);
     $etape1 = appel(['action' => 'tsConnexion'], ['identifiant' => $id, 'password' => $mdp]);
     if (!($etape1['etape2'] ?? false)) return $etape1;
     $f = glob("$dossierMails/*.txt"); sort($f);
@@ -728,45 +730,58 @@ verifier(appel(['action' => 'tsDemandeAcces'], ['email' => 'robot@lotetgaronne.f
 $d1 = appel(['action' => 'tsDemandeAcces', 'site' => 'nextstep'], ['email' => ' TS.Un@Lotetgaronne.fr ']);
 verifier($d1 === ['ok' => true]
     && $db->query("SELECT doit_changer FROM comptes_ts WHERE email = 'ts.un@lotetgaronne.fr'")->fetchColumn() == 1
-    && $db->query("SELECT site FROM demandes_ts WHERE email = 'ts.un@lotetgaronne.fr'")->fetchColumn() === 'nextstep', 'demande : compte créé en minuscules (provisoire à changer), réponse sans mot de passe');
+    && $db->query("SELECT COUNT(*) FROM envois_ts WHERE type = 'creation' AND email = 'ts.un@lotetgaronne.fr'")->fetchColumn() == 1, 'demande : compte créé en minuscules (provisoire à changer), un envoi inscrit au registre, réponse sans mot de passe');
 $m = $mails();
 verifier(count($m) === 1 && str_starts_with($m[0], 'A: ts.un@lotetgaronne.fr') && preg_match('/Mot de passe provisoire : (\S{12})\n/', $m[0], $mm) === 1 && str_contains($m[0], 'ateliers-cd47_NextStep/ts.html'), 'demande : un seul mail, au demandeur, avec le mot de passe provisoire (aucun mail aux admins)');
 $provisoire = $mm[1] ?? '';
 verifier(appel(['action' => 'tsDemandeAcces'], ['email' => 'ts.un@lotetgaronne.fr']) === $d1 && count($mails()) === 1, 'demande en double : même réponse, aucun second mail, mot de passe inchangé');
-$insD = $db->prepare("INSERT INTO demandes_ts (email, demande_le) VALUES (?, NOW())");
-for ($i = 1; $i < TS_DEMANDES_MAX; $i++) $insD->execute(["d$i@lotetgaronne.fr"]);
-// File pleine (30 créations en 24 h) : même refus pour une adresse nouvelle, déjà créée ou titulaire, aucun compte ni mail.
+// Quota : chaque ENVOI (création ou oubli) est une ligne du registre `envois_ts` (AG-043, Codex n° 2).
+$insE = $db->prepare("INSERT INTO envois_ts (envoye_le, type, email) VALUES (NOW(), 'creation', ?)");
+for ($i = 1; $i < TS_QUOTA_ENVOIS; $i++) $insE->execute(["d$i@lotetgaronne.fr"]);
+// File pleine (30 envois en 24 h) : même refus pour une adresse nouvelle, déjà créée ou titulaire, aucun compte ni mail.
 $db->exec("INSERT INTO comptes_ts (email, hash, actif, doit_changer, cree_le) VALUES ('titulaire@lotetgaronne.fr', NULL, 1, 0, NOW())");
 $pleine = array_map(fn($e) => appel(['action' => 'tsDemandeAcces'], ['email' => $e]), ['nouvelle@lotetgaronne.fr', 'ts.un@lotetgaronne.fr', 'titulaire@lotetgaronne.fr']);
 verifier($pleine[0] === $pleine[1] && $pleine[1] === $pleine[2] && ($pleine[0]['ok'] ?? true) === false && str_contains($pleine[0]['error'] ?? '', 'Trop de demandes')
-    && count($mails()) === 1 && !$db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'nouvelle@lotetgaronne.fr'")->fetchColumn(), 'plafond de ' . TS_DEMANDES_MAX . ' créations en 24 h : même refus pour toute adresse, rien créé, aucun mail');
+    && count($mails()) === 1 && !$db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'nouvelle@lotetgaronne.fr'")->fetchColumn(), 'quota de ' . TS_QUOTA_ENVOIS . ' envois en 24 h : même refus pour toute adresse, rien créé, aucun mail');
 $db->exec("DELETE FROM comptes_ts WHERE email = 'titulaire@lotetgaronne.fr'");
-// Les créations de plus de 24 h ne comptent plus dans le plafond.
-$db->exec("UPDATE demandes_ts SET demande_le = NOW() - INTERVAL 2 DAY WHERE email LIKE 'd%@lotetgaronne.fr'");
+// Les envois de plus de 24 h ne comptent plus.
+$db->exec("UPDATE envois_ts SET envoye_le = NOW() - INTERVAL 2 DAY WHERE email LIKE 'd%@lotetgaronne.fr'");
 // Section critique : une autre connexion tient le verrou, la demande attend puis est refusée sans rien écrire.
 $autre = new PDO("mysql:host=$hote;dbname=ateliers_test_api;charset=utf8mb4", $util, $mdp, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 $autre->query("SELECT GET_LOCK('ts_demande_acces', 1)");
 $occupe = appel(['action' => 'tsDemandeAcces'], ['email' => 'concurrente@lotetgaronne.fr']);
 $autre->query("SELECT RELEASE_LOCK('ts_demande_acces')");
 verifier(($occupe['ok'] ?? true) === false && !$db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'concurrente@lotetgaronne.fr'")->fetchColumn(), 'demande pendant la section critique d\'une autre : refusée, rien créé');
-// Purges au passage d'une demande : provisoire jamais changé depuis 30 jours supprimé, compte utilisé gardé, registre de plus de 90 jours effacé.
-$db->exec("INSERT INTO comptes_ts (email, hash, actif, doit_changer, cree_le) VALUES ('dormant@lotetgaronne.fr', NULL, 1, 1, NOW() - INTERVAL 31 DAY), ('actif@lotetgaronne.fr', NULL, 1, 0, NOW() - INTERVAL 31 DAY)");
-$db->exec("INSERT INTO demandes_ts (email, demande_le) VALUES ('vieille@lotetgaronne.fr', NOW() - INTERVAL 91 DAY)");
+// Purges au passage d'une demande (Codex n° 3) : premier accès jamais terminé depuis 30 jours supprimé ;
+// compte déjà utilisé puis réinitialisé (même ancien), ou utilisé, gardé ; registre de plus de 7 jours effacé.
+$db->exec("INSERT INTO comptes_ts (email, hash, actif, doit_changer, cree_le, mdp_change_le) VALUES
+    ('dormant@lotetgaronne.fr', NULL, 1, 1, NOW() - INTERVAL 31 DAY, NULL),
+    ('reinit@lotetgaronne.fr', NULL, 1, 1, NOW() - INTERVAL 31 DAY, NOW() - INTERVAL 20 DAY),
+    ('actif@lotetgaronne.fr', NULL, 1, 0, NOW() - INTERVAL 31 DAY, NOW() - INTERVAL 20 DAY)");
+$db->exec("INSERT INTO envois_ts (envoye_le, type, email) VALUES (NOW() - INTERVAL 8 DAY, 'creation', 'vieux@lotetgaronne.fr')");
 verifier(appel(['action' => 'tsDemandeAcces'], ['email' => 'concurrente@lotetgaronne.fr'])['ok'] === true && count($mails()) === 2
     && $db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'concurrente@lotetgaronne.fr'")->fetchColumn() == 1, 'verrou libéré : le compte est créé et le mail part');
-verifier(!$db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'dormant@lotetgaronne.fr'")->fetchColumn() && $db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'actif@lotetgaronne.fr'")->fetchColumn() == 1
-    && !$db->query("SELECT COUNT(*) FROM demandes_ts WHERE email = 'vieille@lotetgaronne.fr'")->fetchColumn(), 'provisoire jamais changé depuis 30 jours supprimé, compte utilisé gardé, registre de plus de 90 jours effacé');
-// Échec d'envoi : le dossier des mails disparaît, le compte et le registre sont annulés.
+verifier(!$db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'dormant@lotetgaronne.fr'")->fetchColumn()
+    && $db->query("SELECT COUNT(*) FROM comptes_ts WHERE email IN ('reinit@lotetgaronne.fr', 'actif@lotetgaronne.fr')")->fetchColumn() == 2
+    && !$db->query("SELECT COUNT(*) FROM envois_ts WHERE email = 'vieux@lotetgaronne.fr'")->fetchColumn(), 'purge : premier accès jamais terminé supprimé, compte déjà utilisé (même réinitialisé) gardé, registre de plus de 7 jours effacé');
+// Échec d'envoi : le dossier des mails disparaît, le compte et son envoi sont annulés.
 rename($dossierMails, "$dossierMails.sav");
 $echec = appel(['action' => 'tsDemandeAcces'], ['email' => 'sans.mail@lotetgaronne.fr']);
 rename("$dossierMails.sav", $dossierMails);
 verifier(($echec['ok'] ?? true) === false && str_contains($echec['error'] ?? '', 'Envoi du mail impossible')
     && !$db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'sans.mail@lotetgaronne.fr'")->fetchColumn()
-    && !$db->query("SELECT COUNT(*) FROM demandes_ts WHERE email = 'sans.mail@lotetgaronne.fr'")->fetchColumn(), 'échec d\'envoi du mail : compte et registre annulés');
-$db->exec("DELETE FROM comptes_ts WHERE email IN ('concurrente@lotetgaronne.fr', 'actif@lotetgaronne.fr')");
-$db->exec("DELETE FROM demandes_ts WHERE email <> 'ts.un@lotetgaronne.fr'");
+    && !$db->query("SELECT COUNT(*) FROM envois_ts WHERE email = 'sans.mail@lotetgaronne.fr'")->fetchColumn(), 'échec d\'envoi du mail : compte et envoi annulés');
+$db->exec("DELETE FROM comptes_ts WHERE email IN ('concurrente@lotetgaronne.fr', 'actif@lotetgaronne.fr', 'reinit@lotetgaronne.fr')");
+// 31 oublis pour LA MÊME adresse (Codex n° 2) : le 31e est refusé, chaque envoi comptant pour un.
+$db->exec("DELETE FROM envois_ts");
+$insO = $db->prepare("INSERT INTO envois_ts (envoye_le, type, email) VALUES (NOW(), 'oubli', 'ts.un@lotetgaronne.fr')");
+for ($i = 0; $i < TS_QUOTA_ENVOIS; $i++) $insO->execute();
+$nbm = count($mails());
+$r31 = appel(['action' => 'tsMdpOublie'], ['email' => 'ts.un@lotetgaronne.fr']);
+verifier(($r31['ok'] ?? true) === false && str_contains($r31['error'] ?? '', 'Trop de demandes') && count($mails()) === $nbm, 'quota : le 31e oubli pour une même adresse est refusé (un envoi = une ligne, pas une adresse)');
+$db->exec("DELETE FROM envois_ts");
 $TL = appel(['action' => 'tsListe'], $A);
-verifier(($TL['ok'] ?? false) && array_column($TL['demandes'], 'email') === ['ts.un@lotetgaronne.fr'] && array_column($TL['comptes'], 'email') === ['ts.un@lotetgaronne.fr'], 'liste Admin : le compte créé par la demande y figure');
+verifier(($TL['ok'] ?? false) && array_column($TL['comptes'], 'email') === ['ts.un@lotetgaronne.fr'], 'liste Admin : le compte créé par la demande y figure');
 verifier(appel(['action' => 'tsListe'], ['token' => $nv['token']])['ok'] === false, 'liste Admin : refusée à un conseiller');
 $cree = appel(['action' => 'tsCreerCompte'], $A + ['email' => 'ts.deux@lotetgaronne.fr']);
 verifier(($cree['ok'] ?? false) && strlen($cree['newPassword'] ?? '') === 12, 'création par l\'Admin : mot de passe provisoire rendu une fois');
@@ -862,6 +877,82 @@ verifier(appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronn
 verifier(ts_connexion('ts.un@lotetgaronne.fr', $oubli)['ok'] === true, 'oubli : le provisoire reste le mot de passe jusqu\'au changement');
 $r = appel(['action' => 'tsMdpOublie'], ['email' => 'agent@example.org']);
 verifier(($r['ok'] ?? true) === false && str_contains($r['error'] ?? '', '@lotetgaronne.fr'), 'oubli : domaine imposé aussi');
+// AG-043 : 2FA par code reçu par mail (étape 1 : mot de passe → défi ; étape 2 : défi + code → session).
+$nbLogin = fn() => (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'loginTs' AND source = 'ts'")->fetchColumn();
+$codeDuDernierMail = function () use ($mails) { $m = $mails(); preg_match('/Code de connexion : (\d{6})/', end($m), $x); return $x[1] ?? ''; };
+$resetCode = fn() => $db->exec("UPDATE comptes_ts SET code_expire = NULL WHERE email = 'ts.un@lotetgaronne.fr'");
+$avantLogin = $nbLogin();
+$resetCode(); $e1 = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $oubli]);
+verifier(($e1['etape2'] ?? false) === true && !isset($e1['token']) && ($e1['defi'] ?? '') !== '' && $nbLogin() === $avantLogin, '2FA : le mot de passe seul n\'ouvre pas de session et n\'est pas compté comme connexion');
+$code = $codeDuDernierMail();
+verifier(preg_match('/^\d{6}$/', $code) === 1 && !str_contains(json_encode($e1), $code), '2FA : code à 6 chiffres envoyé par mail, absent de la réponse');
+$e1b = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $oubli]);
+verifier(($e1b['ok'] ?? true) === false && str_contains($e1b['error'] ?? '', 'Un code vient d\'être envoyé'), '2FA : pas de nouveau code pendant la première minute');
+verifier(appel(['action' => 'tsCode'], ['defi' => $e1['defi'], 'code' => $code === '000000' ? '111111' : '000000'])['ok'] === false && $nbLogin() === $avantLogin, '2FA : code faux refusé, aucune connexion comptée');
+$ok2 = appel(['action' => 'tsCode'], ['defi' => $e1['defi'], 'code' => $code]);
+verifier(($ok2['ok'] ?? false) === true && ($ok2['token'] ?? '') !== '' && $nbLogin() === $avantLogin + 1, '2FA : bon code, session ouverte, une connexion comptée');
+verifier(appel(['action' => 'tsCode'], ['defi' => $e1['defi'], 'code' => $code])['ok'] === false, '2FA : le défi ne sert qu\'une fois (rejeu refusé)');
+// 5 codes faux : le défi est effacé, même le bon code est refusé ensuite.
+$resetCode(); $e2 = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $oubli]); $c2 = $codeDuDernierMail();
+$faux = $c2 === '123456' ? '654321' : '123456';
+for ($i = 0; $i < TS_CODE_ESSAIS; $i++) appel(['action' => 'tsCode'], ['defi' => $e2['defi'], 'code' => $faux]);
+verifier(appel(['action' => 'tsCode'], ['defi' => $e2['defi'], 'code' => $c2])['ok'] === false, '2FA : après ' . TS_CODE_ESSAIS . ' codes faux, le défi est effacé');
+$db->exec("DELETE FROM tentatives WHERE conseiller = 'ts:ts.un@lotetgaronne.fr'");
+// Défi remplacé : l'ancien défi ne marche plus.
+$resetCode(); $e3 = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $oubli]); $c3 = $codeDuDernierMail();
+$resetCode(); $e4 = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $oubli]); $c4 = $codeDuDernierMail();
+verifier(appel(['action' => 'tsCode'], ['defi' => $e3['defi'], 'code' => $c3])['ok'] === false && appel(['action' => 'tsCode'], ['defi' => $e4['defi'], 'code' => $c4])['ok'] === true, '2FA : un défi remplacé est refusé, le dernier marche');
+// Mot de passe changé entre les deux étapes (réinitialisation Admin) : la validation est refusée.
+$resetCode(); $e5 = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $oubli]); $c5 = $codeDuDernierMail();
+$rr2 = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']);
+verifier(($rr2['ok'] ?? false) && appel(['action' => 'tsCode'], ['defi' => $e5['defi'], 'code' => $c5])['ok'] === false, '2FA : mot de passe réinitialisé entre les deux étapes, validation refusée');
+// Compte désactivé entre les deux étapes : refusé.
+$resetCode(); $e6 = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $rr2['newPassword']]); $c6 = $codeDuDernierMail();
+appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@lotetgaronne.fr', 'actif' => '0']);
+$r6 = appel(['action' => 'tsCode'], ['defi' => $e6['defi'], 'code' => $c6]);
+appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@lotetgaronne.fr', 'actif' => '1']);
+verifier(($r6['ok'] ?? true) === false, '2FA : compte désactivé entre les deux étapes, validation refusée');
+// Quota des mails de code : 20 par compte et par 24 h.
+$resetCode(); $db->exec("DELETE FROM envois_ts");
+$insC = $db->prepare("INSERT INTO envois_ts (envoye_le, type, email) VALUES (NOW(), 'code', 'ts.un@lotetgaronne.fr')");
+for ($i = 0; $i < TS_QUOTA_CODES; $i++) $insC->execute();
+$nbm = count($mails());
+$q = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $rr2['newPassword']]);
+verifier(($q['ok'] ?? true) === false && str_contains($q['error'] ?? '', 'Trop de codes') && count($mails()) === $nbm, '2FA : au plus ' . TS_QUOTA_CODES . ' mails de code par compte et par 24 h');
+$db->exec("DELETE FROM envois_ts");
+// Échec d'envoi du code : le défi est effacé et l'envoi n'est pas compté.
+$resetCode();
+rename($dossierMails, "$dossierMails.sav");
+$qe = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $rr2['newPassword']]);
+rename("$dossierMails.sav", $dossierMails);
+verifier(($qe['ok'] ?? true) === false && str_contains($qe['error'] ?? '', 'Envoi du code impossible') && !$db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'ts.un@lotetgaronne.fr' AND defi_hash IS NOT NULL")->fetchColumn()
+    && !$db->query("SELECT COUNT(*) FROM envois_ts WHERE type = 'code'")->fetchColumn(), '2FA : mail du code non parti, défi effacé et envoi non compté');
+
+// Codex n° 1 : le provisoire d'« oubli » n'est promu qu'après le code, sur l'empreinte vérifiée ; anciennes sessions fermées.
+$db->exec("UPDATE comptes_ts SET hash = NULL WHERE email = 'ts.un@lotetgaronne.fr'");
+$stable = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']);
+$vieux = ts_connexion('ts.un@lotetgaronne.fr', $stable['newPassword']);   // session « ancienne », provisoire à changer
+verifier(($vieux['token'] ?? '') !== '' && appel(['action' => 'tsChangerMdp'], ['token' => $vieux['token'], 'password' => 'Ancien-Social-47!!'])['ok'] === true, 'oubli/promotion : session ancienne ouverte, mot de passe personnel posé');
+$vieux = ts_connexion('ts.un@lotetgaronne.fr', 'Ancien-Social-47!!');
+$db->exec("UPDATE comptes_ts SET oubli_le = NULL WHERE email = 'ts.un@lotetgaronne.fr'");
+verifier(appel(['action' => 'tsMdpOublie'], ['email' => 'ts.un@lotetgaronne.fr'])['ok'] === true, 'oubli/promotion : nouveau provisoire envoyé');
+$mo = $mails(); preg_match('/Mot de passe provisoire : (\S{12})\n/', end($mo), $mx); $prov2 = $mx[1] ?? '';
+$resetCode(); $eo = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $prov2]); $co = $codeDuDernierMail();
+$av = $db->query("SELECT hash, hash_oubli FROM comptes_ts WHERE email = 'ts.un@lotetgaronne.fr'")->fetch(PDO::FETCH_ASSOC);
+verifier(($eo['etape2'] ?? false) && $av['hash_oubli'] !== null && password_verify(hash('sha256', 'Ancien-Social-47!!'), $av['hash']), 'oubli/promotion : avant le code, rien n\'est promu (l\'ancien mot de passe reste en place)');
+// Changement personnel concurrent (mot de passe changé par l'ancienne session) entre les deux étapes : refus, rien de promu à NULL.
+appel(['action' => 'tsChangerMdp'], ['token' => $vieux['token'], 'password' => 'Concurrent-Social-47!', 'currentPwd' => 'Ancien-Social-47!!']);
+$apres = $db->query("SELECT hash IS NOT NULL AS h, hash_oubli IS NULL AS o FROM comptes_ts WHERE email = 'ts.un@lotetgaronne.fr'")->fetch(PDO::FETCH_ASSOC);
+verifier(appel(['action' => 'tsCode'], ['defi' => $eo['defi'], 'code' => $co])['ok'] === false && (int) $apres['h'] === 1 && (int) $apres['o'] === 1, 'oubli/promotion : changement personnel entre les deux étapes, validation refusée, hash jamais mis à NULL');
+// Cas nominal : promotion après le code, ancienne session fermée.
+$db->exec("UPDATE comptes_ts SET oubli_le = NULL WHERE email = 'ts.un@lotetgaronne.fr'");
+$vieux2 = ts_connexion('ts.un@lotetgaronne.fr', 'Concurrent-Social-47!');
+appel(['action' => 'tsMdpOublie'], ['email' => 'ts.un@lotetgaronne.fr']);
+$mo = $mails(); preg_match('/Mot de passe provisoire : (\S{12})\n/', end($mo), $mx); $prov3 = $mx[1] ?? '';
+$nouv = ts_connexion('ts.un@lotetgaronne.fr', $prov3);
+verifier(($nouv['ok'] ?? false) && ($nouv['doit_changer'] ?? false) === true && ($vieux2['token'] ?? 'x') !== '' && appel(['action' => 'tsAteliers'], ['token' => $vieux2['token']])['ok'] === false, 'oubli/promotion : promotion après le code, ancienne session fermée (son jeton est refusé)');
+verifier(appel(['action' => 'tsChangerMdp'], ['token' => $vieux2['token'], 'password' => 'Pirate-Social-47!!'])['ok'] === false, 'oubli/promotion : l\'ancien jeton ne peut pas choisir le nouveau mot de passe');
+
 // AG-043 : connexions de la page, lues dans le journal (lecture seule, non journalisée).
 $nbJournal = fn() => (int) $db->query('SELECT COUNT(*) FROM journal')->fetchColumn();
 $avant = $nbJournal();
@@ -872,6 +963,14 @@ verifier(($st['ok'] ?? false) && $nbJournal() === $avant, 'connexions TS : lectu
 verifier($reelles >= 2 && ($parCompte['ts.un@lotetgaronne.fr']['connexions'] ?? -1) === $reelles && ($parCompte['ts.un@lotetgaronne.fr']['type'] ?? '') === 'TS', "connexions TS : $reelles connexions de ts.un comptées comme dans le journal");
 verifier(($parCompte['personne@example.org']['echecs'] ?? 0) >= 1 && ($parCompte['personne@example.org']['connexions'] ?? -1) === 0, 'connexions TS : échecs comptés, y compris pour une adresse sans compte');
 verifier(($parCompte['Conseiller Test']['type'] ?? '') === 'Admin' && ($st['jours'][0]['jour'] ?? '') === date('Y-m-d') && ($st['jours'][0]['connexions'] ?? 0) === ($st['total']['connexions'] ?? -1), 'connexions TS : compte Admin distingué, total du jour = total des comptes');
+// Codex n° 4 : un compte dont le rôle a changé reste UNE ligne, et somme des comptes = somme des jours.
+$db->exec("INSERT INTO journal (horodatage, action, conseiller, ref, role, succes, tentatives, user_agent, source) VALUES
+    (NOW() - INTERVAL 1 DAY, 'loginTs', 'Admin Fictif', '', 'admin', 1, 0, '', 'ts'),
+    (NOW(), 'loginTs', 'Admin Fictif', '', 'superviseur', 1, 0, '', 'ts')");
+$st2 = appel(['action' => 'tsStats'], $A);
+$fic = array_values(array_filter($st2['comptes'] ?? [], fn($c) => $c['compte'] === 'Admin Fictif'));
+verifier(count($fic) === 1 && $fic[0]['connexions'] === 2 && $fic[0]['type'] === 'Admin'
+    && array_sum(array_column($st2['comptes'], 'connexions')) === array_sum(array_column($st2['jours'], 'connexions')) && ($st2['total']['connexions'] ?? -1) === array_sum(array_column($st2['jours'], 'connexions')), 'connexions TS : changement de rôle = une seule ligne, somme des comptes = somme des jours');
 verifier(appel(['action' => 'tsStats'], ['token' => $nv['token']])['ok'] === false, 'connexions TS : refusées à un conseiller');
 verifier(appel(['action' => 'tsSupprimer'], $A + ['email' => 'ts.un@lotetgaronne.fr'])['ok'] === true
     && !$db->query("SELECT COUNT(*) FROM comptes_ts")->fetchColumn() && !$db->query("SELECT COUNT(*) FROM sessions WHERE conseiller LIKE 'ts:ts.un%'")->fetchColumn(), 'suppression : compte et sessions effacés');
