@@ -715,6 +715,22 @@ verifier(appel(['action' => 'tsDemandeAcces'], ['email' => 'ts.un@example.org'])
 $insD = $db->prepare("INSERT INTO demandes_ts (email, demande_le) VALUES (?, NOW())");
 for ($i = 1; $i < TS_DEMANDES_MAX; $i++) $insD->execute(["d$i@example.org"]);
 verifier(str_contains(appel(['action' => 'tsDemandeAcces'], ['email' => 'trente-et-un@example.org'])['error'] ?? '', 'Trop de demandes') && count($mails()) === 1, 'plafond de ' . TS_DEMANDES_MAX . ' demandes en attente : refus sans mail');
+// Amendement 1 de Codex (04/11/2026) : file pleine, la réponse est la même pour une
+// adresse nouvelle, déjà en demande ou déjà titulaire d'un compte — rien ne révèle un compte.
+$db->exec("INSERT INTO comptes_ts (email, hash, actif, doit_changer, cree_le) VALUES ('titulaire@example.org', NULL, 1, 1, NOW())");
+$pleine = array_map(fn($e) => appel(['action' => 'tsDemandeAcces'], ['email' => $e]), ['nouvelle@example.org', 'ts.un@example.org', 'titulaire@example.org']);
+verifier($pleine[0] === $pleine[1] && $pleine[1] === $pleine[2] && ($pleine[0]['ok'] ?? true) === false && count($mails()) === 1, 'file pleine : même réponse (adresse nouvelle, en demande, titulaire), aucun mail');
+$db->exec("DELETE FROM comptes_ts WHERE email = 'titulaire@example.org'");
+// Amendement 2 : le contrôle du plafond et l'insertion forment une section critique.
+// Une autre connexion tient le verrou : la demande attend, puis est refusée sans rien écrire.
+$db->exec("DELETE FROM demandes_ts WHERE email LIKE 'd%@example.org' AND email <> 'ts.un@example.org'");
+$autre = new PDO("mysql:host=$hote;dbname=ateliers_test_api;charset=utf8mb4", $util, $mdp, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$autre->query("SELECT GET_LOCK('ts_demande_acces', 1)");
+$occupe = appel(['action' => 'tsDemandeAcces'], ['email' => 'concurrente@example.org']);
+$autre->query("SELECT RELEASE_LOCK('ts_demande_acces')");
+verifier(($occupe['ok'] ?? true) === false && !$db->query("SELECT COUNT(*) FROM demandes_ts WHERE email = 'concurrente@example.org'")->fetchColumn(), 'demande pendant la section critique d\'une autre : refusée, rien enregistré');
+verifier(appel(['action' => 'tsDemandeAcces'], ['email' => 'concurrente@example.org'])['ok'] === true && count($mails()) === 2, 'verrou libéré : la demande passe et le mail part');
+$db->exec("DELETE FROM demandes_ts WHERE email = 'concurrente@example.org'");
 $db->exec("DELETE FROM demandes_ts WHERE email LIKE 'd%@example.org'");
 $db->exec("INSERT INTO demandes_ts (email, demande_le) VALUES ('vieille@example.org', NOW() - INTERVAL 91 DAY)");
 
@@ -752,6 +768,24 @@ $futurs = $db->query("SELECT COUNT(*) FROM ateliers WHERE statut = 'Planifié' A
 verifier(count($r['ateliers'] ?? []) === (int) $futurs && !array_filter($r['ateliers'], fn($a) => $a['statut'] !== 'Planifié' || $a['date'] < date('Y-m-d')), 'ateliers : ni passés, ni autres statuts (' . count($r['ateliers'] ?? []) . ')');
 verifier(array_keys($r['ateliers'][0] ?? []) === TS_CHAMPS, 'ateliers : 7 champs seulement (ni conseiller, ni remarques, ni inscrits)');
 verifier(!str_contains(json_encode($r), 'remarque secrète'), 'ateliers : la remarque ne sort pas');
+// Amendement 3 : « à partir du jour de Paris » ne dépend pas du fuseau de MySQL. Pour chaque
+// fuseau où le jour MySQL diffère de celui de Paris (au moins un des deux, toujours), la veille
+// reste exclue et le jour inclus.
+$db->exec("INSERT INTO ateliers (id, statut, date, orienteur, commune, lieu, thematique, public, conseiller, co_animateur, residence, remarques, inscrits)
+    VALUES ('ts_borne_jour', 'Planifié', '" . date('Y-m-d') . "', 'O', 'BorneJour', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL),
+           ('ts_borne_veille', 'Planifié', '" . date('Y-m-d', strtotime('-1 day')) . "', 'O', 'BorneVeille', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL)");
+$bornes = 0;
+foreach (['+13:00', '-12:00'] as $zone) {
+    $db->exec("SET GLOBAL time_zone = '$zone'");
+    $jourSql = (new PDO("mysql:host=$hote;charset=utf8mb4", $util, $mdp))->query('SELECT CURDATE()')->fetchColumn();
+    if ($jourSql === date('Y-m-d')) continue;
+    $bornes++;
+    $communes = array_column(appel(['action' => 'tsAteliers'], $T)['ateliers'] ?? [], 'commune');
+    verifier(in_array('BorneJour', $communes, true) && !in_array('BorneVeille', $communes, true), "frontière de minuit (MySQL en $zone, jour $jourSql ≠ Paris) : jour inclus, veille exclue");
+}
+$db->exec("SET GLOBAL time_zone = 'SYSTEM'");
+verifier($bornes >= 1, 'frontière de minuit : au moins un fuseau testé avec un jour SQL différent');
+$db->exec("DELETE FROM ateliers WHERE id IN ('ts_borne_jour', 'ts_borne_veille')");
 $db->exec("UPDATE config SET valeur = '" . json_encode(['ts_public:Seniors' => false, 'ts_public:Tous publics' => true, 'saisie' => true], JSON_UNESCAPED_UNICODE) . "' WHERE cle = 'visibility'");
 $r2 = appel(['action' => 'tsAteliers'], $T);
 $pubs = array_unique(array_column($r2['ateliers'] ?? [], 'public'));

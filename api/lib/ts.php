@@ -72,15 +72,30 @@ function action_ts_demande_acces(PDO $db, array $p): array
     if ($email === null) return ['ok' => false, 'error' => 'Adresse e-mail invalide'];
     $db->exec('DELETE FROM demandes_ts WHERE demande_le < NOW() - INTERVAL ' . TS_DEMANDES_JOURS . ' DAY');
 
-    $s = $db->prepare('SELECT (SELECT COUNT(*) FROM comptes_ts WHERE email = ?) + (SELECT COUNT(*) FROM demandes_ts WHERE email = ?)');
-    $s->execute([$email, $email]);
-    if ((int) $s->fetchColumn() > 0) return ['ok' => true];
-
-    if ((int) $db->query('SELECT COUNT(*) FROM demandes_ts')->fetchColumn() >= TS_DEMANDES_MAX) {
-        return ['ok' => false, 'error' => 'Trop de demandes en attente : réessayez dans quelques jours.'];
+    // Section critique (AG-042, amendement 2 de Codex) : le contrôle du plafond
+    // et l'insertion ne doivent pas être séparés, sinon deux demandes
+    // simultanées passent à 29 chacune et la file monte à 31.
+    $verrou = (int) $db->query("SELECT GET_LOCK('ts_demande_acces', 5)")->fetchColumn() === 1;
+    if (!$verrou) return ['ok' => false, 'error' => 'Service occupé : réessayez dans un instant.'];
+    try {
+        // Plafond d'abord, pour toute adresse valide connue ou non (amendement 1) :
+        // une file pleine ne doit pas révéler qu'une adresse a déjà un compte.
+        if ((int) $db->query('SELECT COUNT(*) FROM demandes_ts')->fetchColumn() >= TS_DEMANDES_MAX) {
+            return ['ok' => false, 'error' => 'Trop de demandes en attente : réessayez dans quelques jours.'];
+        }
+        $s = $db->prepare('SELECT (SELECT COUNT(*) FROM comptes_ts WHERE email = ?)');
+        $s->execute([$email]);
+        if ((int) $s->fetchColumn() > 0) return ['ok' => true];
+        $site = api_site_courant() ?: 'nextstep';
+        // INSERT IGNORE : une demande déjà en attente pour cette adresse n'insère rien
+        // (même réponse, pas de mail) ; le mail ne part que si la ligne est créée.
+        $i = $db->prepare('INSERT IGNORE INTO demandes_ts (email, demande_le, site) VALUES (?, NOW(), ?)');
+        $i->execute([$email, $site]);
+        $creee = $i->rowCount() === 1;
+    } finally {
+        $db->query("SELECT RELEASE_LOCK('ts_demande_acces')");
     }
-    $site = api_site_courant() ?: 'nextstep';
-    $db->prepare('INSERT INTO demandes_ts (email, demande_le, site) VALUES (?, NOW(), ?)')->execute([$email, $site]);
+    if (!$creee) return ['ok' => true];
     api_journal($db, 'tsDemande', '', $email, 'ts', 1, 0, '', 'ts');
     ts_prevenir_admins($db, $email, $site);
     return ['ok' => true];
@@ -181,7 +196,11 @@ function action_ts_ateliers(PDO $db, array $session): array
     if ($qui === null) return ['ok' => false, 'error' => 'Non autorisé', 'auth' => true];
     if ($qui['doit_changer']) return ['ok' => false, 'error' => 'Mot de passe provisoire à changer', 'doit_changer' => true];
     $cols = implode(', ', array_map(fn($c) => "`$c`", TS_CHAMPS));
-    $l = $db->query("SELECT $cols FROM ateliers WHERE statut = 'Planifié' AND date >= CURDATE() ORDER BY date, horaire")->fetchAll(PDO::FETCH_ASSOC);
+    // Jour de Paris calculé par PHP, jamais CURDATE() : le fuseau de MySQL peut être
+    // UTC (amendement 3 de Codex, règle « dates du jour » du CLAUDE.md).
+    $q = $db->prepare("SELECT $cols FROM ateliers WHERE statut = 'Planifié' AND date >= ? ORDER BY date, horaire");
+    $q->execute([date('Y-m-d')]);
+    $l = $q->fetchAll(PDO::FETCH_ASSOC);
     // Un interrupteur par type de public (Admin → Visibilité — Page TS,
     // décision de l'utilisateur du 04/11/2026) : clé « ts_public:<type> » de la
     // config « visibility ». Éteint = les ateliers de ce public ne partent pas
