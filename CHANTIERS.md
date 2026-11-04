@@ -5,40 +5,26 @@ NextStep `cb9985e`. Dernière livraison fonctionnelle relue :
 NEWGEN `36db64f` / NextStep `b076d21` (tests, déploiements et parité verts).
 Tient aussi les restes communs à NextStep (même API, même base).
 
-**Passation Codex — 04/11/2026** : derniers correctifs AG-045 et AG-046 confirmés dans
-`85b5d7b` ; AG-043 et AG-044 déjà confirmés. Aucune nouvelle revue de ce même lot.
-La consigne de fin **✅ TÂCHE TERMINÉE** est enregistrée dans les deux `AGENTS.md`
-(NEWGEN `137198a`, NextStep `5434557`). Ménage des `CLAUDE.md` effectué
-(`2d78af9` / `4a80510`) ; règles communes renvoyées à MD-LIB.
+**Codex** : AG-041 à AG-046 confirmés (dernier `85b5d7b`), pas de nouvelle revue de ce lot.
 **Autorisations ChatGPT non résolues** : le réglage GitHub « Autoriser toutes les actions »
 est bien affiché, mais la capture de l'utilisateur montre encore une confirmation
 `create_tree`. Cause non établie ; ne pas présenter ces confirmations comme supprimées.
-Les anciens brouillons Codex locaux n'ont pas été publiés : reprendre les prochains travaux
-sur `main` à jour ; aucune annonce Nouveautés ajoutée par cette session.
-
-**Consignes Codex (04/11/2026)** : `AGENTS.md` aligné sur MD-LIB `17413bd`
-(autorisations, tous les tests du déploiement avant push, « Main toujours »).
-Mise à jour documentaire seule ; aucune nouvelle revue des correctifs livrés.
+Anciens brouillons Codex locaux non publiés : repartir de `main` à jour.
 
 **À reprendre en premier (passation du 04/11/2026)** :
 1. **Essais réels de l'utilisateur** (livraison du 04/11 : tuile et titre de la page TS,
    première connexion TS sans code, message et mail des tickets) : créer un compte TS,
    première connexion, puis reconnexion avec code ; recevoir le mail d'un ticket.
    **Réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée.**
-2. **Veilleur réactivé et éprouvé le 04/11/2026** (AG-040 clos) : échec provoqué → 60 min sans contrôle →
-   un contrôle réussi (n° 3894, 21:52) → relève propre. Run n° 3654 (ancien code) toujours « en file », inerte.
-3. **Registres** sécurité V0.10 et RGPD V0.7 (`ateliers-backups` `10668ab`) : à relire par
+2. **Registres** sécurité V0.10 et RGPD V0.7 (`ateliers-backups` `10668ab`) : à relire par
    l'utilisateur avant remise. Écarts RGPD n° 12 à 14 (durée des comptes TS utilisés, mention
    d'information de la page TS, avis du DPO avant diffusion de l'adresse TS).
-4. **Page TS** : en ligne, **adresse non diffusée** (après les essais et l'écart n° 14).
-5. **Champ « Ouvert à tous » (AG-047, ouvert le 04/11/2026, PAS ENCORE CODÉ — quota de session atteint)** :
+3. **Page TS** : en ligne, **adresse non diffusée** (après les essais et l'écart n° 14).
+4. **Champ « Ouvert à tous » (AG-047, ouvert le 04/11/2026, PAS ENCORE CODÉ — quota de session atteint)** :
    Oui / Non obligatoire sans présélection dans ✏️ Nouveau (NEWGEN et NextStep), existants = Non, choix
    unique obligatoire à l'import Outlook, création sans le champ refusée (« rechargez »), modification
    sans le champ = valeur gardée ; filtre Tous / Oui / Non dans l'Historique des deux applis et sur la
    page TS ; colonne dans les exports. Lire la réponse de Codex à AG-047 avant de coder ; ~1 h 30.
-6. **Méthode** (règles 55, 58, 63 à 65 de MD-LIB) : `git fetch` puis `merge --ff-only`, jamais
-   `git pull` sur `main` ; `git diff --stat origin/main HEAD` avant tout push ; NextStep
-   d'abord ; mutations groupées ; une seule vérification de Codex par livraison.
 
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
@@ -121,7 +107,6 @@ Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
 
 **Pour Claude**
 
-
 0. **Bac à sable NextStep** (AG-033, en ligne le 27/10) : à éprouver — pages
    NextStep dans les contrôles de `coupure-urgence.yml` puis coupure réelle ;
    requêtes vers `api-sandbox` vues au navigateur ; avis fictif par le QR.
@@ -156,9 +141,10 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   contrôle en cours suivi, état relu après chaque attente, alerte sur le dernier **succès** ;
   requête-témoin dans `integrite-api.yml` (contrat de Codex : GET `logLogin`, marque neuve
   cherchée dans les journaux **bruts**, témoin absent = IMPOSSIBLE). Tests :
-  `veilleur.test.js` (14), `integrite.test.js` (12), bloquants en CI. Tuile : lit la liste
-  `status=success` de GitHub, qui peut omettre un run récent (hypothèse non vérifiée) ;
-  « Veilleur en service » tant qu'un run est en file (le n° 3654).
+  `veilleur.test.js` (14), `integrite.test.js` (12), bloquants en CI. **Éprouvé en réel le
+  04/11/2026** (AG-040 clos) : échec provoqué → 60 min d'attente → reprise réussie (n° 3894).
+  Tuile : lit la liste `status=success` de GitHub, qui peut omettre un run récent (hypothèse
+  non vérifiée) ; « Veilleur en service » tant qu'un run est en file (n° 3654, ancien code, inerte).
 - **Correctif PHP : redémarrer le site** (Web → Sites ; version servie : `diagnostic-api.yml`).
   **SSH par clé seule** depuis le 21/10 (mot de passe à réactiver puis couper pour une
   intervention à la main). Un secret GitHub ne part qu'au **déploiement suivant**.
