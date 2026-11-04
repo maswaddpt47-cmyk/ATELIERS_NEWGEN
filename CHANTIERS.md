@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026, 18:15 (heure de Paris)**, base `main` : NEWGEN `9360b39`,
+État au **04/11/2026, 18:04 (heure de Paris)**, base `main` : NEWGEN `9360b39`,
 NextStep `0c5a763` (déploiements et parité verts). Tient aussi les restes
 communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
 
