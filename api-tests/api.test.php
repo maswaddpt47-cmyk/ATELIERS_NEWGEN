@@ -471,15 +471,16 @@ $m = $dernierMail();
 verifier(($r['mail'] ?? '') === 'envoye' && ($r['mail_a'] ?? '') === 'Nouveau Venu' && $nbMails() === $avant + 1 && str_starts_with($m, 'A: nouveau.venu@example.org')
     && str_contains($m, 'Où voir mes ateliers ?') && str_contains($m, 'En cours') && str_contains($m, "Dans l'onglet Planning.") && str_contains($m, 'Conseiller Test'), 'ticket : le demandeur reçoit un mail (titre, statut, réponse, nom du répondant)');
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'En cours', 'reponse' => "Dans l'onglet Planning.\nBonne journée"]);
-verifier(($r['mail'] ?? '') === 'inutile' && $nbMails() === $avant + 1, 'ticket : même validation rejouée, aucun second mail');
+verifier(($r['mail'] ?? '') === 'inchange' && ($r['mail_a'] ?? 'x') === '' && $nbMails() === $avant + 1, 'ticket : même validation rejouée, aucun second mail, la raison est dite (rien n\'a changé)');
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'Résolu', 'reponse' => "Dans l'onglet Planning.\nBonne journée"]);
 verifier(($r['mail'] ?? '') === 'envoye' && $nbMails() === $avant + 2 && str_contains($dernierMail(), 'Résolu'), 'ticket : changement de statut seul, mail envoyé');
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'Résolu', 'reponse' => '']);
-verifier(($r['mail'] ?? '') === 'inutile' && $nbMails() === $avant + 2, 'ticket : réponse effacée sans autre changement, pas de mail');
+verifier(($r['mail'] ?? '') === 'inchange' && $nbMails() === $avant + 2, 'ticket : réponse effacée sans autre changement, pas de mail (rien de nouveau à dire)');
 // L'auteur répond à son propre ticket : pas de mail.
 appel(['action' => 'creerTicket'], $A + ['_id' => 'tk_mail_2', 'type' => 'Bug', 'titre' => 'Ticket de l\'Admin', 'description' => 'd']);
 $avant2 = $nbMails();
-verifier((appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_2', 'statut' => 'Vu', 'reponse' => 'ok'])['mail'] ?? '') === 'inutile' && $nbMails() === $avant2, 'ticket : l\'auteur qui répond à son propre ticket n\'est pas prévenu');
+$ra = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_2', 'statut' => 'Vu', 'reponse' => 'ok']);
+verifier(($ra['mail'] ?? '') === 'auteur' && ($ra['mail_a'] ?? '') === 'Conseiller Test' && $nbMails() === $avant2, 'ticket : l\'auteur qui répond à son propre ticket n\'est pas prévenu, et la raison est dite');
 // Sans adresse enregistrée.
 $emailsAvant = $db->query("SELECT valeur FROM config WHERE cle = 'emails'")->fetchColumn();
 $db->exec("REPLACE INTO config (cle, valeur) VALUES ('emails', '" . json_encode(['Conseiller Test' => ['email' => 'admin@example.org']]) . "')");
@@ -501,7 +502,7 @@ appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_mail_4', 'type' => 'Questi
 $avant4 = $nbMails();
 $par = appels_paralleles(array_fill(0, 4, [['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_4', 'statut' => 'En cours', 'reponse' => 'Pris en compte.']]));
 $etats = array_map(fn($r) => $r['mail'] ?? ($r['error'] ?? '?'), $par);
-verifier($nbMails() === $avant4 + 1 && count(array_filter($etats, fn($e) => $e === 'envoye')) === 1, 'ticket : quatre validations identiques simultanées, un seul mail (' . implode(',', $etats) . ')');
+verifier($nbMails() === $avant4 + 1 && count(array_filter($etats, fn($e) => $e === 'envoye')) === 1 && count(array_filter($etats, fn($e) => in_array($e, ['deja', 'inchange'], true))) === 3, 'ticket : quatre validations identiques simultanées, un seul mail, les autres disent pourquoi (« déjà » ou « inchangé » selon l\'instant de leur lecture) (' . implode(',', $etats) . ')');
 $m4 = $dernierMail();
 verifier(str_contains($m4, 'ateliers-cd47_NextStep/index.html') && !str_contains($m4, 'admin.html') && !str_contains($m4, 'SECRET-DESC-XYZ'), 'ticket : le lien mène à l\'application du site du ticket (pas à l\'Admin), la description d\'origine n\'est pas reprise');
 // Doublon : rattaché, mail qui le dit. Ticket anonymisé : pas de mail.
@@ -510,7 +511,7 @@ $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_3', 'doublon_
 verifier(($r['mail'] ?? '') === 'envoye' && str_contains($dernierMail(), 'rattachée') && str_contains($dernierMail(), 'Non retenu'), 'ticket : doublon, le mail dit qu\'il est rattaché');
 $db->exec("UPDATE tickets SET auteur = '—' WHERE id = 'tk_mail_3'");
 $avant3 = $nbMails();
-verifier((appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_3', 'statut' => 'Vu'])['mail'] ?? '') === 'inutile' && $nbMails() === $avant3, 'ticket : auteur anonymisé, pas de mail');
+verifier((appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_3', 'statut' => 'Vu'])['mail'] ?? '') === 'anonyme' && $nbMails() === $avant3, 'ticket : auteur anonymisé, pas de mail, la raison est dite');
 // Échec d'envoi : l'enregistrement reste.
 rename($dossierMails, "$dossierMails.sav");
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'Vu']);

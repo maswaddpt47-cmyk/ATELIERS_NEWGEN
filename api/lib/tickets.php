@@ -179,16 +179,19 @@ function tickets_mail_actif(PDO $db): bool
     return !in_array($v, ['false', '0'], true);
 }
 
-// Prévient l'auteur d'un ticket que son statut ou la réponse a changé. Rend l'état exact de l'envoi :
-// 'envoye', 'echec', 'sans_adresse', 'desactive' ou 'inutile' (rien n'a changé, l'auteur répond lui-même,
-// ticket anonymisé). Un échec d'envoi n'annule jamais l'enregistrement.
+// Prévient l'auteur d'un ticket que son statut ou la réponse a changé. Rend l'état exact de l'envoi, et
+// chaque cas « rien n'est envoyé » a sa raison (règle 65 de MD-LIB, 04/11/2026) :
+// 'envoye', 'echec', 'sans_adresse', 'desactive', 'inchange' (ni statut ni réponse), 'auteur' (l'auteur répond
+// lui-même), 'anonyme' (auteur effacé), 'deja' (un envoi identique vient d'être fait, appel simultané).
+// Un échec d'envoi n'annule jamais l'enregistrement.
 function tickets_prevenir_auteur(PDO $db, array $avant, array $apres, string $parQui): string
 {
     $statutChange = $apres['statut'] !== $avant['statut'];
     $reponseChangee = (string) $apres['reponse'] !== (string) $avant['reponse'] && (string) $apres['reponse'] !== '';
-    if (!$statutChange && !$reponseChangee) return 'inutile';
+    if (!$statutChange && !$reponseChangee) return 'inchange';
     $auteur = (string) $avant['auteur'];
-    if ($auteur === '' || $auteur === '—' || $auteur === $parQui) return 'inutile';
+    if ($auteur === '' || $auteur === '—') return 'anonyme';
+    if ($auteur === $parQui) return 'auteur';
     if (!tickets_mail_actif($db)) return 'desactive';
     $emails = api_json(api_config_base($db)['emails'] ?? '', []);
     $e = is_array($emails) ? ($emails[$auteur] ?? '') : '';
@@ -269,8 +272,8 @@ function action_repondre_ticket(PDO $db, array $p, array $session): array
     }
     // Le mail décrit ce que CET appel a écrit, pas une relecture qui pourrait être plus récente.
     $ecrit = array_merge($t, ['statut' => $statut, 'reponse' => $reponse, 'doublon_de' => $doublon]);
-    $mail = $gagne ? tickets_prevenir_auteur($db, $t, $ecrit, (string) $session['conseiller']) : 'inutile';
-    return ['ok' => true, 'ticket' => $ticket, 'mail' => $mail, 'mail_a' => $mail === 'inutile' ? '' : (string) $t['auteur']];
+    $mail = $gagne ? tickets_prevenir_auteur($db, $t, $ecrit, (string) $session['conseiller']) : ($change ? 'deja' : 'inchange');
+    return ['ok' => true, 'ticket' => $ticket, 'mail' => $mail, 'mail_a' => in_array($mail, ['inchange', 'deja'], true) ? '' : (string) $t['auteur']];
 }
 
 // Suppression définitive (test, envoi par erreur), réservée à l'admin et à la
