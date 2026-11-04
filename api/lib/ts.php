@@ -68,26 +68,33 @@ function ts_schema(PDO $db): void
     // est inconnu (utilisés puis réinitialisés, ou non). Le drapeau doit_changer ne prouve pas « jamais utilisé » :
     // ils sont préservés de la purge des premiers accès jamais terminés. Le marqueur évite de refaire ce
     // rattrapage ensuite, sinon les comptes créés après lui perdraient leur suivi exact.
-    // Exécution UNIQUE même en concurrence (Codex, 4e relecture d'AG-043) : le marqueur est PRIS avant le
-    // rattrapage, dans la même transaction. Un second appel simultané attend la fin de la transaction sur la clé
-    // du marqueur, puis ne l'obtient pas et ne touche à rien : un compte créé entre-temps garde sa date NULL.
-    // Un échec du rattrapage annule aussi la prise du marqueur.
-    $deja = $db->prepare("SELECT 1 FROM config WHERE cle = 'ts_rattrapage_mdp_change'");
-    $deja->execute();
-    if (!$deja->fetchColumn()) {
-        $propre = !$db->inTransaction();
-        if ($propre) $db->beginTransaction();
-        try {
-            $prise = $db->prepare("INSERT IGNORE INTO config (cle, valeur) VALUES ('ts_rattrapage_mdp_change', ?)");
-            $prise->execute([date('Y-m-d')]);
-            if ($prise->rowCount() === 1) $db->exec('UPDATE comptes_ts SET mdp_change_le = NOW() WHERE mdp_change_le IS NULL');
-            if ($propre) $db->commit();
-        } catch (Throwable $e) {
-            if ($propre && $db->inTransaction()) $db->rollBack();
-            throw $e;
-        }
-    }
+    ts_rattrapage_unique($db, 'ts_rattrapage_mdp_change', 'UPDATE comptes_ts SET mdp_change_le = NOW() WHERE mdp_change_le IS NULL');
+    // Reprise de l'historique (Codex, relecture du 04/11/2026 d'AG-046) : un compte jamais terminé d'avant la colonne
+    // `oubli_promu` peut porter un provisoire d'oubli promu par l'ancienne version ; sa provenance est inconnue, il
+    // garde donc le code. Une fois, indépendamment de l'existence de la colonne (base déjà mise à jour comprise).
+    ts_rattrapage_unique($db, 'ts_rattrapage_oubli_promu', 'UPDATE comptes_ts SET oubli_promu = 1 WHERE doit_changer = 1 AND mdp_change_le IS NULL');
     $ok = true;
+}
+
+// Rattrapage exécuté UNE fois, même en concurrence (Codex, 4e relecture d'AG-043) : le marqueur est PRIS avant le
+// rattrapage, dans la même transaction ; un second appel simultané attend la clé, ne l'obtient pas et ne touche à
+// rien. Un échec du rattrapage annule aussi la prise du marqueur.
+function ts_rattrapage_unique(PDO $db, string $marqueur, string $sql): void
+{
+    $deja = $db->prepare('SELECT 1 FROM config WHERE cle = ?');
+    $deja->execute([$marqueur]);
+    if ($deja->fetchColumn()) return;
+    $propre = !$db->inTransaction();
+    if ($propre) $db->beginTransaction();
+    try {
+        $prise = $db->prepare('INSERT IGNORE INTO config (cle, valeur) VALUES (?, ?)');
+        $prise->execute([$marqueur, date('Y-m-d')]);
+        if ($prise->rowCount() === 1) $db->exec($sql);
+        if ($propre) $db->commit();
+    } catch (Throwable $e) {
+        if ($propre && $db->inTransaction()) $db->rollBack();
+        throw $e;
+    }
 }
 
 // Section critique commune aux envois de mails (quota + registre) : acquise, puis relâchée par l'appelant.

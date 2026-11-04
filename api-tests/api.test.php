@@ -1116,6 +1116,18 @@ $db->exec("UPDATE comptes_ts SET cree_le = NOW() - INTERVAL 31 DAY WHERE email =
 $vieux = appel(['action' => 'tsConnexion'], ['identifiant' => 'vieux.compte@lotetgaronne.fr', 'password' => $pVieux]);
 verifier($pVieux !== '' && ($vieux['etape2'] ?? false) === true && empty($vieux['token']), 'inscription : provisoire de plus de 30 jours, plus de connexion sans code');
 $db->exec("DELETE FROM comptes_ts WHERE email IN ('jamais.fini@lotetgaronne.fr', 'vieux.compte@lotetgaronne.fr')");
+// Relecture de Codex du 04/11/2026 : un provisoire d'oubli promu par l'ANCIENNE version (oubli_promu inconnu, à 0)
+// garde le code après la reprise, que la colonne soit absente (migration) ou déjà présente (base déjà à jour).
+$empreinteAncienne = password_hash(hash('sha256', 'Ancien-Oubli-47!'), PASSWORD_DEFAULT);
+foreach (['colonne absente' => true, 'base déjà à jour' => false] as $cas => $retirer) {
+    if ($retirer) $db->exec('ALTER TABLE comptes_ts DROP COLUMN oubli_promu');
+    $db->exec("DELETE FROM config WHERE cle = 'ts_rattrapage_oubli_promu'");
+    $db->prepare("INSERT INTO comptes_ts (email, hash, actif, doit_changer, cree_le, mdp_change_le) VALUES ('ancien.oubli@lotetgaronne.fr', ?, 1, 1, NOW(), NULL)")->execute([$empreinteAncienne]);
+    $ao = appel(['action' => 'tsConnexion'], ['identifiant' => 'ancien.oubli@lotetgaronne.fr', 'password' => 'Ancien-Oubli-47!']);
+    verifier(($ao['etape2'] ?? false) === true && empty($ao['token']), "reprise : compte jamais terminé d'avant la livraison, provenance inconnue, le code reste exigé ($cas)");
+    $db->exec("DELETE FROM comptes_ts WHERE email = 'ancien.oubli@lotetgaronne.fr'");
+    $db->exec("DELETE FROM envois_ts");
+}
 $db->exec("DELETE FROM envois_ts");
 $db->exec("DELETE FROM envois_ts");
 
