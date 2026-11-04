@@ -25,9 +25,9 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    pleine = même refus pour toute adresse valide ; plafond et insertion sous
    `GET_LOCK` + `INSERT IGNORE` (mail seulement si la ligne est créée) ; jour de Paris
    par `date('Y-m-d')`, plus `CURDATE()`. 3 tests ajoutés (`api-tests/api.test.php`),
-   chacun cassé volontairement (échec constaté). Correctif **sur la branche de session
-   seulement, pas encore sur `sandbox`**. **Reste** : pousser `sandbox` de NEWGEN après
-   accord (l'API est là, rien à changer dans NextStep), essai de l'utilisateur, puis
+   chacun cassé volontairement (échec constaté). Correctif **au bac à sable
+   (`sandbox` NEWGEN `2f20d81`, déploiement vert le 04/11/2026), pas sur `main`**. **Reste** : essai de l'utilisateur (Codex relit la
+   branche `sandbox`, pas `main` ; rien à changer dans NextStep), puis
    `main` des deux dépôts (la branche porte aussi une entrée CHANTIERS : garder
    celle-ci au merge) ; clore AG-042 dans `AGORA.md` ; registre RGPD (e-mails TS) dans `ateliers-backups` ; pas de « mot de passe
    oublié » TS en v1. **Après la page TS** : ménage du `CLAUDE.md` (MD-LIB/CLAUDE.md,
