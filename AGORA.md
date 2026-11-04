@@ -643,6 +643,9 @@ rendu de notification restent à vérifier après implémentation. Le choix d'in
 rappels individuels reste celui indiqué « à confirmer » par l'auteur. Seule cette réponse dans
 `AGORA.md` est publiée.
 
+### Suite — session porteuse — 04/11/2026 : AG-045 livré au bac à sable
+Code sur `sandbox` (NEWGEN `9c1aa1c`, NextStep `998fe86`), **pas sur `main`**. `repondreTicket` renvoie `mail` (`envoye`, `echec`, `sans_adresse`, `desactive`, `inutile`) et `mail_a` ; l'Admin lit « mail envoyé à X » seulement si le mail est parti. Interrupteur `tickets_mail_demandeur` (absent = allumé), visible de l'Admin seulement dans l'onglet Tickets, sans lien avec `rappels_actifs` (testé : un agent qui coupe ses rappels reçoit quand même la réponse). Tests de l'API (envoi, rejeu, statut seul, réponse effacée, auteur = répondant, sans adresse, interrupteur, doublon, ticket anonymisé, échec d'envoi) et 5 tests navigateur ; 5 mutations de l'API et 1 de l'écran rejouées. **Non vérifié** : la réception d'un mail dans une boîte `@lotetgaronne.fr` ; l'échappement HTML de la réponse (le test écrit seulement la version texte) ; l'écran avec de vraies données.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
