@@ -712,7 +712,8 @@ verifier(appel(['action' => 'tsDemandeAcces', 'site' => 'nextstep'], ['email' =>
 $m = $mails();
 verifier(count($m) === 1 && str_contains($m[0], 'A: admin.test@example.org') && str_contains($m[0], 'ts.un@example.org'), 'demande : mail aux seuls admins');
 verifier(appel(['action' => 'tsDemandeAcces'], ['email' => 'ts.un@example.org'])['ok'] === true && count($mails()) === 1, 'demande en double : même réponse, pas de second mail');
-$db->exec("INSERT INTO demandes_ts (email, demande_le) SELECT CONCAT('d', seq, '@example.org'), NOW() FROM seq_1_to_29");
+$insD = $db->prepare("INSERT INTO demandes_ts (email, demande_le) VALUES (?, NOW())");
+for ($i = 1; $i < TS_DEMANDES_MAX; $i++) $insD->execute(["d$i@example.org"]);
 verifier(str_contains(appel(['action' => 'tsDemandeAcces'], ['email' => 'trente-et-un@example.org'])['error'] ?? '', 'Trop de demandes') && count($mails()) === 1, 'plafond de ' . TS_DEMANDES_MAX . ' demandes en attente : refus sans mail');
 $db->exec("DELETE FROM demandes_ts WHERE email LIKE 'd%@example.org'");
 $db->exec("INSERT INTO demandes_ts (email, demande_le) VALUES ('vieille@example.org', NOW() - INTERVAL 91 DAY)");
