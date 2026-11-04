@@ -25,7 +25,7 @@ Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fo
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
 **Ménages (26/09 → 04/11/2026)** : récit dans `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` — aucun bloc ouvert au 04/11/2026 (AG-047 clos).
+Contradiction : `AGORA.md` — aucun bloc ouvert au 05/11/2026 (AG-047 et AG-048 clos).
 
 ---
 
