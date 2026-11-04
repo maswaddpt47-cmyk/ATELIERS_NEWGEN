@@ -34,7 +34,12 @@ Mise à jour documentaire seule ; aucune nouvelle revue des correctifs livrés.
    l'utilisateur avant remise. Écarts RGPD n° 12 à 14 (durée des comptes TS utilisés, mention
    d'information de la page TS, avis du DPO avant diffusion de l'adresse TS).
 4. **Page TS** : en ligne, **adresse non diffusée** (après les essais et l'écart n° 14).
-5. **Méthode** (règles 55, 58, 63 à 65 de MD-LIB) : `git fetch` puis `merge --ff-only`, jamais
+5. **Champ « Ouvert à tous » (AG-047, ouvert le 04/11/2026, PAS ENCORE CODÉ — quota de session atteint)** :
+   Oui / Non obligatoire sans présélection dans ✏️ Nouveau (NEWGEN et NextStep), existants = Non, choix
+   unique obligatoire à l'import Outlook, création sans le champ refusée (« rechargez »), modification
+   sans le champ = valeur gardée ; filtre Tous / Oui / Non dans l'Historique des deux applis et sur la
+   page TS ; colonne dans les exports. Lire la réponse de Codex à AG-047 avant de coder ; ~1 h 30.
+6. **Méthode** (règles 55, 58, 63 à 65 de MD-LIB) : `git fetch` puis `merge --ff-only`, jamais
    `git pull` sur `main` ; `git diff --stat origin/main HEAD` avant tout push ; NextStep
    d'abord ; mutations groupées ; une seule vérification de Codex par livraison.
 
