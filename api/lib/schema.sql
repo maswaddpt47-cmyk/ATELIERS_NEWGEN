@@ -203,6 +203,7 @@ CREATE TABLE IF NOT EXISTS comptes_ts (
   defi_oubli   TINYINT      NOT NULL DEFAULT 0,   -- le défi vient du provisoire d'« oubli » (promu après le code),
   defi_mdp     VARCHAR(255) NULL,     -- empreinte de mot de passe vérifiée à l'étape 1, revérifiée à l'étape 2
   mdp_change_le DATETIME    NULL,     -- 1er changement de mot de passe : NULL = premier accès jamais terminé
+  oubli_promu  TINYINT      NOT NULL DEFAULT 0,  -- provisoire d'oubli promu, pas encore remplacé : pas de connexion sans code (AG-046)
   PRIMARY KEY (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

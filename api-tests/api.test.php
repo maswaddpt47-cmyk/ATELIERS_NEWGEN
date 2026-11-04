@@ -1098,6 +1098,25 @@ verifier($db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'neuf.concurr
     'migration : rattrapage simultané, le second appel ne fait aucun rattrapage (marqueur pris avant, dans la même transaction)');
 $db->exec("DELETE FROM comptes_ts WHERE email IN ('neuf.concurrent@lotetgaronne.fr', 'declencheur4@lotetgaronne.fr')");
 $db->exec("DELETE FROM envois_ts");
+// AG-046, amendements de Codex. n° 1 : compte jamais terminé, « oubli », code validé, abandon avant le choix du
+// mot de passe : le provisoire d'oubli promu n'ouvre JAMAIS sans code à la connexion suivante.
+$provisoireDe = function (string $email) use ($mails) { $m = $mails(); $d = end($m); return (str_starts_with($d, "A: $email") && preg_match('/Mot de passe provisoire : (\S{12})\n/', $d, $x)) ? $x[1] : ''; };
+appel(['action' => 'tsDemandeAcces'], ['email' => 'jamais.fini@lotetgaronne.fr']);
+appel(['action' => 'tsMdpOublie'], ['email' => 'jamais.fini@lotetgaronne.fr']);
+$pOubli = $provisoireDe('jamais.fini@lotetgaronne.fr');
+$promu = ts_connexion('jamais.fini@lotetgaronne.fr', $pOubli, $e1promu);
+$apresAbandon = appel(['action' => 'tsConnexion'], ['identifiant' => 'jamais.fini@lotetgaronne.fr', 'password' => $pOubli]);
+verifier($pOubli !== '' && ($e1promu['etape2'] ?? false) === true && ($promu['doit_changer'] ?? false) === true
+    && ($apresAbandon['etape2'] ?? false) === true && empty($apresAbandon['token']), 'inscription : provisoire d\'oubli promu puis abandonné, la connexion suivante exige le code');
+// n° 2 : la borne des 30 jours est contrôlée à la connexion, sans attendre la purge d'une nouvelle demande.
+$db->exec("DELETE FROM envois_ts");
+appel(['action' => 'tsDemandeAcces'], ['email' => 'vieux.compte@lotetgaronne.fr']);
+$pVieux = $provisoireDe('vieux.compte@lotetgaronne.fr');
+$db->exec("UPDATE comptes_ts SET cree_le = NOW() - INTERVAL 31 DAY WHERE email = 'vieux.compte@lotetgaronne.fr'");
+$vieux = appel(['action' => 'tsConnexion'], ['identifiant' => 'vieux.compte@lotetgaronne.fr', 'password' => $pVieux]);
+verifier($pVieux !== '' && ($vieux['etape2'] ?? false) === true && empty($vieux['token']), 'inscription : provisoire de plus de 30 jours, plus de connexion sans code');
+$db->exec("DELETE FROM comptes_ts WHERE email IN ('jamais.fini@lotetgaronne.fr', 'vieux.compte@lotetgaronne.fr')");
+$db->exec("DELETE FROM envois_ts");
 $db->exec("DELETE FROM envois_ts");
 
 // Codex n° 1 : le provisoire d'« oubli » n'est promu qu'après le code, sur l'empreinte vérifiée ; anciennes sessions fermées.

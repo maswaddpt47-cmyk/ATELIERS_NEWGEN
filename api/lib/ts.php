@@ -60,6 +60,9 @@ function ts_schema(PDO $db): void
         $db->exec('ALTER TABLE comptes_ts ADD COLUMN defi_oubli TINYINT NOT NULL DEFAULT 0, ADD COLUMN defi_mdp VARCHAR(255) NULL, ADD COLUMN mdp_change_le DATETIME NULL');
         $db->exec('UPDATE comptes_ts SET mdp_change_le = NOW() WHERE mdp_change_le IS NULL');   // colonne neuve : tous les comptes sont préexistants
     }
+    if (!$db->query("SHOW COLUMNS FROM comptes_ts LIKE 'oubli_promu'")->fetch()) {
+        $db->exec('ALTER TABLE comptes_ts ADD COLUMN oubli_promu TINYINT NOT NULL DEFAULT 0');   // AG-046, amendement 1 de Codex
+    }
     // Rattrapage exécuté UNE fois, indépendant de l'existence de la colonne (Codex, 3e relecture d'AG-043) :
     // une base déjà migrée par une version précédente garde des comptes à mdp_change_le NULL dont l'historique
     // est inconnu (utilisés puis réinitialisés, ou non). Le drapeau doit_changer ne prouve pas « jamais utilisé » :
@@ -279,7 +282,7 @@ function action_ts_connexion(PDO $db, array $p): array
         $id = ts_email($saisi);
         if ($id === null) return ['ok' => false, 'error' => TS_ERREUR_CONNEXION];
         $cleTentatives = TS_PREFIXE . $id;
-        $s = $db->prepare('SELECT hash, actif, doit_changer, (mdp_change_le IS NULL) AS premier_acces, hash_oubli, (oubli_le IS NOT NULL AND oubli_le > NOW() - INTERVAL ' . TS_OUBLI_HEURES . ' HOUR) AS oubli_valide FROM comptes_ts WHERE email = ?');
+        $s = $db->prepare('SELECT hash, actif, doit_changer, (mdp_change_le IS NULL AND oubli_promu = 0 AND cree_le > NOW() - INTERVAL ' . TS_JAMAIS_CONNECTE_JOURS . ' DAY) AS premier_acces, hash_oubli, (oubli_le IS NOT NULL AND oubli_le > NOW() - INTERVAL ' . TS_OUBLI_HEURES . ' HOUR) AS oubli_valide FROM comptes_ts WHERE email = ?');
         $s->execute([$id]);
         $c = $s->fetch(PDO::FETCH_ASSOC);
         $valide = $c && (int) $c['actif'] === 1;
@@ -320,7 +323,8 @@ function action_ts_connexion(PDO $db, array $p): array
     // Inscription allégée (AG-046, demande de l'utilisateur du 04/11/2026) : à la PREMIÈRE connexion
     // (provisoire jamais changé, premier accès jamais terminé), pas de code par mail — le provisoire et le
     // code arriveraient dans la même boîte. La session ouverte ne sert qu'à choisir son mot de passe.
-    // « Mot de passe oublié » et compte déjà utilisé puis réinitialisé gardent le code.
+    // « Mot de passe oublié » (même promu, `oubli_promu`), compte déjà utilisé puis réinitialisé, et compte de plus
+    // de TS_JAMAIS_CONNECTE_JOURS jours (borne contrôlée ici, pas seulement par la purge) gardent le code (Codex, AG-046).
     if ($role === 'ts' && !$parOubli && $doitChanger && (int) $c['premier_acces'] === 1) {
         return ts_premiere_connexion($db, $id, (string) $verifiee, (string) ($p['userAgent'] ?? ''));
     }
@@ -338,7 +342,8 @@ function ts_premiere_connexion(PDO $db, string $id, string $verifiee, string $ua
 {
     $db->beginTransaction();
     try {
-        $s = $db->prepare('SELECT 1 FROM comptes_ts WHERE email = ? AND BINARY hash = BINARY ? AND actif = 1 AND doit_changer = 1 AND mdp_change_le IS NULL FOR UPDATE');
+        $s = $db->prepare('SELECT 1 FROM comptes_ts WHERE email = ? AND BINARY hash = BINARY ? AND actif = 1 AND doit_changer = 1 AND mdp_change_le IS NULL AND oubli_promu = 0'
+            . ' AND cree_le > NOW() - INTERVAL ' . TS_JAMAIS_CONNECTE_JOURS . ' DAY FOR UPDATE');
         $s->execute([$id, $verifiee]);
         if (!$s->fetchColumn()) { $db->rollBack(); return ['ok' => false, 'error' => TS_ERREUR_CONNEXION]; }
         $jeton = ts_creer_session($db, $id);
@@ -456,7 +461,7 @@ function action_ts_code(PDO $db, array $p): array
         $u->execute([$id, $hDefi, $c['code_hash']]);
         if ($u->rowCount() !== 1) { $db->rollBack(); return ['ok' => false, 'error' => TS_ERREUR_CODE]; }
         if ($oubli) {
-            $pr = $db->prepare('UPDATE comptes_ts SET hash = hash_oubli, doit_changer = 1, hash_oubli = NULL, oubli_le = NULL WHERE email = ? AND hash_oubli = ?');
+            $pr = $db->prepare('UPDATE comptes_ts SET hash = hash_oubli, doit_changer = 1, oubli_promu = 1, hash_oubli = NULL, oubli_le = NULL WHERE email = ? AND hash_oubli = ?');
             $pr->execute([$id, $c['defi_mdp']]);
             if ($pr->rowCount() !== 1) { $db->rollBack(); return ['ok' => false, 'error' => TS_ERREUR_CODE]; }
             ts_fermer_sessions($db, $id);   // avant d'ouvrir celle qui fera le changement forcé
@@ -552,7 +557,7 @@ function action_ts_changer_mdp(PDO $db, array $p, array $session): array
     if (!(strlen($mdp) >= 12 && preg_match('/[A-Z]/', $mdp) && preg_match('/[a-z]/', $mdp) && preg_match('/[0-9]/', $mdp) && preg_match('/[^A-Za-z0-9]/', $mdp))) {
         return ['ok' => false, 'error' => API_MDP_POLITIQUE];
     }
-    $db->prepare('UPDATE comptes_ts SET hash = ?, doit_changer = 0, mdp_change_le = NOW(), hash_oubli = NULL, oubli_le = NULL WHERE email = ?')->execute([password_hash(hash('sha256', $mdp), PASSWORD_DEFAULT), $id]);
+    $db->prepare('UPDATE comptes_ts SET hash = ?, doit_changer = 0, mdp_change_le = NOW(), oubli_promu = 0, hash_oubli = NULL, oubli_le = NULL WHERE email = ?')->execute([password_hash(hash('sha256', $mdp), PASSWORD_DEFAULT), $id]);
     ts_fermer_sessions($db, $id, $session['jeton_hash'] ?? null);
     api_journal($db, 'tsChangerMdp', $id, '', 'ts', 1, 0, '', 'ts');
     return ['ok' => true];
