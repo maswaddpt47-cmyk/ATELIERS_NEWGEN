@@ -27,7 +27,8 @@ Anciens brouillons Codex locaux non publiés : repartir de `main` à jour.
    filtre montré seulement si Admin → Visibilité → « 🔓 Filtre Ouvert à tous » est allumé (éteint
    par défaut). Compléments 1 à 4 de Codex appliqués (Corbeille d'avant = Non, migration avant les
    transactions et la 1ʳᵉ lecture TS, import Outlook ne touche pas les existants). Reste : **une**
-   vérification de Codex (règle 58) (annonce Nouveautés 37 publiée le 04/11). Ajouts du 04/11 (demandes de
+   vérification de Codex faite le 04/11 (`08eb2cc`, seul écart : mention de portée du filtre,
+   corrigée) ; annonce Nouveautés 37 publiée. **À clore** sur accord de l'utilisateur. Ajouts du 04/11 (demandes de
    l'utilisateur) : champ sous « Type de public », badge sur la tuile de l’Historique (mot Oui vert
    Oui / rouge Non, sans fond), choix dans le volet Détail ; Planifié coché à l'ouverture du
    formulaire (une date passée le change en Réalisé tant qu'aucun statut n'est cliqué).

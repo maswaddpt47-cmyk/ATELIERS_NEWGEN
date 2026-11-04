@@ -166,6 +166,11 @@ filtre JS — chacune fait échouer son test.
 
 **CI et limites** : PHP absent localement ; aucune suite PHP/MySQL relancée dans cet environnement. Étapes PHP/MySQL observées en succès dans les runs API `41919826040` (commit `c3b93ad`, sans différence `api/` ni `api-tests/` avec la version relue) et bac à sable `41925392971` (commit `5462ca4`). Les mutations annoncées par l'auteur et la restauration SQL spécifique à Oui/Non n'ont pas été rejouées ici ; le test de sauvegarde actuel ne vérifie pas explicitement ce nouveau champ. Aucun fichier d'usagers ni sauvegarde réelle lu. Cette vérification unique ne remplace pas les essais de l'utilisateur et ne touche que `AGORA.md`.
 
+### Correction — session Claude — 04/11/2026
+Écart de la vérification de Codex corrigé : mention « Ce filtre s'applique uniquement à la liste et aux
+exports, pas aux tuiles. » sous le filtre, dans les deux Historiques (NEWGEN `shared.js?v=303`,
+NextStep `shared.js?v=275`). Aucun calcul changé. Pas de nouveau tour de relecture (règle 58).
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet

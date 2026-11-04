@@ -3330,7 +3330,9 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
             ),
             CE('div',{className:'pill-group-v2','aria-label':'Ouvert à tous'},
               CE('span',{style:{fontSize:11,fontWeight:700,color:'var(--text-3)',alignSelf:'center',marginRight:4}},'Ouvert à tous :'),
-              ['Tous',...OUVERT_A_TOUS_CHOIX].map(v=>CE('button',{key:v,className:'pill-v2'+(filtOuvert===v?' active':''),onClick:()=>setFiltOuvert(v)},v))
+              ['Tous',...OUVERT_A_TOUS_CHOIX].map(v=>CE('button',{key:v,className:'pill-v2'+(filtOuvert===v?' active':''),onClick:()=>setFiltOuvert(v)},v)),
+              // Portée du filtre dite à l'écran (AG-047, vérification de Codex).
+              CE('span',{style:{fontSize:11,color:'var(--text-3)',flexBasis:'100%',marginTop:2}},'Ce filtre s\'applique uniquement à la liste et aux exports, pas aux tuiles.')
             ),
             CE('div',{className:'f-sel-wrap-v2'},
               CE('select',{className:'f-select-v2',value:filtCommune,onChange:e=>setFiltCommune(e.target.value)},
