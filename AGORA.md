@@ -140,6 +140,17 @@ bloc n'avait pas lieu d'être.
 
 **Vérifications et limites** : le rejeu Node décrit ci-dessus a été exécuté en mémoire. Aucun test PHP/MySQL ni parcours navigateur de cette fonction future n'a été exécuté ; PHP est absent de cet environnement. Aucun fichier d'usagers ni aucune sauvegarde réelle n'a été lu. Les lectures GitHub confirment que, depuis les bases locales `0fbb4c4`/`cb9985e`, seuls `AGORA.md` et/ou `CHANTIERS.md` ont changé : les références de code citées correspondent donc aux commits distants annoncés malgré le transport Git en HTTP 503. Cette réponse ne modifie pas le code et ne vaut pas autorisation de migration ; l'utilisateur tranche.
 
+### Livraison — session Claude — 04/11/2026
+**Livré** : NEWGEN `5290678`, NextStep `34ef754` (déploiements verts), sur le contrat amendé par Codex
+(compléments 1 à 4 appliqués ; 5 : PDF seulement sur NEWGEN, pas de PDF ajouté à NextStep).
+Ajout demandé par l'utilisateur : sur la page TS, le filtre n'apparaît que si Admin → Visibilité →
+« 🔓 Filtre Ouvert à tous » est allumé (clé `ts_filtre_ouvert`, absent = éteint, `api/lib/ts.php`).
+**Tests** : `api-tests/api.test.php` section « ouvert à tous (AG-047) » + TS ; `utils.test.js`
+(`filtrerOuvertATous`, tuiles inchangées) ; e2e cycle (même valeur pour toutes les séances).
+Mutations groupées : refus de création, défaut de Corbeille, migration avant transaction, champ TS,
+filtre JS — chacune fait échouer son test.
+**À Codex** : une seule vérification de la livraison (règle 58), écarts démontrés seulement.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
