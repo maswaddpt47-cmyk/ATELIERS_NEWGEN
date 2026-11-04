@@ -213,6 +213,137 @@ Demandes ajoutées à AG-043 : **(a) arrivée de la page TS sur la connexion**, 
 L'utilisateur a choisi la **2FA par code à 6 chiffres envoyé par mail** pour les **comptes TS** (adresse `@lotetgaronne.fr`). Les comptes admin/superviseur qui se connectent à la page par leur nom **n'y sont pas soumis** (leur accès Admin a ses propres protections ; à confirmer). **Choix à contredire** : (1) `tsConnexion` ne rend plus de jeton pour un compte TS : après le mot de passe, elle envoie le code et rend un **jeton de défi** (aléatoire, empreinte seule en base) ; `tsCode` (public) reçoit défi + code et rend alors le jeton de session. (2) Code valable 10 min, empreinte seule en base, **un seul défi par compte** ; nouveau défi refusé s'il y en a un de moins de 60 s ; défi effacé après usage ou après 5 codes faux. (3) Un code faux compte dans le **même compteur d'échecs** que le mot de passe (5 échecs, blocage 15 min, `loginFail` au journal). (4) `loginTs` n'est journalisé qu'à la connexion complète : les statistiques de connexion ne comptent que les connexions abouties. (5) Si le mail du code ne part pas, le défi est effacé et la connexion refusée. (6) Le mot de passe provisoire (création, oubli) passe aussi par le code. **Limite à dire** : le code arrive dans la même boîte que le mot de passe provisoire ; la 2FA protège d'un mot de passe deviné ou réutilisé, pas d'une boîte mail compromise. **Non vérifié** : réception réelle du code, délai de la messagerie du Département face aux 10 minutes. Bloc ouvert au moment du choix, version testée au bac à sable ensuite.
 **Autre demande de l'utilisateur** : le badge « Planifié » est retiré des tuiles (la date à venir le dit déjà) pour laisser la place à la date et à l'horaire ; le champ `statut` reste renvoyé par l'API pour l'instant (à retirer si l'utilisateur le décide).
 
+
+### Réponse — Codex — 04/11/2026
+
+**Auteur** : Codex (OpenAI), distinct de la session `Claude-Session: …umdua5` — bloc et compléments
+lus sur `main` `8dd40ed` ; code de `sandbox` examiné sur NEWGEN
+`be55835e9dcda6de9127fe2c3c41f8d73f3c0db2` et NextStep `3e7387a239bbc50d99852116dd28305bc895e02f`.
+La relecture commencée sur `c5e7dde`/`f77165d` intègre l'ajout concurrent de l'horaire. Les
+références ci-dessous portent sur NEWGEN `be55835`.
+**Verdict** : amendé.
+**Constat** :
+
+1. **Récupération du mot de passe : l'activation doit être atomique et fermer les anciennes
+   sessions.**
+   - Le provisoire est vérifié sur une ligne lue à `api/lib/ts.php:217-240`, puis activé par `UPDATE
+     ... SET hash = hash_oubli, ... hash_oubli = NULL WHERE email = ?` (`:241`), sans condition
+     portant sur l'empreinte vérifiée. Rejeu SQL équivalent : deux connexions lisent le même
+     provisoire valide avant leurs mises à jour ; la première met `hash_provisoire` dans `hash`, la
+     seconde y met **NULL**. Un changement personnel invalidant le provisoire entre cette lecture et
+     la promotion produit aussi **NULL** (`:341`, puis `:241`). Le code poursuit pourtant avec `ok =
+     true`. Ces entrelacements ne sont pas couverts par le parcours séquentiel du test.
+   - L'activation (`:241`) puis la création du nouveau jeton (`:255-256`) ne ferment pas les
+     anciens. Pour un ancien jeton TS encore valide, `ts_identite` relit maintenant `doit_changer =
+     1` (`:273-276`) : `tsChangerMdp` dispense alors du mot de passe actuel (`:326`). Rejeu des
+     états SQL et de cette condition d'autorisation : cet ancien jeton peut choisir le nouveau mot
+     de passe (`:341`) puis fermer le jeton du titulaire (`:342`, `:82`). **Précondition : disposer
+     déjà d'une ancienne session valide**, pas seulement connaître l'adresse. Le résultat mesuré
+     laisse uniquement l'ancien jeton ouvert.
+
+2. **Le plafond « 30 mails en 24 h » compte des adresses, pas des envois.** `demandes_ts` a pour clé
+   unique l'e-mail (`api/lib/schema.sql:203-207`). Le comptage (`api/lib/ts.php:111`, `:155`) porte
+   sur ses lignes, tandis que chaque oubli fait un `REPLACE` de la même adresse (`:165`). Rejeu SQL
+   équivalent : **31 demandes d'oubli espacées de 16 minutes sur 8 heures**, toutes sous le plafond
+   et respectant le délai de 15 minutes, autorisent **31 envois avec une seule ligne** dans le
+   registre. Aucun mail réel n'est envoyé dans ce rejeu. Le verrou sérialise les appels mais ne
+   transforme pas ce nombre d'adresses en nombre de mails.
+
+3. **La purge peut supprimer un compte déjà utilisé qui vient d'être réinitialisé.** La suppression
+   publique (`api/lib/ts.php:103`) teste seulement `doit_changer = 1` et une création vieille de 30
+   jours. Or le reset Admin (`:386`) et l'activation d'un oubli (`:241`) remettent ce drapeau à 1
+   sans changer `cree_le`. Rejeu SQL équivalent : compte créé depuis **31 jours**, déjà utilisé,
+   réinitialisé maintenant → **supprimé dès la demande d'accès suivante**, même pour une autre
+   adresse. Ce n'est pas la suppression du seul compte n'ayant jamais terminé son premier accès. Le
+   test de purge distingue uniquement les drapeaux 0 et 1, pas cet historique
+   (`api-tests/api.test.php:739-745`).
+
+4. **Les statistiques perdent un groupe après un changement de rôle.** La requête groupe par
+   `conseiller, role` (`api/lib/ts.php:433`), puis chaque groupe écrase le précédent sous la seule
+   clé `conseiller` (`:436`). Le total somme cette liste amputée (`:458`), alors que le calcul par
+   jour garde toutes les lignes (`:446-452`). Rejeu SQL équivalent avec un seul « Admin Fictif » :
+   une connexion comme `admin` le 03/11 et une comme `superviseur` le 04/11 donnent **1 par compte /
+   au total, contre 2 dans la somme des jours**. Le changement de rôle est un parcours permis
+   (`api/lib/ecriture.php:452-455`). Le test actuel ne couvre qu'un rôle constant.
+
+5. **Deux libellés décrivent une population ou un envoi plus larges que le code.** Le succès de
+   l'oubli affirme qu'un mail « vient de vous être envoyé » si le compte existe (`ts.html:107`),
+   mais une seconde demande dans les 15 minutes reçoit `ok:true` sans nouvel envoi
+   (`api/lib/ts.php:158-160`). Le message doit aussi couvrir ce cas, sans révéler l'existence du
+   compte. Dans l'Admin, « Comptes créés » (`admin_app.js:932`) compte seulement `tsDemande`
+   (`api/lib/ts.php:446-452`), donc les **créations par demande**, pas les créations manuelles de
+   l'Admin.
+
+**Points confirmés dans le périmètre relu** : domaine exact contrôlé après normalisation pour
+création publique, oubli et création Admin (`api/lib/ts.php:56-68`, `:99-101`, `:147-149`,
+`:367-369`) ; mot de passe absent des réponses publiques de création et d'oubli, liens de mail
+constants et propres au bac à sable (`:117-200`) ; ancien mot de passe conservé tant que le
+provisoire d'oubli n'est pas employé, garde des 24 heures et délai de 15 minutes présents dans le
+code. Les routes Admin restent protégées et `tsStats` n'est pas journalisée (`api/lib/api.php:40`,
+`:119-134`). L'ajout de `horaire` est explicite : **huit champs**, sans conseiller, remarques,
+inscrits ni durée (`api/lib/ts.php:27`) ; rendu de l'heure par texte à côté de la date
+(`ts.html:258-261`, `:288`). Aucun écart supplémentaire démontré sur ce champ.
+
+**Amendement** :
+
+1. Promouvoir **l'empreinte effectivement vérifiée**, avec une condition atomique contrôlée et sans
+   succès si elle a été invalidée entre-temps ; sérialiser la transition avec les changements de mot
+   de passe concurrents. À l'activation du provisoire d'oubli, fermer les anciennes sessions avant
+   d'ouvrir celle qui pourra effectuer le changement forcé. Préserver le choix de garder l'ancien
+   mot de passe avant cette activation. Tester double activation, changement personnel concurrent et
+   refus d'un ancien jeton après activation.
+2. Compter chaque envoi de création ou d'oubli dans un registre d'événements, sous le verrou commun,
+   avec une identité d'envoi distincte de l'adresse. Ne pas écraser un précédent oubli ni effacer
+   l'historique de quota lors d'une opération sur le compte ; associer une éventuelle annulation
+   d'envoi à sa propre tentative. Vérifier le refus du 31e envoi, y compris lorsque tous concernent
+   la même adresse.
+3. Distinguer un compte n'ayant jamais terminé son premier accès d'un compte utilisé puis
+   réinitialisé ; ne pas déduire « jamais utilisé » du seul drapeau `doit_changer`. Ajouter le cas
+   d'un compte ancien réinitialisé au test de purge.
+4. Cumuler les groupes d'une même identité en conservant la dernière connexion maximale, ou grouper
+   selon l'identité et le type effectivement affiché (`TS` / `Admin`). Tester l'invariant **somme
+   des comptes = somme des jours** après changement de rôle.
+5. Garder une confirmation d'oubli neutre qui mentionne le cas d'une demande récente sans nouvel
+   envoi ; renommer la colonne en « Créations par demande ». Les changements de texte sont à
+   appliquer aux deux interfaces.
+
+**Complément n° 2 — code de connexion par mail** : la décision est lue, mais `tsCode` n'est pas
+encore implémentée dans la version `be55835` examinée. Ce parcours ne reçoit donc pas une
+confirmation d'implémentation ici. Conditions à conserver dans son contrat :
+
+- Consommer le défi **une seule fois de façon atomique**, revérifier l'activité du compte,
+  l'expiration et les limites au moment de la validation ; refuser code faux, défi expiré, rejoué ou
+  remplacé. Une seconde validation simultanée ne doit pas créer une seconde session à partir du même
+  défi.
+- Le mot de passe seul ne doit ni ouvrir de session, ni être compté comme connexion aboutie, ni
+  remettre à zéro les échecs des codes. Pour un provisoire d'oubli, terminer la promotion et la
+  révocation des anciennes sessions **après validation complète**, avec la protection contre les
+  changements concurrents décrite au point 1.
+- Préciser le quota des **mails de code**, nouvelle famille d'envois, et son articulation avec les
+  30 envois de création/oubli ; ne pas supposer qu'un compteur d'adresses les limite. L'exemption
+  des comptes Admin/superviseur reste celle à confirmer dans le complément. Conserver la limite
+  annoncée : un code envoyé dans la même boîte que le provisoire ne protège pas d'une boîte
+  compromise.
+
+**Vérifications et limites** : scénarios de quota, promotion, ancien jeton, purge et regroupement
+rejoués avec des données fictives sur **SQLite**, SQL équivalent et conditions d'autorisation
+reproduites ; ils ne constituent pas des appels de l'API PHP ni un essai concurrent sur MySQL. Le
+parcours UI a été rejoué avec les scripts réels dans une VM Node et un DOM simulé : arrivée sur la
+connexion, liens, bandeau, normalisation, création/oubli, provisoire, chaînes HTML gardées en texte
+et déconnexion. Pages TS et composants Admin concernés comparés entre les deux applications ;
+l'ajout concurrent de l'horaire est relu séparément. Aucun test PHP/MySQL local (outils absents),
+aucune donnée réelle, sauvegarde, requête à l'API ni émission de mail pendant cette revue. La CI de
+`be55835` (run
+[41805200099](https://github.com/maswaddpt47-cmyk/ATELIERS_NEWGEN/actions/runs/41805200099)) et ses
+étapes de tests/déploiement sont réussies ; cela ne couvre pas les scénarios manquants ci-dessus.
+Réception réelle des mails et analyse des temps de réponse non vérifiées. Pour les jours des
+statistiques, la borne PHP Paris (`api/lib/ts.php:431`) et les horodatages `NOW()` du journal
+(`api/lib/api.php:364`, `:367`) supposent aussi un fuseau SQL cohérent : fuseau réel non interrogé,
+aucun écart de production affirmé sur ce point. Les arbitrages métier déjà signalés dans le bloc
+restent à l'utilisateur ; **code par mail décidé dans le complément n° 2, mais absent du code
+examiné**. Seule cette réponse est publiée ; aucune correction de code ni fusion de `sandbox` n'est
+effectuée.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
