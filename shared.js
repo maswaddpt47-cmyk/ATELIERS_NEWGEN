@@ -3386,7 +3386,7 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
             // Même ligne que le type de public (demande du 04/11/2026, AG-047).
             CE('span',{style:{display:'inline-flex',gap:6,flexWrap:'wrap'}},
               CE('span',{className:'tag-v2'},e.public||'Tous publics'),
-              CE('span',{className:'tag-v2',style:e.ouvert_a_tous==='Oui'?{background:'#dcfce7',color:'#166534'}:undefined,title:'Ouvert à tous'},'Ouvert à tous : '+(e.ouvert_a_tous==='Oui'?'Oui':'Non')))
+              CE('span',{className:'tag-v2',style:e.ouvert_a_tous==='Oui'?{background:'#dcfce7',color:'#166534'}:{background:'#fee2e2',color:'#b91c1c'},title:'Ouvert à tous'},'Ouvert à tous : '+(e.ouvert_a_tous==='Oui'?'Oui':'Non')))
           ),
           // Ligne 2 : orienteur en italique petit si présent
           e.orienteur&&CE('div',{style:{fontSize:11,color:'var(--text-3)',fontStyle:'italic',gridColumn:2,paddingBottom:2}},e.orienteur),
