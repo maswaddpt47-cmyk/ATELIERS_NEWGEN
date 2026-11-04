@@ -226,3 +226,14 @@ CREATE TABLE IF NOT EXISTS demandes_ts (
   site       VARCHAR(20) NOT NULL DEFAULT '',
   PRIMARY KEY (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Anomalies validées par l'Admin (AG-044) : une ligne par (atelier, catégorie). L'empreinte garde
+-- les valeurs concernées au moment de la validation ; si elles changent, l'anomalie réapparaît.
+CREATE TABLE IF NOT EXISTS anomalies_validees (
+  atelier_id VARCHAR(100) NOT NULL,
+  categorie  VARCHAR(20)  NOT NULL,
+  empreinte  VARCHAR(200) NOT NULL,
+  valide_le  DATETIME     NOT NULL,
+  par        VARCHAR(100) NOT NULL DEFAULT '',
+  PRIMARY KEY (atelier_id, categorie)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

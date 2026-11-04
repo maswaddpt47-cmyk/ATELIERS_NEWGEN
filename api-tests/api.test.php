@@ -1025,6 +1025,32 @@ verifier(count($fic) === 1 && $fic[0]['connexions'] === 2 && $fic[0]['type'] ===
 verifier(appel(['action' => 'tsStats'], ['token' => $nv['token']])['ok'] === false, 'connexions TS : refusées à un conseiller');
 verifier(appel(['action' => 'tsSupprimer'], $A + ['email' => 'ts.un@lotetgaronne.fr'])['ok'] === true
     && !$db->query("SELECT COUNT(*) FROM comptes_ts")->fetchColumn() && !$db->query("SELECT COUNT(*) FROM sessions WHERE conseiller LIKE 'ts:ts.un%'")->fetchColumn(), 'suppression : compte et sessions effacés');
+// ── Anomalies validées (AG-044, 04/11/2026) ───────────────────────────────
+echo "\nAPI — anomalies validées\n";
+$idA = $db->query("SELECT id FROM ateliers WHERE id NOT LIKE 'ts\\_%' ORDER BY id LIMIT 1")->fetchColumn();
+verifier(appel(['action' => 'validerAnomalie'], ['token' => $nv['token'], '_id' => $idA, 'categorie' => 'tard', 'empreinte' => '17:30'])['ok'] === false, 'anomalies : validation refusée à un conseiller');
+verifier(appel(['action' => 'getAnomaliesValidees'], ['token' => $nv['token']])['ok'] === false, 'anomalies : lecture refusée à un conseiller');
+verifier(appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'inconnue', 'empreinte' => 'x'])['ok'] === false, 'anomalies : catégorie inconnue refusée');
+verifier(appel(['action' => 'validerAnomalie'], $A + ['_id' => 'entry_absent', 'categorie' => 'tard', 'empreinte' => '17:30'])['ok'] === false, 'anomalies : atelier introuvable refusé');
+verifier(appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard', 'empreinte' => ''])['ok'] === false && appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard', 'empreinte' => str_repeat('x', 201)])['ok'] === false, 'anomalies : empreinte vide ou trop longue refusée');
+verifier(appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard', 'empreinte' => '17:30'])['ok'] === true, 'anomalies : validation par l\'Admin');
+$g = appel(['action' => 'getAnomaliesValidees'], $A)['validees'] ?? [];
+verifier(count($g) === 1 && $g[0]['atelier_id'] === $idA && $g[0]['categorie'] === 'tard' && $g[0]['empreinte'] === '17:30' && $g[0]['par'] === 'Conseiller Test' && str_starts_with($g[0]['valide_le'], date('Y-m-d')), 'anomalies : lue avec empreinte, auteur et date du jour (heure de Paris)');
+appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard', 'empreinte' => '18:00']);
+$g = appel(['action' => 'getAnomaliesValidees'], $A)['validees'] ?? [];
+verifier(count($g) === 1 && $g[0]['empreinte'] === '18:00', 'anomalies : revalider remplace l\'empreinte (une seule ligne par atelier et catégorie)');
+$jv = $db->query("SELECT COUNT(*) FROM journal WHERE action = 'validerAnomalie' AND ref = " . $db->quote($idA))->fetchColumn();
+$jl = $db->query("SELECT COUNT(*) FROM journal WHERE action = 'getAnomaliesValidees'")->fetchColumn();
+verifier((int) $jv === 2 && (int) $jl === 0, 'anomalies : les validations sont journalisées au nom de l\'Admin, la lecture ne l\'est pas');
+// Concurrence réelle : cinq catégories validées en même temps sur le même atelier, deux fois la même clé.
+$par = appels_paralleles(array_merge(
+    array_map(fn($c) => [['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => $c, 'empreinte' => "v-$c"]], ['manquants', 'communes', 'chiffres', 'ordi', 'tard']),
+    [[['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard', 'empreinte' => 'v-tard-bis']]]
+));
+verifier(count(array_filter($par, fn($r) => ($r['ok'] ?? false) === true)) === 6 && (int) $db->query("SELECT COUNT(*) FROM anomalies_validees WHERE atelier_id = " . $db->quote($idA))->fetchColumn() === 5, 'anomalies : six validations simultanées, aucune perdue, une seule ligne par catégorie');
+verifier(appel(['action' => 'annulerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard'])['ok'] === true && (int) $db->query("SELECT COUNT(*) FROM anomalies_validees WHERE atelier_id = " . $db->quote($idA))->fetchColumn() === 4, 'anomalies : annuler la validation ne retire que cette catégorie');
+$db->exec("DELETE FROM anomalies_validees");
+
 $db->exec("DELETE FROM ateliers WHERE id LIKE 'ts\\_%'");
 
 array_map('unlink', glob("$dossierMails/*.txt")); @rmdir($dossierMails);
