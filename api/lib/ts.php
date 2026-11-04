@@ -24,7 +24,7 @@ const TS_OUBLI_HEURES = 24;      // validité du provisoire envoyé par « mot d
 const TS_OUBLI_ESPACE_MIN = 15;  // une seule demande d'oubli par compte et par 15 min
 const TS_DOMAINE = '@lotetgaronne.fr'; // seules adresses acceptées (AG-043, 04/11/2026)
 const TS_EMAIL_MAX = 97;         // 'ts:' + e-mail tient dans VARCHAR(100) (sessions, tentatives)
-const TS_CHAMPS = ['date', 'statut', 'orienteur', 'commune', 'lieu', 'public', 'thematique'];
+const TS_CHAMPS = ['date', 'horaire', 'statut', 'orienteur', 'commune', 'lieu', 'public', 'thematique'];
 // Adresse de la page, dans le mail du mot de passe provisoire : jamais prise
 // de la requête (un mail du Département avec un lien choisi par l'appelant
 // serait un hameçonnage). Bac à sable : ses propres pages.

@@ -699,11 +699,11 @@ verifier(!($sans['ok'] ?? true) && str_contains($sans['error'] ?? '', 'Aucune ad
 echo "\nAPI — page des travailleurs sociaux\n";
 array_map('unlink', glob("$dossierMails/*.txt"));
 $db->exec("UPDATE config SET valeur = '" . json_encode(['Nouveau Venu' => 'nouveau.venu@example.org', 'Conseiller Test' => 'admin.test@example.org']) . "' WHERE cle = 'emails'");
-$db->exec("INSERT INTO ateliers (id, statut, date, orienteur, commune, lieu, thematique, public, conseiller, co_animateur, residence, remarques, inscrits)
-    VALUES ('ts_futur', 'Planifié', CURDATE() + INTERVAL 3 DAY, 'CCAS Agen', 'Agen', 'MDS', 'Mail', 'Seniors', 'Conseiller Test', '', '', 'remarque secrète', 7),
-           ('ts_jour', 'Planifié', CURDATE(), 'Orienteur', 'Nérac', 'Mairie', 'Smartphone', 'Tous publics', 'Conseiller Test', '', '', '', NULL),
-           ('ts_passe', 'Planifié', CURDATE() - INTERVAL 1 DAY, 'O', 'Agen', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL),
-           ('ts_realise', 'Réalisé', CURDATE() + INTERVAL 5 DAY, 'O', 'Agen', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL)");
+$db->exec("INSERT INTO ateliers (id, statut, date, horaire, orienteur, commune, lieu, thematique, public, conseiller, co_animateur, residence, remarques, inscrits)
+    VALUES ('ts_futur', 'Planifié', CURDATE() + INTERVAL 3 DAY, '14:00', 'CCAS Agen', 'Agen', 'MDS', 'Mail', 'Seniors', 'Conseiller Test', '', '', 'remarque secrète', 7),
+           ('ts_jour', 'Planifié', CURDATE(), NULL, 'Orienteur', 'Nérac', 'Mairie', 'Smartphone', 'Tous publics', 'Conseiller Test', '', '', '', NULL),
+           ('ts_passe', 'Planifié', CURDATE() - INTERVAL 1 DAY, NULL, 'O', 'Agen', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL),
+           ('ts_realise', 'Réalisé', CURDATE() + INTERVAL 5 DAY, NULL, 'O', 'Agen', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL)");
 verifier(appel(['action' => 'tsDemandeAcces'], ['email' => 'pas-une-adresse'])['ok'] === false, 'demande : adresse invalide refusée');
 // AG-043 : seules les adresses @lotetgaronne.fr sont acceptées (domaine exact).
 foreach (['agent@example.org', 'agent@sub.lotetgaronne.fr', 'agent@lotetgaronne.fr.autre.com', 'agent@lotetgaronne.org'] as $mauvaise) {
@@ -786,7 +786,8 @@ $ids = array_map(fn($a) => $a['thematique'] . '@' . $a['commune'], $r['ateliers'
 verifier(($r['ok'] ?? false) && in_array('Mail@Agen', $ids, true) && in_array('Smartphone@Nérac', $ids, true), 'ateliers : Planifié du jour et à venir');
 $futurs = $db->query("SELECT COUNT(*) FROM ateliers WHERE statut = 'Planifié' AND date >= CURDATE()")->fetchColumn();
 verifier(count($r['ateliers'] ?? []) === (int) $futurs && !array_filter($r['ateliers'], fn($a) => $a['statut'] !== 'Planifié' || $a['date'] < date('Y-m-d')), 'ateliers : ni passés, ni autres statuts (' . count($r['ateliers'] ?? []) . ')');
-verifier(array_keys($r['ateliers'][0] ?? []) === TS_CHAMPS, 'ateliers : 7 champs seulement (ni conseiller, ni remarques, ni inscrits)');
+verifier(array_keys($r['ateliers'][0] ?? []) === ['date', 'horaire', 'statut', 'orienteur', 'commune', 'lieu', 'public', 'thematique'], 'ateliers : 8 champs seulement, dont l\'horaire (ni conseiller, ni remarques, ni inscrits)');
+verifier(array_column(array_filter($r['ateliers'] ?? [], fn($a) => $a['thematique'] === 'Mail'), 'horaire') === ['14:00'], 'ateliers : l\'horaire de début est renvoyé');
 verifier(!str_contains(json_encode($r), 'remarque secrète'), 'ateliers : la remarque ne sort pas');
 // Amendement 3 : « à partir du jour de Paris » ne dépend pas du fuseau de MySQL. Pour chaque
 // fuseau où le jour MySQL diffère de celui de Paris (au moins un des deux, toujours), la veille
