@@ -458,6 +458,22 @@ cette réponse est publiée, sans modification de code ni fusion de branche.
 **AG-044 livré tel que proposé** (définitions inchangées, aucune décision de l'utilisateur contraire) : table `anomalies_validees`, actions `validerAnomalie` / `annulerAnomalie` (Admin, journalisées) et `getAnomaliesValidees` (lue à l'ouverture de l'onglet, non journalisée) ; bouton « ✅ Valider » par catégorie, « Validées (n) » avec « Annuler la validation », compteurs hors validées ; une valeur qui change fait réapparaître l'anomalie. Tests de l'API (six validations simultanées, rôle, empreinte, journal) et trois tests navigateur ; mutations rejouées (rôle, annulation, journal, comparaison d'empreinte). `sandbox` NEWGEN `cdfbd1b`, NextStep `eb4e50a`. **Non vérifié** : l'onglet à l'écran avec de vraies données.
 **Autre demande de l'utilisateur** : les connexions à la page TS passent dans l'onglet « 🤝 Page travailleurs sociaux » de Connexions (Admin) ; le journal reste l'onglet d'arrivée.
 
+## AG-045 — Tickets : mail au demandeur quand l'Admin change le statut ou répond — ouvert le 04/11/2026
+**Auteur** : session du 04/11/2026 (trailer `Claude-Session: …umdua5`) — lu sur `b977904`
+**Proposition** (question de l'utilisateur du 04/11/2026 : « quand je change le statut d'un ticket, le demandeur reçoit-il un mail ? » — non ; réponse : « oui fais-le, pour les mails ») : `repondreTicket` envoie un mail à **l'auteur du ticket** quand le **statut** ou la **réponse** a changé.
+**Contradicteur** : Codex
+**Critère déclencheur** : données personnelles (adresse e-mail d'un agent, texte libre d'un administrateur envoyé par mail) et nouveau mail automatique (`agora.md` §12). Enrichissement : bloc ouvert au moment du choix, version testée au bac à sable, vérification de Codex une fois (règle 58).
+**Choix à contredire** :
+- **Quand** : un mail seulement si le statut ou la réponse (non vide) a réellement changé ; rejouer une même validation n'en envoie pas un second. **Jamais** si l'auteur est la personne qui répond, si le ticket est anonymisé (auteur « — »), si l'auteur n'a pas d'adresse dans la configuration des e-mails, ou si l'interrupteur est éteint.
+- **Interrupteur global** `tickets_mail_demandeur` (absent = allumé), affiché dans l'onglet Tickets de l'Admin, **sans lien avec** l'interrupteur individuel des rappels (`rappels_actifs`) : un agent qui coupe ses rappels reçoit quand même la réponse à son ticket (à confirmer par l'utilisateur).
+- **Contenu** : titre du ticket, nouveau statut, réponse (2 000 caractères au plus, texte échappé dans la version HTML), mention « doublon de … » le cas échéant, lien vers l'application du site du ticket. Jamais la description d'origine ni le nom du répondant au-delà de son nom affiché.
+- **Retour d'API honnête** : `repondreTicket` renvoie l'état de l'envoi (envoyé, sans adresse, interrupteur éteint, inutile) et l'Admin ne lit « mail envoyé à X » que si le mail est parti (règle 39). L'échec d'envoi n'annule pas l'enregistrement.
+- **Hors périmètre** : la modification d'un ticket par son auteur (AG-041) reste sans mail ; pas de mail aux autres agents.
+**Ce que ça engage** : le texte libre de l'administrateur part par mail vers une boîte professionnelle (fiche T5 du registre RGPD à compléter) ; un message peut atterrir en indésirable.
+**Non vérifié par l'auteur** : (a) la réception réelle d'un mail dans une boîte `@lotetgaronne.fr` ; (b) un agent à l'adresse mal saisie dans la configuration (le mail part à cette adresse).
+**Si personne ne répond, je fais quoi ?** Je livre la version testée au bac à sable ; l'utilisateur l'essaie ; Codex vérifie une fois.
+**Où regarder** : `api/lib/tickets.php` (`action_repondre_ticket`, `tickets_prevenir_auteur`), `shared.js` (`ReponseTicket`, `VueTickets`), `api-tests/api.test.php`.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
