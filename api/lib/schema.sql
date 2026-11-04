@@ -194,6 +194,8 @@ CREATE TABLE IF NOT EXISTS comptes_ts (
   actif        TINYINT(1)   NOT NULL DEFAULT 1,
   doit_changer TINYINT(1)   NOT NULL DEFAULT 1,
   cree_le      DATETIME     NOT NULL,
+  hash_oubli   VARCHAR(255) NULL,     -- « mot de passe oublié » (AG-043) : provisoire envoyé par mail,
+  oubli_le     DATETIME     NULL,     -- valable 24 h, sans toucher le mot de passe actuel jusqu'à son emploi
   PRIMARY KEY (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

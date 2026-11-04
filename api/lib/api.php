@@ -37,7 +37,7 @@ const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
 const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'modifierTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier', 'bilanAvis', 'avisParAtelier'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
-const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'purgerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'envoyerLienReinit', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket', 'avisAtelier', 'supprimerAvis', 'tsListe', 'tsCreerCompte', 'tsReinitMdp', 'tsActiver', 'tsSupprimer'];
+const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'purgerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'envoyerLienReinit', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket', 'avisAtelier', 'supprimerAvis', 'tsListe', 'tsStats', 'tsCreerCompte', 'tsReinitMdp', 'tsActiver', 'tsSupprimer'];
 // Seules actions d'un jeton 'ts' (page des travailleurs sociaux, AG-042).
 const API_ACTIONS_TS = ['tsAteliers', 'tsChangerMdp'];
 
@@ -87,6 +87,8 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
         // Page des travailleurs sociaux (AG-042) : demande d'accès et connexion.
         case 'tsDemandeAcces':
             return action_ts_demande_acces($db, $p);
+        case 'tsMdpOublie':
+            return action_ts_mdp_oublie($db, $p);
         case 'tsConnexion':
             return action_ts_connexion($db, $p);
         case 'logLogin':
@@ -129,7 +131,7 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
     // nom de la personne CONNECTÉE (audit du 24/09/2026), avec sa cible.
     // purgerCorbeille journalise elle-même, un atelier par ligne (AG-024).
     // Les lectures pures n'y vont pas (getUsageOnglets : AG-036, 28/10/2026).
-    if (($r['ok'] ?? false) === true && (in_array($action, API_ACTIONS_ADMIN, true) || $action === 'selfSetPassword') && !in_array($action, ['getLogs', 'getUsageOnglets', 'getCorbeille', 'etatSauvegardes', 'avisAtelier', 'purgerCorbeille', 'tsListe'], true)) {
+    if (($r['ok'] ?? false) === true && (in_array($action, API_ACTIONS_ADMIN, true) || $action === 'selfSetPassword') && !in_array($action, ['getLogs', 'getUsageOnglets', 'getCorbeille', 'etatSauvegardes', 'avisAtelier', 'purgerCorbeille', 'tsListe', 'tsStats'], true)) {
         $cible = (string) ($p['conseiller'] ?? $p['key'] ?? $p['_id'] ?? $p['email'] ?? '');
         if ($action === 'setConfig' && in_array($cible, ['maintenance', 'stock_ordinateurs'], true)) $cible .= '=' . (string) ($p['value'] ?? '');
         api_journal($db, $action, $session['conseiller'], $cible, $session['role'], 1, 0, '', 'admin');
@@ -144,6 +146,7 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'tsAteliers':      return action_ts_ateliers($db, $session);
         case 'tsChangerMdp':    return action_ts_changer_mdp($db, $p, $session);
         case 'tsListe':         return action_ts_liste($db);
+        case 'tsStats':         return action_ts_stats($db);
         case 'tsCreerCompte':   return action_ts_creer_compte($db, $p);
         case 'tsReinitMdp':     return action_ts_reinit_mdp($db, $p);
         case 'tsActiver':       return action_ts_activer($db, $p);
