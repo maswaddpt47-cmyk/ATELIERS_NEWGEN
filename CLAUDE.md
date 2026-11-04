@@ -28,6 +28,7 @@
    Message : `type: description courte`, avec `feat`, `fix`, `refactor`,
    `style`, `docs` ou `chore`.
 4. Pousser sur `main` : `git push origin main`.
+   **Livraison directe sur `main`, jamais par `sandbox` sauf demande explicite de l'utilisateur** (depuis le 25/10/2026, rappelé le 04/11/2026 : un détour par le bac à sable non demandé a coûté un déploiement et un tour).
 5. **Avant d'écrire « en ligne »** : `MD-LIB/outils/attendre-deploiement.sh` (hook
    automatique après un push, sinon à lancer à la main) doit avoir dit ✅.
 
