@@ -181,8 +181,8 @@ function tickets_mail_actif(PDO $db): bool
 
 // Prévient l'auteur d'un ticket que son statut ou la réponse a changé. Rend l'état exact de l'envoi, et
 // chaque cas « rien n'est envoyé » a sa raison (règle 65 de MD-LIB, 04/11/2026) :
-// 'envoye', 'echec', 'sans_adresse', 'desactive', 'inchange' (ni statut ni réponse), 'auteur' (l'auteur répond
-// lui-même), 'anonyme' (auteur effacé), 'deja' (un envoi identique vient d'être fait, appel simultané).
+// 'envoye', 'echec', 'sans_adresse', 'desactive', 'inchange' (ni statut changé ni nouvelle réponse : une réponse effacée n'envoie rien), 'auteur' (l'auteur répond
+// lui-même), 'anonyme' (auteur effacé), 'deja' (un autre appel a enregistré les mêmes valeurs juste avant : son envoi éventuel ne se déduit pas d'ici).
 // Un échec d'envoi n'annule jamais l'enregistrement.
 function tickets_prevenir_auteur(PDO $db, array $avant, array $apres, string $parQui): string
 {

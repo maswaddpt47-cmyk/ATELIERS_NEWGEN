@@ -28,10 +28,10 @@ const cas = [
   ['envoye', /mail envoyé à Nouveau Venu/],
   ['sans_adresse', /pas de mail : aucune adresse enregistrée pour Nouveau Venu/],
   ['desactive', /pas de mail : le mail au demandeur est désactivé/],
-  ['inchange', /pas de mail : ni le statut ni la réponse n'ont changé/],
+  ['inchange', /pas de mail : ni changement de statut ni nouvelle réponse à envoyer/],
   ['auteur', /pas de mail : vous êtes l'auteur de ce ticket/],
   ['anonyme', /pas de mail : l'auteur de ce ticket est anonymisé/],
-  ['deja', /pas de mail : un envoi identique vient d'être fait/],
+  ['deja', /pas de mail : ces valeurs étaient déjà enregistrées, cet enregistrement n'envoie rien de plus/],
   ['echec', /le mail à Nouveau Venu n'a pas pu partir/],
 ];
 for (const [etat, motif] of cas) {
