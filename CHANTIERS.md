@@ -1,37 +1,45 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026**, base `main` (`7d75319`). Tient aussi les restes
+État au **04/11/2026, 12:30 (heure de Paris)**, base `main` : NEWGEN `144e5c7`,
+NextStep `0c5a763` (déploiements et parité verts). Tient aussi les restes
 communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
 
-**À reprendre en premier (passation du 04/11/2026)** :
-1. **AG-040 à trancher par l'utilisateur** : Codex a répondu (amendé), écarts
-   corrigés `86b8752`. Une fois tranché, le sortir d'`AGORA.md` vers le tableau.
-   (AG-041 tranché le 04/11/2026 : tickets validés à l'écran, **pas d'annonce**.)
-3. **Veilleur désactivé** : essai réel de reprise (`passages=1`) puis accord
-   explicite de l'utilisateur avant réactivation ; run n° 3654 bloqué en file.
-4. **Codex** : l'utilisateur lui dit seulement « pull » (`AGENTS.md`) ; chaque
-   bloc mis en ligne s'annonce quand même à l'utilisateur.
-5. **Page des travailleurs sociaux (AG-042, Codex)** — passation du 04/11/2026 :
-   code sur la branche `claude/social-workers-workshops-history-l8tat7` = `sandbox`
-   des deux dépôts (NEWGEN `da2fdaf`, PR #39 ; NextStep `44dd224`, PR #27), **au
-   bac à sable**, CI verte, **pas sur `main`**. Fait : `ts.html` sans menu (demande
-   d'accès par e-mail, connexion e-mail ou compte admin/superviseur, mot de passe
-   provisoire à changer, œil, ateliers Planifié ≥ aujourd'hui, filtres Du/Au/Commune),
-   API `api/lib/ts.php` (garde : un jeton `ts` n'ouvre que `tsAteliers`/`tsChangerMdp`),
-   Admin « Accès travailleurs sociaux » et Visibilité « un interrupteur par type de
-   public » (`ts_public:<type>`, éteint = ateliers cachés par l'API). Menu « Type de
-   public » **retiré** de la page (décision du 04/11/2026). **Réponse de Codex à AG-042
-   reçue (amendé, 3 écarts) et corrigée le 04/11/2026** dans `api/lib/ts.php` : file
-   pleine = même refus pour toute adresse valide ; plafond et insertion sous
-   `GET_LOCK` + `INSERT IGNORE` (mail seulement si la ligne est créée) ; jour de Paris
-   par `date('Y-m-d')`, plus `CURDATE()`. 3 tests ajoutés (`api-tests/api.test.php`),
-   chacun cassé volontairement (échec constaté). Code **en ligne sur `main` le 04/11/2026** (NEWGEN `7f186a7`, déploiements API, Pages et parité verts ; NextStep `657eaf4`, Pages vert), **sans la 2FA ni le retrait du badge « Planifié »** (en cours, branche de session). **2FA par code mail et amendements de Codex (n° 1 à 5) essayés par l'utilisateur au bac à sable le 04/11/2026 (connexion avec code, code faux/bon, tuiles sans badge, mot de passe oublié : OK) et en ligne sur `main` (NEWGEN `3a67198`, NextStep `2329911`, déploiements et parité verts) ; comptes Admin/superviseur non soumis au code, à confirmer par l'utilisateur ; 2e relecture de Codex appliquée le 04/11/2026 (échecs atomiques, session dans la transaction, migration) au bac à sable seulement, à essayer puis à passer sur `main`** ; **AG-044 (valider une anomalie) et onglet « Page TS » de Connexions en ligne sur `main` (NEWGEN `a02f9e1`, NextStep `bfafc52`) ; essayés par l'utilisateur le 04/11/2026 : Anomalies OK, Connexions OK** ; **réponses de Codex du 04/11/2026 (AG-043 3e relecture, AG-044, AG-045) appliquées au bac à sable seulement** (NEWGEN `e63848a`, NextStep `fd93af8`), à essayer puis à passer sur `main` ; **`main` NEWGEN contient déjà la 1re version d'AG-045 (mail au demandeur) par une fusion involontaire de `sandbox` (`39a8003`)** ; **AG-045 : mail au demandeur d'un ticket, livré au bac à sable, à essayer** ; **URL non diffusée aux TS** avant la réponse de Codex à AG-043 et la 2FA ; **Codex a confirmé les trois correctifs le 04/11/2026** (aucun amendement de plus, pas de test de deux requêtes réellement simultanées ni sur le MySQL d'Alwaysdata). **Reste** : essai de l'utilisateur (Codex relit la
-   branche `sandbox`, pas `main` ; rien à changer dans NextStep), puis
-   `main` des deux dépôts (la branche porte aussi une entrée CHANTIERS : garder
-   celle-ci au merge) ; clore AG-042 dans `AGORA.md` ; **AG-043 ouvert le 04/11/2026** (domaine `@lotetgaronne.fr`, compte créé à la demande avec mot de passe par mail, mot de passe oublié, rubrique « Connexions TS » dans l'Admin, arrivée sur la connexion, bandeau du bac à sable ; code sur `sandbox` des deux dépôts, réponse de Codex attendue ; **2FA non décidée**, voir `AGORA.md` ; **essayé par l'utilisateur au bac à sable le 04/11/2026 : première connexion OK, refus d'une adresse hors `@lotetgaronne.fr` OK, mot de passe oublié OK** ; **non encore confirmés par lui** : tuiles avec horaire, bandeau rouge, rubrique « Connexions TS » de l'Admin, copie NextStep) ; registre RGPD (e-mails TS) dans `ateliers-backups` ; pas de « mot de passe
-   oublié » TS en v1. **Après la page TS** : ménage du `CLAUDE.md` (MD-LIB/CLAUDE.md,
-   « Ménage au prochain pull ») de NEWGEN et NextStep, liste avant/après à
-   présenter à l'utilisateur.
+**À reprendre en premier (passation du 04/11/2026, fin de session)** :
+1. **Mail au demandeur d'un ticket (AG-045), en ligne.** Essai de l'utilisateur
+   sur son propre ticket : pas de mail (voulu : l'auteur n'est pas prévenu de sa
+   propre action) mais **rien ne s'affichait**. **Proposé, en attente de oui/non** :
+   afficher « pas de mail : vous êtes l'auteur de ce ticket » (états `auteur` et
+   `anonyme`, API + écran + tests, les deux sites ; règle 65 de MD-LIB). Essai réel
+   à faire avec un ticket d'un autre auteur ayant l'adresse de l'utilisateur ;
+   **réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée**.
+2. **Registres dans `ateliers-backups`** (dépôt privé, cloné lecture seule dans
+   `/home/user/ateliers-backups` la session précédente ; sources HTML
+   `documents/sources/registre-securite.html` V0.9 et `registre-rgpd.html` V0.6,
+   rendu `node documents/sources/rendre.js`) : **aucune modification faite**. À y
+   porter : fiche T7 page des travailleurs sociaux (comptes `@lotetgaronne.fr`,
+   2FA par code mail, journal des connexions, registre des envois, durées),
+   anomalies validées (T1), mails de réponse aux tickets (T4/T5), nouvelles actions
+   du journal (T3), bilan mensuel le 5, et au registre de sécurité les audits
+   AG-042 à AG-045 de Codex. **Question à poser d'abord** : la V0.9 sécurité et la
+   V0.6 RGPD ont-elles été remises à quelqu'un ? (règles 49 et 54 de MD-LIB : non
+   remis, correction sur place ; remis, nouvelle version).
+3. **Ménage des `CLAUDE.md`** de NEWGEN et NextStep (`MD-LIB/CLAUDE.md`, « Ménage au
+   prochain pull ») : liste avant/après à présenter, accord avant commit.
+4. **Codex** : AG-043 (trois relectures), AG-044 et AG-045 : toutes ses réponses du
+   04/11 sont appliquées (`AGORA.md`, « Suite ») ; relecture de la version livrée
+   attendue (il lit `main`). Les blocs AG-042 à AG-045 sortent d'`AGORA.md` quand
+   l'utilisateur les tranche. **AG-040** reste à trancher par l'utilisateur.
+5. **Page des travailleurs sociaux** : en ligne, **URL non diffusée** aux travailleurs
+   sociaux (attendre la relecture de Codex puis l'accord de l'utilisateur) ; pas de
+   code de connexion pour les comptes Admin/superviseur (décision du 04/11).
+6. **Veilleur désactivé** (AG-039/040) : essai réel de reprise puis accord explicite
+   de l'utilisateur avant réactivation.
+7. **Méthode** (règles 63 à 65 de MD-LIB) : jamais `git pull` sur `main`, mais
+   `git fetch origin main` puis `git merge --ff-only origin/main` ; avant tout push
+   sur `main`, `git diff --stat origin/main HEAD` ne montre que le voulu ; NextStep
+   d'abord ; une CI rouge sur l'API = rien en production.
+8. **Ménage de ce fichier dû** (plus de 300 lignes) : retirer les tâches finies, garder
+   les invariants (`scripts/check-chantiers.sh`).
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
