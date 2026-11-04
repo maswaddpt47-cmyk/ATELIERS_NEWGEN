@@ -10,17 +10,9 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    par Codex**), page TS : tuile, titre « Agenda des ateliers collectifs… », première connexion sans code (AG-046) avec
    ses amendements (oubli promu, 30 jours, comptes d'avant la livraison). Pas de nouvelle relecture de Codex (règle 58 précisée le 04/11/2026 : une seule vérification ; l'audit trimestriel reprendra). **Essais réels de l'utilisateur à faire** : création d'un compte TS et première connexion, puis reconnexion avec code ; mail au demandeur d'un ticket reçu. Consigne de l'utilisateur du 04/11/2026 : **travailler sur `main`,
    plus sur `sandbox`.** **Réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée.**
-2. **Registres dans `ateliers-backups`** (dépôt privé, cloné lecture seule dans
-   `/home/user/ateliers-backups` la session précédente ; sources HTML
-   `documents/sources/registre-securite.html` V0.9 et `registre-rgpd.html` V0.6,
-   rendu `node documents/sources/rendre.js`) : **aucune modification faite**. À y
-   porter : fiche T7 page des travailleurs sociaux (comptes `@lotetgaronne.fr`,
-   2FA par code mail, journal des connexions, registre des envois, durées),
-   anomalies validées (T1), mails de réponse aux tickets (T4/T5), nouvelles actions
-   du journal (T3), bilan mensuel le 5, et au registre de sécurité les audits
-   AG-042 à AG-045 de Codex. **Question à poser d'abord** : la V0.9 sécurité et la
-   V0.6 RGPD ont-elles été remises à quelqu'un ? (règles 49 et 54 de MD-LIB : non
-   remis, correction sur place ; remis, nouvelle version).
+2. **Registres mis à jour le 04/11/2026** (`ateliers-backups` `10668ab`) : sécurité **V0.10**, RGPD **V0.7** (fiche T7 page TS,
+   mails des tickets, anomalies validées, audits Codex du 04/11) ; V0.9 et V0.6, remises, archivées. Nouveaux écarts RGPD
+   n° 12 à 14 (durée des comptes TS utilisés, information TS incomplète, avis du DPO avant diffusion de l'adresse TS).
 3. **Ménage des `CLAUDE.md`** de NEWGEN et NextStep (`MD-LIB/CLAUDE.md`, « Ménage au
    prochain pull ») : liste avant/après à présenter, accord avant commit.
 4. **Codex** : AG-043 et AG-044 confirmés, amendements d'AG-045 et AG-046 livrés (point 1). Les blocs AG-042 à
