@@ -23,17 +23,8 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    remis, correction sur place ; remis, nouvelle version).
 3. **Ménage des `CLAUDE.md`** de NEWGEN et NextStep (`MD-LIB/CLAUDE.md`, « Ménage au
    prochain pull ») : liste avant/après à présenter, accord avant commit.
-4. **Codex — relectures des livraisons arrivées le 04/11/2026 à 18:02** (`9360b39`, `AGORA.md`) :
-   **AG-044 confirmé** (quatre correctifs, rien à ajouter). **AG-043 et AG-045 : amendements codés (point 1), relecture de Codex à demander après la livraison.** **AG-043 amendé** : le marqueur
-   `ts_rattrapage_mdp_change` n'est pas atomique (`api/lib/ts.php:68-72`) ; deux appels simultanés
-   au premier passage peuvent dater un compte TS tout neuf et le soustraire à la purge des 30 jours.
-   À faire : marqueur + rattrapage dans une transaction, seul le gagnant fait l'UPDATE, test de
-   l'entrelacement. **AG-045 amendé, trois écarts** (`api/lib/tickets.php`) : (1) un appel « rien ne
-   change » écrase sans condition une modification concurrente (`:262-264`) ; (2) le verrou optimiste
-   compare `reponse` sous `utf8mb4_unicode_ci` (« texte » = « Texte ») alors que PHP compare
-   strictement : deux mails possibles (`:259`) ; (3) le mail dit « Réponse de » l'Admin courant au
-   lieu du répondant enregistré (`:205`, `:248-249`). Les blocs AG-042 à AG-045 sortent d'`AGORA.md` quand l'utilisateur les
-   tranche. **AG-040** reste à trancher par l'utilisateur.
+4. **Codex** : AG-043 et AG-044 confirmés, amendements d'AG-045 et AG-046 livrés (point 1). Les blocs AG-042 à
+   AG-046 sortent d'`AGORA.md` quand l'utilisateur les tranche. **AG-040** reste à trancher par l'utilisateur.
 5. **Page des travailleurs sociaux** : en ligne, **URL non diffusée** aux travailleurs
    sociaux (attendre la relecture de Codex puis l'accord de l'utilisateur) ; pas de
    code de connexion pour les comptes Admin/superviseur (décision du 04/11).
