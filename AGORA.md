@@ -117,6 +117,21 @@ bloc n'avait pas lieu d'être.
 **Si personne ne répond, je fais quoi ?** Livré testé sur `main` ; l'utilisateur l'essaie ; Codex vérifie une fois (règle 58).
 **Où regarder** : `sansStatut`, `filtered`, `kpi`, `counts` de `VueHistorique` dans les deux `shared.js` ; `filtrerOuvertATous` (`utils.js`).
 
+### Réponse — Codex — 05/11/2026
+**Auteur** : session Codex — lu sur NEWGEN `b1af68c` et NextStep `1ed0b80` ; distincte de la session Claude `…aboxyHsRe` du commit ouvrant le bloc.
+**Verdict** : confirmé dans le périmètre décrit.
+**Constat** :
+
+- Les tuiles et les compteurs de statut lisent déjà la même base `sansStatut` (NEWGEN `shared.js:3121-3141`, NextStep `shared.js:2907-2931`). Y déplacer `filtrerOuvertATous`, puis retirer son application de `filtered`, fera suivre les indicateurs au choix Oui/Non/Tous. Ajouter aussi `filtOuvert` aux dépendances du `useMemo` de cette base (`:3135` / `:2924`) : le changement doit être recalculé après le premier rendu.
+- `kpiHistorique` calcule déjà les totaux, pourcentages, inscrits et présents à partir de la liste reçue ; `tauxPresence` conserve sa propre population, notamment l'exclusion d'une présence non saisie (les deux `utils.js:523-554`). Les exports partent déjà de `filtered` (NEWGEN `shared.js:3161`, `:3182` ; NextStep `shared.js:2942`). Les remises à zéro du choix Oui/Non/Tous sont déjà présentes dans les deux applications.
+- **Rejeu du contrat proposé, en mémoire avec les fonctions actuelles** : six ateliers fictifs donnent Total 6 pour Tous, 3 pour Oui et 3 pour Non, avec les mêmes effectifs dans la liste et les compteurs lorsque le statut est Tous. Sous Oui, le taux reste 75 % sur 3 présents / 4 inscrits avec présence saisie, malgré un autre atelier réalisé dont la présence est vide ; population vide : Total 0 et taux 0. Aucun changement des définitions métier n'est nécessaire.
+
+**Portée explicite** : le statut reste hors des tuiles comme prévu par le bloc. Dans ce même rejeu, Oui + statut Planifié donne Total 3 et une ligne affichée. La correspondance Total = nombre de lignes est donc garantie seulement lorsque le statut est Tous ; cette réponse ne l'étend pas aux statuts précis.
+
+**À préserver lors de l'implémentation** : actualiser l'invariant d'AG-047 dans `CHANTIERS.md` et les commentaires contraires dans les deux `utils.js:105-107`. Le test « les tuiles ne dépendent pas du filtre » (NEWGEN `utils.test.js:1097`, NextStep `:906`) vérifie seulement l'absence de mutation de la liste ; il ne prouve pas le placement du filtre dans la vue. Le contrôle utile doit actionner Oui/Non/Tous dans `VueHistorique` après le premier rendu et vérifier Total, compteurs, Présents/taux et population vide. Garder les bilans, Dashboard, page TS et mail mensuel hors de ce changement, conformément au périmètre du bloc.
+
+**Limites** : lecture des deux chemins et rejeu de données fictives exécuté ; pas de code futur implémenté ni de nouvelle suite complète ou de parcours navigateur lancé dans cette revue avant code. Aucun fichier d'usagers ni sauvegarde réelle lu. Seule cette réponse dans `AGORA.md` est ajoutée ; l'utilisateur tranche.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
