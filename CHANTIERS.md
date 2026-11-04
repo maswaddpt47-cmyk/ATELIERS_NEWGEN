@@ -1,8 +1,20 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026, 20:00 (heure de Paris)**, base `main` : NEWGEN `7312ced`,
-NextStep `b2b601e` (déploiements et parité verts). Tient aussi les restes
-communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
+État au **04/11/2026, 20:54 (heure de Paris)**, bases `main` : NEWGEN `2d78af9`,
+NextStep `4a80510`. Dernière livraison fonctionnelle relue :
+NEWGEN `36db64f` / NextStep `b076d21` (tests, déploiements et parité verts).
+Tient aussi les restes communs à NextStep (même API, même base).
+
+**Passation Codex — 04/11/2026** : derniers correctifs AG-045 et AG-046 confirmés dans
+`85b5d7b` ; AG-043 et AG-044 déjà confirmés. Aucune nouvelle revue de ce même lot.
+La consigne de fin **✅ TÂCHE TERMINÉE** est enregistrée dans les deux `AGENTS.md`
+(NEWGEN `137198a`, NextStep `5434557`). Ménage des `CLAUDE.md` effectué
+(`2d78af9` / `4a80510`) ; règles communes renvoyées à MD-LIB.
+**Autorisations ChatGPT non résolues** : le réglage GitHub « Autoriser toutes les actions »
+est bien affiché, mais la capture de l'utilisateur montre encore une confirmation
+`create_tree`. Cause non établie ; ne pas présenter ces confirmations comme supprimées.
+Les anciens brouillons Codex locaux n'ont pas été publiés : reprendre les prochains travaux
+sur `main` à jour ; aucune annonce Nouveautés ajoutée par cette session.
 
 **À reprendre en premier (passation du 04/11/2026)** :
 1. **Essais réels de l'utilisateur** (livraison du 04/11 : tuile et titre de la page TS,
@@ -23,9 +35,7 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    l'utilisateur avant remise. Écarts RGPD n° 12 à 14 (durée des comptes TS utilisés, mention
    d'information de la page TS, avis du DPO avant diffusion de l'adresse TS).
 5. **Page TS** : en ligne, **adresse non diffusée** (après les essais et l'écart n° 14).
-6. **Ménage des `CLAUDE.md`** de NEWGEN et NextStep (« Ménage au prochain pull » de MD-LIB) :
-   liste avant/après présentée à l'utilisateur, commit à son accord.
-7. **Méthode** (règles 55, 58, 63 à 65 de MD-LIB) : `git fetch` puis `merge --ff-only`, jamais
+6. **Méthode** (règles 55, 58, 63 à 65 de MD-LIB) : `git fetch` puis `merge --ff-only`, jamais
    `git pull` sur `main` ; `git diff --stat origin/main HEAD` avant tout push ; NextStep
    d'abord ; mutations groupées ; une seule vérification de Codex par livraison.
 
