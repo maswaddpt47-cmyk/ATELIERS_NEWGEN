@@ -4,12 +4,9 @@
 communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
 
 **À reprendre en premier (passation du 04/11/2026)** :
-1. **AG-040 et AG-041 à trancher par l'utilisateur** : Codex a répondu aux deux
-   (AG-040 amendé, écarts corrigés `86b8752` ; AG-041 confirmé). Une fois
-   tranchés, les sortir d'`AGORA.md` vers le tableau.
-2. **Tickets modifiables** (en ligne, `shared.js?v=290` / NextStep `?v=262`) :
-   validation à l'écran par l'utilisateur, puis proposer une annonce
-   `NOUVEAUTES` (prochain `id` 37) et attendre son accord sur le texte.
+1. **AG-040 à trancher par l'utilisateur** : Codex a répondu (amendé), écarts
+   corrigés `86b8752`. Une fois tranché, le sortir d'`AGORA.md` vers le tableau.
+   (AG-041 tranché le 04/11/2026 : tickets validés à l'écran, **pas d'annonce**.)
 3. **Veilleur désactivé** : essai réel de reprise (`passages=1`) puis accord
    explicite de l'utilisateur avant réactivation ; run n° 3654 bloqué en file.
 4. **Codex** : l'utilisateur lui dit seulement « pull » (`AGENTS.md`) ; chaque
@@ -347,11 +344,10 @@ appel superflu, `sw.js` de désinscription.
 - **Tickets modifiables (03/11/2026, AG-041, en ligne)** : toute l'équipe,
   champs saisis (type, gêne, onglet, titre, description), tant que le statut est
   « Nouveau » ; ni mention « modifié », ni mail, ni journal (décisions de
-  l'utilisateur). **Confirmé par Codex le 03/11/2026** (AG-041, sans amendement :
+  l'utilisateur). **Validé à l'écran par l'utilisateur le 04/11/2026, pas d'annonce `NOUVEAUTES` (sa décision).** Confirmé par Codex le 03/11/2026 (AG-041, sans amendement :
   droits, champs, absence de mail et de journal, rendu en texte ; course
   « l'Admin change le statut pendant la modification » rejouée sur base jetable :
-  refus, ticket intact). Reste : validation à l'écran par l'utilisateur, et AG-041
-  à trancher. Premier « pull » de Codex selon `AGENTS.md` : il a répondu seul.
+  refus, ticket intact). Premier « pull » de Codex selon `AGENTS.md` : il a répondu seul.
 - **Corbeille** : un conseiller ne voit que ses ateliers animés ou co-animés
   (AG-034) ; l'Admin voit tout, sans suivre le sélecteur de conseiller (choix du
   27/10) ; purge définitive réservée admin/superviseur (AG-024). Testés.
