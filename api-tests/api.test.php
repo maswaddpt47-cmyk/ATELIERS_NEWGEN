@@ -901,6 +901,9 @@ $db->exec("INSERT INTO ateliers (id, statut, date, orienteur, commune, lieu, the
 $bornes = 0;
 foreach (['+13:00', '-12:00'] as $zone) {
     $db->exec("SET GLOBAL time_zone = '$zone'");
+    // Les sessions sont datées par PHP (Paris) mais lues avec NOW() de MySQL : un fuseau SQL décalé de plus de 6 h
+    // les ferait expirer et le test échouerait pour une autre raison que la frontière de minuit (CI du 04/11/2026, midi).
+    $db->exec("UPDATE sessions SET expire = '2099-01-01 00:00:00'");
     $jourSql = (new PDO("mysql:host=$hote;charset=utf8mb4", $util, $mdp))->query('SELECT CURDATE()')->fetchColumn();
     if ($jourSql === date('Y-m-d')) continue;
     $bornes++;
