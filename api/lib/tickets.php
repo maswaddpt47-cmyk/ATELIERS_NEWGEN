@@ -248,10 +248,28 @@ function action_repondre_ticket(PDO $db, array $p, array $session): array
     $reponduLe = $t['repondu_le']; $reponduPar = $t['repondu_par'];
     if ($reponse !== (string) $t['reponse'] && $reponse !== '') { $reponduLe = $maintenant; $reponduPar = $session['conseiller']; }
     $closLe = in_array($statut, TICKET_STATUTS_CLOS, true) ? ($t['clos_le'] ?: $maintenant) : null;
-    $db->prepare('UPDATE tickets SET statut = ?, reponse = ?, repondu_le = ?, repondu_par = ?, doublon_de = ?, clos_le = ? WHERE id = ?')
-       ->execute([$statut, $reponse, $reponduLe, $reponduPar, $doublon, $closLe, $id]);
+    // Droit d'envoyer le mail ATOMIQUE (Codex, AG-045) : quand le statut ou la réponse change, la mise à jour
+    // ne s'applique que si la ligne a encore l'ancien statut et l'ancienne réponse. Deux validations
+    // identiques simultanées lisent le même ancien état, mais une seule modifie la ligne : seule celle-là
+    // envoie. Les autres relisent le ticket, ne trouvent rien à envoyer, ou signalent un conflit.
+    $change = $statut !== (string) $t['statut'] || $reponse !== (string) $t['reponse'];
+    $maj = 'UPDATE tickets SET statut = ?, reponse = ?, repondu_le = ?, repondu_par = ?, doublon_de = ?, clos_le = ? WHERE id = ?';
+    $val = [$statut, $reponse, $reponduLe, $reponduPar, $doublon, $closLe, $id];
+    if ($change) {
+        $u = $db->prepare($maj . ' AND statut = ? AND reponse = ?');
+        $u->execute(array_merge($val, [(string) $t['statut'], (string) $t['reponse']]));
+        $gagne = $u->rowCount() === 1;
+    } else {
+        $db->prepare($maj)->execute($val);
+        $gagne = false;
+    }
     $ticket = ticket_lire($db, $id);
-    $mail = tickets_prevenir_auteur($db, $t, $ticket, (string) $session['conseiller']);
+    if ($change && !$gagne && ($ticket['statut'] !== $statut || (string) $ticket['reponse'] !== $reponse)) {
+        return ['ok' => false, 'error' => 'Ce ticket vient d\'être modifié par quelqu\'un d\'autre : rechargez la liste.'];
+    }
+    // Le mail décrit ce que CET appel a écrit, pas une relecture qui pourrait être plus récente.
+    $ecrit = array_merge($t, ['statut' => $statut, 'reponse' => $reponse, 'doublon_de' => $doublon]);
+    $mail = $gagne ? tickets_prevenir_auteur($db, $t, $ecrit, (string) $session['conseiller']) : 'inutile';
     return ['ok' => true, 'ticket' => $ticket, 'mail' => $mail, 'mail_a' => $mail === 'inutile' ? '' : (string) $t['auteur']];
 }
 
