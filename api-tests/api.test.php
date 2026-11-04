@@ -695,6 +695,19 @@ verifier(($e['ok'] ?? false) && count($m) === 5 && str_contains(end($m), 'A: nou
 $sans = appel(['action' => 'envoyerLienReinit'], $A + ['conseiller' => 'Conseiller Test', 'retour' => $RETOUR]);
 verifier(!($sans['ok'] ?? true) && str_contains($sans['error'] ?? '', 'Aucune adresse') && count($mails()) === 5, 'envoi du lien par l\'Admin : sans adresse, le dire (provisoire en secours)');
 
+// Connexion TS complète (AG-043 : 2FA) : mot de passe, puis code lu dans le dernier mail.
+// Le délai d'une minute entre deux défis est levé pour pouvoir enchaîner les essais.
+function ts_connexion(string $id, string $mdp, ?array &$etape1 = null): array
+{
+    global $db, $dossierMails;
+    $db->prepare('UPDATE comptes_ts SET code_expire = NULL WHERE email = ?')->execute([mb_strtolower(preg_replace('/\s+/', '', $id))]);
+    $etape1 = appel(['action' => 'tsConnexion'], ['identifiant' => $id, 'password' => $mdp]);
+    if (!($etape1['etape2'] ?? false)) return $etape1;
+    $f = glob("$dossierMails/*.txt"); sort($f);
+    preg_match('/Code de connexion : (\d{6})/', file_get_contents(end($f)), $m);
+    return appel(['action' => 'tsCode'], ['defi' => $etape1['defi'], 'code' => $m[1] ?? '']);
+}
+
 // ── Page des travailleurs sociaux (AG-042, 04/11/2026) ────────────────────
 echo "\nAPI — page des travailleurs sociaux\n";
 array_map('unlink', glob("$dossierMails/*.txt"));
@@ -768,7 +781,7 @@ $inconnu = appel(['action' => 'tsConnexion'], ['identifiant' => 'personne@exampl
 $faux = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => 'x']);
 verifier(($inconnu['error'] ?? '') === TS_ERREUR_CONNEXION && ($faux['error'] ?? '') === TS_ERREUR_CONNEXION, 'connexion : même message, compte connu ou non');
 verifier(appel(['action' => 'tsConnexion', 'identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $provisoire])['ok'] === false, 'connexion : mot de passe dans l\'URL ignoré');
-$ts = appel(['action' => 'tsConnexion'], ['identifiant' => 'TS. Un@Lotetgaronne.fr', 'password' => $provisoire]);
+$ts = ts_connexion('TS. Un@Lotetgaronne.fr', $provisoire);
 verifier(($ts['ok'] ?? false) && ($ts['doit_changer'] ?? false) === true, 'connexion TS (adresse avec espace et majuscules du clavier) : provisoire signalé');
 $T = ['token' => $ts['token'] ?? ''];
 verifier(($ts_a = appel(['action' => 'tsAteliers'], $T))['ok'] === false && ($ts_a['doit_changer'] ?? false), 'provisoire : ateliers refusés tant qu\'il n\'est pas changé');
@@ -824,7 +837,7 @@ verifier(appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@lotetgaronne.f
 verifier(appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => 'Travail-Social-47!'])['error'] === TS_ERREUR_CONNEXION, 'compte désactivé : même message d\'échec');
 appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@lotetgaronne.fr', 'actif' => '1']);
 $re = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']);
-verifier(($re['ok'] ?? false) && appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $re['newPassword']])['doit_changer'] === true, 'réinitialisation : nouveau provisoire');
+verifier(($re['ok'] ?? false) && ts_connexion('ts.un@lotetgaronne.fr', $re['newPassword'])['doit_changer'] === true, 'réinitialisation : nouveau provisoire');
 for ($i = 0; $i < API_ECHECS_MAX; $i++) appel(['action' => 'tsConnexion'], ['identifiant' => 'bloque@example.org', 'password' => 'x']);
 verifier(str_contains(appel(['action' => 'tsConnexion'], ['identifiant' => 'bloque@example.org', 'password' => 'x'])['error'] ?? '', 'Trop de tentatives'), 'blocage après ' . API_ECHECS_MAX . ' échecs, même pour une adresse inconnue');
 
@@ -841,12 +854,12 @@ verifier($o1 === ['ok' => true] && $o2 === $o1 && count($mails()) === $nbm + 1, 
 $mo = $mails(); $dernier = end($mo);
 verifier(str_starts_with($dernier, 'A: ts.un@lotetgaronne.fr') && str_contains($dernier, 'Nouveau mot de passe provisoire') && preg_match('/Mot de passe provisoire : (\S{12})\n/', $dernier, $mo2) === 1, 'oubli : mail au titulaire avec un nouveau provisoire');
 $oubli = $mo2[1] ?? '';
-verifier(($T2 = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $re['newPassword']]))['ok'] === true, 'oubli : l\'ancien mot de passe reste valable tant que le provisoire n\'est pas employé (pas de blocage par un tiers)');
+verifier(($T2 = ts_connexion('ts.un@lotetgaronne.fr', $re['newPassword']))['ok'] === true, 'oubli : l\'ancien mot de passe reste valable tant que le provisoire n\'est pas employé (pas de blocage par un tiers)');
 $nbm = count($mails());
 verifier(appel(['action' => 'tsMdpOublie'], ['email' => 'ts.un@lotetgaronne.fr']) === $o1 && count($mails()) === $nbm, 'oubli : une seule demande par compte et par 15 min, même réponse, aucun mail de plus');
-verifier(($o3 = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $oubli]))['ok'] === true && ($o3['doit_changer'] ?? false) === true, 'oubli : le provisoire reçu ouvre le compte, changement obligatoire');
+verifier(($o3 = ts_connexion('ts.un@lotetgaronne.fr', $oubli))['ok'] === true && ($o3['doit_changer'] ?? false) === true, 'oubli : le provisoire reçu ouvre le compte, changement obligatoire');
 verifier(appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $re['newPassword']])['ok'] === false, 'oubli : l\'ancien mot de passe est remplacé une fois le provisoire employé');
-verifier(appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $oubli])['ok'] === true, 'oubli : le provisoire reste le mot de passe jusqu\'au changement');
+verifier(ts_connexion('ts.un@lotetgaronne.fr', $oubli)['ok'] === true, 'oubli : le provisoire reste le mot de passe jusqu\'au changement');
 $r = appel(['action' => 'tsMdpOublie'], ['email' => 'agent@example.org']);
 verifier(($r['ok'] ?? true) === false && str_contains($r['error'] ?? '', '@lotetgaronne.fr'), 'oubli : domaine imposé aussi');
 // AG-043 : connexions de la page, lues dans le journal (lecture seule, non journalisée).

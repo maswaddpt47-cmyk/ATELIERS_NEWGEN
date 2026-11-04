@@ -22,6 +22,8 @@ const TS_DEMANDES_JOURS = 90;    // purge du registre des demandes
 const TS_JAMAIS_CONNECTE_JOURS = 30;   // provisoire jamais changé : compte supprimé (AG-043)
 const TS_OUBLI_HEURES = 24;      // validité du provisoire envoyé par « mot de passe oublié »
 const TS_OUBLI_ESPACE_MIN = 15;  // une seule demande d'oubli par compte et par 15 min
+const TS_CODE_MINUTES = 10;      // validité du code de connexion envoyé par mail (2FA, AG-043)
+const TS_CODE_ESSAIS = 5;        // codes faux avant d'effacer le défi
 const TS_DOMAINE = '@lotetgaronne.fr'; // seules adresses acceptées (AG-043, 04/11/2026)
 const TS_EMAIL_MAX = 97;         // 'ts:' + e-mail tient dans VARCHAR(100) (sessions, tentatives)
 const TS_CHAMPS = ['date', 'horaire', 'statut', 'orienteur', 'commune', 'lieu', 'public', 'thematique'];
@@ -37,6 +39,7 @@ const TS_URL_PAGE_BAC = [
     'nextstep' => 'https://ateliers-numeriques.alwaysdata.net/sandbox/nextstep/ts.html',
 ];
 const TS_ERREUR_CONNEXION = 'Identifiant ou mot de passe incorrect';
+const TS_ERREUR_CODE = 'Code incorrect ou expiré : recommencez la connexion.';
 
 function ts_schema(PDO $db): void
 {
@@ -48,6 +51,9 @@ function ts_schema(PDO $db): void
     // Colonnes ajoutées après la création de la table (AG-043) : bases déjà en service.
     if (!$db->query("SHOW COLUMNS FROM comptes_ts LIKE 'hash_oubli'")->fetch()) {
         $db->exec('ALTER TABLE comptes_ts ADD COLUMN hash_oubli VARCHAR(255) NULL, ADD COLUMN oubli_le DATETIME NULL');
+    }
+    if (!$db->query("SHOW COLUMNS FROM comptes_ts LIKE 'code_hash'")->fetch()) {
+        $db->exec('ALTER TABLE comptes_ts ADD COLUMN code_hash VARCHAR(64) NULL, ADD COLUMN defi_hash VARCHAR(64) NULL, ADD COLUMN code_expire DATETIME NULL, ADD COLUMN code_essais TINYINT NOT NULL DEFAULT 0');
     }
     $ok = true;
 }
@@ -249,15 +255,80 @@ function action_ts_connexion(PDO $db, array $p): array
         if ($role === 'ts' || $c) api_echec_mdp($db, $cleTentatives, (string) ($p['userAgent'] ?? ''), 'ts');
         return ['ok' => false, 'error' => TS_ERREUR_CONNEXION];
     }
+    // Compte TS : le mot de passe ne suffit pas (2FA par code reçu par mail, AG-043).
+    // Les échecs ne sont remis à zéro qu'à la fin de la connexion complète.
+    if ($role === 'ts') return ts_envoyer_defi($db, $id, (string) ($p['userAgent'] ?? ''));
     $db->prepare('DELETE FROM tentatives WHERE conseiller = ?')->execute([$cleTentatives]);
+    return ts_ouvrir_session($db, $id, $role, false, (string) ($p['userAgent'] ?? ''));
+}
+
+function ts_ouvrir_session(PDO $db, string $id, string $role, bool $doitChanger, string $ua): array
+{
     $jeton = bin2hex(random_bytes(32));
     $db->exec('DELETE FROM sessions WHERE expire < NOW()');
     $db->prepare('INSERT INTO sessions (jeton_hash, conseiller, role, expire) VALUES (?, ?, ?, ?)')
        ->execute([hash('sha256', $jeton), TS_PREFIXE . $id, 'ts', date('Y-m-d H:i:s', time() + API_JETON_DUREE_S)]);
-    api_journal($db, 'loginTs', $id, '', $role === 'ts' ? 'ts' : $role, 1, 0, (string) ($p['userAgent'] ?? ''), 'ts');
+    api_journal($db, 'loginTs', $id, '', $role === 'ts' ? 'ts' : $role, 1, 0, $ua, 'ts');
     $r = ['ok' => true, 'token' => $jeton];
     if ($doitChanger) $r['doit_changer'] = true;
     return $r;
+}
+
+// 2FA (AG-043) : mot de passe accepté → code à 6 chiffres envoyé à l'adresse du compte,
+// jeton de défi rendu au navigateur (empreintes seules en base). Un seul défi par compte ;
+// un nouveau n'est pas accepté pendant la première minute (évite l'inondation de la boîte).
+function ts_envoyer_defi(PDO $db, string $id, string $ua): array
+{
+    $s = $db->prepare('SELECT (code_expire IS NOT NULL AND code_expire > NOW() + INTERVAL ' . (TS_CODE_MINUTES - 1) . ' MINUTE) FROM comptes_ts WHERE email = ?');
+    $s->execute([$id]);
+    if ((int) $s->fetchColumn() === 1) return ['ok' => false, 'error' => 'Un code vient d\'être envoyé : attendez une minute avant de recommencer.'];
+    $code = sprintf('%06d', random_int(0, 999999));
+    $defi = bin2hex(random_bytes(24));
+    $db->prepare('UPDATE comptes_ts SET code_hash = ?, defi_hash = ?, code_expire = NOW() + INTERVAL ' . TS_CODE_MINUTES . ' MINUTE, code_essais = 0 WHERE email = ?')
+       ->execute([hash('sha256', $code . ':' . $id), hash('sha256', $defi), $id]);
+    $texte = "Bonjour,\n\nCode de connexion : $code\n\nIl est valable " . TS_CODE_MINUTES . " minutes. Si vous n'êtes pas à l'origine de cette connexion, ignorez ce message et changez votre mot de passe (« Mot de passe oublié » sur la page).\n";
+    $html = '<div style="font-family:sans-serif;max-width:640px"><p>Bonjour,</p><p>Code de connexion : <strong style="font-family:Consolas,monospace;font-size:20px;letter-spacing:3px">' . $code . '</strong></p>'
+          . '<p style="color:#4a5568;font-size:13px">Il est valable ' . TS_CODE_MINUTES . ' minutes. Si vous n\'êtes pas à l\'origine de cette connexion, ignorez ce message et changez votre mot de passe (« Mot de passe oublié » sur la page).</p></div>';
+    $envoye = false;
+    try { $envoye = mail_envoyer($id, 'Votre code de connexion — ateliers numériques', $texte, $html); } catch (Throwable $e) { /* annulé ci-dessous */ }
+    if (!$envoye) {
+        $db->prepare('UPDATE comptes_ts SET code_hash = NULL, defi_hash = NULL, code_expire = NULL, code_essais = 0 WHERE email = ?')->execute([$id]);
+        return ['ok' => false, 'error' => 'Envoi du code impossible : réessayez dans un instant.'];
+    }
+    return ['ok' => true, 'etape2' => true, 'defi' => $defi];
+}
+
+// Seconde étape : défi + code → jeton de session. Un code faux compte dans le même
+// compteur d'échecs que le mot de passe ; après TS_CODE_ESSAIS codes faux, le défi est effacé.
+function action_ts_code(PDO $db, array $p): array
+{
+    ts_schema($db);
+    $defi = trim((string) ($p['defi'] ?? ''));
+    $code = preg_replace('/\D/', '', (string) ($p['code'] ?? ''));
+    if ($defi === '' || strlen($code) !== 6) return ['ok' => false, 'error' => TS_ERREUR_CODE];
+    $s = $db->prepare('SELECT email, actif, doit_changer, code_hash, code_essais, (code_expire IS NOT NULL AND code_expire > NOW()) AS valide FROM comptes_ts WHERE defi_hash = ?');
+    $s->execute([hash('sha256', $defi)]);
+    $c = $s->fetch(PDO::FETCH_ASSOC);
+    if (!$c) return ['ok' => false, 'error' => TS_ERREUR_CODE];
+    $id = $c['email'];
+    $cle = TS_PREFIXE . $id;
+    $bloque = api_blocage($db, $cle);
+    if ($bloque !== null) return ['ok' => false, 'error' => $bloque];
+    $efface = 'UPDATE comptes_ts SET code_hash = NULL, defi_hash = NULL, code_expire = NULL, code_essais = 0 WHERE email = ?';
+    if ((int) $c['actif'] !== 1 || (int) $c['valide'] !== 1 || $c['code_hash'] === null) {
+        $db->prepare($efface)->execute([$id]);
+        return ['ok' => false, 'error' => TS_ERREUR_CODE];
+    }
+    if (!hash_equals($c['code_hash'], hash('sha256', $code . ':' . $id))) {
+        $essais = (int) $c['code_essais'] + 1;
+        if ($essais >= TS_CODE_ESSAIS) $db->prepare($efface)->execute([$id]);
+        else $db->prepare('UPDATE comptes_ts SET code_essais = ? WHERE email = ?')->execute([$essais, $id]);
+        api_echec_mdp($db, $cle, (string) ($p['userAgent'] ?? ''), 'ts');
+        return ['ok' => false, 'error' => TS_ERREUR_CODE];
+    }
+    $db->prepare($efface)->execute([$id]);
+    $db->prepare('DELETE FROM tentatives WHERE conseiller = ?')->execute([$cle]);
+    return ts_ouvrir_session($db, $id, 'ts', (int) $c['doit_changer'] === 1, (string) ($p['userAgent'] ?? ''));
 }
 
 // ── Session TS ────────────────────────────────────────────────────────────

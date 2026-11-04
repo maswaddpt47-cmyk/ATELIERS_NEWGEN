@@ -196,6 +196,10 @@ CREATE TABLE IF NOT EXISTS comptes_ts (
   cree_le      DATETIME     NOT NULL,
   hash_oubli   VARCHAR(255) NULL,     -- « mot de passe oublié » (AG-043) : provisoire envoyé par mail,
   oubli_le     DATETIME     NULL,     -- valable 24 h, sans toucher le mot de passe actuel jusqu'à son emploi
+  code_hash    VARCHAR(64)  NULL,     -- 2FA par mail (AG-043) : empreinte du code à 6 chiffres,
+  defi_hash    VARCHAR(64)  NULL,     -- du jeton de défi rendu au navigateur,
+  code_expire  DATETIME     NULL,     -- valable 10 min,
+  code_essais  TINYINT      NOT NULL DEFAULT 0,   -- codes faux déjà tentés
   PRIMARY KEY (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

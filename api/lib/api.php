@@ -91,6 +91,8 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
             return action_ts_mdp_oublie($db, $p);
         case 'tsConnexion':
             return action_ts_connexion($db, $p);
+        case 'tsCode':
+            return action_ts_code($db, $p);
         case 'logLogin':
             // Journalisé par checkPassword ; gardé pour le client actuel.
             return ['ok' => true];
