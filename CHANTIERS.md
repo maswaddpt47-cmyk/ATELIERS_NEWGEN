@@ -1,16 +1,16 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026, 18:54 (heure de Paris)**, base `main` : NEWGEN `2e921a0`,
-NextStep `34ec1e2` (déploiements et parité verts). Tient aussi les restes
+État au **04/11/2026, 19:10 (heure de Paris)**, base `main` : NEWGEN `36db64f`,
+NextStep `b076d21` (déploiements et parité verts). Tient aussi les restes
 communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
 
 **À reprendre en premier (passation du 04/11/2026, fin de session)** :
-1. **Livré sur `main` le 04/11/2026** (NEWGEN `2e921a0`, NextStep `34ec1e2`, déploiements verts) : message explicite
-   des tickets et amendements de Codex à AG-045 ; rattrapage TS unique (AG-043) ; page TS : titre « Agenda des ateliers
-   collectifs… », première connexion sans code (AG-046) avec ses deux amendements (provisoire d'oubli promu et compte
-   de plus de 30 jours gardent le code). **Relecture de Codex de cette livraison à demander** (AG-043, AG-045, AG-046).
-   Consigne de l'utilisateur du 04/11/2026 : **travailler sur `main`, plus sur `sandbox`.**
-   **Réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée.**
+1. **Livré sur `main` le 04/11/2026** (NEWGEN `36db64f`, NextStep `b076d21`, déploiements verts) : tickets (message
+   explicite, amendements de Codex à AG-045, libellés « pas de mail » exacts), rattrapage TS unique (AG-043, **confirmé
+   par Codex**), page TS : tuile, titre « Agenda des ateliers collectifs… », première connexion sans code (AG-046) avec
+   ses amendements (oubli promu, 30 jours, comptes d'avant la livraison). **Relecture de Codex des derniers correctifs
+   (AG-045 libellés, AG-046 reprise) à demander.** Consigne de l'utilisateur du 04/11/2026 : **travailler sur `main`,
+   plus sur `sandbox`.** **Réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée.**
 2. **Registres dans `ateliers-backups`** (dépôt privé, cloné lecture seule dans
    `/home/user/ateliers-backups` la session précédente ; sources HTML
    `documents/sources/registre-securite.html` V0.9 et `registre-rgpd.html` V0.6,
