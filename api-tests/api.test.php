@@ -732,8 +732,8 @@ $inconnu = appel(['action' => 'tsConnexion'], ['identifiant' => 'personne@exampl
 $faux = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@example.org', 'password' => 'x']);
 verifier(($inconnu['error'] ?? '') === TS_ERREUR_CONNEXION && ($faux['error'] ?? '') === TS_ERREUR_CONNEXION, 'connexion : même message, compte connu ou non');
 verifier(appel(['action' => 'tsConnexion', 'identifiant' => 'ts.un@example.org', 'password' => $cree['newPassword']])['ok'] === false, 'connexion : mot de passe dans l\'URL ignoré');
-$ts = appel(['action' => 'tsConnexion'], ['identifiant' => 'TS.un@example.org', 'password' => $cree['newPassword']]);
-verifier(($ts['ok'] ?? false) && ($ts['doit_changer'] ?? false) === true, 'connexion TS : provisoire signalé');
+$ts = appel(['action' => 'tsConnexion'], ['identifiant' => 'TS. Un@Example.org', 'password' => $cree['newPassword']]);
+verifier(($ts['ok'] ?? false) && ($ts['doit_changer'] ?? false) === true, 'connexion TS (adresse avec espace et majuscules du clavier) : provisoire signalé');
 $T = ['token' => $ts['token'] ?? ''];
 verifier(($ts_a = appel(['action' => 'tsAteliers'], $T))['ok'] === false && ($ts_a['doit_changer'] ?? false), 'provisoire : ateliers refusés tant qu\'il n\'est pas changé');
 verifier(appel(['action' => 'tsChangerMdp'], $T + ['password' => 'court'])['ok'] === false, 'changement : politique de mot de passe');

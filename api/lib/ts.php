@@ -39,7 +39,8 @@ function ts_schema(PDO $db): void
 // E-mail normalisé (minuscules), ou null s'il est invalide ou trop long.
 function ts_email(mixed $v): ?string
 {
-    $e = mb_strtolower(trim((string) $v));
+    // Espaces retirés : le clavier d'un téléphone en ajoute après un point.
+    $e = mb_strtolower(preg_replace('/\s+/u', '', (string) $v));
     if ($e === '' || strlen($e) > TS_EMAIL_MAX || !filter_var($e, FILTER_VALIDATE_EMAIL)) return null;
     return $e;
 }
