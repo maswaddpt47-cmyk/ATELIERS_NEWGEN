@@ -12,7 +12,7 @@ async function ouvrir(page, baseURL, { mail = 'envoye', mailDem = true, appels =
     else if (action === 'getAll') r = { ok: true, entries: [], years: [], lists: { statuts: ['Réalisé'], conseillers: ['Alice Martin'], publics: [], materiels: [] }, config: {}, role: 'admin', comptes: [], visibility: {}, colors: {} };
     else if (action === 'getComptes') r = { ok: true, comptes: [{ conseiller: 'Alice Martin', role: 'admin', actif: 'OUI' }] };
     else if (action === 'getTickets') r = { ok: true, tickets: [ticket], moi: 'Alice Martin', mail_demandeur: mailDem };
-    else if (action === 'repondreTicket') { appels.push({ action, statut: q.get('statut'), reponse: q.get('reponse') }); r = { ok: true, ticket: { ...ticket, statut: q.get('statut'), reponse: q.get('reponse') }, mail, mail_a: mail === 'inutile' ? '' : 'Nouveau Venu' }; }
+    else if (action === 'repondreTicket') { appels.push({ action, statut: q.get('statut'), reponse: q.get('reponse') }); r = { ok: true, ticket: { ...ticket, statut: q.get('statut'), reponse: q.get('reponse') }, mail, mail_a: ['inchange', 'deja'].includes(mail) ? '' : 'Nouveau Venu' }; }
     else if (action === 'setConfig') { appels.push({ action, key: q.get('key'), value: q.get('value') }); }
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(r) });
   });
@@ -27,7 +27,11 @@ async function ouvrir(page, baseURL, { mail = 'envoye', mailDem = true, appels =
 const cas = [
   ['envoye', /mail envoyé à Nouveau Venu/],
   ['sans_adresse', /pas de mail : aucune adresse enregistrée pour Nouveau Venu/],
-  ['desactive', /mail au demandeur désactivé/],
+  ['desactive', /pas de mail : le mail au demandeur est désactivé/],
+  ['inchange', /pas de mail : ni le statut ni la réponse n'ont changé/],
+  ['auteur', /pas de mail : vous êtes l'auteur de ce ticket/],
+  ['anonyme', /pas de mail : l'auteur de ce ticket est anonymisé/],
+  ['deja', /pas de mail : un envoi identique vient d'être fait/],
   ['echec', /le mail à Nouveau Venu n'a pas pu partir/],
 ];
 for (const [etat, motif] of cas) {
@@ -39,16 +43,13 @@ for (const [etat, motif] of cas) {
     expect(errs).toEqual([]);
   });
 }
-test('Admin — tickets : « inutile » ne parle pas de mail ; l\'interrupteur écrit la config', async ({ page, baseURL }) => {
+test('Admin — tickets : l\'interrupteur du mail au demandeur écrit la config', async ({ page, baseURL }) => {
   const errs = []; page.on('pageerror', e => errs.push(e.message));
   const appels = [];
-  await ouvrir(page, baseURL, { mail: 'inutile', appels });
+  await ouvrir(page, baseURL, { mail: 'envoye', appels });
   const sw = page.getByLabel(/Prévenir le demandeur par mail/);
   await expect(sw).toBeChecked();
   await sw.uncheck();
   await expect.poll(() => appels.find(a => a.action === 'setConfig')).toEqual({ action: 'setConfig', key: 'tickets_mail_demandeur', value: 'false' });
-  await page.getByRole('button', { name: /Enregistrer/ }).first().click();
-  await expect(page.getByText('Ticket mis à jour')).toBeVisible();
-  await expect(page.getByText(/mail envoyé|pas de mail/)).toHaveCount(0);
   expect(errs).toEqual([]);
 });
