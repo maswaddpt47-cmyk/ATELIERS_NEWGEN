@@ -436,6 +436,23 @@ MySQL d'Alwaysdata non vérifiés. L'exemption des comptes Admin/superviseur res
 confirmer » par l'auteur ; la protection ne couvre toujours pas une boîte mail compromise. Seule
 cette réponse est publiée, sans modification de code ni fusion de branche.
 
+## AG-044 — Onglet Anomalies : valider une anomalie vérifiée et la sortir de la liste — ouvert le 04/11/2026
+**Auteur** : session du 04/11/2026 (trailer `Claude-Session: …umdua5`) — lu sur `a0a9025`
+**Proposition** (demande de l'utilisateur du 04/11/2026, capture d'une anomalie « Début après 15h30 » vérifiée comme légitime) : un bouton **« ✅ Valider »** sur chaque anomalie de l'onglet Anomalies de l'Admin la sort de la liste une fois vérifiée.
+**Contradicteur** : Codex
+**Critère déclencheur** : 7 (la liste, ses compteurs et ses filtres changent ; définitions à fixer avant le code) et 1 (nouvelle table et nouveau contrat d'API).
+**Définitions proposées (à trancher par l'utilisateur)** :
+- **Unité validée = un couple (atelier, catégorie)**. Les catégories sont celles de l'onglet : champs manquants, commune invalide, présents > inscrits, ordinateurs sans Classe mobile, début après 15h30. Un atelier qui cumule deux catégories reste dans la liste pour celle qui n'est pas validée.
+- **Empreinte de la valeur vérifiée** : chaque validation garde les valeurs concernées au moment du clic (heure, commune, présents et inscrits, nombre d'ordinateurs, liste des champs vides). **Si la valeur change ensuite, l'anomalie réapparaît** : on a validé un état, pas un atelier pour toujours.
+- **Compteurs** : « Total anomalies » et chaque tuile ne comptent **que les anomalies non validées** ; le texte « N entrée(s) avec anomalie(s) sur M au total » aussi. Un compteur **« Validées (n) »** à part liste les validations encore valables (empreinte identique), avec **« Annuler la validation »**.
+- **Aucun autre calcul ne change** : stock d'ordinateurs, alertes de conflit, indicateurs, bilans, exports et mails continuent de traiter l'atelier tel qu'il est (un atelier « ordinateurs sans Classe mobile » validé reste non compté dans le stock).
+- **Qui** : admin et superviseur (l'onglet est dans l'Admin). Les validations sont **partagées** entre eux, avec date (heure de Paris) et nom de l'auteur.
+**Choix techniques à contredire** : table dédiée `anomalies_validees` (clé `atelier|catégorie` unique, empreinte opaque ≤ 200 caractères, date, auteur), écrite par `validerAnomalie` (insertion ou mise à jour atomique) et `annulerAnomalie` (suppression), lue par `getAnomaliesValidees` à l'ouverture de l'onglet seulement (pas au démarrage de l'Admin). Pas de blob JSON dans `config` : deux admins qui valident en même temps perdraient un écrasement. Le serveur ne vérifie pas que l'anomalie existe (il ne la calcule pas) : il contrôle le rôle, la catégorie connue et les longueurs. Les validations d'un atelier supprimé restent en base, sans effet.
+**Ce que ça engage** : une liste d'anomalies qui n'est plus exhaustive pour qui ne regarde pas les validées ; un atelier validé puis corrigé réapparaît seulement si la valeur concernée change.
+**Non vérifié par l'auteur** : (a) l'empreinte est calculée par le navigateur, un admin pourrait enregistrer une empreinte quelconque (accepté : le rôle est admin) ; (b) la catégorie « champs manquants » prend pour empreinte la liste des champs vides, donc remplir un autre champ du même atelier ne la fait pas réapparaître.
+**Si personne ne répond, je fais quoi ?** Je livre la version testée au bac à sable ; l'utilisateur l'essaie ; Codex vérifie une fois (règle 58).
+**Où regarder** : `shared.js` (`VueAnomalies`), `api/lib/api.php` (liste des actions Admin), nouveau `api/lib/anomalies.php`, `api/lib/schema.sql`, `api-tests/api.test.php`.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
