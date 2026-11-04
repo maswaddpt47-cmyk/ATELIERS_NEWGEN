@@ -46,6 +46,9 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    `git fetch origin main` puis `git merge --ff-only origin/main` ; avant tout push
    sur `main`, `git diff --stat origin/main HEAD` ne montre que le voulu ; NextStep
    d'abord ; une CI rouge sur l'API = rien en production.
+9. **Page TS : tuile à l'image de l'Historique de NextStep** (demande du 04/11/2026, `e723f6b` NEWGEN,
+   `a9df716` NextStep) : sur `sandbox` des deux dépôts, **pas sur `main`**. Sans conseiller, durée ni
+   présents (l'API TS ne les envoie pas) ; grille gardée sur PC. Essai de l'utilisateur, puis `main` sur son accord.
 8. **Ménage de ce fichier dû** (plus de 300 lignes) : retirer les tâches finies, garder
    les invariants (`scripts/check-chantiers.sh`).
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
