@@ -190,9 +190,7 @@ function action_ts_ateliers(PDO $db, array $session): array
     // chaque valeur à un booléen, un objet imbriqué serait écrasé.
     $vis = api_json(api_config_base($db)['visibility'] ?? '', []);
     $l = array_values(array_filter($l, fn($a) => !ts_public_cache($vis, (string) $a['public'])));
-    // Menu de filtre : dès qu'un atelier affiché porte un type de public.
-    $filtre = (bool) array_filter($l, fn($a) => trim((string) $a['public']) !== '');
-    return ['ok' => true, 'ateliers' => $l, 'filtrePublic' => $filtre];
+    return ['ok' => true, 'ateliers' => $l];
 }
 
 // Type de public éteint pour la page TS ? Même lecture que visibiliteEffective
