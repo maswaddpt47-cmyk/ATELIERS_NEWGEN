@@ -16,8 +16,9 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    travailleurs sociaux » + Visibilité « Page TS ». Code sur la branche
    `claude/social-workers-workshops-history-l8tat7` des deux dépôts, **pas sur
    `main`** : l'utilisateur veut l'essayer d'abord au bac à sable. NextStep
-   `sandbox` = `d0e7fee` ; NEWGEN `sandbox` **pas encore poussé** (branche
-   d'octobre à écraser : accord de l'utilisateur demandé). Après essai :
+   `sandbox` = `d0e7fee` ; NEWGEN `sandbox` = `6f1568c` (ancienne branche
+   d'octobre écrasée avec l'accord de l'utilisateur, 04/11/2026) : **au bac à
+   sable**, déploiement réussi, essai de l'utilisateur attendu. Après essai :
    `main` des deux, puis vérification de Codex avant de diffuser l'URL (choisie
    par l'utilisateur). Restes : registre RGPD (e-mails des TS, demandes purgées
    à 90 j) dans `ateliers-backups` ; pas de « mot de passe oublié » TS en v1.
