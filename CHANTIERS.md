@@ -11,6 +11,16 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    explicite de l'utilisateur avant réactivation ; run n° 3654 bloqué en file.
 4. **Codex** : l'utilisateur lui dit seulement « pull » (`AGENTS.md`) ; chaque
    bloc mis en ligne s'annonce quand même à l'utilisateur.
+5. **Page des travailleurs sociaux (AG-042, ouvert le 04/11/2026, Codex)** :
+   `ts.html` (NEWGEN + NextStep), API `api/lib/ts.php`, rubrique Admin « Accès
+   travailleurs sociaux » + Visibilité « Page TS ». Code sur la branche
+   `claude/social-workers-workshops-history-l8tat7` des deux dépôts, **pas sur
+   `main`** : l'utilisateur veut l'essayer d'abord au bac à sable. NextStep
+   `sandbox` = `d0e7fee` ; NEWGEN `sandbox` **pas encore poussé** (branche
+   d'octobre à écraser : accord de l'utilisateur demandé). Après essai :
+   `main` des deux, puis vérification de Codex avant de diffuser l'URL (choisie
+   par l'utilisateur). Restes : registre RGPD (e-mails des TS, demandes purgées
+   à 90 j) dans `ateliers-backups` ; pas de « mot de passe oublié » TS en v1.
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
