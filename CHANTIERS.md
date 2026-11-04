@@ -1,9 +1,19 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **03/11/2026**, base `main` (`ac1da68`). Tient aussi les restes
+État au **04/11/2026**, base `main` (`e78657e`). Tient aussi les restes
 communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
-Depuis le 29/10 : règles MD-LIB 48 à 59 propagées dans `CLAUDE.md` (30/10 →
-01/11) et frise du parc (02/11) ; rien d'autre côté code.
+
+**À reprendre en premier (passation du 04/11/2026)** :
+1. **AG-040 et AG-041 à trancher par l'utilisateur** : Codex a répondu aux deux
+   (AG-040 amendé, écarts corrigés `86b8752` ; AG-041 confirmé). Une fois
+   tranchés, les sortir d'`AGORA.md` vers le tableau.
+2. **Tickets modifiables** (en ligne, `shared.js?v=290` / NextStep `?v=262`) :
+   validation à l'écran par l'utilisateur, puis proposer une annonce
+   `NOUVEAUTES` (prochain `id` 37) et attendre son accord sur le texte.
+3. **Veilleur désactivé** : essai réel de reprise (`passages=1`) puis accord
+   explicite de l'utilisateur avant réactivation ; run n° 3654 bloqué en file.
+4. **Codex** : l'utilisateur lui dit seulement « pull » (`AGENTS.md`) ; chaque
+   bloc mis en ligne s'annonce quand même à l'utilisateur.
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
