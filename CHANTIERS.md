@@ -20,24 +20,12 @@ Anciens brouillons Codex locaux non publiés : repartir de `main` à jour.
    l'utilisateur avant remise. Écarts RGPD n° 12 à 14 (durée des comptes TS utilisés, mention
    d'information de la page TS, avis du DPO avant diffusion de l'adresse TS).
 3. **Page TS** : en ligne, **adresse non diffusée** (après les essais et l'écart n° 14).
-4. **Champ « Ouvert à tous » (AG-047) livré le 04/11/2026, essayé par l'utilisateur le 04/11 (« tout fonctionne »)** (NEWGEN et NextStep) :
-   Oui / Non obligatoire sans présélection (✏️ Nouveau, cycle et import Outlook : un choix pour
-   toutes les séances) ; ateliers existants = Non ; filtre Tous / Oui / Non dans l'Historique
-   (liste et exports seulement, tuiles inchangées) ; colonne XLSX (+ PDF sur NEWGEN) ; page TS :
-   filtre montré seulement si Admin → Visibilité → « 🔓 Filtre Ouvert à tous » est allumé (éteint
-   par défaut). Compléments 1 à 4 de Codex appliqués (Corbeille d'avant = Non, migration avant les
-   transactions et la 1ʳᵉ lecture TS, import Outlook ne touche pas les existants). Reste : **une**
-   vérification de Codex faite le 04/11 (`08eb2cc`, seul écart : mention de portée du filtre,
-   corrigée) ; annonce Nouveautés 37 publiée. **À clore** sur accord de l'utilisateur. Ajouts du 04/11 (demandes de
-   l'utilisateur) : champ sous « Type de public », badge sur la tuile de l’Historique (mot Oui vert
-   Oui / rouge Non, sans fond), choix dans le volet Détail ; Planifié coché à l'ouverture du
-   formulaire (une date passée le change en Réalisé tant qu'aucun statut n'est cliqué).
 
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
 **Ménages (26/09 → 04/11/2026)** : récit dans `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` — **AG-047 seul ouvert** au 04/11/2026 (livré, à vérifier une fois par Codex).
+Contradiction : `AGORA.md` — aucun bloc ouvert au 04/11/2026 (AG-047 clos).
 
 ---
 
@@ -277,6 +265,10 @@ appel superflu, `sw.js` de désinscription.
   de l'après-midi puisent dans les ordinateurs du matin (5 + 2 + 2 = 5), repère « ↳ 2 » sur la
   frise ; prêt sur plusieurs jours = journées entières (AG-002) ; sans dates de prêt, date de
   l'atelier (`logic.test.js`). **Rouvrir** seulement sur une alerte d'un créneau réellement libre.
+- **Ouvert à tous (AG-047, clos le 04/11/2026)** : `Oui` / `Non` obligatoire à la création (API : refus
+  « rechargez » sans le champ, modification sans lui = valeur gardée, Corbeille d'avant = `Non`) ; colonne
+  posée dans `api_action_protegee`, avant toute transaction ; filtre de l'Historique sur la liste et les
+  exports, **jamais sur les tuiles** ; filtre TS seulement si `ts_filtre_ouvert` est allumé (absent = éteint).
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS` `newgen` / `nextstep`) :
   origine `maswaddpt47-cmyk.github.io` partagée, `localStorage` non cloisonné
   par chemin. **Couche réseau client gardée** : elle sert sur une vraie
