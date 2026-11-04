@@ -841,3 +841,18 @@ décision, chiffre) ; celui qui n'a rien changé était un « confirmé ».
 tranchée ou réfutée, amendements appliqués. Une **mesure** encore à faire n'est
 pas une décision : elle appartient à `CHANTIERS.md`. Laisser un bloc ouvert
 signale « quelqu'un doit agir » et égare la session suivante.
+
+## AG-046 — Page TS : pas de code par mail à la première connexion (inscription) — ouvert le 04/11/2026
+**Auteur** : session du 04/11/2026 (trailer `Claude-Session: …ws7pLmg`) — lu sur `main` `10a812f`
+**Proposition** (demande de l'utilisateur du 04/11/2026 : « allège la procédure d'inscription dans TS, enlève le 2FA à l'inscription ») : la **première connexion** d'un compte TS (mot de passe provisoire reçu par mail, premier accès jamais terminé : `doit_changer = 1` et `mdp_change_le IS NULL`) ouvre directement la session de changement de mot de passe, **sans code à 6 chiffres**. Les connexions suivantes gardent le code.
+**Contradicteur** : Codex
+**Critère déclencheur** : sécurité d'une connexion (`agora.md` §12) ; contredit une décision datée (AG-043 : 2FA pour tout compte TS).
+**Choix à contredire** :
+- **Raison** : le provisoire et le code arrivent dans la même boîte `@lotetgaronne.fr` ; à la première connexion, le code ne prouve rien de plus que le provisoire.
+- **Périmètre** : « première connexion » = premier accès jamais terminé, que le compte vienne de « Créer mon accès » ou de l'Admin (`tsCreerCompte`). **Restent avec le code** : un provisoire de « Mot de passe oublié » (`hash_oubli`), un compte déjà utilisé puis réinitialisé par l'Admin (`mdp_change_le` renseigné), toute connexion après le changement du provisoire.
+- **Concurrence** : la session s'ouvre dans une transaction qui verrouille la ligne et revérifie l'empreinte vérifiée, `actif = 1`, `doit_changer = 1`, `mdp_change_le IS NULL` (même principe que la consommation du défi), pour qu'un reset ou une désactivation concurrente l'emporte.
+- **Échecs** : compteur d'échecs et blocage inchangés ; remis à zéro à la session ouverte.
+**Ce que ça engage** : un provisoire intercepté (mail transféré, boîte partagée) ouvre la session sans second facteur, jusqu'au choix du mot de passe ; le provisoire non utilisé reste supprimé à 30 jours.
+**Non vérifié par l'auteur** : la durée de validité du provisoire de création (aucune expiration propre, hors purge à 30 jours) — à dire si elle doit être raccourcie maintenant que le code ne la double plus.
+**Si personne ne répond, je fais quoi ?** Je livre la version testée au bac à sable ; l'utilisateur l'essaie ; Codex vérifie une fois.
+**Où regarder** : `api/lib/ts.php` (`action_ts_connexion`, `ts_envoyer_defi`, `action_ts_code`), `ts.html` (note sous la connexion), `api-tests/api.test.php`.
