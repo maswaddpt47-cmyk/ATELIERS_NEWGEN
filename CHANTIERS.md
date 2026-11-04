@@ -1,7 +1,7 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026, 20:54 (heure de Paris)**, bases `main` : NEWGEN `2d78af9`,
-NextStep `4a80510`. Dernière livraison fonctionnelle relue :
+État au **04/11/2026, 21:36 (heure de Paris)**, bases `main` : NEWGEN `0e0a488`,
+NextStep `cb9985e`. Dernière livraison fonctionnelle relue :
 NEWGEN `36db64f` / NextStep `b076d21` (tests, déploiements et parité verts).
 Tient aussi les restes communs à NextStep (même API, même base).
 
@@ -15,6 +15,10 @@ est bien affiché, mais la capture de l'utilisateur montre encore une confirmati
 `create_tree`. Cause non établie ; ne pas présenter ces confirmations comme supprimées.
 Les anciens brouillons Codex locaux n'ont pas été publiés : reprendre les prochains travaux
 sur `main` à jour ; aucune annonce Nouveautés ajoutée par cette session.
+
+**Consignes Codex (04/11/2026)** : `AGENTS.md` aligné sur MD-LIB `17413bd`
+(autorisations, tous les tests du déploiement avant push, « Main toujours »).
+Mise à jour documentaire seule ; aucune nouvelle revue des correctifs livrés.
 
 **À reprendre en premier (passation du 04/11/2026)** :
 1. **Essais réels de l'utilisateur** (livraison du 04/11 : tuile et titre de la page TS,
