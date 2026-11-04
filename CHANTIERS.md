@@ -25,11 +25,8 @@ Mise à jour documentaire seule ; aucune nouvelle revue des correctifs livrés.
    première connexion TS sans code, message et mail des tickets) : créer un compte TS,
    première connexion, puis reconnexion avec code ; recevoir le mail d'un ticket.
    **Réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée.**
-2. **Veilleur** (AG-040) : réactivé par l'utilisateur le 04/11 à 20:51 ; essai réel lancé : n° 3657
-   (`simuler_refus`) en échec voulu à 20:52, successeur n° 3658 en attente de 60 min sans rien
-   relancer (vérifié à 20:57). **Reste** : constater sa reprise vers 21:52 (un vrai contrôle, une
-   alerte « surveillance interrompue » attendue une fois), puis clore AG-040. Run n° 3654 (ancien
-   code) toujours « en file », inerte, non annulable ni supprimable.
+2. **Veilleur réactivé et éprouvé le 04/11/2026** (AG-040 clos) : échec provoqué → 60 min sans contrôle →
+   un contrôle réussi (n° 3894, 21:52) → relève propre. Run n° 3654 (ancien code) toujours « en file », inerte.
 3. **Registres** sécurité V0.10 et RGPD V0.7 (`ateliers-backups` `10668ab`) : à relire par
    l'utilisateur avant remise. Écarts RGPD n° 12 à 14 (durée des comptes TS utilisés, mention
    d'information de la page TS, avis du DPO avant diffusion de l'adresse TS).
@@ -47,7 +44,7 @@ Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fo
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
 **Ménages (26/09 → 04/11/2026)** : récit dans `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` — **AG-040 seul ouvert** au 04/11/2026.
+Contradiction : `AGORA.md` — **AG-047 seul ouvert** au 04/11/2026.
 
 ---
 
