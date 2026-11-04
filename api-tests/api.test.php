@@ -863,10 +863,10 @@ echo "\nAPI — page des travailleurs sociaux\n";
 array_map('unlink', glob("$dossierMails/*.txt"));
 $db->exec("UPDATE config SET valeur = '" . json_encode(['Nouveau Venu' => 'nouveau.venu@example.org', 'Conseiller Test' => 'admin.test@example.org']) . "' WHERE cle = 'emails'");
 $db->exec("INSERT INTO ateliers (id, statut, date, horaire, orienteur, commune, lieu, thematique, public, conseiller, co_animateur, residence, remarques, inscrits)
-    VALUES ('ts_futur', 'Planifié', CURDATE() + INTERVAL 3 DAY, '14:00', 'CCAS Agen', 'Agen', 'MDS', 'Mail', 'Seniors', 'Conseiller Test', '', '', 'remarque secrète', 7),
-           ('ts_jour', 'Planifié', CURDATE(), NULL, 'Orienteur', 'Nérac', 'Mairie', 'Smartphone', 'Tous publics', 'Conseiller Test', '', '', '', NULL),
-           ('ts_passe', 'Planifié', CURDATE() - INTERVAL 1 DAY, NULL, 'O', 'Agen', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL),
-           ('ts_realise', 'Réalisé', CURDATE() + INTERVAL 5 DAY, NULL, 'O', 'Agen', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL)");
+    VALUES ('ts_futur', 'Planifié', '" . date('Y-m-d', strtotime('+3 days')) . "', '14:00', 'CCAS Agen', 'Agen', 'MDS', 'Mail', 'Seniors', 'Conseiller Test', '', '', 'remarque secrète', 7),
+           ('ts_jour', 'Planifié', '" . date('Y-m-d') . "', NULL, 'Orienteur', 'Nérac', 'Mairie', 'Smartphone', 'Tous publics', 'Conseiller Test', '', '', '', NULL),
+           ('ts_passe', 'Planifié', '" . date('Y-m-d', strtotime('-1 day')) . "', NULL, 'O', 'Agen', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL),
+           ('ts_realise', 'Réalisé', '" . date('Y-m-d', strtotime('+5 days')) . "', NULL, 'O', 'Agen', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL)");
 verifier(appel(['action' => 'tsDemandeAcces'], ['email' => 'pas-une-adresse'])['ok'] === false, 'demande : adresse invalide refusée');
 // AG-043 : seules les adresses @lotetgaronne.fr sont acceptées (domaine exact).
 foreach (['agent@example.org', 'agent@sub.lotetgaronne.fr', 'agent@lotetgaronne.fr.autre.com', 'agent@lotetgaronne.org'] as $mauvaise) {
@@ -967,7 +967,8 @@ verifier(appel(['action' => 'tsAteliers'], $A)['ok'] === false, 'tsAteliers refu
 $r = appel(['action' => 'tsAteliers'], $T);
 $ids = array_map(fn($a) => $a['thematique'] . '@' . $a['commune'], $r['ateliers'] ?? []);
 verifier(($r['ok'] ?? false) && in_array('Mail@Agen', $ids, true) && in_array('Smartphone@Nérac', $ids, true), 'ateliers : Planifié du jour et à venir');
-$futurs = $db->query("SELECT COUNT(*) FROM ateliers WHERE statut = 'Planifié' AND date >= CURDATE()")->fetchColumn();
+// Jour de Paris, comme l'API (jamais CURDATE() : MySQL peut être en UTC, échec de la CI à 00:08 le 05/11/2026).
+$futurs = $db->query("SELECT COUNT(*) FROM ateliers WHERE statut = 'Planifié' AND date >= '" . date('Y-m-d') . "'")->fetchColumn();
 verifier(count($r['ateliers'] ?? []) === (int) $futurs && !array_filter($r['ateliers'], fn($a) => $a['statut'] !== 'Planifié' || $a['date'] < date('Y-m-d')), 'ateliers : ni passés, ni autres statuts (' . count($r['ateliers'] ?? []) . ')');
 verifier(array_keys($r['ateliers'][0] ?? []) === ['date', 'horaire', 'statut', 'orienteur', 'commune', 'lieu', 'public', 'thematique', 'ouvert_a_tous'], 'ateliers : 9 champs seulement, dont l\'horaire et « ouvert à tous » (ni conseiller, ni remarques, ni inscrits)');
 verifier(($r['filtreOuvert'] ?? null) === false, 'filtre « Ouvert à tous » de la page TS : éteint tant qu\'il n\'est pas activé');
@@ -1216,7 +1217,7 @@ $reelles = (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'loginT
 verifier(($st['ok'] ?? false) && $nbJournal() === $avant, 'connexions TS : lecture seule, rien n\'est journalisé par la consultation');
 verifier($reelles >= 2 && ($parCompte['ts.un@lotetgaronne.fr']['connexions'] ?? -1) === $reelles && ($parCompte['ts.un@lotetgaronne.fr']['type'] ?? '') === 'TS', "connexions TS : $reelles connexions de ts.un comptées comme dans le journal");
 verifier(($parCompte['personne@example.org']['echecs'] ?? 0) >= 1 && ($parCompte['personne@example.org']['connexions'] ?? -1) === 0, 'connexions TS : échecs comptés, y compris pour une adresse sans compte');
-verifier(($parCompte['Conseiller Test']['type'] ?? '') === 'Admin' && ($st['jours'][0]['jour'] ?? '') === date('Y-m-d') && ($st['jours'][0]['connexions'] ?? 0) === ($st['total']['connexions'] ?? -1), 'connexions TS : compte Admin distingué, total du jour = total des comptes');
+verifier(($parCompte['Conseiller Test']['type'] ?? '') === 'Admin' && ($st['jours'][0]['jour'] ?? '') === $db->query('SELECT CURDATE()')->fetchColumn() && ($st['jours'][0]['connexions'] ?? 0) === ($st['total']['connexions'] ?? -1), 'connexions TS : compte Admin distingué, total du jour = total des comptes');
 // Codex n° 4 : un compte dont le rôle a changé reste UNE ligne, et somme des comptes = somme des jours.
 $db->exec("INSERT INTO journal (horodatage, action, conseiller, ref, role, succes, tentatives, user_agent, source) VALUES
     (NOW() - INTERVAL 1 DAY, 'loginTs', 'Admin Fictif', '', 'admin', 1, 0, '', 'ts'),
