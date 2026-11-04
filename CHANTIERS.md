@@ -28,7 +28,7 @@ Anciens brouillons Codex locaux non publiés : repartir de `main` à jour.
    par défaut). Compléments 1 à 4 de Codex appliqués (Corbeille d'avant = Non, migration avant les
    transactions et la 1ʳᵉ lecture TS, import Outlook ne touche pas les existants). Reste : essai de
    l'utilisateur, puis **une** vérification de Codex (règle 58). Ajouts du 04/11 (demandes de
-   l'utilisateur) : champ sous « Type de public », badge sur la tuile de l'Historique (texte vert
+   l'utilisateur) : champ sous « Type de public », badge sur la tuile de l’Historique (mot Oui vert
    Oui / rouge Non, sans fond), choix dans le volet Détail ; Planifié coché à l'ouverture du
    formulaire (une date passée le change en Réalisé tant qu'aucun statut n'est cliqué).
 
