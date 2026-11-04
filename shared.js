@@ -3042,8 +3042,8 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
   // Plusieurs publics sélectionnables (26/09/2026) : [] = tous.
   const[filtPublic,setFiltPublic]=React.useState([]);
   const basculerPublic=p=>setFiltPublic(l=>l.includes(p)?l.filter(x=>x!==p):[...l,p]);
-  // Ouvert à tous (AG-047) : 'Tous' / 'Oui' / 'Non', appliqué à la liste et aux
-  // exports seulement — les tuiles et les compteurs de statut gardent leur base.
+  // Ouvert à tous (AG-047) : 'Tous' / 'Oui' / 'Non', appliqué comme les autres filtres :
+  // tuiles, compteurs de statut, liste et exports (AG-048, demande du 04/11/2026).
   const[filtOuvert,setFiltOuvert]=React.useState('Tous');
   const[sortDir,setSortDir]=React.useState(1);
   const[dateFrom,setDateFrom]=React.useState('');
@@ -3124,6 +3124,8 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
     if(filtCommune!=='Toutes'){const normFilt=filtCommune.replace(/\s*\(\d+\)\s*/g,'').trim().toUpperCase();r=r.filter(e=>e.commune===filtCommune||e.commune.replace(/\s*\(\d+\)\s*/g,'').trim().toUpperCase()===normFilt);}
     if(filtConseiller!=='Tous')r=r.filter(e=>e.conseiller===filtConseiller);
     if(filtPublic.length)r=r.filter(e=>filtPublic.includes(e.public||'Tous publics'));
+    // Ouvert à tous : un filtre comme les autres, tuiles comprises (AG-048, 04/11/2026).
+    r=filtrerOuvertATous(r,filtOuvert);
     if(dateFrom)r=r.filter(e=>e.date>=dateFrom);
     if(dateTo)r=r.filter(e=>e.date<=dateTo);
     if(dSearch){const q=stripAccents(dSearch);r=r.filter(e=>[e.lieu,e.thematique,e.orienteur,e.commune,e.public,e.remarques].some(v=>stripAccents(String(v||'')).includes(q)));}
@@ -3132,8 +3134,8 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
     // que « 0 sur N » : on l'ignore (constaté le 23/09/2026 sur NextStep).
     if(newIdsFilter&&newIdsFilter.size>0&&entries.some(e=>newIdsFilter.has(e._id)))r=r.filter(e=>newIdsFilter.has(e._id));
     return r;
-  },[entries,filtMois,filtCommune,filtConseiller,filtPublic,dSearch,dateFrom,dateTo,newIdsFilter]);
-  const filtered=React.useMemo(()=>[...filtrerOuvertATous(filtStatut!=='Tous'?sansStatut.filter(e=>e.statut===filtStatut):sansStatut,filtOuvert)].sort((a,b)=>comparerHistorique(a,b,sortDir)),[sansStatut,filtStatut,filtOuvert,sortDir]);
+  },[entries,filtMois,filtCommune,filtConseiller,filtPublic,filtOuvert,dSearch,dateFrom,dateTo,newIdsFilter]);
+  const filtered=React.useMemo(()=>[...(filtStatut!=='Tous'?sansStatut.filter(e=>e.statut===filtStatut):sansStatut)].sort((a,b)=>comparerHistorique(a,b,sortDir)),[sansStatut,filtStatut,sortDir]);
 
   const kpi=React.useMemo(()=>kpiHistorique(sansStatut),[sansStatut]);
   // Compteurs des pastilles de statut sur la même base que les tuiles (13/10/2026) :

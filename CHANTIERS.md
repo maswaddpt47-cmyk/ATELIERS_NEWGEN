@@ -267,9 +267,9 @@ appel superflu, `sw.js` de désinscription.
   l'atelier (`logic.test.js`). **Rouvrir** seulement sur une alerte d'un créneau réellement libre.
 - **Ouvert à tous (AG-047, clos le 04/11/2026)** : `Oui` / `Non` obligatoire à la création (API : refus
   « rechargez » sans le champ, modification sans lui = valeur gardée, Corbeille d'avant = `Non`) ; colonne
-  posée dans `api_action_protegee`, avant toute transaction ; filtre de l'Historique sur la liste et les
-  exports, **jamais sur les tuiles** (sans mention à l'écran : retirée sur décision de l'utilisateur le
-  04/11/2026, « le nombre d'ateliers reste le même », ne pas la remettre) ; filtre TS seulement si `ts_filtre_ouvert` est allumé (absent = éteint).
+  posée dans `api_action_protegee`, avant toute transaction ; filtre de l'Historique appliqué comme les autres
+  filtres, **tuiles et compteurs compris** (AG-048, décision de l'utilisateur du 04/11/2026, confirmé par Codex) ;
+  filtre TS seulement si `ts_filtre_ouvert` est allumé (absent = éteint).
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS` `newgen` / `nextstep`) :
   origine `maswaddpt47-cmyk.github.io` partagée, `localStorage` non cloisonné
   par chemin. **Couche réseau client gardée** : elle sert sur une vraie

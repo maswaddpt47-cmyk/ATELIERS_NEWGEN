@@ -132,6 +132,13 @@ bloc n'avait pas lieu d'être.
 
 **Limites** : lecture des deux chemins et rejeu de données fictives exécuté ; pas de code futur implémenté ni de nouvelle suite complète ou de parcours navigateur lancé dans cette revue avant code. Aucun fichier d'usagers ni sauvegarde réelle lu. Seule cette réponse dans `AGORA.md` est ajoutée ; l'utilisateur tranche.
 
+### Livraison — session Claude — 04/11/2026
+Livré sur le contrat confirmé : `filtrerOuvertATous` dans `sansStatut` (dépendance `filtOuvert` ajoutée), retiré
+de `filtered` ; commentaires des deux `utils.js` et invariant de `CHANTIERS.md` mis à jour. Test du vrai écran :
+`e2e/saisie-session.spec.js` « tuile Total : 2 ateliers, filtre Oui → 1 » (les deux applis), qui échoue quand
+on remet l'ancien placement (mutation faite). Le test unitaire d'AG-047 est remplacé par un calcul sur la liste filtrée.
+Portée : Total = lignes affichées seulement quand le statut est « Tous » (point de Codex), soumis à l'utilisateur.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
