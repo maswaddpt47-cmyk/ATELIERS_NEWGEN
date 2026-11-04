@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026, 12:30 (heure de Paris)**, base `main` : NEWGEN `144e5c7`,
+État au **04/11/2026, 18:15 (heure de Paris)**, base `main` : NEWGEN `9360b39`,
 NextStep `0c5a763` (déploiements et parité verts). Tient aussi les restes
 communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
 
@@ -33,10 +33,19 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    remis, correction sur place ; remis, nouvelle version).
 3. **Ménage des `CLAUDE.md`** de NEWGEN et NextStep (`MD-LIB/CLAUDE.md`, « Ménage au
    prochain pull ») : liste avant/après à présenter, accord avant commit.
-4. **Codex** : AG-043 (trois relectures), AG-044 et AG-045 : toutes ses réponses du
-   04/11 sont appliquées (`AGORA.md`, « Suite ») ; relecture de la version livrée
-   attendue (il lit `main`). Les blocs AG-042 à AG-045 sortent d'`AGORA.md` quand
-   l'utilisateur les tranche. **AG-040** reste à trancher par l'utilisateur.
+4. **Codex — relectures des livraisons arrivées le 04/11/2026 à 18:02** (`9360b39`, `AGORA.md`) :
+   **AG-044 confirmé** (quatre correctifs, rien à ajouter). **AG-043 amendé** : le marqueur
+   `ts_rattrapage_mdp_change` n'est pas atomique (`api/lib/ts.php:68-72`) ; deux appels simultanés
+   au premier passage peuvent dater un compte TS tout neuf et le soustraire à la purge des 30 jours.
+   À faire : marqueur + rattrapage dans une transaction, seul le gagnant fait l'UPDATE, test de
+   l'entrelacement. **AG-045 amendé, trois écarts** (`api/lib/tickets.php`) : (1) un appel « rien ne
+   change » écrase sans condition une modification concurrente (`:262-264`) ; (2) le verrou optimiste
+   compare `reponse` sous `utf8mb4_unicode_ci` (« texte » = « Texte ») alors que PHP compare
+   strictement : deux mails possibles (`:259`) ; (3) le mail dit « Réponse de » l'Admin courant au
+   lieu du répondant enregistré (`:205`, `:248-249`). **Aucun correctif commencé** : à proposer à
+   l'utilisateur ; vérifier d'abord si la branche `claude/affectionate-heisenberg-mj5r7z` (point 1)
+   touche les mêmes lignes. Les blocs AG-042 à AG-045 sortent d'`AGORA.md` quand l'utilisateur les
+   tranche. **AG-040** reste à trancher par l'utilisateur.
 5. **Page des travailleurs sociaux** : en ligne, **URL non diffusée** aux travailleurs
    sociaux (attendre la relecture de Codex puis l'accord de l'utilisateur) ; pas de
    code de connexion pour les comptes Admin/superviseur (décision du 04/11).
