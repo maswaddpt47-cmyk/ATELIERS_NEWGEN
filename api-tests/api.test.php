@@ -505,6 +505,33 @@ $etats = array_map(fn($r) => $r['mail'] ?? ($r['error'] ?? '?'), $par);
 verifier($nbMails() === $avant4 + 1 && count(array_filter($etats, fn($e) => $e === 'envoye')) === 1 && count(array_filter($etats, fn($e) => in_array($e, ['deja', 'inchange'], true))) === 3, 'ticket : quatre validations identiques simultanées, un seul mail, les autres disent pourquoi (« déjà » ou « inchangé » selon l\'instant de leur lecture) (' . implode(',', $etats) . ')');
 $m4 = $dernierMail();
 verifier(str_contains($m4, 'ateliers-cd47_NextStep/index.html') && !str_contains($m4, 'admin.html') && !str_contains($m4, 'SECRET-DESC-XYZ'), 'ticket : le lien mène à l\'application du site du ticket (pas à l\'Admin), la description d\'origine n\'est pas reprise');
+// Relecture de Codex du 04/11/2026 (AG-045), n° 1 : un appel « rien ne change » n'écrase pas une modification
+// faite entre sa lecture et son écriture. La ligne est verrouillée par une autre connexion qui la modifie.
+appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_mail_5', 'type' => 'Question', 'titre' => 'Écrasement', 'description' => 'd', 'site' => 'nextstep']);
+$autreTk = new PDO("mysql:host=$hote;dbname=ateliers_test_api;charset=utf8mb4", $util, $mdp, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$autreTk->beginTransaction();
+$autreTk->query("SELECT id FROM tickets WHERE id = 'tk_mail_5' FOR UPDATE")->fetchAll();   // B tient la ligne : A lit l'ancien état, son écriture attend
+$p5 = appels_paralleles([[['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_5', 'statut' => 'Nouveau', 'reponse' => '']]], function () use ($autreTk) {
+    $autreTk->exec("UPDATE tickets SET statut = 'En cours', reponse = 'Pris en compte (B).', repondu_par = 'Admin B' WHERE id = 'tk_mail_5'");
+    $autreTk->commit();
+});
+$l5 = $db->query("SELECT statut, reponse FROM tickets WHERE id = 'tk_mail_5'")->fetch(PDO::FETCH_ASSOC);
+verifier(($p5[0]['ok'] ?? true) === false && $l5['statut'] === 'En cours' && $l5['reponse'] === 'Pris en compte (B).', 'ticket : un appel sans changement n\'écrase pas une modification concurrente, il signale le conflit (' . json_encode($p5[0]) . ')');
+// n° 2 : « texte » → « Texte » par deux Admins en même temps : la base tient les deux pour égaux (collation), un seul mail.
+$db->exec("UPDATE tickets SET statut = 'En cours', reponse = 'texte', repondu_par = 'Admin B' WHERE id = 'tk_mail_5'");
+$avant5 = $nbMails();
+$autreTk->beginTransaction();
+$autreTk->query("SELECT id FROM tickets WHERE id = 'tk_mail_5' FOR UPDATE")->fetchAll();
+$p5 = appels_paralleles([[['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_5', 'statut' => 'En cours', 'reponse' => 'Texte']]], function () use ($autreTk) {
+    $autreTk->exec("UPDATE tickets SET reponse = 'Texte', repondu_par = 'Admin B' WHERE id = 'tk_mail_5'");   // l'autre Admin gagne le premier
+    $autreTk->commit();
+});
+verifier(($p5[0]['mail'] ?? '') === 'deja' && $nbMails() === $avant5, 'ticket : « texte » → « Texte » déjà fait par un autre Admin, pas de second mail (comparaison binaire) (' . json_encode($p5[0]) . ')');
+// n° 3 : changer le statut sans toucher à la réponse d'un autre : le mail l'attribue à celui qui l'a écrite.
+$db->exec("UPDATE tickets SET statut = 'En cours', reponse = 'Réponse écrite par Alice.', repondu_par = 'Alice Fictive' WHERE id = 'tk_mail_5'");
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_5', 'statut' => 'Résolu', 'reponse' => 'Réponse écrite par Alice.']);
+$m5 = $dernierMail();
+verifier(($r['mail'] ?? '') === 'envoye' && str_contains($m5, 'Réponse de Alice Fictive') && !str_contains($m5, 'Réponse de Conseiller Test') && ($r['ticket']['repondu_par'] ?? '') === 'Alice Fictive', 'ticket : statut changé par un autre Admin, la réponse reste attribuée à celle qui l\'a écrite');
 // Doublon : rattaché, mail qui le dit. Ticket anonymisé : pas de mail.
 appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_mail_3', 'type' => 'Question', 'titre' => 'Même question', 'description' => 'd']);
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_3', 'doublon_de' => 'tk_mail_1']);
@@ -764,7 +791,9 @@ function appels_paralleles(array $reqs, ?callable $pendant = null): array
     $fait = false;
     do {
         curl_multi_exec($mh, $run); curl_multi_select($mh, 0.05);
-        if ($pendant && !$fait) { usleep(600000); $pendant(); $fait = true; }   // laisse les requêtes atteindre la base, puis agit
+        // Laisse les requêtes atteindre la base (curl continue d'émettre pendant l'attente : une simple pause
+        // retenait l'envoi, et la requête n'arrivait qu'après l'action « concurrente »), puis agit.
+        if ($pendant && !$fait) { $fin = microtime(true) + 0.6; while (microtime(true) < $fin) { curl_multi_exec($mh, $run); curl_multi_select($mh, 0.05); } $pendant(); $fait = true; }
     } while ($run > 0);
     $res = [];
     foreach ($hs as $i => $ch) { $res[$i] = json_decode((string) curl_multi_getcontent($ch), true); curl_multi_remove_handle($mh, $ch); }
@@ -1048,6 +1077,20 @@ $db->exec("DELETE FROM envois_ts");
 appel(['action' => 'tsDemandeAcces'], ['email' => 'declencheur3@lotetgaronne.fr']);
 verifier(!$db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'cree.apres@lotetgaronne.fr'")->fetchColumn(), 'migration : le rattrapage ne se refait pas, un compte créé après lui et jamais utilisé est purgé à 30 jours');
 $db->exec("DELETE FROM comptes_ts WHERE email IN ('deja.migre@lotetgaronne.fr', 'declencheur2@lotetgaronne.fr', 'declencheur3@lotetgaronne.fr')");
+// Codex (4e relecture) : rattrapage UNIQUE en concurrence. Un premier appel tient le marqueur (transaction pas
+// encore validée) ; un second appel arrive : il ne doit faire AUCUN rattrapage, donc ne pas dater un compte neuf.
+// (L'ancien code lisait « marqueur absent » et datait ce compte.)
+$db->exec("DELETE FROM config WHERE cle = 'ts_rattrapage_mdp_change'");
+$db->exec("DELETE FROM envois_ts");
+$db->exec("INSERT INTO comptes_ts (email, hash, actif, doit_changer, cree_le, mdp_change_le) VALUES ('neuf.concurrent@lotetgaronne.fr', NULL, 1, 1, NOW(), NULL)");
+$premier = new PDO("mysql:host=$hote;dbname=ateliers_test_api;charset=utf8mb4", $util, $mdp, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$premier->beginTransaction();
+$premier->exec("INSERT INTO config (cle, valeur) VALUES ('ts_rattrapage_mdp_change', 'essai')");
+appels_paralleles([[['action' => 'tsDemandeAcces'], ['email' => 'declencheur4@lotetgaronne.fr']]], function () use ($premier) { $premier->commit(); });
+verifier($db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'neuf.concurrent@lotetgaronne.fr' AND mdp_change_le IS NULL")->fetchColumn() == 1,
+    'migration : rattrapage simultané, le second appel ne fait aucun rattrapage (marqueur pris avant, dans la même transaction)');
+$db->exec("DELETE FROM comptes_ts WHERE email IN ('neuf.concurrent@lotetgaronne.fr', 'declencheur4@lotetgaronne.fr')");
+$db->exec("DELETE FROM envois_ts");
 $db->exec("DELETE FROM envois_ts");
 
 // Codex n° 1 : le provisoire d'« oubli » n'est promu qu'après le code, sur l'empreinte vérifiée ; anciennes sessions fermées.

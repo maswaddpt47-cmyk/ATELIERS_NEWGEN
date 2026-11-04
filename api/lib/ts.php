@@ -65,11 +65,24 @@ function ts_schema(PDO $db): void
     // est inconnu (utilisés puis réinitialisés, ou non). Le drapeau doit_changer ne prouve pas « jamais utilisé » :
     // ils sont préservés de la purge des premiers accès jamais terminés. Le marqueur évite de refaire ce
     // rattrapage ensuite, sinon les comptes créés après lui perdraient leur suivi exact.
+    // Exécution UNIQUE même en concurrence (Codex, 4e relecture d'AG-043) : le marqueur est PRIS avant le
+    // rattrapage, dans la même transaction. Un second appel simultané attend la fin de la transaction sur la clé
+    // du marqueur, puis ne l'obtient pas et ne touche à rien : un compte créé entre-temps garde sa date NULL.
+    // Un échec du rattrapage annule aussi la prise du marqueur.
     $deja = $db->prepare("SELECT 1 FROM config WHERE cle = 'ts_rattrapage_mdp_change'");
     $deja->execute();
     if (!$deja->fetchColumn()) {
-        $db->exec('UPDATE comptes_ts SET mdp_change_le = NOW() WHERE mdp_change_le IS NULL');
-        $db->exec("INSERT IGNORE INTO config (cle, valeur) VALUES ('ts_rattrapage_mdp_change', '" . date('Y-m-d') . "')");
+        $propre = !$db->inTransaction();
+        if ($propre) $db->beginTransaction();
+        try {
+            $prise = $db->prepare("INSERT IGNORE INTO config (cle, valeur) VALUES ('ts_rattrapage_mdp_change', ?)");
+            $prise->execute([date('Y-m-d')]);
+            if ($prise->rowCount() === 1) $db->exec('UPDATE comptes_ts SET mdp_change_le = NOW() WHERE mdp_change_le IS NULL');
+            if ($propre) $db->commit();
+        } catch (Throwable $e) {
+            if ($propre && $db->inTransaction()) $db->rollBack();
+            throw $e;
+        }
     }
     $ok = true;
 }

@@ -201,16 +201,18 @@ function tickets_prevenir_auteur(PDO $db, array $avant, array $apres, string $pa
     $h = fn($x) => htmlspecialchars((string) $x, ENT_QUOTES, 'UTF-8');
     $bac = (api_config()['bac_a_sable'] ?? false) === true;
     $url = ($bac ? TICKET_URL_APP_BAC : TICKET_URL_APP)[$apres['site']] ?? ($bac ? TICKET_URL_APP_BAC : TICKET_URL_APP)['nextstep'];
+    // « Réponse de » : la personne qui a écrit la réponse, pas forcément celle qui change le statut (Codex, AG-045).
+    $repondant = trim((string) ($apres['repondu_par'] ?? '')) !== '' ? (string) $apres['repondu_par'] : $parQui;
     $sujet = 'Votre contribution « ' . $apres['titre'] . ' » : ' . $apres['statut'];
     $doublon = (string) $apres['doublon_de'] !== '' ? "Elle a été rattachée à une contribution déjà existante.
 " : '';
     $texte = "Bonjour,\n\nVotre contribution « {$apres['titre']} » est maintenant : {$apres['statut']}.\n" . $doublon;
-    if ((string) $apres['reponse'] !== '') $texte .= "\nRéponse de $parQui :\n{$apres['reponse']}\n";
+    if ((string) $apres['reponse'] !== '') $texte .= "\nRéponse de $repondant :\n{$apres['reponse']}\n";
     $texte .= "\nLa retrouver dans l'application, onglet Contribuer : $url\n";
     $html = '<div style="font-family:sans-serif;max-width:640px"><p>Bonjour,</p>'
           . '<p>Votre contribution <strong>« ' . $h($apres['titre']) . ' »</strong> est maintenant : <strong>' . $h($apres['statut']) . '</strong>.</p>'
           . ($doublon !== '' ? '<p>' . $h(trim($doublon)) . '</p>' : '')
-          . ((string) $apres['reponse'] !== '' ? '<p style="margin:0 0 4px;color:#718096;font-size:13px">Réponse de ' . $h($parQui) . ' :</p>'
+          . ((string) $apres['reponse'] !== '' ? '<p style="margin:0 0 4px;color:#718096;font-size:13px">Réponse de ' . $h($repondant) . ' :</p>'
               . '<p style="white-space:pre-wrap;background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">' . $h($apres['reponse']) . '</p>' : '')
           . '<p><a href="' . $h($url) . '" style="color:#1e3a8a;font-weight:700">La retrouver dans l\'application, onglet Contribuer</a></p></div>';
     try { return mail_envoyer($adresse, $sujet, $texte, $html) ? 'envoye' : 'echec'; } catch (Throwable $e) { return 'echec'; }
@@ -251,27 +253,24 @@ function action_repondre_ticket(PDO $db, array $p, array $session): array
     $reponduLe = $t['repondu_le']; $reponduPar = $t['repondu_par'];
     if ($reponse !== (string) $t['reponse'] && $reponse !== '') { $reponduLe = $maintenant; $reponduPar = $session['conseiller']; }
     $closLe = in_array($statut, TICKET_STATUTS_CLOS, true) ? ($t['clos_le'] ?: $maintenant) : null;
-    // Droit d'envoyer le mail ATOMIQUE (Codex, AG-045) : quand le statut ou la réponse change, la mise à jour
-    // ne s'applique que si la ligne a encore l'ancien statut et l'ancienne réponse. Deux validations
-    // identiques simultanées lisent le même ancien état, mais une seule modifie la ligne : seule celle-là
-    // envoie. Les autres relisent le ticket, ne trouvent rien à envoyer, ou signalent un conflit.
+    // Droit d'envoyer le mail ATOMIQUE (Codex, AG-045) : la mise à jour ne s'applique que si la ligne a encore
+    // l'ancien statut et l'ancienne réponse. Deux validations identiques simultanées lisent le même ancien état,
+    // mais une seule modifie la ligne : seule celle-là envoie. Relectures de Codex du 04/11/2026 :
+    // - la condition vaut AUSSI quand rien ne change, sinon cet appel écraserait une modification faite entre
+    //   sa lecture et son écriture ;
+    // - comparaison BINAIRE : la collation de la colonne tient « texte » = « Texte », PHP non ; sans BINARY,
+    //   deux Admins passant de « texte » à « Texte » gagneraient tous deux le droit d'envoyer.
     $change = $statut !== (string) $t['statut'] || $reponse !== (string) $t['reponse'];
-    $maj = 'UPDATE tickets SET statut = ?, reponse = ?, repondu_le = ?, repondu_par = ?, doublon_de = ?, clos_le = ? WHERE id = ?';
-    $val = [$statut, $reponse, $reponduLe, $reponduPar, $doublon, $closLe, $id];
-    if ($change) {
-        $u = $db->prepare($maj . ' AND statut = ? AND reponse = ?');
-        $u->execute(array_merge($val, [(string) $t['statut'], (string) $t['reponse']]));
-        $gagne = $u->rowCount() === 1;
-    } else {
-        $db->prepare($maj)->execute($val);
-        $gagne = false;
-    }
+    $u = $db->prepare('UPDATE tickets SET statut = ?, reponse = ?, repondu_le = ?, repondu_par = ?, doublon_de = ?, clos_le = ?'
+        . ' WHERE id = ? AND BINARY statut = BINARY ? AND BINARY reponse = BINARY ?');
+    $u->execute([$statut, $reponse, $reponduLe, $reponduPar, $doublon, $closLe, $id, (string) $t['statut'], (string) $t['reponse']]);
+    $gagne = $change && $u->rowCount() === 1;
     $ticket = ticket_lire($db, $id);
-    if ($change && !$gagne && ($ticket['statut'] !== $statut || (string) $ticket['reponse'] !== $reponse)) {
+    if (!$gagne && ($ticket['statut'] !== $statut || (string) $ticket['reponse'] !== $reponse)) {
         return ['ok' => false, 'error' => 'Ce ticket vient d\'être modifié par quelqu\'un d\'autre : rechargez la liste.'];
     }
     // Le mail décrit ce que CET appel a écrit, pas une relecture qui pourrait être plus récente.
-    $ecrit = array_merge($t, ['statut' => $statut, 'reponse' => $reponse, 'doublon_de' => $doublon]);
+    $ecrit = array_merge($t, ['statut' => $statut, 'reponse' => $reponse, 'doublon_de' => $doublon, 'repondu_par' => $reponduPar]);
     $mail = $gagne ? tickets_prevenir_auteur($db, $t, $ecrit, (string) $session['conseiller']) : ($change ? 'deja' : 'inchange');
     return ['ok' => true, 'ticket' => $ticket, 'mail' => $mail, 'mail_a' => in_array($mail, ['inchange', 'deja'], true) ? '' : (string) $t['auteur']];
 }
