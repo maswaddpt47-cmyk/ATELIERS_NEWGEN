@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026**, base `main` (`e78657e`). Tient aussi les restes
+État au **04/11/2026**, base `main` (`4cd145a`). Tient aussi les restes
 communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
 
 **À reprendre en premier (passation du 04/11/2026)** :
@@ -11,6 +11,22 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    explicite de l'utilisateur avant réactivation ; run n° 3654 bloqué en file.
 4. **Codex** : l'utilisateur lui dit seulement « pull » (`AGENTS.md`) ; chaque
    bloc mis en ligne s'annonce quand même à l'utilisateur.
+5. **Page des travailleurs sociaux (AG-042, Codex)** — passation du 04/11/2026 :
+   code sur la branche `claude/social-workers-workshops-history-l8tat7` = `sandbox`
+   des deux dépôts (NEWGEN `da2fdaf`, PR #39 ; NextStep `44dd224`, PR #27), **au
+   bac à sable**, CI verte, **pas sur `main`**. Fait : `ts.html` sans menu (demande
+   d'accès par e-mail, connexion e-mail ou compte admin/superviseur, mot de passe
+   provisoire à changer, œil, ateliers Planifié ≥ aujourd'hui, filtres Du/Au/Commune),
+   API `api/lib/ts.php` (garde : un jeton `ts` n'ouvre que `tsAteliers`/`tsChangerMdp`),
+   Admin « Accès travailleurs sociaux » et Visibilité « un interrupteur par type de
+   public » (`ts_public:<type>`, éteint = ateliers cachés par l'API). Menu « Type de
+   public » **retiré** de la page (décision du 04/11/2026). **Reste** : essai de
+   l'utilisateur, puis `main` des deux dépôts (la branche porte aussi une entrée
+   CHANTIERS : garder celle-ci au merge) ; réponse de Codex à AG-042 (« pull ») ;
+   registre RGPD (e-mails TS) dans `ateliers-backups` ; pas de « mot de passe
+   oublié » TS en v1. **Après la page TS** : ménage du `CLAUDE.md` (MD-LIB/CLAUDE.md,
+   « Ménage au prochain pull ») de NEWGEN et NextStep, liste avant/après à
+   présenter à l'utilisateur.
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
