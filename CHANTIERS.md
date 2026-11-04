@@ -1,25 +1,21 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026, 18:04 (heure de Paris)**, base `main` : NEWGEN `9360b39`,
-NextStep `0c5a763` (déploiements et parité verts). Tient aussi les restes
+État au **04/11/2026, 18:31 (heure de Paris)**, base `main` : NEWGEN `8972544`,
+NextStep `a9df716` (déploiements et parité verts). Tient aussi les restes
 communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
 
 **À reprendre en premier (passation du 04/11/2026, fin de session)** :
-1. **Mail au demandeur d'un ticket (AG-045), en ligne.** Essai de l'utilisateur
-   sur son propre ticket : pas de mail (voulu : l'auteur n'est pas prévenu de sa
-   propre action) mais **rien ne s'affichait**. **Proposé, en attente de oui/non** :
-   afficher « pas de mail : vous êtes l'auteur de ce ticket » (états `auteur` et
-   `anonyme`, API + écran + tests, les deux sites ; règle 65 de MD-LIB). Essai réel
-   à faire avec un ticket d'un autre auteur ayant l'adresse de l'utilisateur ;
-   **réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée**.
-   **Fait le 04/11/2026, mis en pause avant livraison** : le message explicite (oui de
-   l'utilisateur) est codé et testé sur la branche `claude/affectionate-heisenberg-mj5r7z`
-   (NEWGEN `9cd3e22`, **pas sur `main`, pas sur `sandbox`, pas porté dans NextStep**) : états
-   `inchange`, `auteur`, `anonyme`, `deja` (l'ancien `inutile` disparaît), API, écran, 9 tests
-   navigateur et tests de l'API verts (suites complètes NEWGEN passées). Reste : porter
-   `shared.js` dans NextStep (`patch` du diff de `shared.js`, bump `?v=`), pousser NextStep
-   puis NEWGEN sur `sandbox`, essai de l'utilisateur, `main` sur son accord. Un push de `main` NEWGEN
-   sans NextStep fait échouer la parité.
+1. **Lot sur `sandbox`, en attente d'essai de l'utilisateur puis de son accord pour `main`** (04/11/2026, branche
+   `ccr-6961a50f-t1v0fk`, NextStep d'abord puis NEWGEN) :
+   - **Tickets (AG-045)** : message explicite quand aucun mail ne part (`inchange`, `auteur`, `anonyme`, `deja`),
+     repris de `claude/affectionate-heisenberg-mj5r7z`, porté dans NextStep (`shared.js?v=267`) ; et les trois
+     amendements de Codex (pas d'écrasement concurrent, comparaison `BINARY`, « Réponse de » = répondant enregistré).
+   - **Rattrapage TS (AG-043)** : marqueur pris avant le rattrapage, dans la même transaction.
+   - **Page TS** : titre « Agenda des ateliers collectifs animés par l'équipe départementale des conseillers
+     numériques » ; **première connexion sans code par mail (AG-046, bloc ouvert pour Codex)**, le code reste
+     exigé ensuite, après « oubli » et après une réinitialisation d'un compte déjà utilisé.
+   Tests : suite de l'API 360 verte en local (MariaDB 10.11), chaque nouveau test vérifié par mutation.
+   **Réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée.**
 2. **Registres dans `ateliers-backups`** (dépôt privé, cloné lecture seule dans
    `/home/user/ateliers-backups` la session précédente ; sources HTML
    `documents/sources/registre-securite.html` V0.9 et `registre-rgpd.html` V0.6,
@@ -34,7 +30,7 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
 3. **Ménage des `CLAUDE.md`** de NEWGEN et NextStep (`MD-LIB/CLAUDE.md`, « Ménage au
    prochain pull ») : liste avant/après à présenter, accord avant commit.
 4. **Codex — relectures des livraisons arrivées le 04/11/2026 à 18:02** (`9360b39`, `AGORA.md`) :
-   **AG-044 confirmé** (quatre correctifs, rien à ajouter). **AG-043 amendé** : le marqueur
+   **AG-044 confirmé** (quatre correctifs, rien à ajouter). **AG-043 et AG-045 : amendements codés (point 1), relecture de Codex à demander après la livraison.** **AG-043 amendé** : le marqueur
    `ts_rattrapage_mdp_change` n'est pas atomique (`api/lib/ts.php:68-72`) ; deux appels simultanés
    au premier passage peuvent dater un compte TS tout neuf et le soustraire à la purge des 30 jours.
    À faire : marqueur + rattrapage dans une transaction, seul le gagnant fait l'UPDATE, test de
@@ -42,9 +38,7 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    change » écrase sans condition une modification concurrente (`:262-264`) ; (2) le verrou optimiste
    compare `reponse` sous `utf8mb4_unicode_ci` (« texte » = « Texte ») alors que PHP compare
    strictement : deux mails possibles (`:259`) ; (3) le mail dit « Réponse de » l'Admin courant au
-   lieu du répondant enregistré (`:205`, `:248-249`). **Aucun correctif commencé** : à proposer à
-   l'utilisateur ; vérifier d'abord si la branche `claude/affectionate-heisenberg-mj5r7z` (point 1)
-   touche les mêmes lignes. Les blocs AG-042 à AG-045 sortent d'`AGORA.md` quand l'utilisateur les
+   lieu du répondant enregistré (`:205`, `:248-249`). Les blocs AG-042 à AG-045 sortent d'`AGORA.md` quand l'utilisateur les
    tranche. **AG-040** reste à trancher par l'utilisateur.
 5. **Page des travailleurs sociaux** : en ligne, **URL non diffusée** aux travailleurs
    sociaux (attendre la relecture de Codex puis l'accord de l'utilisateur) ; pas de
