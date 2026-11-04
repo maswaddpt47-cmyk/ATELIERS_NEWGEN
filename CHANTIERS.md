@@ -269,6 +269,7 @@ appel superflu, `sw.js` de désinscription.
   « rechargez » sans le champ, modification sans lui = valeur gardée, Corbeille d'avant = `Non`) ; colonne
   posée dans `api_action_protegee`, avant toute transaction ; filtre de l'Historique appliqué comme les autres
   filtres, **tuiles et compteurs compris** (AG-048, décision de l'utilisateur du 04/11/2026, confirmé par Codex) ;
+  le filtre de statut reste hors des tuiles (répartition des statuts, choix de l'utilisateur du 05/11/2026) ;
   filtre TS seulement si `ts_filtre_ouvert` est allumé (absent = éteint).
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS` `newgen` / `nextstep`) :
   origine `maswaddpt47-cmyk.github.io` partagée, `localStorage` non cloisonné

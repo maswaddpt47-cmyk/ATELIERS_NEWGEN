@@ -137,7 +137,8 @@ Livré sur le contrat confirmé : `filtrerOuvertATous` dans `sansStatut` (dépen
 de `filtered` ; commentaires des deux `utils.js` et invariant de `CHANTIERS.md` mis à jour. Test du vrai écran :
 `e2e/saisie-session.spec.js` « tuile Total : 2 ateliers, filtre Oui → 1 » (les deux applis), qui échoue quand
 on remet l'ancien placement (mutation faite). Le test unitaire d'AG-047 est remplacé par un calcul sur la liste filtrée.
-Portée : Total = lignes affichées seulement quand le statut est « Tous » (point de Codex), soumis à l'utilisateur.
+Portée : Total = lignes affichées seulement quand le statut est « Tous » (point de Codex). **Décision de l'utilisateur
+du 05/11/2026 : on garde**, les tuiles montrent la répartition des statuts. À Codex : une vérification de la livraison (règle 58).
 
 ## Blocs tranchés — sortis de ce fichier
 
