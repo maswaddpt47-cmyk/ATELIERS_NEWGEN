@@ -184,3 +184,23 @@ CREATE TABLE IF NOT EXISTS tickets (
   KEY idx_cree_le (cree_le),
   KEY idx_clos_le (clos_le)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Page des travailleurs sociaux (AG-042, 04/11/2026) : comptes à part, jamais
+-- dans `comptes` (liste de connexion, rappels, bilans, tickets n'y voient
+-- rien). Identifiant = e-mail pro, en minuscules. Empreinte comme `comptes`.
+CREATE TABLE IF NOT EXISTS comptes_ts (
+  email        VARCHAR(97)  NOT NULL,
+  hash         VARCHAR(255) NULL,
+  actif        TINYINT(1)   NOT NULL DEFAULT 1,
+  doit_changer TINYINT(1)   NOT NULL DEFAULT 1,
+  cree_le      DATETIME     NOT NULL,
+  PRIMARY KEY (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Demandes d'accès déposées sur la page TS, purgées à 90 jours (AG-042).
+CREATE TABLE IF NOT EXISTS demandes_ts (
+  email      VARCHAR(97) NOT NULL,
+  demande_le DATETIME    NOT NULL,
+  site       VARCHAR(20) NOT NULL DEFAULT '',
+  PRIMARY KEY (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
