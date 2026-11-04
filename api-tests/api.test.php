@@ -60,6 +60,15 @@ for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port); $i++) usleep(100000);
 function appel(array $get, array $post = [], ?array &$entetes = null): array
 {
     global $port;
+    // « Ouvert à tous » (AG-047) : obligatoire à la création. Les tests d'avant
+    // ce champ envoient « Non » par défaut ; '_brut' envoie l'atelier tel quel
+    // (tests du champ lui-même : absent, invalide, page en cache).
+    if (!empty($post['_brut'])) unset($post['_brut']);
+    elseif (in_array($get['action'] ?? '', ['saveEntry', 'saveMany'], true)) {
+        $avec = fn($e) => is_array($e) && !array_key_exists('ouvert_a_tous', $e) ? $e + ['ouvert_a_tous' => 'Non'] : $e;
+        if (isset($post['entry']) && is_array($e = json_decode((string) $post['entry'], true))) $post['entry'] = json_encode($avec($e));
+        if (isset($post['entries']) && is_array($l = json_decode((string) $post['entries'], true))) $post['entries'] = json_encode(array_map($avec, $l));
+    }
     $url = "http://127.0.0.1:$port/index.php?" . http_build_query($get);
     $ctx = stream_context_create(['http' => $post
         ? ['method' => 'POST', 'header' => 'Content-Type: application/x-www-form-urlencoded', 'content' => http_build_query($post), 'ignore_errors' => true]
@@ -598,6 +607,40 @@ appel(['action' => 'getAll'], $T);
 verifier($db->query("SELECT duree FROM ateliers WHERE id = 'mig_1'")->fetchColumn() === null, 'remplissage fait une seule fois (repère dans config)');
 $db->exec("DELETE FROM ateliers WHERE id LIKE 'mig\\_%'");
 
+echo "API — ouvert à tous (AG-047)\n";
+$base = ['statut' => 'Planifié', 'date' => '2026-12-15', 'horaire' => '10:00', 'thematique' => 'Ouvert', 'commune' => 'Agen', 'conseiller' => 'Conseiller Test'];
+$ouvert = fn(string $id) => $db->query("SELECT ouvert_a_tous FROM ateliers WHERE id = " . $db->quote($id))->fetchColumn();
+$r = appel(['action' => 'saveEntry'], $T + ['_brut' => 1, 'entry' => json_encode(['_id' => 'ot_cache'] + $base)]);
+verifier(($r['ok'] ?? true) === false && str_contains($r['error'] ?? '', 'Rechargez') && $ouvert('ot_cache') === false, 'création sans le champ (page en cache) : refusée, rien d\'écrit');
+$r = appel(['action' => 'saveEntry'], $T + ['_brut' => 1, 'entry' => json_encode(['_id' => 'ot_x', 'ouvert_a_tous' => 'oui'] + $base)]);
+verifier(($r['ok'] ?? true) === false && $ouvert('ot_x') === false, 'valeur hors Oui / Non : refusée');
+appel(['action' => 'saveEntry'], $T + ['_brut' => 1, 'entry' => json_encode(['_id' => 'ot_1', 'ouvert_a_tous' => 'Oui'] + $base)]);
+verifier(($lire('ot_1')['ouvert_a_tous'] ?? '') === 'Oui', 'création Oui : relue Oui dans getAll');
+appel(['action' => 'saveEntry'], $T + ['_brut' => 1, 'entry' => json_encode(['_id' => 'ot_1', 'remarques' => 'modifié'] + $base)]);
+verifier($ouvert('ot_1') === 'Oui' && $lire('ot_1')['remarques'] === 'modifié', 'modification sans le champ (page en cache) : Oui gardé');
+appel(['action' => 'saveEntry'], $T + ['_brut' => 1, 'entry' => json_encode(['_id' => 'ot_1', 'ouvert_a_tous' => 'Non'] + $base)]);
+verifier($ouvert('ot_1') === 'Non', 'modification Oui → Non : enregistrée');
+$r = appel(['action' => 'saveMany'], $T + ['_brut' => 1, 'entries' => json_encode([['_id' => 'ot_m1', 'ouvert_a_tous' => 'Oui'] + $base, ['_id' => 'ot_m2'] + $base])]);
+verifier(($r['ok'] ?? true) === false && str_contains($r['error'], '"idx":1') && $ouvert('ot_m1') === 'Oui' && $ouvert('ot_m2') === false, 'saveMany : chaque entrée à part, la création sans le champ refusée seule');
+// Corbeille : une copie d'avant le champ revient à Non ; une copie récente garde sa valeur.
+appel(['action' => 'delete'], $T + ['_id' => 'ot_m1']);
+$r = appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'ot_m1']);
+verifier(($r['ok'] ?? false) && $ouvert('ot_m1') === 'Oui', 'corbeille : atelier Oui restauré Oui');
+$vieux = ['_id' => 'ot_vieux', '_n' => 777] + $base;
+$db->prepare('INSERT INTO ateliers_corbeille (id, donnees, supprime_le, supprime_par) VALUES (?, ?, NOW(), ?)')->execute(['ot_vieux', json_encode($vieux), 'Conseiller Test']);
+$r = appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'ot_vieux']);
+verifier(($r['ok'] ?? false) && $ouvert('ot_vieux') === 'Non' && ($r['entry']['ouvert_a_tous'] ?? '') === 'Non', 'corbeille : copie d\'avant le champ restaurée en Non, pas refusée');
+// Migration : colonne posée une fois avec Non pour l'existant, jamais réinitialisée ensuite.
+$db->exec('ALTER TABLE ateliers DROP COLUMN ouvert_a_tous');
+appel(['action' => 'getConfig'], $T);
+verifier($ouvert('ot_1') === 'Non' && $ouvert('ot_m1') === 'Non', 'migration : colonne remise par une action quelconque, existants à Non');
+$db->exec("UPDATE ateliers SET ouvert_a_tous = 'Oui' WHERE id = 'ot_1'");
+appel(['action' => 'getAll'], $T);
+verifier($ouvert('ot_1') === 'Oui', 'migration : un Oui n\'est pas réinitialisé aux appels suivants');
+$db->exec("INSERT INTO ateliers (id, statut, date, orienteur, lieu, thematique, conseiller, co_animateur, residence, remarques) VALUES ('ot_brut', 'Planifié', '2026-12-16', '', '', 'T', '', '', '', '')");
+verifier($ouvert('ot_brut') === 'Non', 'INSERT sans la colonne (import, bac à sable) : Non par défaut');
+$db->exec("DELETE FROM ateliers WHERE id LIKE 'ot\\_%'");
+
 echo "API — avis des stagiaires (AG-021)\n";
 $auj = date('Y-m-d');
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_1', 'date' => $auj, 'horaire' => '10:00', 'thematique' => 'Smartphone', 'conseiller' => 'Nouveau Venu', 'commune' => 'Nérac'])]);
@@ -926,7 +969,8 @@ $ids = array_map(fn($a) => $a['thematique'] . '@' . $a['commune'], $r['ateliers'
 verifier(($r['ok'] ?? false) && in_array('Mail@Agen', $ids, true) && in_array('Smartphone@Nérac', $ids, true), 'ateliers : Planifié du jour et à venir');
 $futurs = $db->query("SELECT COUNT(*) FROM ateliers WHERE statut = 'Planifié' AND date >= CURDATE()")->fetchColumn();
 verifier(count($r['ateliers'] ?? []) === (int) $futurs && !array_filter($r['ateliers'], fn($a) => $a['statut'] !== 'Planifié' || $a['date'] < date('Y-m-d')), 'ateliers : ni passés, ni autres statuts (' . count($r['ateliers'] ?? []) . ')');
-verifier(array_keys($r['ateliers'][0] ?? []) === ['date', 'horaire', 'statut', 'orienteur', 'commune', 'lieu', 'public', 'thematique'], 'ateliers : 8 champs seulement, dont l\'horaire (ni conseiller, ni remarques, ni inscrits)');
+verifier(array_keys($r['ateliers'][0] ?? []) === ['date', 'horaire', 'statut', 'orienteur', 'commune', 'lieu', 'public', 'thematique', 'ouvert_a_tous'], 'ateliers : 9 champs seulement, dont l\'horaire et « ouvert à tous » (ni conseiller, ni remarques, ni inscrits)');
+verifier(($r['filtreOuvert'] ?? null) === false, 'filtre « Ouvert à tous » de la page TS : éteint tant qu\'il n\'est pas activé');
 verifier(array_column(array_filter($r['ateliers'] ?? [], fn($a) => $a['thematique'] === 'Mail'), 'horaire') === ['14:00'], 'ateliers : l\'horaire de début est renvoyé');
 verifier(!str_contains(json_encode($r), 'remarque secrète'), 'ateliers : la remarque ne sort pas');
 // Amendement 3 : « à partir du jour de Paris » ne dépend pas du fuseau de MySQL. Pour chaque
@@ -961,6 +1005,13 @@ $db->exec("UPDATE config SET valeur = '" . json_encode(array_fill_keys(array_map
 $r3 = appel(['action' => 'tsAteliers'], $T);
 verifier(($r3['ok'] ?? false) && !array_filter($r3['ateliers'] ?? [], fn($a) => trim($a['public']) !== ''), 'tous les publics éteints : plus aucun atelier avec un public');
 $db->exec("UPDATE config SET valeur = '{}' WHERE cle = 'visibility'");
+$db->exec("UPDATE config SET valeur = '{\"ts_filtre_ouvert\":true}' WHERE cle = 'visibility'");
+verifier((appel(['action' => 'tsAteliers'], $T)['filtreOuvert'] ?? null) === true, 'filtre « Ouvert à tous » activé dans Admin → Visibilité : annoncé à la page TS');
+$db->exec("UPDATE config SET valeur = '{}' WHERE cle = 'visibility'");
+// Première lecture de la page TS sur une base sans la colonne (AG-047, Codex n° 2).
+$db->exec('ALTER TABLE ateliers DROP COLUMN ouvert_a_tous');
+$r4 = appel(['action' => 'tsAteliers'], $T);
+verifier(($r4['ok'] ?? false) && ($r4['ateliers'][0]['ouvert_a_tous'] ?? '') === 'Non', 'page TS en premier appel, colonne absente : ajoutée, ateliers à Non');
 
 verifier(appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@lotetgaronne.fr', 'actif' => '0'])['ok'] === true
     && appel(['action' => 'tsAteliers'], $T)['ok'] === false, 'désactivation : la session tombe aussitôt');

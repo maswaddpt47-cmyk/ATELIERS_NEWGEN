@@ -33,6 +33,7 @@ function buildEntry(overrides = {}) {
     date_retour_materiel:      '',
     duree:                     90,
     fiche_bilan:               '',
+    ouvert_a_tous:             'Non',
     ...overrides,
   };
 }

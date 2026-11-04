@@ -4,8 +4,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN utils.js:320",
-      "NextStep utils.js:320"
+      "NEWGEN utils.js:328",
+      "NextStep utils.js:328"
     ],
     "newgen": "25030113b1/25030113b1",
     "nextstep": "c010301b5c/c010301b5c",
@@ -30,12 +30,12 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:3008",
-      "NextStep shared.js:2824"
+      "NEWGEN shared.js:3019",
+      "NextStep shared.js:2835"
     ],
-    "newgen": "bd3b62ea1e/bd3b62ea1e",
-    "nextstep": "d618c8acfc/d618c8acfc",
-    "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres). Revérifié le 28/10/2026 après les chiffres animés des tuiles : même composant NombreAnime dans les deux, posé sur le bandeau propre à chaque appli."
+    "newgen": "7c638f3140/7c638f3140",
+    "nextstep": "901de8dfc1/901de8dfc1",
+    "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres). Revérifié le 28/10/2026 après les chiffres animés des tuiles : même composant NombreAnime dans les deux, posé sur le bandeau propre à chaque appli. Revérifié le 04/11/2026 après AG-047 (filtre « Ouvert à tous » et colonne des exports) : même filtre et même portée dans les deux, posé dans les filtres propres à chaque design."
   },
   "majIndiceNav": {
     "statut": "voulu",

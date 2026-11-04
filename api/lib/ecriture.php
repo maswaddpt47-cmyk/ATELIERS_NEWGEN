@@ -136,6 +136,7 @@ function api_ecrire_atelier(PDO $db, array $d, ?string &$err, string $acteur = '
     }
     $l = api_valider_atelier($d, $err);
     if ($l === null) return null;
+    $ouvertAbsent = !array_key_exists('ouvert_a_tous', $l);
     $materiel = api_materiel_canonique($db, $d['materiel'] ?? []);
 
     $propre = !$db->inTransaction();
@@ -146,6 +147,14 @@ function api_ecrire_atelier(PDO $db, array $d, ?string &$err, string $acteur = '
         $s = $db->prepare('SELECT n FROM ateliers WHERE id = ? FOR UPDATE');
         $s->execute([$l['id']]);
         $n = $s->fetchColumn();
+        // Ouvert à tous (AG-047) : une création doit le porter. Sans lui, la
+        // page est d'avant le 04/11/2026 (règle 40) : refus, jamais un « Non »
+        // posé en silence. Une modification sans lui garde la valeur en base.
+        if ($n === false && $ouvertAbsent) {
+            if ($propre) $db->rollBack();
+            $err = 'Ouvert à tous : choix manquant. Rechargez la page pour avoir la dernière version, puis recommencez.';
+            return null;
+        }
         if ($n === false && $nImpose !== null) {
             $n = $nImpose;   // n n'est pas unique (schema.sql) : aucun conflit
         } elseif ($n === false) {
@@ -287,6 +296,16 @@ function api_valider_atelier(array $d, ?string &$err): ?array
         $b = api_bilan_valide($d['fiche_bilan'], $err);
         if ($err !== null) return null;
         $l['fiche_bilan'] = $b;
+    }
+    // Ouvert à tous (AG-047) : 'Oui' ou 'Non'. Absent de l'envoi (page en
+    // cache) : colonne inchangée en modification, refus en création
+    // (api_ecrire_atelier).
+    if (array_key_exists('ouvert_a_tous', $d)) {
+        $v = $d['ouvert_a_tous'];
+        if (!is_string($v) || !in_array($v, ['Oui', 'Non'], true)) {
+            $err = 'Ouvert à tous : choisir Oui ou Non'; return null;
+        }
+        $l['ouvert_a_tous'] = $v;
     }
     // Durée en minutes (AG-017). Absente de l'envoi (client d'avant, en
     // cache) : la colonne n'est pas touchée, la durée déjà saisie reste.
@@ -670,6 +689,10 @@ function action_restaurer_corbeille(PDO $db, array $p, string $acteur, ?string $
         $s = $db->prepare('SELECT 1 FROM ateliers WHERE id = ? FOR UPDATE');
         $s->execute([$id]);
         $d = $donnees === false ? null : json_decode($donnees, true);
+        // Atelier supprimé avant le champ « Ouvert à tous » (AG-047, Codex n° 1) :
+        // sa copie n'en a pas, il revient à « Non » comme les ateliers d'avant.
+        // Seul ce chemin le pose : une création ordinaire sans lui est refusée.
+        if (is_array($d) && !array_key_exists('ouvert_a_tous', $d)) $d['ouvert_a_tous'] = 'Non';
         $err = null;
         if ($donnees === false) $err = 'Atelier absent de la corbeille (déjà restauré ou purgé)';
         elseif ($s->fetchColumn() !== false) $err = 'Un atelier avec cet identifiant existe déjà';

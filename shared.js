@@ -2047,7 +2047,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   // Conseiller connecté proposé par défaut (lot 1 UX, 01/10/2026) : fourni par
   // l'interface des conseillers seulement, l'Admin saisit pour les autres.
   const consDef=conseillerDefaut&&conseillers.includes(conseillerDefaut)?conseillerDefaut:'';
-  const empty={_id:'',_n:'',statut:'',date:'',horaire:'',ampm:'',duree:DUREE_DEFAUT,orienteur:'',commune:'',lieu:'',thematique:'',inscrits:4,presents:'',public:'',conseiller:consDef,co_animateur:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:'',date_prelevement_materiel:'',date_retour_materiel:''};
+  const empty={_id:'',_n:'',statut:'',date:'',horaire:'',ampm:'',duree:DUREE_DEFAUT,orienteur:'',commune:'',lieu:'',thematique:'',inscrits:4,presents:'',public:'',conseiller:consDef,co_animateur:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:'',date_prelevement_materiel:'',date_retour_materiel:'',ouvert_a_tous:''};
 
   // ── états mode unique ──
   const[form,setForm]   = React.useState(empty);
@@ -2060,7 +2060,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   const[modeLot,setModeLot]     = React.useState(false);
   const[importOuvert,setImportOuvert]=React.useState(false);
   const[creneauUnique,setCreneauUnique]=React.useState(null);   // {date, demi} venu de Disponibilités
-  const[lotForm,setLotForm]     = React.useState({orienteur:'',commune:'',lieu:'',conseiller:consDef,co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:''});
+  const[lotForm,setLotForm]     = React.useState({orienteur:'',commune:'',lieu:'',conseiller:consDef,co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:'',ouvert_a_tous:''});
   const[lotRows,setLotRows]     = React.useState([emptyRow(),emptyRow()]);
   const[lotErrors,setLotErrors] = React.useState({});
   const[lotRowErrors,setLotRowErrors]= React.useState({});
@@ -2129,12 +2129,12 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
   // (statutSelonDate, utils.js) ; jamais en modification d'un atelier.
   const statutChoisiRef=React.useRef(false);
   function reset(){origineUniqueRef.current=empty;idNouveauRef.current=null;statutChoisiRef.current=false;setForm(empty);setEditId(null);setIsDup(false);setErrors({});}
-  function resetLot(){idsLotRef.current={};setLotForm({orienteur:'',commune:'',lieu:'',conseiller:consDef,co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:''});setLotRows([emptyRow(),emptyRow()]);setLotErrors({});setLotRowErrors({});}
+  function resetLot(){idsLotRef.current={};setLotForm({orienteur:'',commune:'',lieu:'',conseiller:consDef,co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:'',ouvert_a_tous:''});setLotRows([emptyRow(),emptyRow()]);setLotErrors({});setLotRowErrors({});}
 
 
   const ligneVideRef=React.useRef(null);
   if(!ligneVideRef.current)ligneVideRef.current=emptyRow();
-  const lotVide={orienteur:'',commune:'',lieu:'',conseiller:consDef,co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:''};
+  const lotVide={orienteur:'',commune:'',lieu:'',conseiller:consDef,co_animateur:'',public:'',materiel:[],residence:'',remarques:'',nb_ordinateurs:'',ouvert_a_tous:''};
   const modifiee=modeLot
     ?preparatifsCycle||champsSaisieModifies(lotForm,lotVide)||lotRows.length!==2||lotRows.some(r=>champsSaisieModifies(r,ligneVideRef.current,['id']))
     :champsSaisieModifies(form,origineUniqueRef.current);
@@ -2220,7 +2220,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       if(k==='horaire'||k==='duree')Object.keys(n).forEach(i=>{if(n[i]&&n[i][k])n[i]={...n[i],[k]:'',...(a?{ampm:''}:{})};});return n;});}
 
   // ── validation mode unique ──
-  const FIELD_LABELS={'statut':'Statut','date':'Date','horaire':'Horaire','duree':'Durée','ampm':'AM/PM','commune':'Commune','lieu':'Lieu','thematique':'Thématique','conseiller':'Conseiller','orienteur':'Orienteur','public':'Type de public','inscrits':'Inscrits','nb_ordinateurs':'Ordinateurs prêtés'};
+  const FIELD_LABELS={'statut':'Statut','date':'Date','horaire':'Horaire','duree':'Durée','ampm':'AM/PM','commune':'Commune','lieu':'Lieu','thematique':'Thématique','conseiller':'Conseiller','orienteur':'Orienteur','public':'Type de public','ouvert_a_tous':'Ouvert à tous','inscrits':'Inscrits','nb_ordinateurs':'Ordinateurs prêtés'};
 
   function validate(){
     const e={};
@@ -2234,6 +2234,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     if(!form.conseiller)        e.conseiller='Requis';
     if(!form.orienteur.trim())  e.orienteur='Requis';
     if(!form.public)            e.public='Requis';
+    if(!OUVERT_A_TOUS_CHOIX.includes(form.ouvert_a_tous)) e.ouvert_a_tous='Requis';
     if(form.inscrits==='')      e.inscrits='Requis';
     // Classe mobile cochée sans quantité : le conflit de stock (Frise du
     // parc, findOrdinateursConflicts) ne peut rien détecter sans ce nombre
@@ -2256,6 +2257,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     if(!lotForm.conseiller)       e.conseiller='Requis';
     if(!lotForm.orienteur.trim()) e.orienteur='Requis';
     if(!lotForm.public)           e.public='Requis';
+    if(!OUVERT_A_TOUS_CHOIX.includes(lotForm.ouvert_a_tous)) e.ouvert_a_tous='Requis';
     if(matIncludes(lotForm.materiel,'Classe mobile')&&!(parseInt(lotForm.nb_ordinateurs)>0)) e.nb_ordinateurs='Requis';
     setLotErrors(e);
     const re={};
@@ -2335,7 +2337,7 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
     if(alertesLot.length&&!window.confirm(alertesLot.slice(0,8).join('\n')+(alertesLot.length>8?'\n…':'')+'\n\nEnregistrer quand même ?'))return;
     setSaving(true);
     try{
-      const entries=rowsFilled.map(row=>({_id:idsLotRef.current[row.id]||(idsLotRef.current[row.id]=row.olkId||genId()),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:ampmDepuisHoraire(row.horaire)||row.ampm,duree:parseInt(row.duree)||DUREE_DEFAUT,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0,nb_ordinateurs:lotForm.nb_ordinateurs===''?'':parseInt(lotForm.nb_ordinateurs)||0,date_prelevement_materiel:row.date_prelevement_materiel||'',date_retour_materiel:row.date_retour_materiel||''}));
+      const entries=rowsFilled.map(row=>({_id:idsLotRef.current[row.id]||(idsLotRef.current[row.id]=row.olkId||genId()),_n:'',statut:'Planifié',date:row.date,horaire:row.horaire,ampm:ampmDepuisHoraire(row.horaire)||row.ampm,duree:parseInt(row.duree)||DUREE_DEFAUT,thematique:row.thematique,orienteur:lotForm.orienteur,commune:lotForm.commune,lieu:lotForm.lieu,conseiller:lotForm.conseiller,co_animateur:lotForm.co_animateur||'',public:lotForm.public,ouvert_a_tous:lotForm.ouvert_a_tous,materiel:(lotForm.materiel||[]).join('|'),residence:lotForm.residence,remarques:lotForm.remarques,inscrits:row.inscrits===''?'':parseInt(row.inscrits)||0,presents:row.presents===''?'':parseInt(row.presents)||0,nb_ordinateurs:lotForm.nb_ordinateurs===''?'':parseInt(lotForm.nb_ordinateurs)||0,date_prelevement_materiel:row.date_prelevement_materiel||'',date_retour_materiel:row.date_retour_materiel||''}));
       // Même conversion materiel string→tableau que le mode unique.
       const appliquer=liste=>{
         liste.forEach(entry=>{const loc={...entry,materiel:lotForm.materiel||[]};if(onNewEntry)onNewEntry(loc);entreeSauvegardee(loc);});
@@ -2452,6 +2454,15 @@ function VueSaisie({entries,onSaved,onNewEntry,lists,editingId,onClearEdit,prefi
       CE('div',null,
         LblG({t:'Résidence'}),
         CE('input',{type:'text',style:iStyle(false),value:frm.residence,placeholder:'Commune d\'origine',onChange:e=>setFn('residence',e.target.value)}))
+    ),
+    // Ouvert à tous (AG-047) : Oui / Non obligatoire, sans présélection ; en
+    // cycle et à l'import Outlook, un seul choix pour toutes les séances.
+    CE('div',{style:{marginTop:12}},
+      Lbl({t:'Ouvert à tous *',err:!!errs.ouvert_a_tous}),
+      CE('div',{role:'radiogroup','aria-label':'Ouvert à tous',style:{display:'flex',gap:8}},
+        OUVERT_A_TOUS_CHOIX.map(v=>{const chk=frm.ouvert_a_tous===v;
+          return CE('button',{key:v,type:'button',role:'radio','aria-checked':chk,onClick:()=>setFn('ouvert_a_tous',v),style:{padding:'7px 18px',border:`2px solid ${chk?ac:(errs.ouvert_a_tous?'#e53e3e':'#e2e8f0')}`,borderRadius:20,cursor:'pointer',fontSize:12,fontWeight:700,color:chk?ac:'#718096',background:chk?acLight:'#fff'}},v);})),
+      errs.ouvert_a_tous&&CE('span',{style:{color:'#e53e3e',fontSize:11,fontWeight:600}},errs.ouvert_a_tous)
     ),
     CE('div',{style:{marginTop:12}},
       LblG({t:'Matériel utilisé'}),
@@ -3024,6 +3035,9 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
   // Plusieurs publics sélectionnables (26/09/2026) : [] = tous.
   const[filtPublic,setFiltPublic]=React.useState([]);
   const basculerPublic=p=>setFiltPublic(l=>l.includes(p)?l.filter(x=>x!==p):[...l,p]);
+  // Ouvert à tous (AG-047) : 'Tous' / 'Oui' / 'Non', appliqué à la liste et aux
+  // exports seulement — les tuiles et les compteurs de statut gardent leur base.
+  const[filtOuvert,setFiltOuvert]=React.useState('Tous');
   const[sortDir,setSortDir]=React.useState(1);
   const[dateFrom,setDateFrom]=React.useState('');
   const[dateTo,setDateTo]=React.useState('');
@@ -3053,9 +3067,10 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
     if(filtMois!=='Tous')n++;
     if(filtCommune!=='Toutes')n++;
     if(filtPublic.length)n++;
+    if(filtOuvert!=='Tous')n++;
     if(dateFrom||dateTo)n++;
     return n;
-  },[filtStatut,filtConseiller,filtMois,filtCommune,filtPublic,dateFrom,dateTo]);
+  },[filtStatut,filtConseiller,filtMois,filtCommune,filtPublic,filtOuvert,dateFrom,dateTo]);
 
   React.useEffect(()=>{if(initConseiller)setFiltConseiller(initConseiller);},[initConseiller]);
   React.useEffect(()=>{const t=setTimeout(()=>setDSearch(search),300);return()=>clearTimeout(t);},[search]);
@@ -3063,7 +3078,7 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
     const handler = (e)=>{
       const ids = e.detail?.ids || [];
       setFiltStatut('Tous');setFiltMois('Tous');setFiltCommune('Toutes');
-      setFiltConseiller('Tous');setFiltPublic([]);setDateFrom('');setDateTo('');
+      setFiltConseiller('Tous');setFiltPublic([]);setFiltOuvert('Tous');setDateFrom('');setDateTo('');
       setSearch('');setDSearch('');
       setNewIdsFilter(new Set(ids));
     };
@@ -3077,7 +3092,7 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
       const found = ids.some(id=>entries.find(e2=>e2._id===id));
       if(!found)return;
       setFiltStatut('Tous');setFiltMois('Tous');setFiltCommune('Toutes');
-      setFiltConseiller('Tous');setFiltPublic([]);setDateFrom('');setDateTo('');
+      setFiltConseiller('Tous');setFiltPublic([]);setFiltOuvert('Tous');setDateFrom('');setDateTo('');
       setSearch('');setDSearch('');
       setNewIdsFilter(new Set(ids));
     };
@@ -3111,7 +3126,7 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
     if(newIdsFilter&&newIdsFilter.size>0&&entries.some(e=>newIdsFilter.has(e._id)))r=r.filter(e=>newIdsFilter.has(e._id));
     return r;
   },[entries,filtMois,filtCommune,filtConseiller,filtPublic,dSearch,dateFrom,dateTo,newIdsFilter]);
-  const filtered=React.useMemo(()=>[...(filtStatut!=='Tous'?sansStatut.filter(e=>e.statut===filtStatut):sansStatut)].sort((a,b)=>comparerHistorique(a,b,sortDir)),[sansStatut,filtStatut,sortDir]);
+  const filtered=React.useMemo(()=>[...filtrerOuvertATous(filtStatut!=='Tous'?sansStatut.filter(e=>e.statut===filtStatut):sansStatut,filtOuvert)].sort((a,b)=>comparerHistorique(a,b,sortDir)),[sansStatut,filtStatut,filtOuvert,sortDir]);
 
   const kpi=React.useMemo(()=>kpiHistorique(sansStatut),[sansStatut]);
   // Compteurs des pastilles de statut sur la même base que les tuiles (13/10/2026) :
@@ -3123,7 +3138,7 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
   function closePanel(){setPanel(null);}
 
 
-  function resetFiltres(statut='Planifié'){setSearch('');setDSearch('');setFiltStatut(statut);setFiltMois('Tous');setFiltCommune('Toutes');setFiltConseiller('Tous');setFiltPublic([]);setDateFrom('');setDateTo('');setNewIdsFilter(null);if(onResetConseiller)onResetConseiller();}
+  function resetFiltres(statut='Planifié'){setSearch('');setDSearch('');setFiltStatut(statut);setFiltMois('Tous');setFiltCommune('Toutes');setFiltConseiller('Tous');setFiltPublic([]);setFiltOuvert('Tous');setDateFrom('');setDateTo('');setNewIdsFilter(null);if(onResetConseiller)onResetConseiller();}
 
   async function exportXLSX(){
     // Chargement différé — ne bloque plus le démarrage (~800 Ko)
@@ -3135,8 +3150,8 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
         document.head.appendChild(s);
       });
     }
-    const rows=[['N°','Statut','Date','Horaire','Commune','Lieu','Thématique','Inscrits','Présents','Public','Conseiller','Orienteur','Matériel','Résidence','Remarques']];
-    filtered.forEach(e=>rows.push([e._n,e.statut,e.date,e.horaire,normCommune(e.commune),e.lieu,e.thematique,e.inscrits,e.presents,e.public,e.conseiller,e.orienteur,(e.materiel||[]).join('|'),e.residence,e.remarques]));
+    const rows=[['N°','Statut','Date','Horaire','Commune','Lieu','Thématique','Inscrits','Présents','Public','Ouvert à tous','Conseiller','Orienteur','Matériel','Résidence','Remarques']];
+    filtered.forEach(e=>rows.push([e._n,e.statut,e.date,e.horaire,normCommune(e.commune),e.lieu,e.thematique,e.inscrits,e.presents,e.public,e.ouvert_a_tous==='Oui'?'Oui':'Non',e.conseiller,e.orienteur,(e.materiel||[]).join('|'),e.residence,e.remarques]));
     const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Ateliers');
     XLSX.writeFile(wb,`ateliers_cd47_${new Date().toISOString().slice(0,10)}.xlsx`);
   }
@@ -3157,8 +3172,8 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
     if(!filtered.length)return;
     const oris=[...new Set(filtered.map(e=>(e.orienteur||'').trim()).filter(Boolean))];
     const title=oris.length===1?'Ateliers — '+oris[0]:'Ateliers numériques';
-    const rows=filtered.map(e=>`<tr><td>${htmlEsc(fmtDate(e.date))}</td><td>${htmlEsc(e.horaire)}</td><td>${htmlEsc(e.statut)}</td><td>${htmlEsc(e.thematique)}</td><td>${htmlEsc(e.commune)}</td><td>${htmlEsc(e.lieu)}</td><td>${htmlEsc(e.orienteur)}</td><td>${htmlEsc(e.conseiller)}</td><td>${htmlEsc(String(e.inscrits??''))}</td><td>${htmlEsc(String(e.presents??''))}</td></tr>`).join('');
-    const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>${htmlEsc(title)}</title><style>body{font-family:Arial,sans-serif;font-size:10px;margin:20px;}h2{font-size:14px;color:#1e3a8a;margin-bottom:4px;}p.sub{color:#718096;font-size:9px;margin-bottom:12px;}table{width:100%;border-collapse:collapse;}th{background:#1e3a8a;color:#fff;padding:5px 7px;text-align:left;font-size:9px;}td{border:1px solid #e2e8f0;padding:4px 7px;vertical-align:top;}tr:nth-child(even) td{background:#f7fafc;}@page{margin:15mm;}</style></head><body><h2>${htmlEsc(title)}</h2><p class="sub">${filtered.length} ateliers — Imprimé le ${new Date().toLocaleDateString('fr-FR')}</p><table><thead><tr><th>Date</th><th>Horaire</th><th>Statut</th><th>Thématique</th><th>Commune</th><th>Lieu</th><th>Orienteur</th><th>Conseiller</th><th>Inscrits</th><th>Présents</th></tr></thead><tbody>${rows}</tbody></table><script>window.print();<\/script></body></html>`;
+    const rows=filtered.map(e=>`<tr><td>${htmlEsc(fmtDate(e.date))}</td><td>${htmlEsc(e.horaire)}</td><td>${htmlEsc(e.statut)}</td><td>${htmlEsc(e.thematique)}</td><td>${htmlEsc(e.commune)}</td><td>${htmlEsc(e.lieu)}</td><td>${htmlEsc(e.orienteur)}</td><td>${htmlEsc(e.conseiller)}</td><td>${htmlEsc(String(e.inscrits??''))}</td><td>${htmlEsc(String(e.presents??''))}</td><td>${e.ouvert_a_tous==='Oui'?'Oui':'Non'}</td></tr>`).join('');
+    const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>${htmlEsc(title)}</title><style>body{font-family:Arial,sans-serif;font-size:10px;margin:20px;}h2{font-size:14px;color:#1e3a8a;margin-bottom:4px;}p.sub{color:#718096;font-size:9px;margin-bottom:12px;}table{width:100%;border-collapse:collapse;}th{background:#1e3a8a;color:#fff;padding:5px 7px;text-align:left;font-size:9px;}td{border:1px solid #e2e8f0;padding:4px 7px;vertical-align:top;}tr:nth-child(even) td{background:#f7fafc;}@page{margin:15mm;}</style></head><body><h2>${htmlEsc(title)}</h2><p class="sub">${filtered.length} ateliers — Imprimé le ${new Date().toLocaleDateString('fr-FR')}</p><table><thead><tr><th>Date</th><th>Horaire</th><th>Statut</th><th>Thématique</th><th>Commune</th><th>Lieu</th><th>Orienteur</th><th>Conseiller</th><th>Inscrits</th><th>Présents</th><th>Ouvert à tous</th></tr></thead><tbody>${rows}</tbody></table><script>window.print();<\/script></body></html>`;
     const w=window.open('','_blank');if(!w){showToast('Autorisez les popups pour ce site',false);return;}w.document.write(html);w.document.close();
   }
 
@@ -3298,13 +3313,17 @@ function VueHistorique({onOuvrirGestionOrdi,entries,onEdit,onDelete,onRefresh,on
             CE('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
               CE('path',{d:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'}),CE('circle',{cx:9,cy:7,r:4}),CE('path',{d:'M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'})),
             'Public & commune',
-            (filtPublic.length>0||filtCommune!=='Toutes')&&CE('span',{className:'fs-badge-v2'},'actif'),
+            (filtPublic.length>0||filtCommune!=='Toutes'||filtOuvert!=='Tous')&&CE('span',{className:'fs-badge-v2'},'actif'),
             CE('span',{className:'fs-chev'},'▾')
           ),
           CE('div',{className:'fs-body-v2'+(secPublicOpen?' open':'')},
             CE('div',{className:'pill-group-v2'},
               CE('button',{className:'pill-v2'+(filtPublic.length===0?' active':''),onClick:()=>setFiltPublic([]),title:'Retirer le filtre de public'},'Tout afficher'),
               PUBLICS.map(p=>CE('button',{key:p,className:'pill-v2'+(filtPublic.includes(p)?' active':''),onClick:()=>basculerPublic(p)},p))
+            ),
+            CE('div',{className:'pill-group-v2','aria-label':'Ouvert à tous'},
+              CE('span',{style:{fontSize:11,fontWeight:700,color:'var(--text-3)',alignSelf:'center',marginRight:4}},'Ouvert à tous :'),
+              ['Tous',...OUVERT_A_TOUS_CHOIX].map(v=>CE('button',{key:v,className:'pill-v2'+(filtOuvert===v?' active':''),onClick:()=>setFiltOuvert(v)},v))
             ),
             CE('div',{className:'f-sel-wrap-v2'},
               CE('select',{className:'f-select-v2',value:filtCommune,onChange:e=>setFiltCommune(e.target.value)},

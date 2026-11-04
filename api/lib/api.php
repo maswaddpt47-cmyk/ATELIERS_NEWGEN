@@ -53,6 +53,7 @@ const API_CHAMPS_ATELIER = [
     'date_retour_materiel' => 'date_retour_materiel',
     'duree' => 'duree',
     'fiche_bilan' => 'fiche_bilan',
+    'ouvert_a_tous' => 'ouvert_a_tous',
 ];
 
 // Point d'entrée : choisit l'action et applique la règle d'accès.
@@ -144,6 +145,10 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
 
 function api_action_protegee(PDO $db, string $action, array $p, array $session): array
 {
+    // Colonnes ajoutées à chaud (durée, fiche bilan, ouvert à tous) : posées
+    // ici, avant toute transaction (un ALTER validerait celle de la Corbeille)
+    // et avant la première lecture de la page TS (AG-047, Codex n° 2).
+    ateliers_colonne_duree($db);
     switch ($action) {
         case 'getAll':          return action_get_all($db, $p, $session);
         case 'tsAteliers':      return action_ts_ateliers($db, $session);
@@ -340,6 +345,12 @@ function ateliers_colonne_duree(PDO $db): void
     if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'fiche_bilan'")->fetch()) {
         if ($db->query("SHOW COLUMNS FROM ateliers LIKE 'bilan'")->fetch()) $db->exec('ALTER TABLE ateliers CHANGE bilan fiche_bilan TEXT NULL');
         else $db->exec('ALTER TABLE ateliers ADD COLUMN fiche_bilan TEXT NULL');
+    }
+    // Ouvert à tous (AG-047, 04/11/2026) : défaut 'Non' pour les ateliers
+    // existants (choix de l'utilisateur), posé une seule fois par l'ALTER ;
+    // les appels suivants ne touchent plus aux valeurs.
+    if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'ouvert_a_tous'")->fetch()) {
+        $db->exec("ALTER TABLE ateliers ADD COLUMN ouvert_a_tous VARCHAR(3) NOT NULL DEFAULT 'Non'");
     }
     $ok = true;
 }

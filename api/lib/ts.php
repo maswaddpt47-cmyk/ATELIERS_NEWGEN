@@ -27,7 +27,7 @@ const TS_CODE_MINUTES = 10;      // validité du code de connexion envoyé par m
 const TS_CODE_ESSAIS = 5;        // codes faux avant d'effacer le défi
 const TS_DOMAINE = '@lotetgaronne.fr'; // seules adresses acceptées (AG-043, 04/11/2026)
 const TS_EMAIL_MAX = 97;         // 'ts:' + e-mail tient dans VARCHAR(100) (sessions, tentatives)
-const TS_CHAMPS = ['date', 'horaire', 'statut', 'orienteur', 'commune', 'lieu', 'public', 'thematique'];
+const TS_CHAMPS = ['date', 'horaire', 'statut', 'orienteur', 'commune', 'lieu', 'public', 'thematique', 'ouvert_a_tous'];
 // Adresse de la page, dans le mail du mot de passe provisoire : jamais prise
 // de la requête (un mail du Département avec un lien choisi par l'appelant
 // serait un hameçonnage). Bac à sable : ses propres pages.
@@ -527,7 +527,10 @@ function action_ts_ateliers(PDO $db, array $session): array
     // chaque valeur à un booléen, un objet imbriqué serait écrasé.
     $vis = api_json(api_config_base($db)['visibility'] ?? '', []);
     $l = array_values(array_filter($l, fn($a) => !ts_public_cache($vis, (string) $a['public'])));
-    return ['ok' => true, 'ateliers' => $l];
+    // Filtre « Ouvert à tous » de la page : seulement s'il est activé dans
+    // Admin → Visibilité (AG-047, absent = éteint).
+    $filtreOuvert = is_array($vis) && in_array($vis['ts_filtre_ouvert'] ?? false, [true, 1, '1', 'true'], true);
+    return ['ok' => true, 'ateliers' => $l, 'filtreOuvert' => $filtreOuvert];
 }
 
 // Type de public éteint pour la page TS ? Même lecture que visibiliteEffective
