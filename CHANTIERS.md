@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026, 22:20 (heure de Paris)**, bases `main` : NEWGEN `bb0947b`,
+État au **04/11/2026, 22:48 (heure de Paris)**, bases `main` : NEWGEN `bb0947b`,
 NextStep `cb9985e`. Dernière livraison fonctionnelle relue :
 NEWGEN `36db64f` / NextStep `b076d21` (tests, déploiements et parité verts).
 Tient aussi les restes communs à NextStep (même API, même base).
@@ -20,21 +20,20 @@ Anciens brouillons Codex locaux non publiés : repartir de `main` à jour.
    l'utilisateur avant remise. Écarts RGPD n° 12 à 14 (durée des comptes TS utilisés, mention
    d'information de la page TS, avis du DPO avant diffusion de l'adresse TS).
 3. **Page TS** : en ligne, **adresse non diffusée** (après les essais et l'écart n° 14).
-4. **Champ « Ouvert à tous » (AG-047, ouvert le 04/11/2026, PAS ENCORE CODÉ — quota de session atteint)** :
-   Oui / Non obligatoire sans présélection dans ✏️ Nouveau (NEWGEN et NextStep), existants = Non, choix
-   unique obligatoire à l'import Outlook, création sans le champ refusée (« rechargez »), modification
-   sans le champ = valeur gardée ; filtre Tous / Oui / Non dans l'Historique des deux applis et sur la
-   page TS ; colonne dans les exports. **Codex a répondu le 04/11 (amendé, `bb0947b`)** : restauration
-   de la Corbeille d'avant le champ = `Non` (pas de refus) ; migration avant les transactions et
-   avant la 1ʳᵉ lecture TS ; filtre appliqué à la liste et aux exports **sans toucher les tuiles ni
-   les KPI** ; Outlook : choix commun aux seules créations, existants gardés ; PDF Historique
-   n'existe que sur NEWGEN. **À trancher par l'utilisateur avant de coder** ; ~1 h 30.
+4. **Champ « Ouvert à tous » (AG-047) livré le 04/11/2026, à essayer** (NEWGEN et NextStep) :
+   Oui / Non obligatoire sans présélection (✏️ Nouveau, cycle et import Outlook : un choix pour
+   toutes les séances) ; ateliers existants = Non ; filtre Tous / Oui / Non dans l'Historique
+   (liste et exports seulement, tuiles inchangées) ; colonne XLSX (+ PDF sur NEWGEN) ; page TS :
+   filtre montré seulement si Admin → Visibilité → « 🔓 Filtre Ouvert à tous » est allumé (éteint
+   par défaut). Compléments 1 à 4 de Codex appliqués (Corbeille d'avant = Non, migration avant les
+   transactions et la 1ʳᵉ lecture TS, import Outlook ne touche pas les existants). Reste : essai de
+   l'utilisateur, puis **une** vérification de Codex (règle 58).
 
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
 **Ménages (26/09 → 04/11/2026)** : récit dans `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` — **AG-047 seul ouvert** au 04/11/2026 (réponse de Codex reçue, à trancher).
+Contradiction : `AGORA.md` — **AG-047 seul ouvert** au 04/11/2026 (livré, à vérifier une fois par Codex).
 
 ---
 
