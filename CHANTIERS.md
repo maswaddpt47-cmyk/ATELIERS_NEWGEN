@@ -21,29 +21,23 @@ sur `main` à jour ; aucune annonce Nouveautés ajoutée par cette session.
    première connexion TS sans code, message et mail des tickets) : créer un compte TS,
    première connexion, puis reconnexion avec code ; recevoir le mail d'un ticket.
    **Réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée.**
-2. **Veilleur** (AG-040) : corrections de Codex faites le 03/11, **réactivation décidée par
-   l'utilisateur le 04/11**. Il le réactive lui-même (Actions → Veilleur intégrité → Enable
-   workflow : aucun outil de Claude ne le fait). Puis essai réel (règle 61) : un veilleur
-   `simuler_refus=true`, `passages=1` doit échouer et laisser un successeur qui attend 60 min
-   sans rien relancer, puis lance un vrai contrôle. ⚠️ Le run n° 3654 (ancien code) est encore
-   « en file », non annulable (409) ; le premier veilleur lancé dans le même groupe de
-   concurrence devrait le remplacer (hypothèse non vérifiée).
-3. **Origine web partagée avec GDINV2** (registre de sécurité V0.10 §9) : séparation proposée
-   le 04/11 (pages servies par Alwaysdata sur une adresse propre, anciennes adresses
-   redirigées), **en attente** : l'utilisateur crée le site, puis bloc AGORA pour Codex.
-4. **Registres** sécurité V0.10 et RGPD V0.7 (`ateliers-backups` `10668ab`) : à relire par
+2. **Veilleur** (AG-040) : réactivé par l'utilisateur le 04/11 à 20:51 ; essai réel lancé : n° 3657
+   (`simuler_refus`) en échec voulu à 20:52, successeur n° 3658 en attente de 60 min sans rien
+   relancer (vérifié à 20:57). **Reste** : constater sa reprise vers 21:52 (un vrai contrôle, une
+   alerte « surveillance interrompue » attendue une fois), puis clore AG-040. Run n° 3654 (ancien
+   code) toujours « en file », inerte, non annulable ni supprimable.
+3. **Registres** sécurité V0.10 et RGPD V0.7 (`ateliers-backups` `10668ab`) : à relire par
    l'utilisateur avant remise. Écarts RGPD n° 12 à 14 (durée des comptes TS utilisés, mention
    d'information de la page TS, avis du DPO avant diffusion de l'adresse TS).
-5. **Page TS** : en ligne, **adresse non diffusée** (après les essais et l'écart n° 14).
-6. **Méthode** (règles 55, 58, 63 à 65 de MD-LIB) : `git fetch` puis `merge --ff-only`, jamais
+4. **Page TS** : en ligne, **adresse non diffusée** (après les essais et l'écart n° 14).
+5. **Méthode** (règles 55, 58, 63 à 65 de MD-LIB) : `git fetch` puis `merge --ff-only`, jamais
    `git pull` sur `main` ; `git diff --stat origin/main HEAD` avant tout push ; NextStep
    d'abord ; mutations groupées ; une seule vérification de Codex par livraison.
 
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
-**Ménages (26/09 → 04/11/2026)** : époque GAS, parité, livraisons, audits Codex,
-PHP2Shell, veilleur (AG-028 à AG-040), page TS (AG-042 à AG-046) — `git log -p CHANTIERS.md`.
+**Ménages (26/09 → 04/11/2026)** : récit dans `git log -p CHANTIERS.md`.
 Contradiction : `AGORA.md` — **AG-040 seul ouvert** au 04/11/2026.
 
 ---
@@ -162,25 +156,26 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
 - **Correctif PHP : redémarrer le site** (Web → Sites ; version servie : `diagnostic-api.yml`).
   **SSH par clé seule** depuis le 21/10 (mot de passe à réactiver puis couper pour une
   intervention à la main). Un secret GitHub ne part qu'au **déploiement suivant**.
-- Utilisateur MySQL **sensible à la casse** (`…_michel`). Hôtes
-  `mysql-<compte>.alwaysdata.net`, `ssh-<compte>.alwaysdata.net`, site dans
-  `~/www/` ; `api/lib/` fermé par `.htaccess` (403 vérifié à chaque déploiement).
+- Utilisateur MySQL **sensible à la casse** (`…_michel`) ; site dans `~/www/`, `api/lib/` fermé
+  par `.htaccess` (403 vérifié à chaque déploiement).
 - Identifiants : Secrets GitHub, écrits par `deploy-api.yml` dans
   `~/config-api.php` (hors `~/www/`, droits 600). Claude ne les voit jamais et
   ne joint pas Alwaysdata : son œil sur le serveur est le workflow manuel
   **« Diagnostic API Alwaysdata »** (bac à sable : journal de `deploy-sandbox.yml`).
-- **Dates « du jour » : `date('Y-m-d')` côté PHP (heure de Paris), jamais
-  `CURDATE()`** (MySQL peut être en UTC, `08e4f8b`). `NOW()` restant ailleurs
-  (corbeille, journal, sessions) : même piège possible, non traité.
-- **Poste pro de l'utilisateur : pas d'invite de commandes** : tout passe par
-  le **terminal web** d'Alwaysdata (Accès distant → SSH → « par le Web »,
-  identifiant `ateliers-numeriques`). Une commande courte à la fois, **sans
-  `~`**, majuscules exactes. Déchiffrer une copie hors site exige un PC perso.
+- **Dates « du jour » : `date('Y-m-d')` côté PHP, jamais `CURDATE()`** (MySQL peut être en UTC) ;
+  `NOW()` restant ailleurs (corbeille, journal, sessions) : même piège possible, non traité.
+- **Poste pro de l'utilisateur : pas d'invite de commandes** : terminal web d'Alwaysdata (SSH « par
+  le Web »), une commande courte à la fois, sans `~` ; déchiffrer une copie exige un PC perso.
 - **Tests PHP en session** : MariaDB s'arrête parfois (`Connection refused`) ;
   `service mariadb start`, mot de passe root `testmdp` (script de démarrage « Micky »).
 
 ## Décisions de l'utilisateur à ne pas « corriger »
 
+- **Origine web partagée avec GDINV2 : séparation ABANDONNÉE le 04/11/2026** (utilisateur :
+  « on laisse tomber, ne plus me la rappeler »). Essai : Alwaysdata refuse les sous-adresses de
+  `alwaysdata.net` (« ce domaine ne vous appartient pas ») ; second compte, adresse de la DSI ou
+  domaine acheté écartés. Risque accepté (registre de sécurité V0.10 §9). **Ne plus le proposer**,
+  sauf fait nouveau (faille démontrée sur l'origine, adresse fournie par le Département).
 - **Planning et Calendrier (04/11/2026)** : on garde l'existant (Calendrier à côté de la vue
   Mois), sujet sorti des chantiers. Sur téléphone, seuls lundi et mardi tiennent à l'écran.
 - **Fiches bilan** : interrupteur « 📋 Fiches bilan vides » (Admin → Listes →
@@ -214,18 +209,13 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
 - **Interfaces** : volet `PanneauAtelier` commun ; filtre public de l'Historique à choix
   multiples ; « Effacer » vide tout ; frise à une ligne par conseiller ; « ⚠️ ordi » clignotant ;
   chevron « › » de NEWGEN (écart voulu).
-- **Avis des stagiaires (04-06/10)** : anonymes, sans âge ni recontact tant que
-  le DPO n'a pas validé ; un avis par appareil, pas plus que de présents (à
-  défaut d'inscrits) ; réservés à l'animateur et au co-animateur (filtre API),
-  un agent peut se déclarer co-animateur (écart n° 11, gardé) ; sous **3 avis**
-  un conseiller ne voit que leur nombre, l'Admin voit tout (`AVIS_SEUIL`) ;
-  suppression par l'Admin seulement ; envois simultanés acceptés. Avis par
-  atelier : colonne Partenaire, réponses en détail, export CSV remarques
-  comprises (⚠️ hors purge à 24 mois ; formules neutralisées).
-- **Côté conseillers (04/10)** : Stats = Synthèse et Analyse ; « Mes bilans »
-  (avis par atelier, bilans mensuel et trimestriel) limité aux ateliers animés
-  ou co-animés, masquable dans Admin → Visibilité. Pas de satisfaction par
-  conseiller dans le bilan trimestriel (question RH).
+- **Avis des stagiaires (04-06/10)** : anonymes, sans âge ni recontact sans le DPO ; un avis par
+  appareil, plafond = présents (à défaut inscrits) ; réservés à l'animateur et au co-animateur (un
+  agent peut se déclarer co-animateur, écart n° 11 gardé) ; sous **3 avis** un conseiller ne voit
+  que leur nombre (`AVIS_SEUIL`) ; suppression par l'Admin ; export CSV remarques comprises (hors
+  purge à 24 mois, formules neutralisées).
+- **Côté conseillers (04/10)** : « Mes bilans » limité aux ateliers animés ou co-animés, masquable
+  (Admin → Visibilité) ; pas de satisfaction par conseiller (question RH).
 
 ## ⚠️ Pièges connus
 
