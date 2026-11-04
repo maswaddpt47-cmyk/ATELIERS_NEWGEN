@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026**, base `main` (`4cd145a`). Tient aussi les restes
+État au **04/11/2026**, base `main` (`7d75319`). Tient aussi les restes
 communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
 
 **À reprendre en premier (passation du 04/11/2026)** :
@@ -20,10 +20,16 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    API `api/lib/ts.php` (garde : un jeton `ts` n'ouvre que `tsAteliers`/`tsChangerMdp`),
    Admin « Accès travailleurs sociaux » et Visibilité « un interrupteur par type de
    public » (`ts_public:<type>`, éteint = ateliers cachés par l'API). Menu « Type de
-   public » **retiré** de la page (décision du 04/11/2026). **Reste** : essai de
-   l'utilisateur, puis `main` des deux dépôts (la branche porte aussi une entrée
-   CHANTIERS : garder celle-ci au merge) ; réponse de Codex à AG-042 (« pull ») ;
-   registre RGPD (e-mails TS) dans `ateliers-backups` ; pas de « mot de passe
+   public » **retiré** de la page (décision du 04/11/2026). **Réponse de Codex à AG-042
+   reçue (amendé, 3 écarts) et corrigée le 04/11/2026** dans `api/lib/ts.php` : file
+   pleine = même refus pour toute adresse valide ; plafond et insertion sous
+   `GET_LOCK` + `INSERT IGNORE` (mail seulement si la ligne est créée) ; jour de Paris
+   par `date('Y-m-d')`, plus `CURDATE()`. 3 tests ajoutés (`api-tests/api.test.php`),
+   chacun cassé volontairement (échec constaté). Correctif **sur la branche de session
+   seulement, pas encore sur `sandbox`**. **Reste** : pousser `sandbox` de NEWGEN après
+   accord (l'API est là, rien à changer dans NextStep), essai de l'utilisateur, puis
+   `main` des deux dépôts (la branche porte aussi une entrée CHANTIERS : garder
+   celle-ci au merge) ; clore AG-042 dans `AGORA.md` ; registre RGPD (e-mails TS) dans `ateliers-backups` ; pas de « mot de passe
    oublié » TS en v1. **Après la page TS** : ménage du `CLAUDE.md` (MD-LIB/CLAUDE.md,
    « Ménage au prochain pull ») de NEWGEN et NextStep, liste avant/après à
    présenter à l'utilisateur.
