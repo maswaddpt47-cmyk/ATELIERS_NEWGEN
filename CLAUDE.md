@@ -121,8 +121,9 @@ enregistrement de service worker dans les pages.
   **seulement si ses tests passent** (base MySQL jetable). NextStep et NEWGEN
   partagent cette API et cette base : un changement ici touche les deux sites.
 - Tests en local : `ATELIERS_TEST_MYSQL=root@127.0.0.1 ATELIERS_TEST_MYSQL_MDP=…
-  php api-tests/api.test.php` (MariaDB s'installe dans l'environnement de
-  session).
+  php api-tests/api.test.php` : dans l'environnement « Micky », MariaDB est installé et
+  démarré par le script de démarrage (04/11/2026), mot de passe `testmdp` (base locale
+  jetable). Suite complète une seule fois avant le push, mutations groupées (règle 55).
 - Google Apps Script est **coupé** et son code retiré du dépôt (30/09/2026) :
   version qui tournait en ligne, `git show 3da2257:gas/GAS_NEWGEN.js` ; banc
   de mesure GAS/Alwaysdata, `git log --diff-filter=D -- banc/` puis
