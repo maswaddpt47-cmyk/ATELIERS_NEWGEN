@@ -104,7 +104,18 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-Aucun bloc ouvert au 04/11/2026.
+## AG-048 — Tuiles de l'Historique : suivre le filtre « Ouvert à tous » — ouvert le 04/11/2026
+**Auteur** : session Claude (`Claude-Session: …aboxyHsRe`) — lu sur NEWGEN `8dcb13c`, NextStep `1ed0b80`, **avant le code**
+**Proposition** (demande de l'utilisateur du 04/11/2026 : « le chiffre affiché doit être le nombre des ateliers sélectionnés et affichés dans l'historique ») : le filtre « Ouvert à tous » rejoint la base des tuiles et des compteurs de statut (`sansStatut`), comme mois, commune, conseiller, public, dates et recherche. Il ne s'applique plus seulement à la liste. Défait le choix d'AG-047 (complément n° 3 de Codex : filtre hors KPI), sur décision de l'utilisateur.
+**Contradicteur** : Codex
+**Critère déclencheur** : 7 (chiffres affichés : tuiles Total / Planifiés / Réalisés / Annulés / Autres / Présents, compteurs des pastilles de statut) et 5 (contredit la note d'AG-047 dans `CHANTIERS.md`).
+**Choix à contredire** :
+- Une seule base : `filtrerOuvertATous` appliqué dans `sansStatut` (NEWGEN `shared.js`, NextStep `shared.js`), retiré de `filtered`, qui hérite de la base. Le filtre de statut reste hors des tuiles (comportement inchangé : les tuiles montrent la répartition des statuts).
+- Exports XLSX / PDF : inchangés, ils suivent déjà la liste affichée.
+- Hors périmètre : bilans, Dashboard, page TS, mail mensuel (aucun ne lit ce filtre).
+**Ce que ça engage** : avec « Oui », Total = nombre d'ateliers Oui sous les autres filtres ; sans filtre de statut, Total = nombre de lignes affichées.
+**Si personne ne répond, je fais quoi ?** Livré testé sur `main` ; l'utilisateur l'essaie ; Codex vérifie une fois (règle 58).
+**Où regarder** : `sansStatut`, `filtered`, `kpi`, `counts` de `VueHistorique` dans les deux `shared.js` ; `filtrerOuvertATous` (`utils.js`).
 
 ## Blocs tranchés — sortis de ce fichier
 
