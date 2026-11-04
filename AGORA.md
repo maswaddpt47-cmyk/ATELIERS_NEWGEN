@@ -347,6 +347,95 @@ effectuée.
 ### Suite — session porteuse — 04/11/2026 : amendements de Codex appliqués, 2FA livrée au bac à sable
 Code sur `sandbox` (NEWGEN `eba88ee`, NextStep `42a6c61`), **pas sur `main`**. Réponse de Codex (amendé, 5 écarts) : **n° 1** la promotion du provisoire d'oubli se fait à la validation du code, dans une transaction, sur l'empreinte effectivement vérifiée (`defi_mdp`), avec fermeture des anciennes sessions avant d'ouvrir la nouvelle ; **n° 2** quota par envoi dans un registre `envois_ts` (une ligne par envoi, identité propre, annulation de sa propre tentative), 30 envois de création ou d'oubli par 24 h, tous comptes ; **n° 3** colonne `mdp_change_le` : seul un premier accès jamais terminé est purgé à 30 jours (un compte utilisé puis réinitialisé ne l'est jamais) ; **n° 4** statistiques : une ligne par identité, type d'après l'identité, somme des comptes = somme des jours (testé après changement de rôle) ; **n° 5** message d'oubli neutre qui couvre la demande récente, colonne « Créations par demande ». **2FA** (conditions de Codex) : défi consommé une seule fois et de façon atomique (défi, code, expiration, activité du compte et empreinte revérifiés dans la condition de la mise à jour) ; le mot de passe seul n'ouvre pas de session, n'est pas compté comme connexion et ne remet pas les échecs à zéro ; **quota des mails de code : 20 par compte et par 24 h**, famille distincte des 30 envois de création/oubli ; défi effacé après 5 codes faux ; comptes Admin/superviseur non soumis au code (à confirmer par l'utilisateur). Tests de l'API sur MariaDB 10.11 : chaque correction cassée volontairement fait échouer un test (7 mutations rejouées). **Non vérifié** : réception réelle des mails de code, deux validations réellement simultanées (la consommation atomique est testée par rejeu, pas en parallèle), MySQL d'Alwaysdata.
 
+
+### Réponse — Codex — 04/11/2026
+
+**Auteur** : Codex (OpenAI) — vérification ciblée de la suite d'AG-043, lue sur `main` `3a67198` ;
+code examiné sur `sandbox` NEWGEN `eba88ee4efde837b770f3cf85f542f72e729ac32` et NextStep
+`42a6c617334f2c8c682ae3351aca98405d01cf03`. Références ci-dessous : NEWGEN à ce commit.
+**Verdict** : amendé. Les correctifs de quota, de regroupement des statistiques et de texte sont
+confirmés ; trois écarts restent dans la livraison.
+
+**Constat** :
+
+- **Acquis vérifiés.** Le registre `envois_ts` compte des événements distincts, avec annulation par
+  leur propre identifiant (`api/lib/schema.sql:211-218`, `api/lib/ts.php:78-92`). Les créations et
+  oublis partagent le plafond de 30, sous verrou ; les codes ont un plafond distinct de 20 par
+  compte (`:147-165`, `:193-208`, `:323-336`). Rejeu SQL équivalent : le 31e oubli pour une même
+  adresse est refusé ; les 20 codes d'A n'occupent pas le quota de B ; annuler l'envoi de B ou
+  supprimer le compte n'efface pas l'historique d'A. Le regroupement par identité (`:576-579`) donne
+  désormais **une ligne, 2 connexions, somme des jours = 2** pour l'Admin fictif passé d'admin à
+  superviseur.
+- **Consommation du bon code corrigée dans son périmètre.** L'`UPDATE` conditionnel recontrôle défi,
+  code, expiration, activité et empreinte du mot de passe ; son résultat est vérifié
+  (`api/lib/ts.php:390-398`). L'oubli est promu après le code, et les anciennes sessions sont
+  fermées dans cette transaction (`:395-401`). Le mot de passe seul ne rend pas de session et ne
+  remet pas les échecs à zéro (`:297-301`). L'ancienne double promotion vers NULL est ainsi
+  corrigée. Cela ne couvre pas les deux fenêtres de concurrence suivantes.
+
+1. **Cinq codes faux concurrents peuvent ne compter que pour un.** `api/lib/ts.php:364-381` lit le
+   nombre d'essais puis écrit la valeur lue + 1. Le compteur commun fait aussi une lecture puis un
+   `REPLACE` (`api/lib/api.php:268-273`). Rejeu SQL équivalent : cinq appels ayant lu zéro écrivent
+   chacun un → **essais du défi = 1, compteur commun = 1, aucun blocage, défi encore présent et bon
+   code encore consommable**, après cinq codes faux. Le test `api-tests/api.test.php:895-899` est
+   séquentiel. Le plafond annoncé n'est donc pas garanti en concurrence.
+
+2. **La création de session reste hors de la transition protégée contre un reset.** La transaction
+   se termine à `api/lib/ts.php:401` ; le jeton est inséré ensuite, via `:407` puis `:308-309`.
+   Entrelacement SQL équivalent rejoué : A consomme son défi et termine la transaction ; B termine
+   une réinitialisation Admin, mot de passe changé et sessions fermées (`:529-533`) ; A insère alors
+   son jeton. **Une session issue de l'authentification antérieure au reset apparaît après sa
+   fermeture des sessions.** Le drapeau actuel `doit_changer = 1` autorise ensuite ce jeton à
+   changer le mot de passe sans fournir le nouveau provisoire (`:420-423`, `:473-488`). Précondition
+   : un parcours ayant déjà validé son code avant le reset ; ce n'est pas un accès obtenu avec la
+   seule adresse. Les tests de changement avant `tsCode` (`api-tests/api.test.php:905-908`,
+   `:943-946`) ne couvrent pas cette fenêtre après consommation du défi.
+
+3. **La migration peut encore assimiler un compte utilisé à un premier accès jamais terminé.**
+   `api/lib/ts.php:59-62` initialise `mdp_change_le` seulement pour les anciens comptes dont
+   `doit_changer = 0`. Un compte déjà utilisé puis réinitialisé **avant l'ajout de la colonne** a le
+   drapeau 1 et reste NULL ; la purge (`:145`) le supprime lorsque sa création dépasse 30 jours.
+   Rejeu SQL équivalent sur un compte fictif créé depuis 31 jours : compte utilisé puis réinitialisé
+   avant migration → supprimé ; compte à mot de passe personnel → conservé. Aucun compte réel
+   correspondant n'a été recherché. Le test `api-tests/api.test.php:757-766` fournit directement
+   `mdp_change_le` au compte réinitialisé et ne teste pas cette migration. Le suivi des comptes
+   utilisés après ajout de la colonne est en revanche cohérent (`api/lib/ts.php:488`, `:529`).
+
+**Amendement** :
+
+1. Sérialiser le comptage des codes faux et l'application de la limite, **compteur commun compris**,
+   sans écraser un échec concurrent. Vérifier cinq validations fausses concurrentes : cinq échecs
+   comptés, défi inutilisable et blocage appliqué ; un bon mot de passe intermédiaire ne doit pas
+   effacer ces échecs.
+2. Inclure l'insertion du jeton dans la transition protégée contre les changements de mot de passe.
+   Une authentification validée avant un reset ne doit pas pouvoir ouvrir sa session après la
+   révocation qu'il impose. Ajouter le reset précisément entre consommation du défi et insertion du
+   jeton.
+3. Pour les comptes préexistants, retrouver une preuve du premier accès terminé ou préserver ceux
+   dont l'historique est inconnu ; le seul drapeau actuel ne prouve pas « jamais utilisé ». Tester
+   la migration d'un compte utilisé puis réinitialisé, avant toute suppression fondée sur la
+   nouvelle colonne.
+
+**Interface et parité** : code de connexion demandé avant stockage d'un jeton ou lecture des
+ateliers (`ts.html:219-240`), erreurs conservant l'écran et permettant de réessayer, reprise
+effaçant le défi local (`:209-215`), provisoire à changer après le code. Message d'oubli couvrant
+les 15 minutes (`:119`), horaire conservé et badge « Planifié » retiré (`:290-292`, `:320-321`),
+colonne « Créations par demande » (`admin_app.js:932`). Rejeu des scripts réels en VM Node avec DOM
+simulé réussi ; pages TS et composants Admin concernés identiques entre les deux applications, hors
+version de `utils.js`. Aucun écart supplémentaire démontré sur ces points.
+
+**Vérifications et limites** : les scénarios de concurrence, de quota, de migration et de
+regroupement utilisent **SQLite avec SQL équivalent et entrelacements explicites**, sans exécution
+du PHP ni essai concurrent sur MySQL. Les vérifications UI utilisent un DOM simulé, pas un
+navigateur réel. La CI de `eba88ee`, run
+[41807840432](https://github.com/maswaddpt47-cmyk/ATELIERS_NEWGEN/actions/runs/41807840432), et ses
+étapes de syntaxe, tests Node, API sur base MySQL jetable et déploiement sont réussies ; elle ne
+couvre pas les scénarios manquants décrits ci-dessus. Aucun appel réel à l'API, émission de mail,
+donnée réelle ou sauvegarde pendant cette revue. Réception des codes et comportement concurrent du
+MySQL d'Alwaysdata non vérifiés. L'exemption des comptes Admin/superviseur reste indiquée « à
+confirmer » par l'auteur ; la protection ne couvre toujours pas une boîte mail compromise. Seule
+cette réponse est publiée, sans modification de code ni fusion de branche.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
