@@ -33,8 +33,7 @@ function mail_envoyer(string $a, string $sujet, string $texte, string $html): bo
     // (api-tests/api.test.php y relit le lien de réinitialisation).
     $dossierTest = getenv('ATELIERS_MAIL_TEST_DIR');
     if ($dossierTest) {
-        file_put_contents($dossierTest . '/' . microtime(true) . '.txt', "A: $a\nObjet: $sujet\n\n$texte");
-        return true;
+        return @file_put_contents($dossierTest . '/' . microtime(true) . '.txt', "A: $a\nObjet: $sujet\n\n$texte") !== false;
     }
     // Pas de saut de ligne dans un en-tête : empêche l'injection d'en-têtes.
     $sujet = str_replace(["\r", "\n"], ' ', $sujet);

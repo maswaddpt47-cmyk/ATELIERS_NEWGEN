@@ -22,6 +22,7 @@ require_once __DIR__ . '/base.php';
 require_once __DIR__ . '/ecriture.php';
 require_once __DIR__ . '/tickets.php';
 require_once __DIR__ . '/avis.php';
+require_once __DIR__ . '/ts.php';
 
 const API_JETON_DUREE_S = 6 * 3600;          // comme TOKEN_TTL_SECONDS du GAS
 const API_ECHECS_MAX = 5;                    // 5 échecs → blocage 15 min
@@ -36,7 +37,9 @@ const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
 const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'modifierTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier', 'bilanAvis', 'avisParAtelier'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
-const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'purgerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'envoyerLienReinit', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket', 'avisAtelier', 'supprimerAvis'];
+const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'purgerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'envoyerLienReinit', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket', 'avisAtelier', 'supprimerAvis', 'tsListe', 'tsStats', 'tsCreerCompte', 'tsReinitMdp', 'tsActiver', 'tsSupprimer'];
+// Seules actions d'un jeton 'ts' (page des travailleurs sociaux, AG-042).
+const API_ACTIONS_TS = ['tsAteliers', 'tsChangerMdp'];
 
 // Ordre des champs d'un atelier dans la réponse (contract.test.js:12-34).
 const API_CHAMPS_ATELIER = [
@@ -81,6 +84,13 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
             return action_avis_public($db, $p);
         case 'deposerAvis':
             return action_deposer_avis($db, $p);
+        // Page des travailleurs sociaux (AG-042) : demande d'accès et connexion.
+        case 'tsDemandeAcces':
+            return action_ts_demande_acces($db, $p);
+        case 'tsMdpOublie':
+            return action_ts_mdp_oublie($db, $p);
+        case 'tsConnexion':
+            return action_ts_connexion($db, $p);
         case 'logLogin':
             // Journalisé par checkPassword ; gardé pour le client actuel.
             return ['ok' => true];
@@ -96,7 +106,7 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
     }
 
     // Toutes les autres actions exigent un jeton valide.
-    if (!in_array($action, API_ACTIONS_CONSEILLER, true) && !in_array($action, API_ACTIONS_ADMIN, true)) {
+    if (!in_array($action, API_ACTIONS_CONSEILLER, true) && !in_array($action, API_ACTIONS_ADMIN, true) && !in_array($action, API_ACTIONS_TS, true)) {
         return ['ok' => false, 'error' => 'action inconnue: ' . $action];
     }
     $session = api_session($db, $jeton);
@@ -104,6 +114,11 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
     // Empreinte de la session en cours : un changement de mot de passe la
     // garde ouverte et ferme les autres (api_apres_changement_mdp).
     $session['jeton_hash'] = hash('sha256', $jeton);
+    // Jeton de la page TS (AG-042) : ses actions seulement, et elles
+    // seulement à lui. Sans cette garde, il ouvrirait getAll.
+    if (($session['role'] === 'ts') !== in_array($action, API_ACTIONS_TS, true)) {
+        return ['ok' => false, 'error' => 'Non autorisé', 'auth' => $session['role'] === 'ts'];
+    }
     // Corbeille (02/10/2026) : ouverte aux conseillers quand l'Admin l'a rendue
     // visible sur Index (Admin → Visibilité) ; fermée sinon, comme avant.
     $corbeilleOuverte = in_array($action, ['getCorbeille', 'restaurerCorbeille'], true) && api_corbeille_ouverte($db);
@@ -116,8 +131,8 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
     // nom de la personne CONNECTÉE (audit du 24/09/2026), avec sa cible.
     // purgerCorbeille journalise elle-même, un atelier par ligne (AG-024).
     // Les lectures pures n'y vont pas (getUsageOnglets : AG-036, 28/10/2026).
-    if (($r['ok'] ?? false) === true && (in_array($action, API_ACTIONS_ADMIN, true) || $action === 'selfSetPassword') && !in_array($action, ['getLogs', 'getUsageOnglets', 'getCorbeille', 'etatSauvegardes', 'avisAtelier', 'purgerCorbeille'], true)) {
-        $cible = (string) ($p['conseiller'] ?? $p['key'] ?? $p['_id'] ?? '');
+    if (($r['ok'] ?? false) === true && (in_array($action, API_ACTIONS_ADMIN, true) || $action === 'selfSetPassword') && !in_array($action, ['getLogs', 'getUsageOnglets', 'getCorbeille', 'etatSauvegardes', 'avisAtelier', 'purgerCorbeille', 'tsListe', 'tsStats'], true)) {
+        $cible = (string) ($p['conseiller'] ?? $p['key'] ?? $p['_id'] ?? $p['email'] ?? '');
         if ($action === 'setConfig' && in_array($cible, ['maintenance', 'stock_ordinateurs'], true)) $cible .= '=' . (string) ($p['value'] ?? '');
         api_journal($db, $action, $session['conseiller'], $cible, $session['role'], 1, 0, '', 'admin');
     }
@@ -128,6 +143,14 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
 {
     switch ($action) {
         case 'getAll':          return action_get_all($db, $p, $session);
+        case 'tsAteliers':      return action_ts_ateliers($db, $session);
+        case 'tsChangerMdp':    return action_ts_changer_mdp($db, $p, $session);
+        case 'tsListe':         return action_ts_liste($db);
+        case 'tsStats':         return action_ts_stats($db);
+        case 'tsCreerCompte':   return action_ts_creer_compte($db, $p);
+        case 'tsReinitMdp':     return action_ts_reinit_mdp($db, $p);
+        case 'tsActiver':       return action_ts_activer($db, $p);
+        case 'tsSupprimer':     return action_ts_supprimer($db, $p);
         case 'getConfig':       return ['ok' => true, 'config' => api_config_pour($db, $session)];
         case 'getVisibility':   return ['ok' => true, 'visibility' => api_json(api_config_base($db)['visibility'] ?? '', (object) [])];
         case 'saveEntry':       return action_save_entry($db, $p, $session['conseiller']);
