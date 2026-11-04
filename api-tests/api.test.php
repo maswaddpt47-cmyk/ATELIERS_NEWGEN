@@ -901,6 +901,11 @@ $inconnu = appel(['action' => 'tsConnexion'], ['identifiant' => 'personne@exampl
 $faux = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => 'x']);
 verifier(($inconnu['error'] ?? '') === TS_ERREUR_CONNEXION && ($faux['error'] ?? '') === TS_ERREUR_CONNEXION, 'connexion : même message, compte connu ou non');
 verifier(appel(['action' => 'tsConnexion', 'identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $provisoire])['ok'] === false, 'connexion : mot de passe dans l\'URL ignoré');
+// AG-046 (04/11/2026) : première connexion (inscription) sans code par mail ; la session ne sert qu'au changement.
+$nbAvantPremiere = count(glob("$dossierMails/*.txt") ?: []);
+$prem = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $provisoire]);
+verifier(($prem['ok'] ?? false) && ($prem['token'] ?? '') !== '' && empty($prem['etape2']) && ($prem['doit_changer'] ?? false) === true
+    && count(glob("$dossierMails/*.txt") ?: []) === $nbAvantPremiere, 'inscription : première connexion sans code par mail, changement du provisoire exigé');
 $ts = ts_connexion('TS. Un@Lotetgaronne.fr', $provisoire);
 verifier(($ts['ok'] ?? false) && ($ts['doit_changer'] ?? false) === true, 'connexion TS (adresse avec espace et majuscules du clavier) : provisoire signalé');
 $T = ['token' => $ts['token'] ?? ''];
@@ -908,6 +913,8 @@ verifier(($ts_a = appel(['action' => 'tsAteliers'], $T))['ok'] === false && ($ts
 verifier(appel(['action' => 'tsChangerMdp'], $T + ['password' => 'court'])['ok'] === false, 'changement : politique de mot de passe');
 verifier(appel(['action' => 'tsChangerMdp'], $T + ['password' => 'Travail-Social-47!'])['ok'] === true, 'changement du provisoire sans l\'actuel');
 verifier(appel(['action' => 'tsChangerMdp'], $T + ['password' => 'Autre-Social-47!!'])['ok'] === false, 'second changement : l\'actuel exigé');
+ts_connexion('ts.un@lotetgaronne.fr', 'Travail-Social-47!', $apres);
+verifier(($apres['etape2'] ?? false) === true && empty($apres['token']), 'inscription terminée : les connexions suivantes exigent le code par mail');
 foreach (['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'delete', 'getTickets', 'creerTicket', 'selfSetPassword', 'tsListe', 'tsStats', 'tsCreerCompte', 'getComptes'] as $act) {
     $r = appel(['action' => $act], $T + ['email' => 'x@example.org']);
     if ($act === 'getComptes') { verifier(!isset($r['comptes'][0]['role']), 'jeton TS : getComptes réduit à la liste publique'); continue; }
@@ -960,7 +967,7 @@ verifier(appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@lotetgaronne.f
 verifier(appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => 'Travail-Social-47!'])['error'] === TS_ERREUR_CONNEXION, 'compte désactivé : même message d\'échec');
 appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@lotetgaronne.fr', 'actif' => '1']);
 $re = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']);
-verifier(($re['ok'] ?? false) && ts_connexion('ts.un@lotetgaronne.fr', $re['newPassword'])['doit_changer'] === true, 'réinitialisation : nouveau provisoire');
+verifier(($re['ok'] ?? false) && ts_connexion('ts.un@lotetgaronne.fr', $re['newPassword'], $e1re)['doit_changer'] === true && ($e1re['etape2'] ?? false) === true, 'réinitialisation d\'un compte déjà utilisé : nouveau provisoire, code par mail exigé');
 for ($i = 0; $i < API_ECHECS_MAX; $i++) appel(['action' => 'tsConnexion'], ['identifiant' => 'bloque@example.org', 'password' => 'x']);
 verifier(str_contains(appel(['action' => 'tsConnexion'], ['identifiant' => 'bloque@example.org', 'password' => 'x'])['error'] ?? '', 'Trop de tentatives'), 'blocage après ' . API_ECHECS_MAX . ' échecs, même pour une adresse inconnue');
 
@@ -980,7 +987,7 @@ $oubli = $mo2[1] ?? '';
 verifier(($T2 = ts_connexion('ts.un@lotetgaronne.fr', $re['newPassword']))['ok'] === true, 'oubli : l\'ancien mot de passe reste valable tant que le provisoire n\'est pas employé (pas de blocage par un tiers)');
 $nbm = count($mails());
 verifier(appel(['action' => 'tsMdpOublie'], ['email' => 'ts.un@lotetgaronne.fr']) === $o1 && count($mails()) === $nbm, 'oubli : une seule demande par compte et par 15 min, même réponse, aucun mail de plus');
-verifier(($o3 = ts_connexion('ts.un@lotetgaronne.fr', $oubli))['ok'] === true && ($o3['doit_changer'] ?? false) === true, 'oubli : le provisoire reçu ouvre le compte, changement obligatoire');
+verifier(($o3 = ts_connexion('ts.un@lotetgaronne.fr', $oubli, $e1ou))['ok'] === true && ($o3['doit_changer'] ?? false) === true && ($e1ou['etape2'] ?? false) === true, 'oubli : le provisoire reçu ouvre le compte après le code par mail, changement obligatoire');
 verifier(appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $re['newPassword']])['ok'] === false, 'oubli : l\'ancien mot de passe est remplacé une fois le provisoire employé');
 verifier(ts_connexion('ts.un@lotetgaronne.fr', $oubli)['ok'] === true, 'oubli : le provisoire reste le mot de passe jusqu\'au changement');
 $r = appel(['action' => 'tsMdpOublie'], ['email' => 'agent@example.org']);

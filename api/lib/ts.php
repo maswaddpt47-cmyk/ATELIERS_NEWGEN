@@ -279,7 +279,7 @@ function action_ts_connexion(PDO $db, array $p): array
         $id = ts_email($saisi);
         if ($id === null) return ['ok' => false, 'error' => TS_ERREUR_CONNEXION];
         $cleTentatives = TS_PREFIXE . $id;
-        $s = $db->prepare('SELECT hash, actif, doit_changer, hash_oubli, (oubli_le IS NOT NULL AND oubli_le > NOW() - INTERVAL ' . TS_OUBLI_HEURES . ' HOUR) AS oubli_valide FROM comptes_ts WHERE email = ?');
+        $s = $db->prepare('SELECT hash, actif, doit_changer, (mdp_change_le IS NULL) AS premier_acces, hash_oubli, (oubli_le IS NOT NULL AND oubli_le > NOW() - INTERVAL ' . TS_OUBLI_HEURES . ' HOUR) AS oubli_valide FROM comptes_ts WHERE email = ?');
         $s->execute([$id]);
         $c = $s->fetch(PDO::FETCH_ASSOC);
         $valide = $c && (int) $c['actif'] === 1;
@@ -317,11 +317,39 @@ function action_ts_connexion(PDO $db, array $p): array
         if ($role === 'ts' || $c) api_echec_mdp($db, $cleTentatives, (string) ($p['userAgent'] ?? ''), 'ts');
         return ['ok' => false, 'error' => TS_ERREUR_CONNEXION];
     }
+    // Inscription allégée (AG-046, demande de l'utilisateur du 04/11/2026) : à la PREMIÈRE connexion
+    // (provisoire jamais changé, premier accès jamais terminé), pas de code par mail — le provisoire et le
+    // code arriveraient dans la même boîte. La session ouverte ne sert qu'à choisir son mot de passe.
+    // « Mot de passe oublié » et compte déjà utilisé puis réinitialisé gardent le code.
+    if ($role === 'ts' && !$parOubli && $doitChanger && (int) $c['premier_acces'] === 1) {
+        return ts_premiere_connexion($db, $id, (string) $verifiee, (string) ($p['userAgent'] ?? ''));
+    }
     // Compte TS : le mot de passe ne suffit pas (2FA par code reçu par mail, AG-043).
     // Les échecs ne sont remis à zéro qu'à la fin de la connexion complète.
     if ($role === 'ts') return ts_envoyer_defi($db, $id, (string) ($p['userAgent'] ?? ''), (string) $verifiee, $parOubli);
     $db->prepare('DELETE FROM tentatives WHERE conseiller = ?')->execute([$cleTentatives]);
     return ts_ouvrir_session($db, $id, $role, false, (string) ($p['userAgent'] ?? ''));
+}
+
+// Première connexion sans code (AG-046) : la ligne est verrouillée et revérifiée dans la transaction qui
+// ouvre la session (empreinte vérifiée, compte actif, premier accès toujours pas terminé) : un reset, une
+// désactivation ou un changement de mot de passe concurrent l'emporte.
+function ts_premiere_connexion(PDO $db, string $id, string $verifiee, string $ua): array
+{
+    $db->beginTransaction();
+    try {
+        $s = $db->prepare('SELECT 1 FROM comptes_ts WHERE email = ? AND BINARY hash = BINARY ? AND actif = 1 AND doit_changer = 1 AND mdp_change_le IS NULL FOR UPDATE');
+        $s->execute([$id, $verifiee]);
+        if (!$s->fetchColumn()) { $db->rollBack(); return ['ok' => false, 'error' => TS_ERREUR_CONNEXION]; }
+        $jeton = ts_creer_session($db, $id);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) $db->rollBack();
+        throw $e;
+    }
+    $db->prepare('DELETE FROM tentatives WHERE conseiller = ?')->execute([TS_PREFIXE . $id]);
+    api_journal($db, 'loginTs', $id, '', 'ts', 1, 0, $ua, 'ts');
+    return ['ok' => true, 'token' => $jeton, 'doit_changer' => true];
 }
 
 // Insère la session et rend son jeton (sans journal). Pour un compte TS, appelée DANS la transaction
