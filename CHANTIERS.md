@@ -12,6 +12,14 @@ communs à NextStep (même API, même base depuis la bascule du 25/09/2026).
    `anonyme`, API + écran + tests, les deux sites ; règle 65 de MD-LIB). Essai réel
    à faire avec un ticket d'un autre auteur ayant l'adresse de l'utilisateur ;
    **réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée**.
+   **Fait le 04/11/2026, mis en pause avant livraison** : le message explicite (oui de
+   l'utilisateur) est codé et testé sur la branche `claude/affectionate-heisenberg-mj5r7z`
+   (NEWGEN `9cd3e22`, **pas sur `main`, pas sur `sandbox`, pas porté dans NextStep**) : états
+   `inchange`, `auteur`, `anonyme`, `deja` (l'ancien `inutile` disparaît), API, écran, 9 tests
+   navigateur et tests de l'API verts (suites complètes NEWGEN passées). Reste : porter
+   `shared.js` dans NextStep (`patch` du diff de `shared.js`, bump `?v=`), pousser NextStep
+   puis NEWGEN sur `sandbox`, essai de l'utilisateur, `main` sur son accord. Un push de `main` NEWGEN
+   sans NextStep fait échouer la parité.
 2. **Registres dans `ateliers-backups`** (dépôt privé, cloné lecture seule dans
    `/home/user/ateliers-backups` la session précédente ; sources HTML
    `documents/sources/registre-securite.html` V0.9 et `registre-rgpd.html` V0.6,
