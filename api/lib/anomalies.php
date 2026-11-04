@@ -40,10 +40,14 @@ function action_valider_anomalie(PDO $db, array $p, string $par): array
     $s = $db->prepare('SELECT 1 FROM ateliers WHERE id = ?');
     $s->execute([$id]);
     if (!$s->fetchColumn()) return ['ok' => false, 'error' => 'Atelier introuvable'];
-    $db->prepare('INSERT INTO anomalies_validees (atelier_id, categorie, empreinte, valide_le, par) VALUES (?, ?, ?, NOW(), ?)'
-        . ' ON DUPLICATE KEY UPDATE empreinte = VALUES(empreinte), valide_le = NOW(), par = VALUES(par)')
-       ->execute([$id, $cat, $emp, mb_substr($par, 0, 100)]);
-    return ['ok' => true];
+    // Date de Paris calculée par PHP, jamais NOW() (le fuseau de MySQL peut être UTC) ; rendue au navigateur,
+    // qui n'invente ni la date ni l'auteur (Codex, AG-044).
+    $le = date('Y-m-d H:i:s');
+    $par = mb_substr($par, 0, 100);
+    $db->prepare('INSERT INTO anomalies_validees (atelier_id, categorie, empreinte, valide_le, par) VALUES (?, ?, ?, ?, ?)'
+        . ' ON DUPLICATE KEY UPDATE empreinte = VALUES(empreinte), valide_le = VALUES(valide_le), par = VALUES(par)')
+       ->execute([$id, $cat, $emp, $le, $par]);
+    return ['ok' => true, 'valide_le' => $le, 'par' => $par];
 }
 
 function action_annuler_anomalie(PDO $db, array $p): array

@@ -496,6 +496,14 @@ $db->exec("REPLACE INTO config (cle, valeur) VALUES ('rappels_actifs', '" . json
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'En cours']);
 verifier(($r['mail'] ?? '') === 'envoye' && $nbMails() === $avant2 + 1, 'ticket : l\'interrupteur individuel des rappels n\'empêche pas le mail de réponse');
 $db->exec("DELETE FROM config WHERE cle = 'rappels_actifs'");
+// Quatre validations identiques SIMULTANÉES : un seul mail (le droit d'envoyer suit la mise à jour atomique).
+appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_mail_4', 'type' => 'Question', 'titre' => 'Envoi unique', 'description' => 'SECRET-DESC-XYZ', 'site' => 'nextstep']);
+$avant4 = $nbMails();
+$par = appels_paralleles(array_fill(0, 4, [['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_4', 'statut' => 'En cours', 'reponse' => 'Pris en compte.']]));
+$etats = array_map(fn($r) => $r['mail'] ?? ($r['error'] ?? '?'), $par);
+verifier($nbMails() === $avant4 + 1 && count(array_filter($etats, fn($e) => $e === 'envoye')) === 1, 'ticket : quatre validations identiques simultanées, un seul mail (' . implode(',', $etats) . ')');
+$m4 = $dernierMail();
+verifier(str_contains($m4, 'ateliers-cd47_NextStep/index.html') && !str_contains($m4, 'admin.html') && !str_contains($m4, 'SECRET-DESC-XYZ'), 'ticket : le lien mène à l\'application du site du ticket (pas à l\'Admin), la description d\'origine n\'est pas reprise');
 // Doublon : rattaché, mail qui le dit. Ticket anonymisé : pas de mail.
 appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_mail_3', 'type' => 'Question', 'titre' => 'Même question', 'description' => 'd']);
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_3', 'doublon_de' => 'tk_mail_1']);
@@ -1024,6 +1032,18 @@ appel(['action' => 'tsDemandeAcces'], ['email' => 'declencheur@lotetgaronne.fr']
 verifier($db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'ancien.reinit@lotetgaronne.fr'")->fetchColumn() == 1
     && $db->query("SELECT mdp_change_le IS NOT NULL FROM comptes_ts WHERE email = 'ancien.reinit@lotetgaronne.fr'")->fetchColumn() == 1, 'migration : un compte ancien à historique inconnu (déjà utilisé puis réinitialisé) est préservé de la purge');
 $db->exec("DELETE FROM comptes_ts WHERE email IN ('ancien.reinit@lotetgaronne.fr', 'declencheur@lotetgaronne.fr')");
+// Codex (3e relecture) : base DÉJÀ migrée par la version précédente (colonnes présentes, dates NULL) : le rattrapage
+// s'exécute une fois, préserve ces comptes ; ceux créés après lui gardent leur suivi exact (purgés à 30 jours).
+$db->exec("DELETE FROM config WHERE cle = 'ts_rattrapage_mdp_change'");
+$db->exec("INSERT INTO comptes_ts (email, hash, actif, doit_changer, cree_le, mdp_change_le) VALUES ('deja.migre@lotetgaronne.fr', NULL, 1, 1, NOW() - INTERVAL 40 DAY, NULL)");
+appel(['action' => 'tsDemandeAcces'], ['email' => 'declencheur2@lotetgaronne.fr']);
+verifier($db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'deja.migre@lotetgaronne.fr' AND mdp_change_le IS NOT NULL")->fetchColumn() == 1
+    && $db->query("SELECT COUNT(*) FROM config WHERE cle = 'ts_rattrapage_mdp_change'")->fetchColumn() == 1, 'migration : base déjà migrée, comptes à historique inconnu préservés (rattrapage exécuté, marqué)');
+$db->exec("INSERT INTO comptes_ts (email, hash, actif, doit_changer, cree_le, mdp_change_le) VALUES ('cree.apres@lotetgaronne.fr', NULL, 1, 1, NOW() - INTERVAL 40 DAY, NULL)");
+$db->exec("DELETE FROM envois_ts");
+appel(['action' => 'tsDemandeAcces'], ['email' => 'declencheur3@lotetgaronne.fr']);
+verifier(!$db->query("SELECT COUNT(*) FROM comptes_ts WHERE email = 'cree.apres@lotetgaronne.fr'")->fetchColumn(), 'migration : le rattrapage ne se refait pas, un compte créé après lui et jamais utilisé est purgé à 30 jours');
+$db->exec("DELETE FROM comptes_ts WHERE email IN ('deja.migre@lotetgaronne.fr', 'declencheur2@lotetgaronne.fr', 'declencheur3@lotetgaronne.fr')");
 $db->exec("DELETE FROM envois_ts");
 
 // Codex n° 1 : le provisoire d'« oubli » n'est promu qu'après le code, sur l'empreinte vérifiée ; anciennes sessions fermées.
@@ -1080,7 +1100,8 @@ verifier(appel(['action' => 'getAnomaliesValidees'], ['token' => $nv['token']])[
 verifier(appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'inconnue', 'empreinte' => 'x'])['ok'] === false, 'anomalies : catégorie inconnue refusée');
 verifier(appel(['action' => 'validerAnomalie'], $A + ['_id' => 'entry_absent', 'categorie' => 'tard', 'empreinte' => '17:30'])['ok'] === false, 'anomalies : atelier introuvable refusé');
 verifier(appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard', 'empreinte' => ''])['ok'] === false && appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard', 'empreinte' => str_repeat('x', 201)])['ok'] === false, 'anomalies : empreinte vide ou trop longue refusée');
-verifier(appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard', 'empreinte' => '17:30'])['ok'] === true, 'anomalies : validation par l\'Admin');
+$vr = appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard', 'empreinte' => '17:30']);
+verifier(($vr['ok'] ?? false) === true && ($vr['par'] ?? '') === 'Conseiller Test' && str_starts_with($vr['valide_le'] ?? '', date('Y-m-d')) && ($vr['valide_le'] ?? '') === $db->query("SELECT valide_le FROM anomalies_validees WHERE atelier_id = " . $db->quote($idA))->fetchColumn(), 'anomalies : validation par l\'Admin, date de Paris et auteur rendus par l\'API (ceux de la base)');
 $g = appel(['action' => 'getAnomaliesValidees'], $A)['validees'] ?? [];
 verifier(count($g) === 1 && $g[0]['atelier_id'] === $idA && $g[0]['categorie'] === 'tard' && $g[0]['empreinte'] === '17:30' && $g[0]['par'] === 'Conseiller Test' && str_starts_with($g[0]['valide_le'], date('Y-m-d')), 'anomalies : lue avec empreinte, auteur et date du jour (heure de Paris)');
 appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard', 'empreinte' => '18:00']);

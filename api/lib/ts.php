@@ -58,10 +58,18 @@ function ts_schema(PDO $db): void
     }
     if (!$db->query("SHOW COLUMNS FROM comptes_ts LIKE 'defi_mdp'")->fetch()) {
         $db->exec('ALTER TABLE comptes_ts ADD COLUMN defi_oubli TINYINT NOT NULL DEFAULT 0, ADD COLUMN defi_mdp VARCHAR(255) NULL, ADD COLUMN mdp_change_le DATETIME NULL');
-        // Comptes préexistants : le drapeau doit_changer ne prouve pas « jamais utilisé » (un compte utilisé
-        // puis réinitialisé l'a aussi). Historique inconnu : tous préservés de la purge des premiers accès
-        // jamais terminés ; seuls les comptes créés après cette migration sont suivis exactement.
+        $db->exec('UPDATE comptes_ts SET mdp_change_le = NOW() WHERE mdp_change_le IS NULL');   // colonne neuve : tous les comptes sont préexistants
+    }
+    // Rattrapage exécuté UNE fois, indépendant de l'existence de la colonne (Codex, 3e relecture d'AG-043) :
+    // une base déjà migrée par une version précédente garde des comptes à mdp_change_le NULL dont l'historique
+    // est inconnu (utilisés puis réinitialisés, ou non). Le drapeau doit_changer ne prouve pas « jamais utilisé » :
+    // ils sont préservés de la purge des premiers accès jamais terminés. Le marqueur évite de refaire ce
+    // rattrapage ensuite, sinon les comptes créés après lui perdraient leur suivi exact.
+    $deja = $db->prepare("SELECT 1 FROM config WHERE cle = 'ts_rattrapage_mdp_change'");
+    $deja->execute();
+    if (!$deja->fetchColumn()) {
         $db->exec('UPDATE comptes_ts SET mdp_change_le = NOW() WHERE mdp_change_le IS NULL');
+        $db->exec("INSERT IGNORE INTO config (cle, valeur) VALUES ('ts_rattrapage_mdp_change', '" . date('Y-m-d') . "')");
     }
     $ok = true;
 }
