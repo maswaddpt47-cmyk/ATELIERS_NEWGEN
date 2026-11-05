@@ -40,6 +40,8 @@ const TS_URL_PAGE_BAC = [
     'nextstep' => 'https://ateliers-numeriques.alwaysdata.net/sandbox/nextstep/ts.html',
 ];
 const TS_ERREUR_CONNEXION = 'Identifiant ou mot de passe incorrect';
+// Compte TS désactivé, bon mot de passe (AG-049, 05/11/2026) : dit tel quel pour éviter des « oublis » en série.
+const TS_ERREUR_DESACTIVE = 'Votre accès a été désactivé. Pour le rétablir, contactez l\'équipe des conseillers numériques du Département.';
 const TS_ERREUR_CODE = 'Code incorrect ou expiré. Vérifiez le code, ou recommencez la connexion.';
 
 function ts_schema(PDO $db): void
@@ -319,6 +321,12 @@ function action_ts_connexion(PDO $db, array $p): array
         $ok = true;
         $verifiee = $c['hash_oubli'];
         $parOubli = true;
+    }
+    // Compte TS désactivé (AG-049) : le message propre n'est rendu qu'avec le BON mot de passe ;
+    // l'adresse seule n'apprend rien (même message et même comptage qu'une adresse inconnue).
+    if (!$ok && $role === 'ts' && $c && (int) $c['actif'] !== 1 && $c['hash'] !== null
+        && password_verify(hash('sha256', $mdp), $c['hash'])) {
+        return ['ok' => false, 'error' => TS_ERREUR_DESACTIVE, 'desactive' => true];
     }
     if (!$ok) {
         // E-mail : compté même inconnu (sinon le blocage dirait qui a un

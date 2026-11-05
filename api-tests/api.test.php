@@ -1016,7 +1016,9 @@ verifier(($r4['ok'] ?? false) && ($r4['ateliers'][0]['ouvert_a_tous'] ?? '') ===
 
 verifier(appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@lotetgaronne.fr', 'actif' => '0'])['ok'] === true
     && appel(['action' => 'tsAteliers'], $T)['ok'] === false, 'désactivation : la session tombe aussitôt');
-verifier(appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => 'Travail-Social-47!'])['error'] === TS_ERREUR_CONNEXION, 'compte désactivé : même message d\'échec');
+$rd = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => 'Travail-Social-47!']);
+verifier(($rd['error'] ?? '') === TS_ERREUR_DESACTIVE && ($rd['desactive'] ?? false) === true && empty($rd['token']) && empty($rd['etape2']), 'compte désactivé, bon mot de passe : « accès désactivé », ni jeton ni code (AG-049)');
+verifier(appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => 'Mauvais-Social-47!'])['error'] === TS_ERREUR_CONNEXION, 'compte désactivé, mauvais mot de passe : message commun (rien n\'est révélé)');
 appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@lotetgaronne.fr', 'actif' => '1']);
 $re = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']);
 verifier(($re['ok'] ?? false) && ts_connexion('ts.un@lotetgaronne.fr', $re['newPassword'], $e1re)['doit_changer'] === true && ($e1re['etape2'] ?? false) === true, 'réinitialisation d\'un compte déjà utilisé : nouveau provisoire, code par mail exigé');
