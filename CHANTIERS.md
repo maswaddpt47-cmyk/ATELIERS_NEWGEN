@@ -1,11 +1,21 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **05/11/2026, 17:22 (heure de Paris)**, bases `main` : NEWGEN `bf7bdf3`,
-NextStep `c59833e`. Dernière livraison fonctionnelle : NEWGEN `bf7bdf3` / NextStep `c59833e`
+État au **05/11/2026, 17:34 (heure de Paris)**, bases `main` : NEWGEN `ea5fe9b`,
+NextStep `5c09453`. Dernière livraison fonctionnelle : NEWGEN `bf7bdf3` / NextStep `c59833e`
 (tests, déploiements et parité verts).
 Tient aussi les restes communs à NextStep (même API, même base).
 
-**Codex** : AG-041 à AG-046 confirmés (dernier `85b5d7b`), pas de nouvelle revue de ce lot.
+**Passation Codex — 05/11/2026** : aucun bloc AGORA ouvert ; AG-041 à AG-051 clos,
+ne pas relancer leurs revues d'office. Les arbitrages récents sont dans « Points à ne pas défaire ».
+CI des livraisons ci-dessus observée en succès : Pages NEWGEN `42051269626`,
+Pages NextStep `42051245179`, bac à sable `42051269526`, parité `42051269466`.
+Aucune suite locale relancée pour ce relais. Les derniers tests utils exécutés par Codex
+(151 / 141, anciennes bases `a77a743` / `b50f83f`) ne valident pas les évolutions suivantes ;
+statut groupé et volet Détail n'ont pas fait l'objet d'une nouvelle revue Codex.
+Consignes communes à relire : `MD-LIB/collaboration.md`, dont règle 18 (fin **✅ TÂCHE TERMINÉE**,
+`9c4f349`) et règle 66 (mise en forme limitée à l'élément demandé). Rien de nouveau à y inscrire.
+Reprise : actualiser les deux `main`, relire les consignes et ce fichier ; aucune ancienne copie
+locale à réappliquer. Aucun travail métier prioritaire ouvert ; attendre la prochaine demande.
 **Autorisations ChatGPT non résolues** : le réglage GitHub « Autoriser toutes les actions »
 est bien affiché, mais la capture de l'utilisateur montre encore une confirmation
 `create_tree`. Cause non établie ; ne pas présenter ces confirmations comme supprimées.
@@ -19,7 +29,6 @@ avis du DPO avant diffusion, dans le registre).
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
-**Ménages (26/09 → 04/11/2026)** : récit dans `git log -p CHANTIERS.md`.
 Contradiction : `AGORA.md` — aucun bloc ouvert au 05/11/2026 (AG-047 à AG-051 clos).
 
 ---
