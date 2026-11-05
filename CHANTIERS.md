@@ -1,7 +1,7 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **05/11/2026, 10:55 (heure de Paris)**, bases `main` : NEWGEN `78ca17c`,
-NextStep `7b021cd`. Dernière livraison fonctionnelle : NEWGEN `78ca17c` / NextStep `7b021cd`
+État au **05/11/2026, 17:22 (heure de Paris)**, bases `main` : NEWGEN `bf7bdf3`,
+NextStep `c59833e`. Dernière livraison fonctionnelle : NEWGEN `bf7bdf3` / NextStep `c59833e`
 (tests, déploiements et parité verts).
 Tient aussi les restes communs à NextStep (même API, même base).
 
@@ -280,6 +280,8 @@ appel superflu, `sw.js` de désinscription.
   la **liste à supprimer dans Outlook** (`listeSuppressionOutlook`), pas un .ics d'annulation : essayé, Outlook
   classique a créé « Annulé : … » à côté du rendez-vous (cause non établie : rendez-vous peut-être créés dans
   Outlook puis importés, UID différent). Ne pas le remettre sans essai concluant.
+- **Volet Détail (05/11/2026, validé par l'utilisateur)** : commune, lieu, orienteur, conseiller, co-animateur
+  modifiables sur place ; champ vidé = valeur d'origine gardée. Matériel (hors Classe mobile) et résidence : « Éditer complet ».
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS` `newgen` / `nextstep`) :
   origine `maswaddpt47-cmyk.github.io` partagée, `localStorage` non cloisonné
   par chemin. **Couche réseau client gardée** : elle sert sur une vraie
