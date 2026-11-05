@@ -20,7 +20,7 @@ Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fo
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
 **Ménages (26/09 → 04/11/2026)** : récit dans `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` — **AG-051 ouvert** (Planning : demi-journée comptée sur ses ateliers actifs, livré, à vérifier une fois par Codex) ; AG-047 à AG-050 clos.
+Contradiction : `AGORA.md` — aucun bloc ouvert au 05/11/2026 (AG-047 à AG-051 clos).
 
 ---
 
@@ -273,6 +273,9 @@ appel superflu, `sw.js` de désinscription.
   `data-ouvert`), fermées à l'arrivée, ouvertes mémorisées par navigateur (`admin_sections_ouvertes`).
 - **Provisoire TS créé par l'Admin (AG-050)** : envoyé par mail à l'adresse du compte, jamais affiché sauf si le
   mail n'a pas pu partir (l'écran le dit) ; **jamais relancé** après une réponse perdue (`GAS_SANS_REPRISE`, une tentative).
+- **Planning, vue Mois (AG-051, 05/11/2026)** : une demi-journée ne montre que ses ateliers actifs
+  (`ateliersDemiCase`) ; annulés, non réalisés, reportés n'y apparaissent jamais, case vide s'il n'y a qu'eux
+  (décision de l'utilisateur) ; ils restent dans l'Historique et la vue Semaine.
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS` `newgen` / `nextstep`) :
   origine `maswaddpt47-cmyk.github.io` partagée, `localStorage` non cloisonné
   par chemin. **Couche réseau client gardée** : elle sert sur une vraie
