@@ -104,7 +104,14 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-Aucun bloc ouvert au 05/11/2026.
+## AG-050 — Admin : mot de passe provisoire TS envoyé par mail au lieu d'être affiché — ouvert le 05/11/2026
+**Auteur** : session Claude (`Claude-Session: …aboxyHsRe`) — lu sur NEWGEN `c680689`, **avant le code**
+**Proposition** (demande de l'utilisateur du 05/11/2026 : « que le mail parte à l'appui du bouton au lieu de copier/coller ») : `tsCreerCompte` et `tsReinitMdp` envoient le provisoire à l'adresse du compte (même fonction que l'inscription et l'oubli, `ts_envoyer_provisoire`, texte adapté « l'équipe vous a ouvert un accès / attribué un nouveau mot de passe »). Réponse : `mailEnvoye: true` **sans** `newPassword` ; si le mail ne part pas, `mailEnvoye: false` et `newPassword` rendu une fois, l'écran le dit (règle 65).
+**Contradicteur** : Codex
+**Critère déclencheur** : sécurité (mots de passe) et 5 (contredit « mot de passe affiché une seule fois »).
+**Choix à contredire** : destinataire = l'adresse du compte, jamais saisie à part ; pas de quota (action Admin, journalisée) ; le provisoire ne transite plus par l'écran de l'Admin ni par une capture.
+**Si personne ne répond, je fais quoi ?** Livré testé ; Codex vérifie une fois.
+**Où regarder** : `action_ts_creer_compte`, `action_ts_reinit_mdp`, `ts_envoyer_provisoire` (`api/lib/ts.php`), `VueAccesTS` (les deux `admin_app.js`).
 
 ## Blocs tranchés — sortis de ce fichier
 
