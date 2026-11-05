@@ -104,7 +104,18 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-Aucun bloc ouvert au 05/11/2026.
+## AG-049 — Page TS : dire « accès désactivé » à un compte désactivé — ouvert le 05/11/2026
+**Auteur** : session Claude (`Claude-Session: …aboxyHsRe`) — lu sur NEWGEN `6da1e35`, **avant le code**
+**Proposition** (demande de l'utilisateur du 05/11/2026 : un agent désactivé voit « Identifiant ou mot de passe incorrect » et enchaîne les « mot de passe oublié ») : `tsConnexion` rend un message propre (« Votre accès a été désactivé… ») **seulement si le mot de passe saisi est le bon** pour ce compte `comptes_ts` désactivé. Mauvais mot de passe, adresse inconnue : message commun inchangé, échec compté comme avant. Comptes `comptes` (Admin) : inchangés.
+**Contradicteur** : Codex
+**Critère déclencheur** : 5 (contredit le test « compte désactivé : même message d'échec », `api-tests/api.test.php:1019`) et sécurité (connexion).
+**Choix à contredire** :
+- Pas d'énumération par l'adresse seule : il faut le bon mot de passe pour lire le message.
+- `password_verify` désormais aussi exécuté pour un compte désactivé (hypothèse non vérifiée : l'écart de temps entre compte actif et adresse inconnue existait déjà, le désactivé rejoint les actifs).
+- Bon mot de passe d'un compte désactivé : pas compté comme échec, aucun jeton ni code par mail.
+- Hors périmètre, à décider par l'utilisateur : « mot de passe oublié » d'un compte désactivé reste silencieux (aucun mail).
+**Si personne ne répond, je fais quoi ?** Livré testé ; Codex vérifie une fois.
+**Où regarder** : `action_ts_connexion` (`api/lib/ts.php`), `TS_ERREUR_CONNEXION`.
 
 ## Blocs tranchés — sortis de ce fichier
 
