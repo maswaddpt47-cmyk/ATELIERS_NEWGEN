@@ -254,7 +254,8 @@ function action_ts_mdp_oublie(PDO $db, array $p): array
     return ['ok' => true];
 }
 
-function ts_envoyer_provisoire(string $email, string $mdp, string $site, bool $oubli = false): bool
+// $parAdmin (AG-050) : envoi déclenché par l'Admin (« Créer » ou « Provisoire »), texte adapté.
+function ts_envoyer_provisoire(string $email, string $mdp, string $site, bool $oubli = false, bool $parAdmin = false): bool
 {
     $bac = (api_config()['bac_a_sable'] ?? false) === true;
     $url = ($bac ? TS_URL_PAGE_BAC : TS_URL_PAGE)[$site] ?? ($bac ? TS_URL_PAGE_BAC : TS_URL_PAGE)['nextstep'];
@@ -264,12 +265,20 @@ function ts_envoyer_provisoire(string $email, string $mdp, string $site, bool $o
         ? "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe actuel reste valable. Ce mot de passe provisoire ne vaut que " . TS_OUBLI_HEURES . ' heures.'
         : "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : sans changement de mot de passe, ce compte sera supprimé au bout de " . TS_JAMAIS_CONNECTE_JOURS . ' jours.';
     $objet = $oubli ? 'un nouveau mot de passe pour la page' : 'un accès à la page';
-    $texte = "Bonjour,\n\nVous avez demandé $objet de consultation des ateliers numériques.\n\n"
+    if ($parAdmin) {
+        $fin = $oubli ? 'Ce mot de passe provisoire remplace le précédent.'
+            : 'Sans changement de mot de passe, ce compte sera supprimé au bout de ' . TS_JAMAIS_CONNECTE_JOURS . ' jours.';
+        $sujet = $oubli ? 'Nouveau mot de passe provisoire — ateliers numériques' : 'Votre accès à la page des ateliers numériques';
+    }
+    $intro = $parAdmin
+        ? "L'équipe des conseillers numériques du Département vous a " . ($oubli ? 'attribué un nouveau mot de passe provisoire pour la page' : 'ouvert un accès à la page') . ' de consultation des ateliers numériques.'
+        : "Vous avez demandé $objet de consultation des ateliers numériques.";
+    $texte = "Bonjour,\n\n$intro\n\n"
            . "Adresse : $url\nIdentifiant : $email\nMot de passe provisoire : $mdp\n\n"
            . "À la connexion, la page vous demandera de choisir votre propre mot de passe.\n\n"
            . $fin . "\n";
     $html = '<div style="font-family:sans-serif;max-width:640px"><p>Bonjour,</p>'
-          . '<p>Vous avez demandé ' . $h($objet) . ' de consultation des ateliers numériques.</p>'
+          . '<p>' . $h($intro) . '</p>'
           . '<p>Adresse : <a href="' . $h($url) . '">' . $h($url) . '</a><br>Identifiant : <strong>' . $h($email) . '</strong><br>'
           . 'Mot de passe provisoire : <strong style="font-family:Consolas,monospace;font-size:16px">' . $h($mdp) . '</strong></p>'
           . '<p>À la connexion, la page vous demandera de choisir votre propre mot de passe.</p>'
@@ -607,7 +616,7 @@ function action_ts_creer_compte(PDO $db, array $p): array
     $mdp = ts_mdp_provisoire();
     $db->prepare('INSERT INTO comptes_ts (email, hash, actif, doit_changer, cree_le) VALUES (?, ?, 1, 1, NOW())')
        ->execute([$email, password_hash(hash('sha256', $mdp), PASSWORD_DEFAULT)]);
-    return ['ok' => true, 'email' => $email, 'newPassword' => $mdp];
+    return ['ok' => true, 'email' => $email] + ts_provisoire_par_mail($email, $mdp, false);
 }
 
 function action_ts_reinit_mdp(PDO $db, array $p): array
@@ -621,7 +630,16 @@ function action_ts_reinit_mdp(PDO $db, array $p): array
     if ($u->rowCount() === 0) return ['ok' => false, 'error' => 'Compte introuvable'];
     ts_fermer_sessions($db, $email);
     $db->prepare('DELETE FROM tentatives WHERE conseiller = ?')->execute([TS_PREFIXE . $email]);
-    return ['ok' => true, 'newPassword' => $mdp];
+    return ['ok' => true, 'email' => $email] + ts_provisoire_par_mail($email, $mdp, true);
+}
+
+// AG-050 (05/11/2026) : le provisoire créé par l'Admin part par mail à l'adresse du compte ; il n'est
+// rendu à l'écran que si le mail n'a pas pu partir (l'Admin le transmet alors lui-même, l'écran le dit).
+function ts_provisoire_par_mail(string $email, string $mdp, bool $remplace): array
+{
+    $envoye = false;
+    try { $envoye = ts_envoyer_provisoire($email, $mdp, api_site_courant() ?: 'nextstep', $remplace, true); } catch (Throwable $e) { error_log('ts : provisoire non envoyé : ' . $e->getMessage()); }
+    return $envoye ? ['mailEnvoye' => true] : ['mailEnvoye' => false, 'newPassword' => $mdp];
 }
 
 function action_ts_activer(PDO $db, array $p): array

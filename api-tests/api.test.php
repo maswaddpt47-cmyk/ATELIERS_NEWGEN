@@ -784,6 +784,8 @@ verifier((int) $db->query('SELECT COUNT(*) FROM avis')->fetchColumn() === 0, '[R
 
 echo "API — mot de passe oublié\n";
 $mails = function () use ($dossierMails) { $f = glob("$dossierMails/*.txt"); sort($f); return array_map('file_get_contents', $f); };
+// AG-050 : le provisoire créé par l'Admin part par mail ; les tests le lisent dans le dernier mail.
+$provDuMail = function () use ($mails) { $m = $mails(); preg_match('/Mot de passe provisoire : (\S{12})\n/', (string) end($m), $x); return $x[1] ?? ''; };
 $RETOUR = 'https://maswaddpt47-cmyk.github.io/ATELIERS_NEWGEN/index.html?backend=php';
 verifier(appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => 'https://pirate.example/'])['ok'] === false && $mails() === [], '[RGPD-11] lien vers un autre site : refusé, aucun mail');
 $r1 = appel(['action' => 'demanderReinit'], ['conseiller' => 'Nouveau Venu', 'retour' => $RETOUR]);
@@ -932,7 +934,11 @@ $TL = appel(['action' => 'tsListe'], $A);
 verifier(($TL['ok'] ?? false) && array_column($TL['comptes'], 'email') === ['ts.un@lotetgaronne.fr'], 'liste Admin : le compte créé par la demande y figure');
 verifier(appel(['action' => 'tsListe'], ['token' => $nv['token']])['ok'] === false, 'liste Admin : refusée à un conseiller');
 $cree = appel(['action' => 'tsCreerCompte'], $A + ['email' => 'ts.deux@lotetgaronne.fr']);
-verifier(($cree['ok'] ?? false) && strlen($cree['newPassword'] ?? '') === 12, 'création par l\'Admin : mot de passe provisoire rendu une fois');
+$mc = $mails();
+verifier(($cree['ok'] ?? false) && ($cree['mailEnvoye'] ?? false) === true && !isset($cree['newPassword'])
+    && str_contains((string) end($mc), 'ts.deux@lotetgaronne.fr') && str_contains((string) end($mc), "vous a ouvert un accès") && strlen($provDuMail()) === 12,
+    'création par l\'Admin : provisoire envoyé par mail à l\'adresse du compte, jamais rendu à l\'écran (AG-050)');
+$cree['newPassword'] = $provDuMail();
 verifier(appel(['action' => 'tsCreerCompte'], $A + ['email' => 'ts.deux@lotetgaronne.fr'])['ok'] === false, 'création en double refusée');
 verifier(appel(['action' => 'tsCreerCompte'], $A + ['email' => 'ts.trois@example.org'])['ok'] === false, 'création par l\'Admin : domaine imposé aussi');
 verifier(!in_array('ts.un@lotetgaronne.fr', array_column(appel(['action' => 'getComptes'])['comptes'], 'conseiller'), true), 'un compte TS n\'apparaît jamais dans getComptes');
@@ -1021,6 +1027,9 @@ verifier(($rd['error'] ?? '') === TS_ERREUR_DESACTIVE && ($rd['desactive'] ?? fa
 verifier(appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => 'Mauvais-Social-47!'])['error'] === TS_ERREUR_CONNEXION, 'compte désactivé, mauvais mot de passe : message commun (rien n\'est révélé)');
 appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@lotetgaronne.fr', 'actif' => '1']);
 $re = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']);
+$mr = $mails();
+verifier(($re['mailEnvoye'] ?? false) === true && !isset($re['newPassword']) && str_contains((string) end($mr), 'remplace le précédent'), 'Provisoire (Admin) : envoyé par mail, pas affiché (AG-050)');
+$re['newPassword'] = $provDuMail();
 verifier(($re['ok'] ?? false) && ts_connexion('ts.un@lotetgaronne.fr', $re['newPassword'], $e1re)['doit_changer'] === true && ($e1re['etape2'] ?? false) === true, 'réinitialisation d\'un compte déjà utilisé : nouveau provisoire, code par mail exigé');
 for ($i = 0; $i < API_ECHECS_MAX; $i++) appel(['action' => 'tsConnexion'], ['identifiant' => 'bloque@example.org', 'password' => 'x']);
 verifier(str_contains(appel(['action' => 'tsConnexion'], ['identifiant' => 'bloque@example.org', 'password' => 'x'])['error'] ?? '', 'Trop de tentatives'), 'blocage après ' . API_ECHECS_MAX . ' échecs, même pour une adresse inconnue');
@@ -1073,7 +1082,7 @@ $resetCode(); $e4 = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@
 verifier(appel(['action' => 'tsCode'], ['defi' => $e3['defi'], 'code' => $c3])['ok'] === false && appel(['action' => 'tsCode'], ['defi' => $e4['defi'], 'code' => $c4])['ok'] === true, '2FA : un défi remplacé est refusé, le dernier marche');
 // Mot de passe changé entre les deux étapes (réinitialisation Admin) : la validation est refusée.
 $resetCode(); $e5 = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $oubli]); $c5 = $codeDuDernierMail();
-$rr2 = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']);
+$rr2 = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']); $rr2['newPassword'] ??= $provDuMail();
 verifier(($rr2['ok'] ?? false) && appel(['action' => 'tsCode'], ['defi' => $e5['defi'], 'code' => $c5])['ok'] === false, '2FA : mot de passe réinitialisé entre les deux étapes, validation refusée');
 // Compte désactivé entre les deux étapes : refusé.
 $resetCode(); $e6 = appel(['action' => 'tsConnexion'], ['identifiant' => 'ts.un@lotetgaronne.fr', 'password' => $rr2['newPassword']]); $c6 = $codeDuDernierMail();
@@ -1115,7 +1124,7 @@ $autre2->exec("UPDATE comptes_ts SET hash = 'mot-de-passe-change-en-cours' WHERE
 $simul = appels_paralleles([[['action' => 'tsCode'], ['defi' => $ed['defi'], 'code' => $cd]]], function () use ($autre2) { $autre2->commit(); });
 verifier(($simul[0]['ok'] ?? true) === false && !isset($simul[0]['token']), 'concurrence : aucun jeton rendu à une validation concurrente d\'un reset');
 // Un reset juste après la connexion complète ferme la session qui vient d'être ouverte.
-$rp = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']);
+$rp = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']); $rp['newPassword'] ??= $provDuMail();
 $vv = ts_connexion('ts.un@lotetgaronne.fr', $rp['newPassword']);
 appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']);
 verifier(($vv['token'] ?? '') !== '' && appel(['action' => 'tsAteliers'], ['token' => $vv['token']])['ok'] === false, 'reset après la connexion complète : la session ouverte est fermée');
@@ -1187,7 +1196,7 @@ $db->exec("DELETE FROM envois_ts");
 
 // Codex n° 1 : le provisoire d'« oubli » n'est promu qu'après le code, sur l'empreinte vérifiée ; anciennes sessions fermées.
 $db->exec("UPDATE comptes_ts SET hash = NULL WHERE email = 'ts.un@lotetgaronne.fr'");
-$stable = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']);
+$stable = appel(['action' => 'tsReinitMdp'], $A + ['email' => 'ts.un@lotetgaronne.fr']); $stable['newPassword'] ??= $provDuMail();
 $vieux = ts_connexion('ts.un@lotetgaronne.fr', $stable['newPassword']);   // session « ancienne », provisoire à changer
 verifier(($vieux['token'] ?? '') !== '' && appel(['action' => 'tsChangerMdp'], ['token' => $vieux['token'], 'password' => 'Ancien-Social-47!!'])['ok'] === true, 'oubli/promotion : session ancienne ouverte, mot de passe personnel posé');
 $vieux = ts_connexion('ts.un@lotetgaronne.fr', 'Ancien-Social-47!!');
