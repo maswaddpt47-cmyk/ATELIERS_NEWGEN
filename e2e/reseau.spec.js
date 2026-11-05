@@ -102,6 +102,20 @@ const CAS = [
     verifier: r => r.ok === true && r.appels.max === 1 && r.appels.total === 2,
   },
   {
+    // AG-050 (Codex) : chaque appel crée un provisoire et envoie un mail ; une reprise après une
+    // réponse perdue en enverrait un second et invaliderait le premier. Un seul appel, jamais rejoué.
+    nom: 'tsReinitMdp sans réponse : un seul appel, aucune reprise',
+    plan: [{ delai: 150, status: 404 }, { delai: 150 }],
+    action: "gasAppel(URL,'tsReinitMdp')",
+    verifier: r => r.ok === false && r.appels.total === 1,
+  },
+  {
+    nom: 'tsCreerCompte sans réponse : un seul appel, aucune reprise',
+    plan: [{ delai: 150, status: 404 }, { delai: 150 }],
+    action: "gasAppel(URL,'tsCreerCompte')",
+    verifier: r => r.ok === false && r.appels.total === 1,
+  },
+  {
     nom: 'checkPassword : repris mais jamais doublé (compteur d’échecs)',
     plan: [{ delai: 150, status: 404 }, { delai: 150 }],
     action: "gasAppel(URL,'checkPassword')",
