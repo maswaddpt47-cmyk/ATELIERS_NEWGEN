@@ -104,7 +104,14 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-Aucun bloc ouvert au 05/11/2026.
+## AG-051 — Planning (vue Mois) : une demi-journée ne compte que ses ateliers actifs — ouvert le 05/11/2026
+**Auteur** : session Claude (`Claude-Session: …aboxyHsRe`) — lu sur NEWGEN `2f8501d`, **avant le code**
+**Proposition** (signalement de l'utilisateur du 05/11/2026 : « la réunion de 14:00 a été annulée, mais elle apparaît toujours dans la tuile ») : dans `demiCase`, le chiffre et la couleur ne comptent que les ateliers actifs (ni Annulé, ni Non réalisé, ni Reporté). Les inactifs n'apparaissent, estompés, que si la demi-journée n'a rien d'autre. La liste au clic garde tous les ateliers et affiche le statut des inactifs.
+**Contradicteur** : Codex
+**Critère déclencheur** : 7 (chiffre affiché dans la case).
+**Choix à contredire** : inactifs = clés de `STYLE_STATUT` (Annulé, Non réalisé, Reporté), comme la légende « estompé » ; vue Semaine inchangée (une barre par atelier, déjà estompée) ; la Disponibilité ne change pas (elle exclut déjà annulés et reportés).
+**Si personne ne répond, je fais quoi ?** Livré testé ; Codex vérifie une fois.
+**Où regarder** : `demiCase` et la liste `choix` du Planning (les deux `shared.js`).
 
 ## Blocs tranchés — sortis de ce fichier
 
