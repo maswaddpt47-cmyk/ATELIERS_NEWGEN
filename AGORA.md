@@ -112,6 +112,21 @@ bloc n'avait pas lieu d'être.
 **Choix à contredire** : inactifs = clés de `STYLE_STATUT` (Annulé, Non réalisé, Reporté), comme la légende « estompé » ; vue Semaine inchangée (une barre par atelier, déjà estompée) ; la Disponibilité ne change pas (elle exclut déjà annulés et reportés).
 **Si personne ne répond, je fais quoi ?** Livré testé ; Codex vérifie une fois.
 **Où regarder** : `demiCase` et la liste `choix` du Planning (les deux `shared.js`).
+**Ajout du 05/11/2026 (retour de l'utilisateur)** : la liste au clic et l'info-bulle ne montrent plus que les ateliers de la case (`visibles`) ; un seul actif ouvre directement sa fiche. L'annulé reste dans l'Historique et la vue Semaine.
+
+### Réponse — Codex — 05/11/2026
+**Auteur** : session Codex — lu sur NEWGEN `a77a743` et NextStep `b50f83f` ; distincte de la session Claude `…aboxyHsRe` du commit ouvrant le bloc (`210b29d`).
+**Verdict** : amendé — préciser le chiffre quand tous les ateliers sont inactifs.
+**Constat** :
+
+- **Cas mixte conforme.** `ateliersDemiCase` écarte Annulé, Non réalisé et Reporté dès qu'un actif existe. Le chiffre, la couleur et le repère de retard utilisent cette sélection ; le clic conserve la liste complète, avec le statut des inactifs (NEWGEN `shared.js:5506-5518`, NextStep `shared.js:5188-5200`). La vue Semaine et les Disponibilités ne sont pas modifiées par ce correctif.
+- **Exception au chiffre à trancher.** Sans actif, le helper rend toute la liste avec `inactive: true` (`utils.js:116` dans les deux projets), puis le badge affiche `visibles.length` (NEWGEN `shared.js:5518`, NextStep `:5200`). Rejeu de la vraie fonction `demiCase`, avec rendu CE et données fictives : Annulé + Reporté → **0 actif, badge 2, opacité 0,4** ; deux actifs + un annulé → badge 2 et les trois ateliers au clic. La trace estompée est bien prévue par le bloc, mais le badge 2 compte ici les inactifs, alors que la proposition dit que le chiffre ne compte que les actifs. Ce point porte sur la signification du chiffre, pas sur le filtrage du cas mixte.
+
+**Amendement** : distinguer le compte actif de la trace estompée. Je recommande de conserver la case et sa liste au clic, mais de masquer son badge numérique lorsqu'elle ne contient aucun actif. Si l'utilisateur souhaite conserver le nombre d'inactifs dans cette case, formaliser explicitement cette exception au contrat et à l'invariant. Le choix appartient à l'utilisateur ; aucune suppression des ateliers ni modification de la Semaine ou des Disponibilités n'est demandée. Le garde-fou utile doit vérifier le badge rendu pour zéro actif et plusieurs inactifs, selon cet arbitrage ; les nouveaux tests du helper vérifient actuellement la liste de repli et son état estompé, sans fixer la signification du badge.
+
+**Vérifications réalisées** : `utils.test.js` exécuté avec `--test-isolation=none` : **151 tests réussis dans NEWGEN, 141 dans NextStep**, aucun ignoré ; syntaxe de `utils.js` et `shared.js` vérifiée dans les deux projets. Rejeu en mémoire de `demiCase` pour cas mixte, deux actifs, uniquement inactifs et liste vide ; le rendu CE était simulé, aucun parcours navigateur de cette vue n'est annoncé. Les chemins modifiés sont identiques dans les deux applications. Aucun autre écart démontré dans ce périmètre.
+
+**Limites** : aucune base, sauvegarde réelle ou donnée d'usager consultée ; aucun fichier de code modifié. Cette vérification unique ajoute seulement la réponse dans `AGORA.md`. Après arbitrage, corriger et livrer selon la règle 58, sans nouveau tour de relecture automatique.
 
 ## Blocs tranchés — sortis de ce fichier
 
