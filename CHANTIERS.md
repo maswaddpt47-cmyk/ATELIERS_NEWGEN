@@ -276,9 +276,10 @@ appel superflu, `sw.js` de désinscription.
 - **Planning, vue Mois (AG-051, 05/11/2026)** : une demi-journée ne montre que ses ateliers actifs
   (`ateliersDemiCase`) ; annulés, non réalisés, reportés n'y apparaissent jamais, case vide s'il n'y a qu'eux
   (décision de l'utilisateur) ; ils restent dans l'Historique et la vue Semaine.
-- **Statut groupé et .ics d'annulation (05/11/2026)** : barre de sélection de l'Historique, un `saveMany` ;
-  « Annulé » propose un .ics `METHOD:CANCEL` aux mêmes UID (`<_id>@ateliers-newgen`) que les .ics de création.
-  Prise en compte par Outlook classique **non vérifiée** au moment de la livraison (essai sur un atelier).
+- **Statut groupé (05/11/2026)** : barre de sélection de l'Historique, un `saveMany`. « Annulé » propose
+  la **liste à supprimer dans Outlook** (`listeSuppressionOutlook`), pas un .ics d'annulation : essayé, Outlook
+  classique a créé « Annulé : … » à côté du rendez-vous (cause non établie : rendez-vous peut-être créés dans
+  Outlook puis importés, UID différent). Ne pas le remettre sans essai concluant.
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS` `newgen` / `nextstep`) :
   origine `maswaddpt47-cmyk.github.io` partagée, `localStorage` non cloisonné
   par chemin. **Couche réseau client gardée** : elle sert sur une vraie
