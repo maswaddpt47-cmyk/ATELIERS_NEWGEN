@@ -1,7 +1,7 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **05/11/2026, 08:55 (heure de Paris)**, bases `main` : NEWGEN `3ee5f28`,
-NextStep `d9fd4af`. Dernière livraison fonctionnelle : NEWGEN `eaa52d7` (AG-049) / NextStep `d9fd4af`
+État au **05/11/2026, 10:55 (heure de Paris)**, bases `main` : NEWGEN `78ca17c`,
+NextStep `7b021cd`. Dernière livraison fonctionnelle : NEWGEN `78ca17c` / NextStep `7b021cd`
 (tests, déploiements et parité verts).
 Tient aussi les restes communs à NextStep (même API, même base).
 
