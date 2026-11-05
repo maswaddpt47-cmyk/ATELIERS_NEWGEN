@@ -870,7 +870,13 @@ function VueAccesTS(){
         showToast(r.mailEnvoye?'✅ Mot de passe provisoire envoyé par mail à '+(r.email||email):r.newPassword?'⚠️ Mail non parti : transmettez le mot de passe affiché':'✅ Fait',!(r.mailEnvoye===false));
         await charger();}
       else showToast('❌ '+(r&&r.error||'Erreur serveur'),false);
-    }catch(_){showToast('❌ Hors-ligne',false);}
+    }catch(_){
+      // AG-050 : jamais rejoué automatiquement ; le mail est peut-être parti.
+      showToast(action==='tsCreerCompte'||action==='tsReinitMdp'
+        ?'⚠️ Pas de réponse du serveur : le mail est peut-être déjà parti. Demandez à l\'agent s\'il l\'a reçu avant de recliquer.'
+        :'❌ Hors-ligne',false);
+      if(action==='tsCreerCompte'||action==='tsReinitMdp')charger();
+    }
     finally{setEnCours('');}
   }
   const page=location.origin+location.pathname.replace(/[^/]*$/,'ts.html');
@@ -1401,7 +1407,7 @@ function VueAdminV10({entries,onRefresh,addLog,conseillersList,onSaveColors,anne
     try{localStorage.setItem(LS_SECTIONS,JSON.stringify(ouv));}catch(_){}
   }
   return CE(React.Fragment,null,
-    CE('style',null,'.admin-replie .admin-section:has(>h3):not([data-ouvert="1"])>*:not(h3){display:none}'
+    CE('style',null,'.admin-replie .admin-section:has(>h3):not([data-ouvert="1"])>*:not(h3){display:none!important}'
       +'.admin-replie .admin-section:has(>h3):not([data-ouvert="1"])>h3{margin-bottom:0}'
       +'.admin-replie .admin-section>h3{cursor:pointer;user-select:none}'
       +'.admin-replie .admin-section>h3::after{content:"▾";margin-left:auto;font-size:13px;color:#94a3b8;transition:transform .2s}'

@@ -104,14 +104,14 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-## AG-050 — Admin : mot de passe provisoire TS envoyé par mail au lieu d'être affiché — ouvert le 05/11/2026
-**Auteur** : session Claude (`Claude-Session: …aboxyHsRe`) — lu sur NEWGEN `c680689`, **avant le code**
-**Proposition** (demande de l'utilisateur du 05/11/2026 : « que le mail parte à l'appui du bouton au lieu de copier/coller ») : `tsCreerCompte` et `tsReinitMdp` envoient le provisoire à l'adresse du compte (même fonction que l'inscription et l'oubli, `ts_envoyer_provisoire`, texte adapté « l'équipe vous a ouvert un accès / attribué un nouveau mot de passe »). Réponse : `mailEnvoye: true` **sans** `newPassword` ; si le mail ne part pas, `mailEnvoye: false` et `newPassword` rendu une fois, l'écran le dit (règle 65).
+## AG-051 — Planning (vue Mois) : une demi-journée ne compte que ses ateliers actifs — ouvert le 05/11/2026
+**Auteur** : session Claude (`Claude-Session: …aboxyHsRe`) — lu sur NEWGEN `2f8501d`, **avant le code**
+**Proposition** (signalement de l'utilisateur du 05/11/2026 : « la réunion de 14:00 a été annulée, mais elle apparaît toujours dans la tuile ») : dans `demiCase`, le chiffre et la couleur ne comptent que les ateliers actifs (ni Annulé, ni Non réalisé, ni Reporté). Les inactifs n'apparaissent, estompés, que si la demi-journée n'a rien d'autre. La liste au clic garde tous les ateliers et affiche le statut des inactifs.
 **Contradicteur** : Codex
-**Critère déclencheur** : sécurité (mots de passe) et 5 (contredit « mot de passe affiché une seule fois »).
-**Choix à contredire** : destinataire = l'adresse du compte, jamais saisie à part ; pas de quota (action Admin, journalisée) ; le provisoire ne transite plus par l'écran de l'Admin ni par une capture.
+**Critère déclencheur** : 7 (chiffre affiché dans la case).
+**Choix à contredire** : inactifs = clés de `STYLE_STATUT` (Annulé, Non réalisé, Reporté), comme la légende « estompé » ; vue Semaine inchangée (une barre par atelier, déjà estompée) ; la Disponibilité ne change pas (elle exclut déjà annulés et reportés).
 **Si personne ne répond, je fais quoi ?** Livré testé ; Codex vérifie une fois.
-**Où regarder** : `action_ts_creer_compte`, `action_ts_reinit_mdp`, `ts_envoyer_provisoire` (`api/lib/ts.php`), `VueAccesTS` (les deux `admin_app.js`).
+**Où regarder** : `demiCase` et la liste `choix` du Planning (les deux `shared.js`).
 
 ## Blocs tranchés — sortis de ce fichier
 
@@ -169,6 +169,7 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 | AG-047 | champ « Ouvert à tous » (Oui / Non) et son filtre — amendé : Corbeille d'avant = Non, migration avant les transactions et la 1ʳᵉ lecture TS, filtre sur la liste et les exports seulement (mention à l'écran) ; filtre TS activé dans Admin → Visibilité ; livré, essayé par l'utilisateur, vérifié une fois par Codex | 04/11/2026 |
 | AG-048 | tuiles de l'Historique suivant le filtre « Ouvert à tous » — confirmé par Codex avant le code ; statut gardé hors des tuiles (utilisateur) ; livré testé (mutation), vérification de livraison levée par l'utilisateur (« laisse tomber Agora pour cette fois ») | 05/11/2026 |
 | AG-049 | page TS : « accès désactivé » dit à un compte désactivé, avec le bon mot de passe seulement — livré testé (mutation), clos par l'utilisateur sans réponse de Codex | 05/11/2026 |
+| AG-050 | provisoire TS envoyé par mail depuis l'Admin — amendé par Codex : jamais relancé après une réponse perdue (une seule tentative, message « le mail est peut-être parti »), corrigé et livré | 05/11/2026 |
 
 **Au 04/11/2026, sur 46 blocs sortis (AG-001 à AG-046) : 36 amendés, 4 confirmés (AG-017, AG-030, AG-031, AG-041), 2 contredits (AG-026, AG-028), 4 clos sans réponse** (AG-002, AG-010, AG-013, AG-022). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
 Douze « amendé » d'affilée ne sont pas un bilan flatteur, c'est un signal — voir
