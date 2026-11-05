@@ -37,6 +37,9 @@ run_suite utils.test.js
 run_suite logic.test.js
 run_suite contract.test.js
 
+# Conteneur neuf : sans node_modules, npx télécharge un Playwright au hasard et échoue.
+[ -d node_modules ] || npm ci --silent >/dev/null 2>&1
+
 # Sandbox navigateur (Playwright — utils.js + logic.js isolés)
 if npx playwright test e2e/sandbox.spec.js --reporter=line >/dev/null 2>&1; then
   echo "✅ sandbox — chargement navigateur OK"
