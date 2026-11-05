@@ -20,7 +20,7 @@ Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fo
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
 **Ménages (26/09 → 04/11/2026)** : récit dans `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` — aucun bloc ouvert au 05/11/2026 (AG-047 à AG-049 clos).
+Contradiction : `AGORA.md` — **AG-050 ouvert** (provisoire TS envoyé par mail depuis l'Admin, livré `3190270`/`d940bda`, à vérifier une fois par Codex) ; AG-047 à AG-049 clos.
 
 ---
 
@@ -269,6 +269,10 @@ appel superflu, `sw.js` de désinscription.
 - **Page TS, compte désactivé (AG-049, 05/11/2026)** : « Votre accès a été désactivé… » seulement avec le
   **bon** mot de passe ; mauvais mot de passe ou adresse inconnue = message commun (pas d'énumération).
   « Mot de passe oublié » d'un compte désactivé reste silencieux.
+- **Admin → Admin (05/11/2026)** : sections repliables par clic sur le titre (`admin-replie`, attribut
+  `data-ouvert`), fermées à l'arrivée, ouvertes mémorisées par navigateur (`admin_sections_ouvertes`).
+- **Provisoire TS créé par l'Admin (AG-050)** : envoyé par mail à l'adresse du compte, jamais affiché sauf si le
+  mail n'a pas pu partir (l'écran le dit).
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS` `newgen` / `nextstep`) :
   origine `maswaddpt47-cmyk.github.io` partagée, `localStorage` non cloisonné
   par chemin. **Couche réseau client gardée** : elle sert sur une vraie
