@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **04/11/2026, 22:48 (heure de Paris)**, bases `main` : NEWGEN `bb0947b`,
+État au **05/11/2026, 00:00 (heure de Paris)**, bases `main` : NEWGEN `eaa52d7`,
 NextStep `cb9985e`. Dernière livraison fonctionnelle relue :
 NEWGEN `36db64f` / NextStep `b076d21` (tests, déploiements et parité verts).
 Tient aussi les restes communs à NextStep (même API, même base).
@@ -11,21 +11,16 @@ est bien affiché, mais la capture de l'utilisateur montre encore une confirmati
 `create_tree`. Cause non établie ; ne pas présenter ces confirmations comme supprimées.
 Anciens brouillons Codex locaux non publiés : repartir de `main` à jour.
 
-**À reprendre en premier (passation du 04/11/2026)** :
-1. **Essais réels de l'utilisateur** (livraison du 04/11 : tuile et titre de la page TS,
-   première connexion TS sans code, message et mail des tickets) : créer un compte TS,
-   première connexion, puis reconnexion avec code ; recevoir le mail d'un ticket.
-   **Réception d'un mail dans une boîte `@lotetgaronne.fr` jamais vérifiée.**
-2. **Registres** sécurité V0.10 et RGPD V0.7 (`ateliers-backups` `10668ab`) : à relire par
-   l'utilisateur avant remise. Écarts RGPD n° 12 à 14 (durée des comptes TS utilisés, mention
-   d'information de la page TS, avis du DPO avant diffusion de l'adresse TS).
-3. **Page TS** : en ligne, **adresse non diffusée** (après les essais et l'écart n° 14).
+**À reprendre en premier** : rien d'ouvert au 05/11/2026. Essais réels (compte TS, connexion avec
+code, mail d'un ticket), relecture des registres (sécurité V0.10, RGPD V0.7) et page TS : vérifiés par
+l'utilisateur le 05/11/2026 (déclaré). **Adresse de la page TS toujours non diffusée** (écart RGPD n° 14 :
+avis du DPO avant diffusion, dans le registre).
 
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
 **Ménages (26/09 → 04/11/2026)** : récit dans `git log -p CHANTIERS.md`.
-Contradiction : `AGORA.md` — aucun bloc ouvert au 05/11/2026 (AG-047 et AG-048 clos).
+Contradiction : `AGORA.md` — aucun bloc ouvert au 05/11/2026 (AG-047 à AG-049 clos).
 
 ---
 
@@ -271,6 +266,9 @@ appel superflu, `sw.js` de désinscription.
   filtres, **tuiles et compteurs compris** (AG-048, décision de l'utilisateur du 04/11/2026, confirmé par Codex) ;
   le filtre de statut reste hors des tuiles (répartition des statuts, choix de l'utilisateur du 05/11/2026) ;
   filtre TS seulement si `ts_filtre_ouvert` est allumé (absent = éteint).
+- **Page TS, compte désactivé (AG-049, 05/11/2026)** : « Votre accès a été désactivé… » seulement avec le
+  **bon** mot de passe ; mauvais mot de passe ou adresse inconnue = message commun (pas d'énumération).
+  « Mot de passe oublié » d'un compte désactivé reste silencieux.
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS` `newgen` / `nextstep`) :
   origine `maswaddpt47-cmyk.github.io` partagée, `localStorage` non cloisonné
   par chemin. **Couche réseau client gardée** : elle sert sur une vraie

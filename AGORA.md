@@ -104,18 +104,7 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-## AG-049 — Page TS : dire « accès désactivé » à un compte désactivé — ouvert le 05/11/2026
-**Auteur** : session Claude (`Claude-Session: …aboxyHsRe`) — lu sur NEWGEN `6da1e35`, **avant le code**
-**Proposition** (demande de l'utilisateur du 05/11/2026 : un agent désactivé voit « Identifiant ou mot de passe incorrect » et enchaîne les « mot de passe oublié ») : `tsConnexion` rend un message propre (« Votre accès a été désactivé… ») **seulement si le mot de passe saisi est le bon** pour ce compte `comptes_ts` désactivé. Mauvais mot de passe, adresse inconnue : message commun inchangé, échec compté comme avant. Comptes `comptes` (Admin) : inchangés.
-**Contradicteur** : Codex
-**Critère déclencheur** : 5 (contredit le test « compte désactivé : même message d'échec », `api-tests/api.test.php:1019`) et sécurité (connexion).
-**Choix à contredire** :
-- Pas d'énumération par l'adresse seule : il faut le bon mot de passe pour lire le message.
-- `password_verify` désormais aussi exécuté pour un compte désactivé (hypothèse non vérifiée : l'écart de temps entre compte actif et adresse inconnue existait déjà, le désactivé rejoint les actifs).
-- Bon mot de passe d'un compte désactivé : pas compté comme échec, aucun jeton ni code par mail.
-- Hors périmètre, à décider par l'utilisateur : « mot de passe oublié » d'un compte désactivé reste silencieux (aucun mail).
-**Si personne ne répond, je fais quoi ?** Livré testé ; Codex vérifie une fois.
-**Où regarder** : `action_ts_connexion` (`api/lib/ts.php`), `TS_ERREUR_CONNEXION`.
+Aucun bloc ouvert au 05/11/2026.
 
 ## Blocs tranchés — sortis de ce fichier
 
@@ -172,6 +161,7 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 | AG-040 | vérification de la livraison d'AG-039 (cadence du veilleur, requête-témoin) — amendé (Codex : historique illisible lu avant l'attente imposée ; contrôle en cours cherché avant l'attente de cadence), corrigé le 03/11 (14 essais `veilleur.test.js`). **Essai réel du 04/11/2026** après réactivation par l'utilisateur : échec provoqué (n° 3657, 20:52), successeur n° 3658 sans aucun contrôle pendant 60 min, puis un contrôle réussi (n° 3894, 21:52), alerte de reprise une fois, relève propre (n° 3659) | 04/11/2026 |
 | AG-047 | champ « Ouvert à tous » (Oui / Non) et son filtre — amendé : Corbeille d'avant = Non, migration avant les transactions et la 1ʳᵉ lecture TS, filtre sur la liste et les exports seulement (mention à l'écran) ; filtre TS activé dans Admin → Visibilité ; livré, essayé par l'utilisateur, vérifié une fois par Codex | 04/11/2026 |
 | AG-048 | tuiles de l'Historique suivant le filtre « Ouvert à tous » — confirmé par Codex avant le code ; statut gardé hors des tuiles (utilisateur) ; livré testé (mutation), vérification de livraison levée par l'utilisateur (« laisse tomber Agora pour cette fois ») | 05/11/2026 |
+| AG-049 | page TS : « accès désactivé » dit à un compte désactivé, avec le bon mot de passe seulement — livré testé (mutation), clos par l'utilisateur sans réponse de Codex | 05/11/2026 |
 
 **Au 04/11/2026, sur 46 blocs sortis (AG-001 à AG-046) : 36 amendés, 4 confirmés (AG-017, AG-030, AG-031, AG-041), 2 contredits (AG-026, AG-028), 4 clos sans réponse** (AG-002, AG-010, AG-013, AG-022). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
 Douze « amendé » d'affilée ne sont pas un bilan flatteur, c'est un signal — voir
