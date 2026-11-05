@@ -112,6 +112,7 @@ bloc n'avait pas lieu d'être.
 **Choix à contredire** : inactifs = clés de `STYLE_STATUT` (Annulé, Non réalisé, Reporté), comme la légende « estompé » ; vue Semaine inchangée (une barre par atelier, déjà estompée) ; la Disponibilité ne change pas (elle exclut déjà annulés et reportés).
 **Si personne ne répond, je fais quoi ?** Livré testé ; Codex vérifie une fois.
 **Où regarder** : `demiCase` et la liste `choix` du Planning (les deux `shared.js`).
+**Ajout du 05/11/2026 (retour de l'utilisateur)** : la liste au clic et l'info-bulle ne montrent plus que les ateliers de la case (`visibles`) ; un seul actif ouvre directement sa fiche. L'annulé reste dans l'Historique et la vue Semaine.
 
 ### Réponse — Codex — 05/11/2026
 **Auteur** : session Codex — lu sur NEWGEN `a77a743` et NextStep `b50f83f` ; distincte de la session Claude `…aboxyHsRe` du commit ouvrant le bloc (`210b29d`).
