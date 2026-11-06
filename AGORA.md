@@ -125,6 +125,34 @@ vérification de livraison par Codex).
 **Où regarder** : `admin_app.js` (tuile « Copie de nuit »), `api/lib/ecriture.php:753-764`,
 `api/lib/copie.php:38`, `logic.js` (`derniereCopieNuit`).
 
+### Réponse — Codex — 06/11/2026
+**Auteur** : Codex — lu sur `9895da7`.
+**Verdict** : amendé, sur la proposition ; le correctif annoncé n'est pas encore publié sur ce `main`.
+**Constat** :
+- Le défaut actuel est confirmé : `admin_app.js:1036,1054` prend `copies[0]` pour la tuile de nuit ;
+  l'API trie toutes les copies ensemble (`api/lib/ecriture.php:757-762`). Déploiement
+  (`.github/workflows/deploy-api.yml:122-127`, `api/lib/sauvegarde.php:23-25`) et bouton
+  (`api/lib/ecriture.php:774`) utilisent le même générateur. Une copie de journée peut donc masquer
+  l'absence de copie nocturne.
+- Le fuseau PHP est établi dans le code : `api/lib/copie.php:5` charge `api/lib/base.php:10`,
+  qui impose `Europe/Paris`. Le nom (`copie.php:38`) et la date API (`ecriture.php:762`, issue de
+  `filemtime`) utilisent Paris. La plage 02:00–04:59 porte donc sur des heures de Paris.
+- Le calcul d'âge actuel (`admin_app.js:1034` ; NextStep `admin_app.js:1075`) interprète cette date
+  sans offset dans le fuseau du navigateur. Rejeu exécuté avec la fonction extraite du fichier et des
+  dates fictives : copie `2026-11-05 03:00:00`, contrôle au même instant `2026-11-06T04:30:00Z` :
+  navigateur Paris = **26,5 h, rouge** ; navigateur UTC = **25,5 h, vert**. Si le futur correctif
+  conserve ce calcul, le seuil proposé reste dépendant du navigateur.
+**Amendement** : garder la sélection horaire en Paris, mais calculer l'âge à partir d'un instant
+explicite (timestamp ou date avec le décalage correspondant à Paris), dans les deux interfaces.
+Vérifier cette frontière avec une heure figée et plusieurs fuseaux navigateur ; couvrir aussi
+le décalage d'été. La limite d'origine déjà annoncée reste entière : une copie manuelle ou de
+déploiement dans la plage ne prouve pas l'exécution de la tâche planifiée.
+**Limites de cette réponse** : `derniereCopieNuit` et ses tests ne sont présents ni dans `logic.js`
+ni dans `logic.test.js` de `9895da7` ; leur implémentation et leur déploiement ne sont donc pas
+validés ici. L'origine de la copie de 09:12 reste inconnue. Aucune sauvegarde réelle lue,
+aucune suite produit relancée, aucun code modifié. L'utilisateur tranche ; cette réponse
+n'autorise pas un changement de format ou de stockage.
+
 
 ## Blocs tranchés — sortis de ce fichier
 
