@@ -104,7 +104,27 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-Aucun bloc ouvert au 06/11/2026.
+## AG-053 — Page TS : « Ouvert à tous » choisi par l'Admin, plus par le TS — ouvert le 06/11/2026
+**Auteur** : session « hooks et veilleur » (06/11) — lu sur `ff3aaf7`
+**Proposition** (demande de l'utilisateur du 06/11/2026) : la liste déroulante « Ouvert à tous » disparaît
+de la page TS (`ts.html`, les deux applis). L'interrupteur « 🔓 Filtre Ouvert à tous » (`ts_filtre_ouvert`)
+est remplacé par deux interrupteurs dans Admin → Visibilité — Page TS : « Ouvert à tous : Oui » et
+« Ouvert à tous : Non », sur le modèle des types de public : allumé = ces ateliers partent vers la page,
+éteint = l'API les retire (`tsAteliers`, `api/lib/ts.php`). **Au départ** (clé absente) : Oui affichés,
+**Non cachés** (choix de l'utilisateur, option a). Un atelier sans valeur `Oui` compte comme Non.
+Statuts : inchangé, « Planifié » à venir seulement (choix de l'utilisateur).
+**Critère déclencheur** : 7 (un filtre change les ateliers affichés aux TS).
+**Contradicteur** : Codex
+**Ce que ça engage** : dès le déploiement, les ateliers « Non » disparaissent de la page TS tant que
+l'Admin n'allume pas l'interrupteur (voulu). Clés `ts_ouvert:Oui` / `ts_ouvert:Non` dans la config
+`visibility` ; `ts_filtre_ouvert` n'est plus lu (laissé en base, sans effet).
+**Non vérifié par l'auteur** : une page TS ouverte avant le déploiement garde sa liste déroulante jusqu'au
+rechargement (sans effet : la réponse ne contient plus que les ateliers autorisés) ; la proportion
+réelle d'ateliers « Non » (règle 59 : non lue).
+**Si personne ne répond, je fais quoi ?** — je livre (règle 58) ; vérification unique de Codex ensuite.
+**Où regarder** : `api/lib/ts.php:535-551`, `admin_app.js` (section « Page travailleurs sociaux »),
+`ts.html:148,171,306,328,335-337`, `api-tests/api.test.php:980,1015`.
+
 
 ## Blocs tranchés — sortis de ce fichier
 
