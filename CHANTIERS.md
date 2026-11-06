@@ -1,13 +1,15 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **06/11/2026, 08:15 (heure de Paris)**, bases `main` : NEWGEN `eff63f5`, NextStep `ab00c17`
-(tests, déploiements et parité verts). Tient aussi les restes communs à NextStep (même API, même base).
+État au **06/11/2026 (heure de Paris)**, bases `main` : NEWGEN `baaded6`, NextStep `aef1aaf`
+(tests, déploiements — API comprise — et parité verts). Tient aussi les restes communs à NextStep.
+**AG-053 ouvert** (page TS : « Ouvert à tous » choisi par l'Admin) : livré, **vérification unique de
+Codex attendue**, essai à l'écran par l'utilisateur attendu.
 Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ;
 aucun ancien brouillon à réappliquer. Revues closes (AG-041 à AG-052) : ne pas les relancer d'office.
 **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue malgré « Autoriser toutes
 les actions » ; cause non établie, ne pas les présenter comme supprimées.
 
-**À reprendre en premier** : rien d'ouvert au 06/11/2026. Essais réels (compte TS, connexion avec
+**À reprendre en premier** : AG-053 (vérification de Codex, essai de l'utilisateur). Essais réels (compte TS, connexion avec
 code, mail d'un ticket), relecture des registres (sécurité V0.10, RGPD V0.7) et page TS : vérifiés par
 l'utilisateur le 05/11/2026 (déclaré). **Adresse de la page TS toujours non diffusée** (écart RGPD n° 14 :
 avis du DPO avant diffusion, dans le registre).
@@ -15,7 +17,7 @@ avis du DPO avant diffusion, dans le registre).
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
-Contradiction : `AGORA.md` — aucun bloc ouvert au 06/11/2026 (AG-052 clos).
+Contradiction : `AGORA.md` — AG-053 ouvert au 06/11/2026 (vérification de livraison).
 
 ---
 
@@ -255,7 +257,8 @@ appel superflu, `sw.js` de désinscription.
   posée dans `api_action_protegee`, avant toute transaction ; filtre de l'Historique appliqué comme les autres
   filtres, **tuiles et compteurs compris** (AG-048, décision de l'utilisateur du 04/11/2026, confirmé par Codex) ;
   le filtre de statut reste hors des tuiles (répartition des statuts, choix de l'utilisateur du 05/11/2026) ;
-  filtre TS seulement si `ts_filtre_ouvert` est allumé (absent = éteint).
+  page TS : plus de filtre pour le TS ; l'Admin choisit (AG-053, interrupteurs `ts_ouvert:Oui` / `ts_ouvert:Non`,
+  absents = Oui affichés, Non cachés ; `ts_filtre_ouvert` n'est plus lu). Statuts : « Planifié » à venir seulement.
 - **Page TS, compte désactivé (AG-049, 05/11/2026)** : « Votre accès a été désactivé… » seulement avec le
   **bon** mot de passe ; mauvais mot de passe ou adresse inconnue = message commun (pas d'énumération).
   « Mot de passe oublié » d'un compte désactivé reste silencieux.
