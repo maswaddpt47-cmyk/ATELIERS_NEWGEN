@@ -124,6 +124,8 @@ serait prise pour la copie de nuit (le nom de fichier ne distingue pas les origi
 vérification de livraison par Codex).
 **Où regarder** : `admin_app.js` (tuile « Copie de nuit »), `api/lib/ecriture.php:753-764`,
 `api/lib/copie.php:38`, `logic.js` (`derniereCopieNuit`).
+**Livré le 06/11/2026** (NEWGEN et NextStep, `?v=` admin_app 106/105, logic 19/29) : 4 mutations
+vérifiées (bornes 01:59/05:00, ordre, filtre). **Vérification de livraison par Codex attendue.**
 
 ### Réponse — Codex — 06/11/2026
 **Auteur** : Codex — lu sur `9895da7`.
