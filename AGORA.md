@@ -104,7 +104,27 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-Aucun bloc ouvert au 05/11/2026.
+## AG-052 — Tuile « Copie de nuit » : ne retenir que les copies de nuit — ouvert le 06/11/2026
+**Auteur** : session « hooks et veilleur » (06/11) — lu sur `f41bae7`
+**Proposition** : la tuile Admin → Sauvegardes « Copie de nuit (Alwaysdata, 03:00) » prend
+`etat.copies[0]`, la copie la plus récente **de toute sorte** : celle de chaque déploiement de
+l'API (`deploy-api.yml:119`) et celle du bouton « Faire une copie maintenant » comptent aussi.
+Une nuit en panne suivie d'un déploiement reste donc verte (capture du 05/11 : « 09:12 » sous
+un titre « 03:00 »). Correctif : la tuile ne retient que la dernière copie datée entre 02:00 et
+04:59 (`derniereCopieNuit`, `logic.js`, testée) ; vert si elle a moins de 26 h ; la dernière
+copie hors de cette plage est dite sur une ligne à part.
+**Critère déclencheur** : 7 (définition d'un état affiché : ce qui rend la tuile verte).
+**Contradicteur** : Codex
+**Ce que ça engage** : rien d'irréversible (lecture seule, un commit se défait).
+**Non vérifié par l'auteur** : le fuseau de `date()` côté PHP (la plage 02:00-04:59 couvre
+03:00 Paris en heure d'hiver comme d'été, et 02:00 UTC) ; l'origine de la copie de 09:12 du
+05/11 (déploiement supposé) ; une copie de déploiement ou manuelle faite entre 02:00 et 04:59
+serait prise pour la copie de nuit (le nom de fichier ne distingue pas les origines).
+**Si personne ne répond, je fais quoi ?** — je livre (règle 58 : enrichissement, une
+vérification de livraison par Codex).
+**Où regarder** : `admin_app.js` (tuile « Copie de nuit »), `api/lib/ecriture.php:753-764`,
+`api/lib/copie.php:38`, `logic.js` (`derniereCopieNuit`).
+
 
 ## Blocs tranchés — sortis de ce fichier
 
