@@ -1,31 +1,13 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **06/11/2026, 07:45 (heure de Paris)**, bases `main` : NEWGEN `2fec538`,
-NextStep `ff9bba6`. Dernière livraison fonctionnelle : NEWGEN `2fec538` / NextStep `ff9bba6`
-(tuile « Copie de nuit », AG-052 ; tests, déploiements et parité verts).
-**AG-052 ouvert** (AGORA) : livré le 06/11, **vérification de livraison par Codex attendue** ;
-contrôle à l'écran par l'utilisateur attendu (Admin → Sauvegardes).
-Hooks de démarrage des deux dépôts : `npm ci` si `node_modules` manque (fausse alerte Playwright
-dans un conteneur neuf, 05/11) ; NextStep lance aussi `reseau.test.js`.
-Tient aussi les restes communs à NextStep (même API, même base).
+État au **06/11/2026, 08:15 (heure de Paris)**, bases `main` : NEWGEN `eff63f5`, NextStep `ab00c17`
+(tests, déploiements et parité verts). Tient aussi les restes communs à NextStep (même API, même base).
+Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ;
+aucun ancien brouillon à réappliquer. Revues closes (AG-041 à AG-052) : ne pas les relancer d'office.
+**Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue malgré « Autoriser toutes
+les actions » ; cause non établie, ne pas les présenter comme supprimées.
 
-**Passation Codex — 05/11/2026** : aucun bloc AGORA ouvert ; AG-041 à AG-051 clos,
-ne pas relancer leurs revues d'office. Les arbitrages récents sont dans « Points à ne pas défaire ».
-CI des livraisons ci-dessus observée en succès : Pages NEWGEN `42051269626`,
-Pages NextStep `42051245179`, bac à sable `42051269526`, parité `42051269466`.
-Aucune suite locale relancée pour ce relais. Les derniers tests utils exécutés par Codex
-(151 / 141, anciennes bases `a77a743` / `b50f83f`) ne valident pas les évolutions suivantes ;
-statut groupé et volet Détail n'ont pas fait l'objet d'une nouvelle revue Codex.
-Consignes communes à relire : `MD-LIB/collaboration.md`, dont règle 18 (fin **✅ TÂCHE TERMINÉE**,
-`9c4f349`) et règle 66 (mise en forme limitée à l'élément demandé). Rien de nouveau à y inscrire.
-Reprise : actualiser les deux `main`, relire les consignes et ce fichier ; aucune ancienne copie
-locale à réappliquer. Aucun travail métier prioritaire ouvert ; attendre la prochaine demande.
-**Autorisations ChatGPT non résolues** : le réglage GitHub « Autoriser toutes les actions »
-est bien affiché, mais la capture de l'utilisateur montre encore une confirmation
-`create_tree`. Cause non établie ; ne pas présenter ces confirmations comme supprimées.
-Anciens brouillons Codex locaux non publiés : repartir de `main` à jour.
-
-**À reprendre en premier** : rien d'ouvert au 05/11/2026. Essais réels (compte TS, connexion avec
+**À reprendre en premier** : rien d'ouvert au 06/11/2026. Essais réels (compte TS, connexion avec
 code, mail d'un ticket), relecture des registres (sécurité V0.10, RGPD V0.7) et page TS : vérifiés par
 l'utilisateur le 05/11/2026 (déclaré). **Adresse de la page TS toujours non diffusée** (écart RGPD n° 14 :
 avis du DPO avant diffusion, dans le registre).
@@ -33,7 +15,7 @@ avis du DPO avant diffusion, dans le registre).
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
-Contradiction : `AGORA.md` — aucun bloc ouvert au 05/11/2026 (AG-047 à AG-051 clos).
+Contradiction : `AGORA.md` — aucun bloc ouvert au 06/11/2026 (AG-052 clos).
 
 ---
 
@@ -101,12 +83,6 @@ pas à jour ou si NextStep a des commits non poussés.
 
 **Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **39** ; jamais `admin:
 true` (26/10) ; jamais 12, 16, 19, 24, 25, 26 ni 29 (publiés puis retirés).
-Entrées des 03-04/10 datées du 05/10 (demande de l'utilisateur).
-
-**Actions de l'utilisateur**
-
-1. **GDINV2** : dossier DSI V3 (six défauts), synthèse et consigne V0.2 prêtes, **pas encore
-   remises** (`GDINV2-BACKUP/dsi/GDIN-DSI_2026-10-29/`) ; suivi dans `GDINV2/CHANTIERS.md`.
 
 **Pour Claude**
 
@@ -146,11 +122,9 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   cherchée dans les journaux **bruts**, témoin absent = IMPOSSIBLE). Tests :
   `veilleur.test.js` (14), `integrite.test.js` (12), bloquants en CI. **Éprouvé en réel le
   04/11/2026** (AG-040 clos) : échec provoqué → 60 min d'attente → reprise réussie (n° 3894).
-  Tuile : lit la liste `status=success` de GitHub, qui peut omettre un run récent (hypothèse
-  non vérifiée) ; « Veilleur en service » tant qu'un run est en file (n° 3654, ancien code, inerte).
-  **Relevé du 05/11** : 24 contrôles réussis d'affilée (04/11 22:17 → 05/11 19:42, écart ≤ 65 min).
-  Chaque veilleur ne fait qu'**un** passage (`PASSAGES: 1` hérité de l'essai du 04/11, journal du
-  run `42068300126`) : 24 relèves par jour au lieu de ~5. Laissé tel quel (avis donné, gain mince).
+  Tuile : lit la liste `status=success` de GitHub (peut omettre un run récent, hypothèse non vérifiée).
+  Chaque veilleur ne fait qu'**un** passage (`PASSAGES: 1` hérité de l'essai du 04/11) : 24 relèves
+  par jour au lieu de ~5 ; laissé tel quel (05/11 : 24 contrôles réussis d'affilée, écart ≤ 65 min).
 - **Correctif PHP : redémarrer le site** (Web → Sites ; version servie : `diagnostic-api.yml`).
   **SSH par clé seule** depuis le 21/10 (mot de passe à réactiver puis couper pour une
   intervention à la main). Un secret GitHub ne part qu'au **déploiement suivant**.
@@ -298,6 +272,9 @@ appel superflu, `sw.js` de désinscription.
   Outlook puis importés, UID différent). Ne pas le remettre sans essai concluant.
 - **Volet Détail (05/11/2026, validé par l'utilisateur)** : commune, lieu, orienteur, conseiller, co-animateur
   modifiables sur place ; champ vidé = valeur d'origine gardée. Matériel (hors Classe mobile) et résidence : « Éditer complet ».
+- **Tuile « Copie de nuit » (AG-052, 06/11/2026)** : seules les copies de 02:00 à 04:59 (heure de Paris)
+  comptent (`derniereCopieNuit`) ; âge des dates du serveur lu en heure de Paris, jamais dans le fuseau
+  du navigateur (`ageHeuresParis`). Une copie manuelle ou de déploiement dans la plage passe pour celle de nuit.
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS` `newgen` / `nextstep`) :
   origine `maswaddpt47-cmyk.github.io` partagée, `localStorage` non cloisonné
   par chemin. **Couche réseau client gardée** : elle sert sur une vraie
