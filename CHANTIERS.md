@@ -1,8 +1,12 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **05/11/2026, 17:34 (heure de Paris)**, bases `main` : NEWGEN `ea5fe9b`,
-NextStep `5c09453`. Dernière livraison fonctionnelle : NEWGEN `bf7bdf3` / NextStep `c59833e`
-(tests, déploiements et parité verts).
+État au **06/11/2026, 07:45 (heure de Paris)**, bases `main` : NEWGEN `2fec538`,
+NextStep `ff9bba6`. Dernière livraison fonctionnelle : NEWGEN `2fec538` / NextStep `ff9bba6`
+(tuile « Copie de nuit », AG-052 ; tests, déploiements et parité verts).
+**AG-052 ouvert** (AGORA) : livré le 06/11, **vérification de livraison par Codex attendue** ;
+contrôle à l'écran par l'utilisateur attendu (Admin → Sauvegardes).
+Hooks de démarrage des deux dépôts : `npm ci` si `node_modules` manque (fausse alerte Playwright
+dans un conteneur neuf, 05/11) ; NextStep lance aussi `reseau.test.js`.
 Tient aussi les restes communs à NextStep (même API, même base).
 
 **Passation Codex — 05/11/2026** : aucun bloc AGORA ouvert ; AG-041 à AG-051 clos,
@@ -144,6 +148,9 @@ le 1er avril, juillet et octobre. Copilot écarté (payant), Gemini en réserve.
   04/11/2026** (AG-040 clos) : échec provoqué → 60 min d'attente → reprise réussie (n° 3894).
   Tuile : lit la liste `status=success` de GitHub, qui peut omettre un run récent (hypothèse
   non vérifiée) ; « Veilleur en service » tant qu'un run est en file (n° 3654, ancien code, inerte).
+  **Relevé du 05/11** : 24 contrôles réussis d'affilée (04/11 22:17 → 05/11 19:42, écart ≤ 65 min).
+  Chaque veilleur ne fait qu'**un** passage (`PASSAGES: 1` hérité de l'essai du 04/11, journal du
+  run `42068300126`) : 24 relèves par jour au lieu de ~5. Laissé tel quel (avis donné, gain mince).
 - **Correctif PHP : redémarrer le site** (Web → Sites ; version servie : `diagnostic-api.yml`).
   **SSH par clé seule** depuis le 21/10 (mot de passe à réactiver puis couper pour une
   intervention à la main). Un secret GitHub ne part qu'au **déploiement suivant**.
