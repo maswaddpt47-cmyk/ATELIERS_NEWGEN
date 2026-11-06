@@ -544,10 +544,22 @@ function action_ts_ateliers(PDO $db, array $session): array
     // chaque valeur à un booléen, un objet imbriqué serait écrasé.
     $vis = api_json(api_config_base($db)['visibility'] ?? '', []);
     $l = array_values(array_filter($l, fn($a) => !ts_public_cache($vis, (string) $a['public'])));
-    // Filtre « Ouvert à tous » de la page : seulement s'il est activé dans
-    // Admin → Visibilité (AG-047, absent = éteint).
-    $filtreOuvert = is_array($vis) && in_array($vis['ts_filtre_ouvert'] ?? false, [true, 1, '1', 'true'], true);
-    return ['ok' => true, 'ateliers' => $l, 'filtreOuvert' => $filtreOuvert];
+    // « Ouvert à tous » choisi par l'Admin, plus par le TS (AG-053, demande de
+    // l'utilisateur du 06/11/2026) : interrupteurs « ts_ouvert:Oui » et
+    // « ts_ouvert:Non » ; absents, les Oui partent et les Non restent cachés.
+    $l = array_values(array_filter($l, fn($a) => ts_ouvert_visible($vis, (string) ($a['ouvert_a_tous'] ?? ''))));
+    return ['ok' => true, 'ateliers' => $l];
+}
+
+// Atelier « Ouvert à tous » Oui / Non montré à la page TS ? Toute autre valeur
+// compte comme Non. Clé absente : Oui visible, Non caché (AG-053, option a).
+function ts_ouvert_visible(mixed $vis, string $valeur): bool
+{
+    $v = trim($valeur) === 'Oui' ? 'Oui' : 'Non';
+    $cle = 'ts_ouvert:' . $v;
+    if (!is_array($vis) || !array_key_exists($cle, $vis)) return $v === 'Oui';
+    $x = $vis[$cle];
+    return !($x === false || $x === 0 || $x === '' || $x === null || strtolower((string) $x) === 'false');
 }
 
 // Type de public éteint pour la page TS ? Même lecture que visibiliteEffective

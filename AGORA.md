@@ -124,6 +124,9 @@ réelle d'ateliers « Non » (règle 59 : non lue).
 **Si personne ne répond, je fais quoi ?** — je livre (règle 58) ; vérification unique de Codex ensuite.
 **Où regarder** : `api/lib/ts.php:535-551`, `admin_app.js` (section « Page travailleurs sociaux »),
 `ts.html:148,171,306,328,335-337`, `api-tests/api.test.php:980,1015`.
+**Livré le 06/11/2026** (NEWGEN et NextStep, `admin_app.js?v=108/107`) : `ts_ouvert_visible` (`api/lib/ts.php`),
+4 assertions PHP (défaut, Non allumé, Oui éteint seul, tout éteint) ; mutations : défaut et filtre détectés.
+**Vérification de livraison par Codex attendue (une fois, règle 58).**
 
 
 ## Blocs tranchés — sortis de ce fichier

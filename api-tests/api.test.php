@@ -970,6 +970,8 @@ foreach (['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'delete', 'getTic
     verifier(($r['ok'] ?? true) === false, "jeton TS : $act refusé");
 }
 verifier(appel(['action' => 'tsAteliers'], $A)['ok'] === false, 'tsAteliers refusé à un jeton conseiller/admin');
+// Ateliers de test « Ouvert à tous » = Oui : les Non sont cachés par défaut (AG-053), testés plus bas.
+$db->exec("UPDATE ateliers SET ouvert_a_tous = 'Oui'");
 $r = appel(['action' => 'tsAteliers'], $T);
 $ids = array_map(fn($a) => $a['thematique'] . '@' . $a['commune'], $r['ateliers'] ?? []);
 verifier(($r['ok'] ?? false) && in_array('Mail@Agen', $ids, true) && in_array('Smartphone@Nérac', $ids, true), 'ateliers : Planifié du jour et à venir');
@@ -977,15 +979,15 @@ verifier(($r['ok'] ?? false) && in_array('Mail@Agen', $ids, true) && in_array('S
 $futurs = $db->query("SELECT COUNT(*) FROM ateliers WHERE statut = 'Planifié' AND date >= '" . date('Y-m-d') . "'")->fetchColumn();
 verifier(count($r['ateliers'] ?? []) === (int) $futurs && !array_filter($r['ateliers'], fn($a) => $a['statut'] !== 'Planifié' || $a['date'] < date('Y-m-d')), 'ateliers : ni passés, ni autres statuts (' . count($r['ateliers'] ?? []) . ')');
 verifier(array_keys($r['ateliers'][0] ?? []) === ['date', 'horaire', 'statut', 'orienteur', 'commune', 'lieu', 'public', 'thematique', 'ouvert_a_tous'], 'ateliers : 9 champs seulement, dont l\'horaire et « ouvert à tous » (ni conseiller, ni remarques, ni inscrits)');
-verifier(($r['filtreOuvert'] ?? null) === false, 'filtre « Ouvert à tous » de la page TS : éteint tant qu\'il n\'est pas activé');
+verifier(!array_key_exists('filtreOuvert', $r), 'plus de filtre « Ouvert à tous » côté TS : l\'Admin choisit (AG-053)');
 verifier(array_column(array_filter($r['ateliers'] ?? [], fn($a) => $a['thematique'] === 'Mail'), 'horaire') === ['14:00'], 'ateliers : l\'horaire de début est renvoyé');
 verifier(!str_contains(json_encode($r), 'remarque secrète'), 'ateliers : la remarque ne sort pas');
 // Amendement 3 : « à partir du jour de Paris » ne dépend pas du fuseau de MySQL. Pour chaque
 // fuseau où le jour MySQL diffère de celui de Paris (au moins un des deux, toujours), la veille
 // reste exclue et le jour inclus.
-$db->exec("INSERT INTO ateliers (id, statut, date, orienteur, commune, lieu, thematique, public, conseiller, co_animateur, residence, remarques, inscrits)
-    VALUES ('ts_borne_jour', 'Planifié', '" . date('Y-m-d') . "', 'O', 'BorneJour', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL),
-           ('ts_borne_veille', 'Planifié', '" . date('Y-m-d', strtotime('-1 day')) . "', 'O', 'BorneVeille', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL)");
+$db->exec("INSERT INTO ateliers (id, statut, date, orienteur, commune, lieu, thematique, public, conseiller, co_animateur, residence, remarques, inscrits, ouvert_a_tous)
+    VALUES ('ts_borne_jour', 'Planifié', '" . date('Y-m-d') . "', 'O', 'BorneJour', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL, 'Oui'),
+           ('ts_borne_veille', 'Planifié', '" . date('Y-m-d', strtotime('-1 day')) . "', 'O', 'BorneVeille', 'L', 'T', 'P', 'Conseiller Test', '', '', '', NULL, 'Oui')");
 $bornes = 0;
 foreach (['+13:00', '-12:00'] as $zone) {
     $db->exec("SET GLOBAL time_zone = '$zone'");
@@ -1012,12 +1014,26 @@ $db->exec("UPDATE config SET valeur = '" . json_encode(array_fill_keys(array_map
 $r3 = appel(['action' => 'tsAteliers'], $T);
 verifier(($r3['ok'] ?? false) && !array_filter($r3['ateliers'] ?? [], fn($a) => trim($a['public']) !== ''), 'tous les publics éteints : plus aucun atelier avec un public');
 $db->exec("UPDATE config SET valeur = '{}' WHERE cle = 'visibility'");
-$db->exec("UPDATE config SET valeur = '{\"ts_filtre_ouvert\":true}' WHERE cle = 'visibility'");
-verifier((appel(['action' => 'tsAteliers'], $T)['filtreOuvert'] ?? null) === true, 'filtre « Ouvert à tous » activé dans Admin → Visibilité : annoncé à la page TS');
+// « Ouvert à tous » choisi par l'Admin (AG-053) : Non caché par défaut, chaque interrupteur agit seul.
+$db->exec("UPDATE ateliers SET ouvert_a_tous = 'Non' WHERE thematique = 'Mail' AND commune = 'Agen'");
+$cles = fn($x) => array_map(fn($a) => $a['thematique'] . '@' . $a['commune'], $x['ateliers'] ?? []);
+$o1 = $cles(appel(['action' => 'tsAteliers'], $T));
+verifier(!in_array('Mail@Agen', $o1, true) && in_array('Smartphone@Nérac', $o1, true) && count($o1) === count($r['ateliers']) - 1, 'Ouvert à tous, réglage par défaut : Non caché, Oui affiché');
+$db->exec("UPDATE config SET valeur = '{\"ts_ouvert:Non\":true}' WHERE cle = 'visibility'");
+$o2 = $cles(appel(['action' => 'tsAteliers'], $T));
+verifier(in_array('Mail@Agen', $o2, true) && count($o2) === count($r['ateliers']), 'Ouvert à tous : Non allumé dans l\'Admin, ses ateliers partent aussi');
+$db->exec("UPDATE config SET valeur = '{\"ts_ouvert:Oui\":false,\"ts_ouvert:Non\":true}' WHERE cle = 'visibility'");
+$o3 = $cles(appel(['action' => 'tsAteliers'], $T));
+verifier($o3 === ['Mail@Agen'], 'Ouvert à tous : Oui éteint, Non allumé : seuls les Non partent');
+$db->exec("UPDATE config SET valeur = '{\"ts_ouvert:Oui\":false}' WHERE cle = 'visibility'");
+verifier(appel(['action' => 'tsAteliers'], $T)['ateliers'] === [], 'Ouvert à tous : Oui éteint, Non par défaut : plus rien');
+$db->exec("UPDATE ateliers SET ouvert_a_tous = 'Oui' WHERE thematique = 'Mail' AND commune = 'Agen'");
 $db->exec("UPDATE config SET valeur = '{}' WHERE cle = 'visibility'");
 // Première lecture de la page TS sur une base sans la colonne (AG-047, Codex n° 2).
 $db->exec('ALTER TABLE ateliers DROP COLUMN ouvert_a_tous');
+$db->exec("UPDATE config SET valeur = '{\"ts_ouvert:Non\":true}' WHERE cle = 'visibility'");
 $r4 = appel(['action' => 'tsAteliers'], $T);
+$db->exec("UPDATE config SET valeur = '{}' WHERE cle = 'visibility'");
 verifier(($r4['ok'] ?? false) && ($r4['ateliers'][0]['ouvert_a_tous'] ?? '') === 'Non', 'page TS en premier appel, colonne absente : ajoutée, ateliers à Non');
 
 verifier(appel(['action' => 'tsActiver'], $A + ['email' => 'ts.un@lotetgaronne.fr', 'actif' => '0'])['ok'] === true
