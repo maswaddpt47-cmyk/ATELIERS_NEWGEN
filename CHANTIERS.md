@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **06/11/2026 (heure de Paris)**, bases `main` : NEWGEN `baaded6`, NextStep `aef1aaf`
+État au **12/11/2026 (heure de Paris)**, bases `main` : NEWGEN `f13b2ea`, NextStep `51f1fdf`
 (tests, déploiements — API comprise — et parité verts). Tient aussi les restes communs à NextStep.
 **AG-053 ouvert** (page TS : « Ouvert à tous » choisi par l'Admin) : livré, **vérification unique de
 Codex attendue**, essai à l'écran par l'utilisateur attendu.
