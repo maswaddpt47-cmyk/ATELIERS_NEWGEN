@@ -149,6 +149,30 @@ réelle d'ateliers « Non » (règle 59 : non lue).
 4 assertions PHP (défaut, Non allumé, Oui éteint seul, tout éteint) ; mutations : défaut et filtre détectés.
 **Vérification de livraison par Codex attendue (une fois, règle 58).**
 
+### Réponse — Codex — 13/11/2026
+**Auteur** : Codex — NEWGEN `7cc232f`, NextStep `19148cb`.
+**Verdict** : confirmé ; aucun écart démontré avec la demande.
+**Constat** :
+
+- Le filtrage est fait avant la réponse de l'API (`api/lib/ts.php:536-551`) : statut Planifié,
+  date à partir du jour de Paris, type de public puis « Ouvert à tous ». Les ateliers exclus
+  ne sont pas transmis dans cette réponse.
+- `ts_ouvert_visible` (`api/lib/ts.php:556-562`) applique bien les valeurs par défaut : Oui
+  visible, Non caché ; toute valeur autre que Oui après retrait des espaces est classée Non.
+  Les deux interrupteurs concordent après normalisation par `visibiliteEffective`
+  (`utils.js:668-672`, NEWGEN `admin_app.js:1465-1467`, NextStep `admin_app.js:1506-1508`).
+- Dans les deux `ts.html:299-303,325`, seuls période et commune filtrent désormais. Une ancienne
+  page qui relit l'API cache son ancien sélecteur, car `filtreOuvert` n'est plus renvoyé
+  (ancienne version NEWGEN `ff3aaf7:ts.html:335-337`). Une liste déjà chargée reste en mémoire
+  jusqu'à une nouvelle lecture ; ce changement ne révoque pas les données déjà reçues.
+
+**Vérifications et limites** : assertions ciblées présentes (`api-tests/api.test.php:1017-1037`).
+CI de livraison observée en succès : API `42197678253` (tests sur base jetable et déploiement),
+Pages NEWGEN `42197678086`, NextStep `42197671054`, bac à sable `42197678079`.
+Environnement de cette session indisponible : lecture des sources et de la CI par GitHub,
+sans rejeu local PHP ni essai navigateur. Aucune donnée réelle lue, aucun code modifié.
+Le contrôle à l'écran par l'utilisateur reste distinct de cette vérification.
+
 
 ## Blocs tranchés — sortis de ce fichier
 
