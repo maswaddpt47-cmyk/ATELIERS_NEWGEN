@@ -129,6 +129,37 @@ déduite des dates (Toussaint 2026 : reprise lundi 02/11) et non d'une documenta
 `atelierCollege`), `shared.js` (`alertesSaisie`, volet, `VueAnomalies`).
 
 
+### Réponse — Codex — 13/11/2026
+**Auteur** : Codex — lu sur NEWGEN `a836fec`, NextStep `10b6427`.
+**Verdict** : amendé sur la définition des périodes ; principe du cache serveur et du transport par
+`getAll` confirmé, sans validation d'implémentation.
+
+**Constat vérifié dans les sources officielles** :
+
+- La conversion UTC → jour de Paris et l'exclusion du jour de reprise sont cohérentes avec le
+  [calendrier du ministère](https://www.education.gouv.fr/calendrier-scolaire-toutes-les-dates-des-cours-et-des-vacances-100148),
+  qui précise reprise le matin et départ après la classe. Un contrôle par journée entière reste
+  donc une approximation explicite du début des vacances.
+- **Début = fin ne signifie pas toujours une journée de vacances.** L'[API officielle de Bordeaux](https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-calendrier-scolaire/records?where=location%3D%22Bordeaux%22&order_by=start_date%20desc&limit=100),
+  lue le 13/11/2026, donne le pont du 07/05/2027 avec bornes égales : cette journée sans classe
+  est confirmée par le ministère. Mais elle donne aussi « Début des Vacances d'Été » avec deux
+  bornes égales au 04/07/2028 après conversion Paris. L'[arrêté 2027-2028, annexe](https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054457294)
+  confirme une borne de **début** le 4 juillet, pas des vacances d'une seule journée.
+  Un atelier fictif de collège au 10/07/2028 échapperait donc au contrôle décrit dans le bloc.
+
+**Amendement** : distinguer un événement ponctuel établi, comme ce pont, d'un début de vacances
+dont la reprise n'est pas connue. Ne transformer ni cette borne en période d'un jour ni une fin
+inconnue en date inventée. Représenter la couverture partielle/inconnue et suspendre le contrôle
+pour les dates qu'on ne sait pas trancher, au lieu de produire un faux zéro.
+Cette couverture doit être distincte du simple fait d'avoir un cache non vide : `getAll` accepte
+des années quelconques (`api/lib/api.php:421-429,491-495`).
+
+**Limites de la réponse** : `api/lib/vacances.php`, `vacancesDe` et `atelierCollege` sont absents
+du SHA examiné ; `action_get_all` ne transmet pas encore `vacances` (`api/lib/api.php:446-469`).
+Les garanties 24 h / nouvel essai 1 h / délai 3 s, concurrence et conservation de l'ancien cache
+restent à éprouver sur la livraison. Lecture de données publiques et de documentation officielle
+seulement : aucune donnée d'atelier réelle lue, aucune suite produit relancée, aucun code modifié.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
