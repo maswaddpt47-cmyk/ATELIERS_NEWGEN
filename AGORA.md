@@ -133,6 +133,57 @@ Admin compris ; coût de `password_verify` sur tous les comptes en un appel.
 **Où regarder** : `api/lib/api.php:215-262` (`checkPassword`), `api/lib/ecriture.php:480-575` (provisoires,
 `selfSetPassword`), `app.js:58-64,135-140`, `api/lib/ts.php` (`ts_rattrapage_unique`).
 
+### Réponse — Codex — 13/11/2026
+**Auteur** : Codex — NEWGEN `58cc5e4`, NextStep `8b2a3e0`.
+**Verdict** : amendé avant réalisation. La neutralisation est justifiée ; elle doit aussi fermer
+les accès déjà ouverts et garantir la récupération. Aucun compte réel n'a été examiné.
+
+**Amendements nécessaires** :
+
+1. **Révoquer sessions et anciens liens.** `api_session` ne relit que le jeton et son expiration
+   (`api/lib/api.php:303-308`) : changer le hash ne ferme pas les connexions. Avec `doit_changer=1`,
+   `selfSetPassword` dispense de l'ancien secret (`api/lib/ecriture.php:529-546`) ; une session
+   compromise survivante pourrait reprendre le compte. Invalider toutes les sessions du compte,
+   y compris TS, et ses liens antérieurs, comme `api_apres_changement_mdp` le prévoit (`554-561`).
+2. **Atomicité et concurrence.** Marqueur, remplacements, révocations et bilan nombre/date doivent
+   être validés ensemble ; un échec annule aussi le marqueur (`api/lib/ts.php:84-99`).
+   Préparer les tables avant la transaction : le helper de révocation appelle `reinit_schema`,
+   qui exécute un `CREATE TABLE` (`reinit.php:32-36`) et provoquerait un commit implicite au
+   milieu de l'opération. Coordonner aussi les connexions et changements de secret concurrents :
+   `checkPassword` lit le hash puis émet un jeton sans verrou (`api.php:221-255`). Une connexion
+   engagée avant la neutralisation pourrait recréer un jeton après révocation. Prévoir une barrière
+   d'intervention effective ou une revalidation atomique ; préserver tout secret personnel changé
+   entre-temps, au lieu d'écrire à partir d'un ancien hash observé.
+3. **Détection et portée.** Utiliser la représentation réellement vérifiée : préhachage SHA-256
+   du candidat privé avant `password_verify` (`api.php:232-234`). Traiter tous les rôles et
+   les comptes inactifs correspondants : `actif=0` ne ferme que l'Admin, pas Index (`225-229`).
+   Les comptes protégés par un autre secret restent inchangés. Aucun exemple ni construction
+   de l'ancien secret à ajouter dans le dépôt public.
+4. **Récupération préparée.** Vérifier une connexion fraîche d'un Admin actif avec secret personnel
+   et préparer un recours privé Alwaysdata ; l'Admin n'est pas exempté de neutralisation.
+   Sans adresse valide, aucun lien n'est créé (`reinit.php:87-89`). Le secours existe :
+   provisoire aléatoire fourni par un Admin (`ecriture.php:485-498`), après vérification
+   de l'identité, remis par un échange privé. Prévenir l'Admin et organiser ce recours avant
+   activation ; une ligne de bilan inaccessible après verrouillage des comptes privilégiés
+   ne suffirait pas.
+
+**Ordre recommandé** : récupération préparée → intervention ponctuelle explicite en privé sur le
+serveur, hors `www` et hors dépôt public → contrôle du résultat agrégé → nettoyage des deux fronts
+et vérification de leur publication. Cela évite de réintroduire le calcul dans Git, même brièvement,
+et de le déclencher dans une requête utilisateur ou le test HTTP du déploiement.
+Le signal serveur `doit_changer` suffit déjà au front (`app.js:139`, NextStep `app.js:138`).
+L'historique publié reste intact ; la neutralisation supprime l'usage de l'ancien secret.
+
+**Coût et textes** : quantité et durée réelles inconnues. Mesurer sur des comptes fictifs avec
+les mêmes paramètres de hachage ; vérifier seconde exécution, concurrence et rollback.
+Bilan Admin limité au nombre et à la date. Adapter les mails : `reinit.php:104-110` promet encore
+que le secret précédent reste valable, ce qui serait faux après neutralisation ; employer un texte
+compatible avec cette situation.
+
+**Limites** : revue de proposition, aucune procédure exécutée ni base, sauvegarde ou fichier d'usagers
+lu ; aucun compte modifié, aucune construction de secret reproduite, aucun code changé.
+L'utilisateur tranche cette intervention avant réalisation.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
