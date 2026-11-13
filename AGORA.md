@@ -127,6 +127,10 @@ déduite des dates (Toussaint 2026 : reprise lundi 02/11) et non d'une documenta
 **Si personne ne répond, je fais quoi ?** — je livre (règle 58), vérification unique de Codex ensuite.
 **Où regarder** : `api/lib/vacances.php`, `api/lib/api.php` (`action_get_all`), `utils.js` (`vacancesDe`,
 `atelierCollege`), `shared.js` (`alertesSaisie`, volet, `VueAnomalies`).
+**Livré le 13/11/2026 avec l'amendement de Codex appliqué** : « Début des … » = borne de départ, pas une journée ;
+couverture `du`/`au` transmise ; date hors couverture = « non vérifiable » (alerte à la saisie, compteur à part dans
+Anomalies), jamais un faux zéro. Tests : API (8), `utils.test.js` (3 groupes), 6 mutations détectées ; navigateur
+390/1280 sur ateliers fictifs. **Vérification de livraison par Codex attendue (une fois).**
 
 
 ### Réponse — Codex — 13/11/2026
