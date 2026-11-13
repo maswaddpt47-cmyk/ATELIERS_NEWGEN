@@ -192,6 +192,39 @@ pas d'opération groupée ; ce compte passe par « Réinitialiser » de l'Admin 
 aléatoire, `doit_changer`, sessions et liens révoqués par `api_apres_changement_mdp`), le provisoire remis en direct ;
 nouveau comptage pour vérifier 0 ; puis formule retirée du code public des deux applis. Décision : utilisateur.
 
+## AG-060 — Règle du mot de passe imposée par le serveur à la connexion — ouvert le 13/11/2026
+**Auteur** : session du 13/11/2026 (trailer `Claude-Session: …ws7pLmg`) — lu sur `main` `9d9b5aa`, **avant tout code**
+**Constat** : la règle (12 caractères, majuscule, minuscule, chiffre, caractère spécial, `API_MDP_POLITIQUE`) n'est
+vérifiée qu'au **choix** d'un mot de passe (`api/lib/ecriture.php:568`). À la connexion, `checkPassword` ne compare que
+l'empreinte (`api/lib/api.php:221-259`) : un mot de passe repris à l'import, court, reste valable. `doit_changer` est
+renvoyé au client mais « ignoré par le client actuel » (`api.php:259`) et **aucune action n'est refusée côté serveur**
+(la garde de `api_traiter`, `api.php:114-124`, ne vise que les jetons TS). Demande de l'utilisateur (13/11/2026) : fin des
+demi-mesures.
+**Proposition** :
+1. **À chaque connexion réussie** (Index et Admin, `checkPassword`), le mot de passe tapé est testé contre la règle ;
+   s'il ne la respecte pas, `doit_changer = 1` est écrit avant d'émettre le jeton.
+2. **Tant que `doit_changer = 1`, le serveur refuse toute action** sauf le changement de son propre mot de passe
+   (`selfSetPassword`) et la déconnexion, avec un message explicite — comme `API_ACTIONS_TS` pour la page TS. Les deux
+   applis envoient directement sur l'écran « choisissez votre mot de passe » (le provisoire de l'Admin y mène déjà).
+3. Une seule fonction de règle partagée par le choix et la connexion ; tests : mot de passe court accepté puis bloqué
+   jusqu'au changement, conforme sans effet, provisoire de l'Admin, actions refusées puis rouvertes, pages déjà ouvertes.
+4. Ensuite seulement (AG-059) : formule de l'ancien mot de passe retirée du code public des deux applis.
+**Condition de mise en ligne** : **le seul compte encore sur l'ancien mot de passe (superviseur, comptage nominatif du
+13/11 dans le dépôt privé) doit avoir été neutralisé avant** (« Mot de passe provisoire » de l'Admin ou changement par
+la personne) : sinon la règle permettrait à qui connaît la formule de se connecter et de choisir le nouveau mot de passe
+à la place de l'agent. L'utilisateur le fera à sa prochaine rencontre avec elle ; recompter (0) avant de déployer.
+**Contradicteur** : Codex, **avant le code** (changement structurant de la connexion, `CLAUDE.md` §6).
+**Critère déclencheur** : 6 (coût côté usager : changement imposé) et sécurité (connexion).
+**Points à contredire** : chemin `selfSetPassword` quand l'actuel est exigé (un compte bloqué connaît son actuel) ;
+superviseur et Admin compris ; sessions déjà ouvertes au déploiement (ouvertes avant la règle : refusées au prochain
+appel ?) ; interaction avec le blocage après échecs et la déconnexion à 30 min ; le client actuel qui ignore `doit_changer`.
+**Non vérifié par l'auteur** : la liste exacte des actions à laisser ouvertes ; le comportement de l'écran d'Index quand le
+serveur refuse tout.
+**Si personne ne répond, je fais quoi ?** Rien sur la connexion sans réponse de Codex ; pas de déploiement avant le
+recomptage à 0.
+**Où regarder** : `api/lib/api.php:114-124,215-262`, `api/lib/ecriture.php:529-575`, `app.js:135-140`, `admin_app.js`
+(écran de connexion), NextStep `app.js:138`.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
