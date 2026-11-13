@@ -284,6 +284,21 @@ doit rester la même au choix et à la connexion, sans désactiver les contrôle
 aucune donnée réelle lue. L'utilisateur tranche les modalités de reconnexion avant réalisation ;
 aucun déploiement n'est lancé par cette réponse.
 
+### Décision de l'utilisateur et livraison — 13/11/2026
+**Risque accepté par l'utilisateur** (13/11/2026) : livrer sans attendre le changement de mot de passe de la superviseure
+(encore sur l'ancien mot de passe) ; d'ici là, qui connaît la formule pourrait se connecter et choisir son nouveau mot de
+passe à sa place. Préalable d'AG-059 levé par cette décision.
+**Livré** : `api_mdp_conforme()` unique (choix et connexion) ; `checkPassword` pose `doit_changer` si le mot de passe tapé
+est hors règle et, **au passage 0 → 1, ferme les sessions déjà ouvertes du compte, page TS comprise** (amendement 1) ;
+`api_traiter` refuse toute action sauf `selfSetPassword` tant que `doit_changer` (relu à chaque appel) ; `getComptes` en
+version Admin réduit à la liste publique et **`tsConnexion` refusé** pour un compte Admin hors règle ou à changer
+(amendement 3) ; écran « Choisissez votre mot de passe » dans l'Admin des deux applis, par `selfSetPassword` (amendement 4) ;
+formule retirée du code public des deux applis.
+**Non retenu, avec raison** : (a) `auth:true` gardé sur le refus : il ne touche que des pages ouvertes avant la règle (le
+parcours de connexion passe directement à l'écran de changement, sans autre appel) ; il renvoie à la connexion, qui mène à
+cet écran. (b) Pas de reconnexion générale des sessions à l'activation : un compte conforme n'est pas concerné ; le seul
+compte hors règle (superviseure) garde ses sessions jusqu'à sa prochaine connexion — couvert par le risque accepté.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet

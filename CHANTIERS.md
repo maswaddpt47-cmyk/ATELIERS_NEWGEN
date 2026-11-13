@@ -11,15 +11,16 @@ les actions » ; cause non établie, ne pas les présenter comme supprimées.
 - **AG-059** : comptage nominatif du 13/11 (dépôt privé, run `43515715586`) : **1 compte, la superviseure** ; l'utilisateur
   lui fera changer son mot de passe **à sa prochaine rencontre** (« Mot de passe provisoire » de l'Admin, ou changement
   par elle) ; puis recompter (0 attendu, option `nominatif`).
-- **AG-060** (ouvert le 13/11, réponse de Codex attendue **avant le code**) : règle du mot de passe imposée par le serveur
-  à la connexion, toute action refusée tant que `doit_changer`. Décision de l'utilisateur : oui. **Ne pas déployer avant le
-  recomptage à 0 d'AG-059** (sinon la formule publique permettrait de choisir le mot de passe à la place de l'agent).
-  Ensuite seulement : formule retirée du code public ; texte du mail de lien (`reinit.php:104-110`) à corriger.
+- **AG-060 livré le 13/11/2026** (risque accepté par l'utilisateur : livré avant le changement de la superviseure) : règle
+  du mot de passe imposée à la connexion, toute action refusée tant que `doit_changer`, sessions fermées au passage 0 → 1,
+  `getComptes` Admin et page TS refusés à un compte qui doit changer, écran de changement dans l'Admin des deux applis,
+  formule retirée du code public. Codex : vérification unique de la livraison à demander. Reste : texte du mail de lien
+  (`reinit.php:104-110`, « votre mot de passe actuel reste valable »).
 
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
-Contradiction : `AGORA.md` — AG-059 (en attente du changement de la superviseure) et AG-060 (Codex attendu) ouverts.
+Contradiction : `AGORA.md` — AG-059 (changement de la superviseure) et AG-060 (vérification de la livraison par Codex) ouverts.
 
 ---
 
