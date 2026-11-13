@@ -63,24 +63,57 @@ function vacances_periodes(string $json): ?array
 // Calendrier à transmettre aux pages ; rafraîchit le cache si besoin.
 // du / au = jours couverts (au-delà : inconnu) ; maj vide = jamais lu : les
 // pages suspendent alors le contrôle.
+// Lecture du cache en base.
+function vacances_cache(PDO $db): array
+{
+    $c = api_json((string) (api_config_base($db)['vacances_cache'] ?? ''), []);
+    return [
+        'periodes' => is_array($c['periodes'] ?? null) ? $c['periodes'] : [],
+        'du' => (string) ($c['du'] ?? ''), 'au' => (string) ($c['au'] ?? ''),
+        'maj' => (int) ($c['maj'] ?? 0), 'essai' => (int) ($c['essai'] ?? 0),
+    ];
+}
+
+function vacances_ecrire(PDO $db, array $c): void
+{
+    $db->prepare('INSERT INTO config (cle, valeur) VALUES (?, ?) ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)')
+        ->execute(['vacances_cache', json_encode($c, JSON_UNESCAPED_UNICODE)]);
+}
+
+// Calendrier à transmettre aux pages ; rafraîchit le cache si besoin.
+// du / au = jours couverts (au-delà : inconnu) ; maj vide = jamais lu : les
+// pages suspendent alors le contrôle.
+// Concurrence (Codex, vérification d'AG-057) : un seul rafraîchissement à la
+// fois (verrou MySQL nommé, pris sans attendre : sinon l'ancien cache sert) ;
+// sous verrou, le cache est relu, la tentative réservée AVANT l'appel externe,
+// et un échec n'écrit rien d'autre : il ne peut plus effacer un rafraîchissement.
 function vacances_scolaires(PDO $db): array
 {
-    $cache = api_json((string) (api_config_base($db)['vacances_cache'] ?? ''), []);
-    $periodes = is_array($cache['periodes'] ?? null) ? $cache['periodes'] : [];
-    $du = (string) ($cache['du'] ?? ''); $au = (string) ($cache['au'] ?? '');
-    $maj = (int) ($cache['maj'] ?? 0);
-    $essai = (int) ($cache['essai'] ?? 0);
-    $now = time();
-    if ($now - $maj > VACANCES_FRAIS && $now - $essai > VACANCES_REESSAI) {
-        $depuis = (date('Y') - 1) . '-09-01';
-        $src = str_replace('{DEPUIS}', $depuis, (string) (api_config()['vacances_source'] ?? VACANCES_SOURCE));
-        $ctx = stream_context_create(['http' => ['timeout' => VACANCES_DELAI, 'ignore_errors' => false]]);
-        $json = @file_get_contents($src, false, $ctx);
-        $p = is_string($json) ? vacances_periodes($json) : null;
-        if ($p !== null && $p['periodes'] !== []) { $periodes = $p['periodes']; $du = $depuis; $au = $p['au']; $maj = $now; }
-        $essai = $now;
-        $db->prepare('INSERT INTO config (cle, valeur) VALUES (?, ?) ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)')
-            ->execute(['vacances_cache', json_encode(['maj' => $maj, 'essai' => $essai, 'du' => $du, 'au' => $au, 'periodes' => $periodes], JSON_UNESCAPED_UNICODE)]);
+    $c = vacances_cache($db);
+    $perime = fn(array $c) => time() - $c['maj'] > VACANCES_FRAIS && time() - $c['essai'] > VACANCES_REESSAI;
+    if ($perime($c)) {
+        $verrou = $db->query("SELECT CONCAT(DATABASE(), '_vacances')")->fetchColumn();
+        $q = $db->prepare('SELECT GET_LOCK(?, 0)');
+        $q->execute([$verrou]);
+        if ((int) $q->fetchColumn() === 1) {
+            try {
+                $c = vacances_cache($db);
+                if ($perime($c)) {
+                    $c['essai'] = time();
+                    vacances_ecrire($db, $c);
+                    $depuis = (date('Y') - 1) . '-09-01';
+                    $src = str_replace('{DEPUIS}', $depuis, (string) (api_config()['vacances_source'] ?? VACANCES_SOURCE));
+                    $json = @file_get_contents($src, false, stream_context_create(['http' => ['timeout' => VACANCES_DELAI]]));
+                    $p = is_string($json) ? vacances_periodes($json) : null;
+                    if ($p !== null && $p['periodes'] !== []) {
+                        $c = ['periodes' => $p['periodes'], 'du' => $depuis, 'au' => $p['au'], 'maj' => time(), 'essai' => $c['essai']];
+                        vacances_ecrire($db, $c);
+                    }
+                }
+            } finally {
+                $db->prepare('SELECT RELEASE_LOCK(?)')->execute([$verrou]);
+            }
+        }
     }
-    return ['periodes' => $periodes, 'du' => $du, 'au' => $au, 'maj' => $maj ? date('Y-m-d H:i', $maj) : ''];
+    return ['periodes' => $c['periodes'], 'du' => $c['du'], 'au' => $c['au'], 'maj' => $c['maj'] ? date('Y-m-d H:i', $c['maj']) : ''];
 }

@@ -155,6 +155,14 @@ $db->exec("UPDATE config SET valeur = '{\"maj\":0,\"essai\":" . time() . ",\"per
 $rv = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']]);
 verifier(($rv['vacances'] ?? null) === ['periodes' => [], 'du' => '', 'au' => '', 'maj' => ''], 'vacances : essai de moins d\'une heure, pas de nouvelle lecture (calendrier vide transmis comme « jamais lu »)');
 $db->exec("UPDATE config SET valeur = '{\"maj\":0,\"essai\":0,\"periodes\":[]}' WHERE cle = 'vacances_cache'");
+// Concurrence (Codex) : verrou tenu par une autre connexion → aucune lecture de la source, l'ancien cache sert.
+$db->exec("UPDATE config SET valeur = '{\"maj\":0,\"essai\":0,\"periodes\":[]}' WHERE cle = 'vacances_cache'");
+$autre = new PDO("mysql:host=$hote;dbname=ateliers_test_api;charset=utf8mb4", $util, $mdp);
+$autre->query("SELECT GET_LOCK(CONCAT(DATABASE(), '_vacances'), 0)")->fetchColumn();
+$rl = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']]);
+verifier(($rl['vacances']['periodes'] ?? null) === [] && ($rl['vacances']['maj'] ?? 'x') === '', 'vacances : rafraîchissement déjà en cours ailleurs, pas de seconde lecture (ancien cache transmis)');
+$autre->query("SELECT RELEASE_LOCK(CONCAT(DATABASE(), '_vacances'))")->fetchColumn();
+$autre = null;
 verifier(count(appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']])['vacances']['periodes'] ?? []) === 11, 'vacances : cache périmé, source relue');
 verifier(count($r['entries']) === 2, '2026 seule : 2 ateliers');
 $parId = array_column($r['entries'], null, '_id');
