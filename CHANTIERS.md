@@ -7,15 +7,19 @@ aucun ancien brouillon à réappliquer. Revues closes (AG-041 à AG-057) : ne pa
 **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue malgré « Autoriser toutes
 les actions » ; cause non établie, ne pas les présenter comme supprimées.
 
-**À reprendre en premier** : **AG-059 — décision de l'utilisateur attendue.** Codex a répondu (amendé : révoquer sessions et liens, atomicité, récupération préparée) ; comptage en lecture seule du 13/11 : **1 compte sur 5** encore sur l'ancien mot de passe, actif, rôle admin ou superviseur. Proposition : pas d'opération groupée, « Réinitialiser » ce compte depuis l'Admin (provisoire remis en direct), recompter (0 attendu), puis retirer la formule du code public des deux applis. Essais réels (compte TS, connexion avec
-code, mail d'un ticket), relecture des registres (sécurité V0.10, RGPD V0.7) et page TS : vérifiés par
-l'utilisateur le 05/11/2026 (déclaré). **Adresse de la page TS toujours non diffusée** (écart RGPD n° 14 :
-avis du DPO avant diffusion, dans le registre).
+**À reprendre en premier** :
+- **AG-059** : comptage nominatif du 13/11 (dépôt privé, run `43515715586`) : **1 compte, la superviseure** ; l'utilisateur
+  lui fera changer son mot de passe **à sa prochaine rencontre** (« Mot de passe provisoire » de l'Admin, ou changement
+  par elle) ; puis recompter (0 attendu, option `nominatif`).
+- **AG-060** (ouvert le 13/11, réponse de Codex attendue **avant le code**) : règle du mot de passe imposée par le serveur
+  à la connexion, toute action refusée tant que `doit_changer`. Décision de l'utilisateur : oui. **Ne pas déployer avant le
+  recomptage à 0 d'AG-059** (sinon la formule publique permettrait de choisir le mot de passe à la place de l'agent).
+  Ensuite seulement : formule retirée du code public ; texte du mail de lien (`reinit.php:104-110`) à corriger.
 
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
-Contradiction : `AGORA.md` — AG-059 ouvert (réponse de Codex reçue, décision de l'utilisateur attendue) ; AG-058 livré et clos.
+Contradiction : `AGORA.md` — AG-059 (en attente du changement de la superviseure) et AG-060 (Codex attendu) ouverts.
 
 ---
 
