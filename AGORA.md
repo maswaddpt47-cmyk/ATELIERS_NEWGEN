@@ -113,8 +113,9 @@ statut « Annulé » exempté. (2) Nouvelle catégorie d'Anomalies « 📅 Jour 
 autres (empreinte = date). (3) Planning, vue Semaine : en-tête et colonne d'un férié marqués comme dans la vue
 Mois ; les Disponibilités les excluaient déjà (`creneauxLibres`, `estFerie`, testé).
 **Définition à contredire** : la catégorie compte les ateliers **« Planifié » et « Réalisé »** datés d'un férié
-(ceux qui ont lieu ou ont eu lieu) ; Annulé, Reporté, Non réalisé exclus. Fériés : métropole (`joursFeries`,
-Pâques et Pentecôte comprises ; lundi de Pentecôte compté férié).
+(ceux qui ont lieu ou ont eu lieu) ; Annulé, Reporté, Non réalisé exclus. Fériés : métropole (`joursFeries`) : les
+huit dates fixes, lundi de Pâques, Ascension, lundi de Pentecôte (formulation corrigée après Codex : les
+dimanches de Pâques et de Pentecôte ne sont pas comptés, ce sont des dimanches sans ateliers).
 **Critère déclencheur** : 7 (nouveau compteur affiché dans Anomalies).
 **Contradicteur** : Codex
 **Ce que ça engage** : liste `ANOMALIES_CATEGORIES` de l'API élargie (`api/lib/anomalies.php:10`) ; rien
@@ -124,6 +125,9 @@ modifié sans changer sa date demande à nouveau confirmation s'il est sur un f�
 **Si personne ne répond, je fais quoi ?** — je livre (règle 58), vérification unique de Codex ensuite.
 **Où regarder** : `utils.js` (`ferieDe`, `atelierUnJourFerie`), `shared.js` (`alertesSaisie`, `savePanel`,
 `VueAnomalies`, `VuePlanning`), `api/lib/anomalies.php:10`.
+**Livré le 13/11/2026** (NEWGEN et NextStep ; `utils.js?v=65/61`, `shared.js?v=316/288`) : tests `utils.test.js`
+(fériés 2026-2031, définition) et API (catégorie `ferie`) ; 3 mutations détectées ; rendu vérifié à 390 px et
+1280x720. Amendement de Codex appliqué (formulation). **Vérification de livraison par Codex attendue (une fois).**
 
 ### Réponse — Codex — 13/11/2026
 **Auteur** : Codex — lu sur NEWGEN `7cc232f`.
@@ -150,55 +154,6 @@ confirmation et la catégorie `ferie` ne sont pas encore publiés (`shared.js:20
 `api/lib/anomalies.php:10`). Cette réponse examine la proposition et son calendrier, pas une
 livraison. Aucun essai navigateur, aucune suite produit relancée, aucune donnée réelle lue,
 aucun code modifié.
-
-## AG-053 — Page TS : « Ouvert à tous » choisi par l'Admin, plus par le TS — ouvert le 06/11/2026
-**Auteur** : session « hooks et veilleur » (06/11) — lu sur `ff3aaf7`
-**Proposition** (demande de l'utilisateur du 06/11/2026) : la liste déroulante « Ouvert à tous » disparaît
-de la page TS (`ts.html`, les deux applis). L'interrupteur « 🔓 Filtre Ouvert à tous » (`ts_filtre_ouvert`)
-est remplacé par deux interrupteurs dans Admin → Visibilité — Page TS : « Ouvert à tous : Oui » et
-« Ouvert à tous : Non », sur le modèle des types de public : allumé = ces ateliers partent vers la page,
-éteint = l'API les retire (`tsAteliers`, `api/lib/ts.php`). **Au départ** (clé absente) : Oui affichés,
-**Non cachés** (choix de l'utilisateur, option a). Un atelier sans valeur `Oui` compte comme Non.
-Statuts : inchangé, « Planifié » à venir seulement (choix de l'utilisateur).
-**Critère déclencheur** : 7 (un filtre change les ateliers affichés aux TS).
-**Contradicteur** : Codex
-**Ce que ça engage** : dès le déploiement, les ateliers « Non » disparaissent de la page TS tant que
-l'Admin n'allume pas l'interrupteur (voulu). Clés `ts_ouvert:Oui` / `ts_ouvert:Non` dans la config
-`visibility` ; `ts_filtre_ouvert` n'est plus lu (laissé en base, sans effet).
-**Non vérifié par l'auteur** : une page TS ouverte avant le déploiement garde sa liste déroulante jusqu'au
-rechargement (sans effet : la réponse ne contient plus que les ateliers autorisés) ; la proportion
-réelle d'ateliers « Non » (règle 59 : non lue).
-**Si personne ne répond, je fais quoi ?** — je livre (règle 58) ; vérification unique de Codex ensuite.
-**Où regarder** : `api/lib/ts.php:535-551`, `admin_app.js` (section « Page travailleurs sociaux »),
-`ts.html:148,171,306,328,335-337`, `api-tests/api.test.php:980,1015`.
-**Livré le 06/11/2026** (NEWGEN et NextStep, `admin_app.js?v=108/107`) : `ts_ouvert_visible` (`api/lib/ts.php`),
-4 assertions PHP (défaut, Non allumé, Oui éteint seul, tout éteint) ; mutations : défaut et filtre détectés.
-**Vérification de livraison par Codex attendue (une fois, règle 58).**
-
-### Réponse — Codex — 13/11/2026
-**Auteur** : Codex — NEWGEN `7cc232f`, NextStep `19148cb`.
-**Verdict** : confirmé ; aucun écart démontré avec la demande.
-**Constat** :
-
-- Le filtrage est fait avant la réponse de l'API (`api/lib/ts.php:536-551`) : statut Planifié,
-  date à partir du jour de Paris, type de public puis « Ouvert à tous ». Les ateliers exclus
-  ne sont pas transmis dans cette réponse.
-- `ts_ouvert_visible` (`api/lib/ts.php:556-562`) applique bien les valeurs par défaut : Oui
-  visible, Non caché ; toute valeur autre que Oui après retrait des espaces est classée Non.
-  Les deux interrupteurs concordent après normalisation par `visibiliteEffective`
-  (`utils.js:668-672`, NEWGEN `admin_app.js:1465-1467`, NextStep `admin_app.js:1506-1508`).
-- Dans les deux `ts.html:299-303,325`, seuls période et commune filtrent désormais. Une ancienne
-  page qui relit l'API cache son ancien sélecteur, car `filtreOuvert` n'est plus renvoyé
-  (ancienne version NEWGEN `ff3aaf7:ts.html:335-337`). Une liste déjà chargée reste en mémoire
-  jusqu'à une nouvelle lecture ; ce changement ne révoque pas les données déjà reçues.
-
-**Vérifications et limites** : assertions ciblées présentes (`api-tests/api.test.php:1017-1037`).
-CI de livraison observée en succès : API `42197678253` (tests sur base jetable et déploiement),
-Pages NEWGEN `42197678086`, NextStep `42197671054`, bac à sable `42197678079`.
-Environnement de cette session indisponible : lecture des sources et de la CI par GitHub,
-sans rejeu local PHP ni essai navigateur. Aucune donnée réelle lue, aucun code modifié.
-Le contrôle à l'écran par l'utilisateur reste distinct de cette vérification.
-
 
 ## Blocs tranchés — sortis de ce fichier
 
@@ -259,6 +214,7 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 | AG-050 | provisoire TS envoyé par mail depuis l'Admin — amendé par Codex : jamais relancé après une réponse perdue (une seule tentative, message « le mail est peut-être parti »), corrigé et livré | 05/11/2026 |
 | AG-051 | Planning (Mois) : une demi-journée ne montre que ses ateliers actifs — amendé par Codex (chiffre des cases sans actif) ; tranché par l'utilisateur : sans actif, la case reste vide ; liste au clic = ateliers de la case | 05/11/2026 |
 | AG-052 | tuile « Copie de nuit » : seules les copies de 02:00 à 04:59 (Paris) comptent, la plus récente hors nuit dite à part — amendé (Codex) : fuseau PHP établi (`base.php:10`, Paris) ; âge calculé en heure de Paris et non dans le fuseau du navigateur (rejeu : 26,5 h rouge à Paris, 25,5 h vert en UTC) ; corrigé et testé (hiver, été, changements d'heure, 4 fuseaux, mutations), option 1 de l'utilisateur. Limite gardée : une copie manuelle ou de déploiement entre 02:00 et 04:59 passe pour la copie de nuit | 06/11/2026 |
+| AG-053 | page TS : « Ouvert à tous » choisi par l'Admin (interrupteurs `ts_ouvert:Oui` / `ts_ouvert:Non`, Non cachés par défaut), liste déroulante retirée de la page TS — confirmé (Codex) : filtrage fait par l'API avant la réponse, valeurs par défaut conformes | 13/11/2026 |
 
 **Au 04/11/2026, sur 46 blocs sortis (AG-001 à AG-046) : 36 amendés, 4 confirmés (AG-017, AG-030, AG-031, AG-041), 2 contredits (AG-026, AG-028), 4 clos sans réponse** (AG-002, AG-010, AG-013, AG-022). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
 Douze « amendé » d'affilée ne sont pas un bilan flatteur, c'est un signal — voir
