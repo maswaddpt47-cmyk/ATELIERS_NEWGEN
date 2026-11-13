@@ -529,10 +529,30 @@ function action_set_password(PDO $db, array $p, array $session): array
 function action_self_set_password(PDO $db, array $p, array $session): array
 {
     $nom = (string) $session['conseiller'];
-    $s = $db->prepare('SELECT hash, doit_changer FROM comptes WHERE conseiller = ?');
+    // Même verrou que le passage à « doit changer » (AG-060, Codex) ; schémas préparés AVANT la transaction (un
+    // CREATE TABLE la validerait en cours de route). Le jeton est revérifié sous le verrou.
+    require_once __DIR__ . '/reinit.php';
+    reinit_schema($db);
+    $db->beginTransaction();
+    try {
+        $r = api_self_set_password_verrou($db, $p, $session, $nom);
+        if ($db->inTransaction()) $db->commit();   // l'échec de l'actuel reste compté (api_echec_mdp)
+        return $r;
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) $db->rollBack();
+        throw $e;
+    }
+}
+
+function api_self_set_password_verrou(PDO $db, array $p, array $session, string $nom): array
+{
+    $s = $db->prepare('SELECT hash, doit_changer FROM comptes WHERE conseiller = ? FOR UPDATE');
     $s->execute([$nom]);
     $c = $s->fetch(PDO::FETCH_ASSOC);
     if (!$c) return ['ok' => false, 'error' => 'Conseiller introuvable'];
+    $j = $db->prepare('SELECT 1 FROM sessions WHERE jeton_hash = ? AND expire > NOW()');
+    $j->execute([(string) ($session['jeton_hash'] ?? '')]);
+    if (!$j->fetchColumn()) return ['ok' => false, 'error' => 'Non autorisé : jeton manquant ou expiré', 'auth' => true];
     if ((int) $c['doit_changer'] !== 1) {
         $bloque = api_blocage($db, $nom);
         if ($bloque !== null) return ['ok' => false, 'error' => $bloque];

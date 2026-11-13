@@ -257,12 +257,21 @@ function action_check_password(PDO $db, array $p): array
     // Règle imposée à la connexion (AG-060, 13/11/2026) : un mot de passe hors règle (repris à l'import,
     // provisoire…) oblige à en choisir un conforme ; le serveur refuse toute autre action d'ici là.
     if ((int) $compte['doit_changer'] !== 1 && !api_mdp_conforme($mdp)) {
-        $db->prepare('UPDATE comptes SET doit_changer = 1 WHERE conseiller = ?')->execute([$nom]);
+        // Passage à « doit changer » (Codex, AG-060) : ligne du compte verrouillée, sessions déjà ouvertes (page TS
+        // comprise) supprimées PUIS drapeau posé, dans une même transaction. selfSetPassword prend le même verrou et
+        // revérifie son jeton : une ancienne session ne profite jamais de la dispense de l'ancien mot de passe.
+        // Un échec annule tout : le drapeau reste à 0 et la fermeture est retentée à la connexion suivante.
+        $db->beginTransaction();
+        try {
+            $db->prepare('SELECT doit_changer FROM comptes WHERE conseiller = ? FOR UPDATE')->execute([$nom]);
+            $db->prepare('DELETE FROM sessions WHERE conseiller = ? OR conseiller = ?')->execute([$nom, 'ts:' . $nom]);
+            $db->prepare('UPDATE comptes SET doit_changer = 1 WHERE conseiller = ?')->execute([$nom]);
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            throw $e;
+        }
         $compte['doit_changer'] = 1;
-        // Passage à « doit changer » (Codex, AG-060) : les sessions déjà ouvertes du compte (page TS comprise)
-        // tombent avant d'émettre le nouveau jeton, sinon elles profiteraient de la dispense de l'ancien mot
-        // de passe dans selfSetPassword.
-        $db->prepare('DELETE FROM sessions WHERE conseiller = ? OR conseiller = ?')->execute([$nom, 'ts:' . $nom]);
     }
     if (password_needs_rehash($compte['hash'], PASSWORD_DEFAULT)) {
         $db->prepare('UPDATE comptes SET hash = ? WHERE conseiller = ?')->execute([password_hash($empreinte, PASSWORD_DEFAULT), $nom]);

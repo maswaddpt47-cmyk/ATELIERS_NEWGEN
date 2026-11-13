@@ -31,6 +31,9 @@ const REINIT_REPONSE = "Si une adresse mail est enregistrée pour ce compte, un 
 // qu'elle existe (CREATE TABLE IF NOT EXISTS, sans effet si elle est là).
 function reinit_schema(PDO $db): void
 {
+    static $fait = false;   // une fois par appel : rappelé dans une transaction, un CREATE TABLE la validerait (AG-060)
+    if ($fait) return;
+    $fait = true;
     foreach (import_requetes_schema() as $sql) {
         if (str_contains($sql, 'reinitialisations')) $db->exec($sql);
     }

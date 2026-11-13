@@ -14,7 +14,7 @@ les actions » ; cause non établie, ne pas les présenter comme supprimées.
 - **AG-060 livré le 13/11/2026, écran vérifié par l'utilisateur sur le compte de la superviseure (marqué « doit changer »)** (risque accepté par l'utilisateur : livré avant le changement de la superviseure) : règle
   du mot de passe imposée à la connexion, toute action refusée tant que `doit_changer`, sessions fermées au passage 0 → 1,
   `getComptes` Admin et page TS refusés à un compte qui doit changer, écran de changement dans l'Admin des deux applis,
-  formule retirée du code public. Codex : vérification unique de la livraison à demander. Reste : texte du mail de lien
+  formule retirée du code public. Vérification de Codex (13/11) : deux écarts corrigés le jour même (verrou au passage « doit changer », retour à la connexion si la session expire sur l'écran de changement). Reste : texte du mail de lien
   (`reinit.php:104-110`, « votre mot de passe actuel reste valable »).
 
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois

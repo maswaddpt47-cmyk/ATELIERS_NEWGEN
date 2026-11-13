@@ -121,6 +121,22 @@ $r2 = appel(['action' => 'checkPassword'], ['conseiller' => 'Ancien Collegue', '
 verifier((int) $db->query("SELECT COUNT(*) FROM sessions WHERE jeton_hash = '" . hash('sha256', $avantDc) . "'")->fetchColumn() === 0
     && (int) $db->query("SELECT COUNT(*) FROM sessions WHERE jeton_hash = '" . hash('sha256', $r2['token']) . "'")->fetchColumn() === 1,
     'passage à « doit changer » : la session ouverte avant tombe, seule la nouvelle reste (AG-060, Codex)');
+// Vérification de Codex : une ancienne session déjà validée qui tente selfSetPassword PENDANT le passage à « doit changer »
+// (ligne du compte verrouillée, sessions supprimées, drapeau posé) est refusée au revérifié du jeton, sous le verrou.
+$db->exec("UPDATE comptes SET doit_changer = 0 WHERE conseiller = 'Ancien Collegue'");
+$vieux = appel(['action' => 'checkPassword'], ['conseiller' => 'Ancien Collegue', 'password' => 'x', 'source' => 'index.html']);
+$db->exec("UPDATE comptes SET doit_changer = 0 WHERE conseiller = 'Ancien Collegue'");
+$verrou = new PDO("mysql:host=$hote;dbname=ateliers_test_api;charset=utf8mb4", $util, $mdp, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$verrou->beginTransaction();
+$verrou->query("SELECT doit_changer FROM comptes WHERE conseiller = 'Ancien Collegue' FOR UPDATE")->fetchAll();
+$pr = appels_paralleles([[['action' => 'selfSetPassword'], ['token' => $vieux['token'], 'password' => 'Pris-Par-Un-Tiers-1!']]], function () use ($verrou) {
+    $verrou->exec("DELETE FROM sessions WHERE conseiller = 'Ancien Collegue'");
+    $verrou->exec("UPDATE comptes SET doit_changer = 1 WHERE conseiller = 'Ancien Collegue'");
+    $verrou->commit();
+});
+verifier(($pr[0]['ok'] ?? true) === false && ($pr[0]['auth'] ?? false) === true
+    && password_verify(hash('sha256', 'x'), (string) $db->query("SELECT hash FROM comptes WHERE conseiller = 'Ancien Collegue'")->fetchColumn()),
+    'ancienne session pendant le passage à « doit changer » : changement refusé sous le verrou (AG-060, Codex)');
 $db->exec('USE ateliers_test_api');
 $db->exec("INSERT INTO journal (horodatage, action, conseiller) VALUES (NOW() - INTERVAL 13 MONTH, 'login', 'Vieux'), (NOW() - INTERVAL 11 MONTH, 'login', 'Recent')");
 $admin = appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => ' Secret-Test-47! ']);
