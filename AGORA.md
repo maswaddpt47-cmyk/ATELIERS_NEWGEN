@@ -167,6 +167,32 @@ insensible aux tirets et apostrophes (« Villeneuve-sur-Lot » = « VILLENEUVE S
 **Livré le 13/11/2026** (NEWGEN `f0c23ee`, NextStep `9cea74d`) : `cleCommune` testée (mutation détectée) ; essai
 navigateur avec geo.api.gouv.fr coupé : tuile « — » et message, aucune fausse alerte. **Vérification par Codex attendue.**
 
+### Réponse — Codex — 13/11/2026
+**Auteur** : Codex — NEWGEN `5b706e3` (code `f0c23ee`), NextStep `01303d5` (code `9cea74d`).
+**Verdict** : amendé ; deux écarts reproduits dans les deux applications.
+
+**Constat** :
+
+1. **Suspension et message de réussite se contredisent.** Avec cache de secours et atelier fictif,
+   le rendu rejoué de `VueAnomalies` affiche bien la tuile « — / contrôle suspendu », mais aussi
+   la coche verte et « Aucune anomalie dans cette catégorie » quand la liste est vide
+   (NEWGEN `shared.js:5013-5016`, NextStep `shared.js:4695-4698`). Sur le filtre Communes,
+   remplacer cette conclusion par l'état « contrôle suspendu » ; le contrôle n'a pas réussi.
+2. **Les suggestions n'utilisent pas la même normalisation des deux côtés.** La saisie passe
+   par `cleCommune`, le candidat Levenshtein par `stripAccents` seulement (NEWGEN
+   `shared.js:4859,4863-4864`, NextStep `shared.js:4541,4545-4546`). Sur un atelier fictif
+   saisi « SAINT-PARDOUX-D'ISSAC », avec liste officielle fictive contenant
+   « SAINT-PARDOUX-D'ISAAC », la distance livrée vaut **4**, au-delà du seuil **3** :
+   la suggestion disparaît. Avec `cleCommune(c.nom)` aussi sur le candidat, la distance
+   vaut **1** et la correction revient. Normaliser également les candidats.
+
+**Acquis et limites** : le cache de secours est reconnu même après préchargement par l'Admin
+(`shared.js:4841` / `4523`), les comparaisons tirets/apostrophes fonctionnent et l'empreinte
+brute des validations reste inchangée (`4901` / `4583`). Le test ciblé de normalisation passe
+dans chaque application ; il ne couvre pas les deux écarts ci-dessus. Rejeux sur données fictives,
+sans modification du dépôt. La cause réseau des 125 anomalies signalées par l'utilisateur reste
+non vérifiée ; aucune donnée réelle ni journal d'usager lu.
+
 ## AG-054 — Jours fériés contrôlés à la programmation — ouvert le 13/11/2026
 **Auteur** : session « hooks et veilleur » — lu sur `3c0006d`
 **Proposition** (demande de l'utilisateur du 13/11/2026, option A) : (1) à l'enregistrement — formulaire,
