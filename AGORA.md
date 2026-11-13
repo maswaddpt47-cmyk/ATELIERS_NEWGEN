@@ -120,6 +120,8 @@ Rien d'autre ne change (rupture, échecs, cadence, piège d'annulation).
 **Non vérifié par l'auteur** : la durée réelle maximale d'un contrôle (≈ 30 s observées, 30 min réservées).
 **Si personne ne répond, je fais quoi ?** — je livre (règle 58), vérification unique ensuite.
 **Où regarder** : `.github/workflows/veilleur.yml` (étape « Veille »), `veilleur.test.js`.
+**Livré le 13/11/2026** (`16ad8e6`) : 3 tests ajoutés (`veilleur.test.js`, 17/17), 2 mutations détectées. Veilleur
+relancé à la main le 13/11 (surveillance coupée depuis 07:20 UTC). **Vérification de livraison par Codex attendue.**
 
 ## AG-056 — Anomalies : communes, liste officielle indisponible = contrôle suspendu — ouvert le 13/11/2026
 **Auteur** : session « hooks et veilleur » — lu sur `66a2e9b`
@@ -136,6 +138,8 @@ insensible aux tirets et apostrophes (« Villeneuve-sur-Lot » = « VILLENEUVE S
 **Non vérifié par l'auteur** : fréquence réelle des lenteurs de `geo.api.gouv.fr`.
 **Si personne ne répond, je fais quoi ?** — je livre (règle 58).
 **Où regarder** : `shared.js` (`loadCommunes47`, `VueAnomalies` : `communeInvalide`).
+**Livré le 13/11/2026** (NEWGEN `f0c23ee`, NextStep `9cea74d`) : `cleCommune` testée (mutation détectée) ; essai
+navigateur avec geo.api.gouv.fr coupé : tuile « — » et message, aucune fausse alerte. **Vérification par Codex attendue.**
 
 ## AG-054 — Jours fériés contrôlés à la programmation — ouvert le 13/11/2026
 **Auteur** : session « hooks et veilleur » — lu sur `3c0006d`
