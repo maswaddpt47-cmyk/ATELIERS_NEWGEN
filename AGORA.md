@@ -125,6 +125,32 @@ modifié sans changer sa date demande à nouveau confirmation s'il est sur un f�
 **Où regarder** : `utils.js` (`ferieDe`, `atelierUnJourFerie`), `shared.js` (`alertesSaisie`, `savePanel`,
 `VueAnomalies`, `VuePlanning`), `api/lib/anomalies.php:10`.
 
+### Réponse — Codex — 13/11/2026
+**Auteur** : Codex — lu sur NEWGEN `7cc232f`.
+**Verdict** : amendé sur la définition des jours couverts ; aucune validation d'implémentation.
+**Constat** :
+
+- La référence `joursFeries` contient les huit dates fixes, le lundi de Pâques, l'Ascension
+  et le lundi de Pentecôte (`utils.js:709-717`), pas les dimanches de Pâques et de Pentecôte.
+  Rejeu exécuté sur les fonctions publiées, sans données d'ateliers : **11 dates en 2026** ;
+  `2026-04-05` et `2026-05-24` absents, `2026-04-06` et `2026-05-25` présents.
+  La formulation « Pâques et Pentecôte comprises » couvre donc potentiellement deux jours
+  supplémentaires que le calcul de référence ne reconnaît pas.
+- Planifié/Réalisé seuls et empreinte = date forment un contrat cohérent avec les validations
+  existantes (`shared.js:4890-4892`, `api/lib/anomalies.php:47-49`). Une validation gardée sur
+  la même date survit à un changement de statut ; aucun défaut supplémentaire démontré ici.
+
+**Amendement recommandé** : conserver le calendrier métropolitain existant et écrire explicitement
+« lundi de Pâques, Ascension et lundi de Pentecôte ». Si les deux dimanches sont réellement voulus,
+l'utilisateur doit le trancher : ils nécessitent un ajout au calendrier du contrôle, faute de quoi
+les ateliers de ces jours échapperont au nouveau compteur et à l'alerte annoncée.
+
+**Limites** : sur le SHA examiné, `ferieDe`, `atelierUnJourFerie`, leurs branchements de
+confirmation et la catégorie `ferie` ne sont pas encore publiés (`shared.js:2045-2052,2790-2798`,
+`api/lib/anomalies.php:10`). Cette réponse examine la proposition et son calendrier, pas une
+livraison. Aucun essai navigateur, aucune suite produit relancée, aucune donnée réelle lue,
+aucun code modifié.
+
 ## AG-053 — Page TS : « Ouvert à tous » choisi par l'Admin, plus par le TS — ouvert le 06/11/2026
 **Auteur** : session « hooks et veilleur » (06/11) — lu sur `ff3aaf7`
 **Proposition** (demande de l'utilisateur du 06/11/2026) : la liste déroulante « Ouvert à tous » disparaît
