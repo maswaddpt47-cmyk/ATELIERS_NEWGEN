@@ -72,6 +72,8 @@ jobs:
       SEUIL: ${{ inputs.seuil || '125' }}
       ATTENTE: ${{ inputs.attente || '0' }}
       CIBLE: ${{ inputs.simuler_refus && 'n-existe-pas.yml' || 'integrite-api.yml' }}
+      # Minutes avant de passer la main, sous timeout-minutes (340) : AG-055.
+      BUDGET: '335'
     steps:
       - name: Veille
         run: |
@@ -98,6 +100,13 @@ jobs:
           }
           # Tout échec espace le successeur : plus de relance immédiate (AG-039).
           echec(){ echo "::error::$*"; releve "$INTERVALLE"; exit 1; }
+          # Budget (AG-055, 13/11/2026) : n° 3779 et 3783 tués par GitHub à 5 h 40
+          # (timeout-minutes) pendant une attente de cadence, sans relève. Avant toute
+          # attente, il doit rester l'attente + 30 min (suivi d'un contrôle : 5 + 25),
+          # sinon relève anticipée sans attente imposée : le successeur respecte la cadence.
+          limite=$(( $(date +%s) + ${BUDGET:-335} * 60 ))
+          assez(){ [ $(( $(date +%s) + $1 + 1800 )) -le "$limite" ]; }
+          anticiper(){ echo "budget du veilleur bientôt atteint ($1) : relève anticipée"; releve 0 || exit 1; exit 0; }
 
           # Attente imposée par la relève d'un échec (AG-039), AVANT toute lecture
           # qui peut provoquer une relève (AG-040, Codex, écart 1 : un historique
@@ -119,7 +128,7 @@ jobs:
           debut=$(date +%s)
           for i in $(seq 1 "$PASSAGES"); do
             prevu=$(( debut + (i - 1) * INTERVALLE * 60 ))
-            attente=$(( prevu - $(date +%s) )); [ "$attente" -gt 0 ] && dormir "$attente"
+            attente=$(( prevu - $(date +%s) )); if [ "$attente" -gt 0 ]; then assez "$attente" || anticiper "passage $i"; dormir "$attente"; fi
             # Avant de lancer : un contrôle déjà en cours (filet, lancement à la
             # main, veilleur précédent) est suivi ; sinon, jamais moins
             # d'INTERVALLE min depuis le dernier lancement, réussi ou non. L'état
@@ -138,12 +147,14 @@ jobs:
               [ -z "$d" ] || [ "$d" = "$attendu_pour" ] && break
               attente=$(( $(date -d "$d" +%s) + INTERVALLE * 60 - $(date +%s) ))
               [ "$attente" -gt 0 ] || break
+              assez "$attente" || anticiper "passage $i, attente de cadence de $(( (attente + 59) / 60 )) min"
               echo "passage $i : dernier lancement du contrôle le $(heure "$(date -d "$d" +%s)"), attente de $(( (attente + 59) / 60 )) min"
               dormir "$attente"; attendu_pour="$d"
             done
             if [ -n "$id" ]; then
               echo "passage $i : contrôle $id déjà en cours, suivi sans en lancer un autre"
             else
+              assez 0 || anticiper "passage $i, pas le temps de suivre un contrôle"
               avant=$(date -u +%Y-%m-%dT%H:%M:%SZ)
               gh workflow run "$CIBLE" -R "$R" --ref main || echec "passage $i : lancement du contrôle refusé par GitHub"
               # Retrouver l'exécution lancée (5 min au plus pour démarrer).

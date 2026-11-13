@@ -267,3 +267,28 @@ test('contrôle terminé apparu pendant l\'attente : le délai repart de ce lanc
   assert.equal(attentes.length, 2, 'deux attentes : une pour le n° 5, une pour le n° 778 — vu ' + JSON.stringify(attentes));
   assert.equal(r.journal.filter(x => /^gh workflow run integrite-api\.yml/.test(x)).length, 1);
 });
+
+// --- AG-055 (13/11/2026) : relève avant la limite de GitHub ------------------
+test('budget presque épuisé avant une attente de cadence : relève anticipée sans attente, aucun lancement', () => {
+  const r = lancer({ dernier_succes: iso(-10 * 60), runs: [{ id: 5, status: 'completed', conclusion: 'success', created_at: iso(-10) }] }, { BUDGET: '40' });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /relève anticipée/);
+  assert.equal(lancementControle(r.journal), -1, 'aucun contrôle lancé');
+  assert.deepEqual(dormirAvant(r.journal, r.journal.length).filter(x => x >= 1000), [], 'aucune longue attente');
+  const rel = releves(r.journal);
+  assert.equal(rel.length, 1);
+  assert.match(rel[0], /-f attente=0\b/);
+});
+
+test('budget suffisant : la même attente de cadence a lieu, puis un seul lancement', () => {
+  const r = lancer({ dernier_succes: iso(-10 * 60), runs: [{ id: 5, status: 'completed', conclusion: 'success', created_at: iso(-10) }] }, { BUDGET: '120' });
+  assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.out, /relève anticipée/);
+  assert.equal(r.journal.filter(l => /^gh workflow run integrite-api\.yml/.test(l)).length, 1);
+});
+
+test('le budget par défaut laisse 5 min sous timeout-minutes', () => {
+  const t = Number((yml.match(/timeout-minutes: (\d+)/) || [])[1]);
+  const b = Number((yml.match(/BUDGET: '(\d+)'/) || [])[1]);
+  assert.ok(t > 0 && b > 0 && b <= t - 5, `budget ${b} / timeout ${t}`);
+});
