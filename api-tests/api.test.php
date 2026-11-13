@@ -1274,13 +1274,13 @@ verifier(count($g) === 1 && $g[0]['empreinte'] === '18:00', 'anomalies : revalid
 $jv = $db->query("SELECT COUNT(*) FROM journal WHERE action = 'validerAnomalie' AND ref = " . $db->quote($idA))->fetchColumn();
 $jl = $db->query("SELECT COUNT(*) FROM journal WHERE action = 'getAnomaliesValidees'")->fetchColumn();
 verifier((int) $jv === 2 && (int) $jl === 0, 'anomalies : les validations sont journalisées au nom de l\'Admin, la lecture ne l\'est pas');
-// Concurrence réelle : cinq catégories validées en même temps sur le même atelier, deux fois la même clé.
+// Concurrence réelle : six catégories (« ferie » depuis AG-054) validées en même temps sur le même atelier, deux fois la même clé.
 $par = appels_paralleles(array_merge(
-    array_map(fn($c) => [['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => $c, 'empreinte' => "v-$c"]], ['manquants', 'communes', 'chiffres', 'ordi', 'tard']),
+    array_map(fn($c) => [['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => $c, 'empreinte' => "v-$c"]], ['manquants', 'communes', 'chiffres', 'ordi', 'tard', 'ferie']),
     [[['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard', 'empreinte' => 'v-tard-bis']]]
 ));
-verifier(count(array_filter($par, fn($r) => ($r['ok'] ?? false) === true)) === 6 && (int) $db->query("SELECT COUNT(*) FROM anomalies_validees WHERE atelier_id = " . $db->quote($idA))->fetchColumn() === 5, 'anomalies : six validations simultanées, aucune perdue, une seule ligne par catégorie');
-verifier(appel(['action' => 'annulerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard'])['ok'] === true && (int) $db->query("SELECT COUNT(*) FROM anomalies_validees WHERE atelier_id = " . $db->quote($idA))->fetchColumn() === 4, 'anomalies : annuler la validation ne retire que cette catégorie');
+verifier(count(array_filter($par, fn($r) => ($r['ok'] ?? false) === true)) === 7 && (int) $db->query("SELECT COUNT(*) FROM anomalies_validees WHERE atelier_id = " . $db->quote($idA))->fetchColumn() === 6, 'anomalies : sept validations simultanées, aucune perdue, une seule ligne par catégorie');
+verifier(appel(['action' => 'annulerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard'])['ok'] === true && (int) $db->query("SELECT COUNT(*) FROM anomalies_validees WHERE atelier_id = " . $db->quote($idA))->fetchColumn() === 5, 'anomalies : annuler la validation ne retire que cette catégorie');
 $db->exec("DELETE FROM anomalies_validees");
 
 $db->exec("DELETE FROM ateliers WHERE id LIKE 'ts\\_%'");
