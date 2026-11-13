@@ -225,6 +225,65 @@ recomptage à 0.
 **Où regarder** : `api/lib/api.php:114-124,215-262`, `api/lib/ecriture.php:529-575`, `app.js:135-140`, `admin_app.js`
 (écran de connexion), NextStep `app.js:138`.
 
+### Réponse — Codex — 13/11/2026
+**Auteur** : Codex — NEWGEN `f9d74e5`, NextStep `1d48d2a`.
+**Verdict** : amendé avant code ; principe de la règle commune et de la restriction serveur confirmé.
+
+**Constat à préciser** : Index prend déjà en compte `doit_changer` (`app.js:139,167` ;
+NextStep `138,166`). C'est Admin qui entre actuellement dans l'application sans le traiter
+(`admin_app.js:89-98`, NextStep `81-90`). Le commentaire « ignoré par le client actuel »
+de `api.php:259` ne prouve donc pas le comportement des deux fronts.
+
+**Contrat recommandé** :
+
+1. **Connexion correcte, secret non conforme** : vérifier la règle partagée après la vérification
+   du secret, écrire le drapeau et émettre un jeton restreint avec `doit_changer:true`.
+   Ce n'est pas un mot de passe incorrect : ne pas le compter comme un échec d'authentification.
+   Lors du passage de 0 à 1, fermer les anciens jetons avant d'émettre le nouveau, avec une
+   opération coordonnée. Sinon les anciennes sessions pourraient profiter de la dispense de
+   l'ancien secret dans `selfSetPassword` (`ecriture.php:529-546`).
+2. **Sessions déjà ouvertes** : le serveur ne peut pas déduire la conformité du secret depuis
+   son hash ou un jeton (`api.php:221-234,303-308`). Pour une application immédiate,
+   recommander une reconnexion unique des anciennes sessions staff à l'activation, y compris
+   leur accès TS ; les vrais comptes TS restent distincts. Ne pas marquer tous les comptes
+   `doit_changer=1` : un secret conforme doit simplement être revérifié, pas remplacé.
+   Sans cette reconnexion, annoncer explicitement que des sessions non qualifiées survivraient.
+3. **Garde serveur complète** : relire le drapeau du compte à chaque action protégée ; autoriser
+   uniquement le changement de son propre secret et la déconnexion pour le jeton restreint.
+   Couvrir aussi la variante privilégiée de `getComptes`, qui passe avant la garde actuelle
+   (`api.php:77-78,397-403`) : pas de privilèges Admin via ce raccourci. Préserver les routes
+   publiques de connexion et récupération (`75-110`). Appliquer aussi la vérification aux
+   connexions des comptes staff par `tsConnexion` : ces chemins imposent aujourd'hui
+   `doit_changer=false` (`ts.php:309-317,521-524`). Si changement requis, orienter ce compte
+   vers Index/Admin ; préserver `tsChangerMdp` pour les vrais comptes de `comptes_ts`.
+4. **Parcours forcé et protocole** : une action interdite par cette restriction doit porter un
+   signal de changement requis et un message explicite, **sans `auth:true`**. Ce dernier
+   déclenche actuellement la déconnexion (`shared.js:921-923`), alors que le jeton restreint
+   doit servir au changement. Dans les deux fronts, l'écran forcé doit précéder les chargements
+   ordinaires. Admin doit appeler `selfSetPassword`, pas son composant actuel `setPassword`
+   (`admin_app.js:749`, NextStep `790`). La route cible déjà le compte du jeton ; conserver
+   l'exigence de l'actuel pour le changement ordinaire, l'exception du provisoire et le compteur
+   d'échecs existants. Après choix conforme, lever la restriction avant de reprendre les lectures
+   (`ecriture.php:571-579`).
+5. **Pages ouvertes et délais** : un push ne remplace pas le script d'un onglet déjà ouvert.
+   Déployer les fronts compatibles avant d'activer la garde ; pour une ancienne page, conserver
+   le refus serveur et un message demandant de recharger, sans promettre de redirection automatique.
+   Conserver expiration des jetons, blocages après erreurs et déconnexion après inactivité ;
+   un refus de politique ne doit pas remettre le compteur d'inactivité à zéro.
+
+**Préalable de publication** : conserver la condition d'AG-059, neutralisation préalable et
+recomptage global à zéro attesté par l'opérateur avant activation/déploiement de la nouvelle règle.
+Ce résultat n'a pas été revérifié ici ; aucune lecture privée ni opération sur un compte.
+
+**Vérification à prévoir sur la livraison** : compte conforme, non conforme et provisoire ; anciens
+jetons et transition 0→1 ; refus effectif de lecture/écriture et des raccourcis ci-dessus ; changement
+puis réouverture des droits ; anciennes pages, récupération et déconnexion. La fonction de règle
+doit rester la même au choix et à la connexion, sans désactiver les contrôles existants.
+
+**Limites** : proposition seulement, aucune implémentation validée, aucun compte ni code modifié,
+aucune donnée réelle lue. L'utilisateur tranche les modalités de reconnexion avant réalisation ;
+aucun déploiement n'est lancé par cette réponse.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
