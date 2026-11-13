@@ -70,7 +70,18 @@ if [ -n "\${APPARITION:-}" ] && [ -f "$APPARITION" ] && [ "$1" -ge 1000 ]; then
   jq --slurpfile r "$APPARITION" '.runs += $r' "$SCENARIO" > "$SCENARIO.tmp" && mv "$SCENARIO.tmp" "$SCENARIO"; rm -f "$APPARITION"
 fi
 [ "$SLEEP_REEL" = 1 ] && exec /bin/sleep 5
+# Horloge simulée (AG-055) : chaque attente avance le faux \`date\`.
+if [ "\${HORLOGE:-}" = 1 ]; then o=$(cat "$STATE/decalage" 2>/dev/null || echo 0); echo $(( o + $1 )) > "$STATE/decalage"; fi
 exit 0
+`;
+
+// Faux \`date\` (HORLOGE=1) : l'heure courante avance des attentes déjà faites ;
+// une date explicite (-d) est lue telle quelle.
+const FAUX_DATE = `#!/bin/bash
+if [ "\${HORLOGE:-}" != 1 ]; then exec /bin/date "$@"; fi
+for a in "$@"; do case "$a" in -d|--date|--date=*) exec /bin/date "$@";; esac; done
+o=$(cat "$STATE/decalage" 2>/dev/null || echo 0)
+exec /bin/date -d "@$(( $(/bin/date +%s) + o ))" "$@"
 `;
 
 const iso = (decalageSec) => new Date(Date.now() + decalageSec * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -80,6 +91,7 @@ function monter(scenario) {
   const bin = path.join(dir, 'bin'); fs.mkdirSync(bin);
   fs.writeFileSync(path.join(bin, 'gh'), FAUX_GH, { mode: 0o755 });
   fs.writeFileSync(path.join(bin, 'sleep'), FAUX_SLEEP, { mode: 0o755 });
+  fs.writeFileSync(path.join(bin, 'date'), FAUX_DATE, { mode: 0o755 });
   const state = path.join(dir, 'etat'); fs.mkdirSync(state);
   const sc = path.join(dir, 'scenario.json');
   fs.writeFileSync(sc, JSON.stringify(Object.assign({ runs: [], lance: { id: 900, conclusion: 'success' } }, scenario)));
@@ -291,4 +303,15 @@ test('le budget par défaut laisse 5 min sous timeout-minutes', () => {
   const t = Number((yml.match(/timeout-minutes: (\d+)/) || [])[1]);
   const b = Number((yml.match(/BUDGET: '(\d+)'/) || [])[1]);
   assert.ok(t > 0 && b > 0 && b <= t - 5, `budget ${b} / timeout ${t}`);
+});
+
+test('cycle complet après une attente imposée (horloge simulée) : relève avant 340 min, jamais tué par GitHub', () => {
+  // Rejeu de Codex (AG-055) : ATTENTE 60, 5 passages ; sans garde finale, l'attente visait la minute 359.
+  const r = lancer({}, { HORLOGE: '1', ATTENTE: '60', PASSAGES: '5', INTERVALLE: '60', BUDGET: '335' });
+  assert.equal(r.code, 0, r.out);
+  const rel = r.journal.findIndex(l => /^gh workflow run veilleur\.yml/.test(l));
+  assert.ok(rel >= 0, 'une relève est demandée\n' + r.out);
+  const total = dormirAvant(r.journal, rel).reduce((a, b) => a + b, 0);
+  assert.ok(total <= 335 * 60, `relève à ${Math.round(total / 60)} min, au-delà du budget`);
+  assert.match(releves(r.journal)[0], /-f attente=0\b/);
 });

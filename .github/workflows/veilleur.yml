@@ -176,5 +176,7 @@ jobs:
             [ -n "$rupture" ] && echec "$rupture. Le contrôle de reprise ($id) est réussi ; la surveillance reprend."
           done
           # Relève à l'heure du passage suivant.
-          attente=$(( debut + PASSAGES * INTERVALLE * 60 - $(date +%s) - 60 )); [ "$attente" -gt 0 ] && dormir "$attente"
+          # Attente finale protégée elle aussi (AG-055, Codex : sans garde, elle visait la minute 359).
+          attente=$(( debut + PASSAGES * INTERVALLE * 60 - $(date +%s) - 60 ))
+          if [ "$attente" -gt 0 ]; then [ $(( $(date +%s) + attente )) -le "$limite" ] || anticiper "fin de cycle"; dormir "$attente"; fi
           releve 0
