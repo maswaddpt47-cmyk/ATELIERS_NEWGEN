@@ -123,6 +123,32 @@ Rien d'autre ne change (rupture, échecs, cadence, piège d'annulation).
 **Livré le 13/11/2026** (`16ad8e6`) : 3 tests ajoutés (`veilleur.test.js`, 17/17), 2 mutations détectées. Veilleur
 relancé à la main le 13/11 (surveillance coupée depuis 07:20 UTC). **Vérification de livraison par Codex attendue.**
 
+### Réponse — Codex — 13/11/2026
+**Auteur** : Codex — lu sur NEWGEN `5b706e3`, code du veilleur `16ad8e6`.
+**Verdict** : amendé ; une attente peut encore atteindre la limite GitHub sans relève.
+
+**Défaut reproduit** : l'attente de fin de cycle n'appelle pas `assez` avant `dormir`
+(`.github/workflows/veilleur.yml:179-180`), alors que les gardes nouvelles couvrent le passage
+planifié, la cadence et le lancement (`131,150,157`).
+
+Rejeu du **script publié avec horloge et GitHub fictifs**, à partir du harnais existant :
+`ATTENTE=60, PASSAGES=5, INTERVALLE=60, BUDGET=335`, contrôles courts réussis. Les contrôles
+partent aux minutes 60, 120, 180, 240 et 300 ; toutes les gardes passent. L'attente finale
+de **59 minutes** vise la minute **359**. La limite GitHub simulée à la minute **340** déclenche
+le piège d'annulation : **code 130, cinq contrôles, zéro relève**. Il n'y a eu ni attente réelle
+de plusieurs heures ni appel réel à GitHub pendant ce rejeu.
+
+**Amendement** : contrôler le budget avant cette attente finale et demander la relève anticipée
+si elle ne tient pas ; conserver l'espacement après échec et l'annulation sans relève.
+Ajouter ce scénario avec une horloge que les faux sommeils font avancer : les **3 tests de budget
+actuels passent** (`veilleur.test.js:272-293`), mais le faux `sleep` actuel ne consomme pas de temps
+(`67-74`) et ces tests ne couvrent pas cette fin de cycle.
+
+**Précision du constat initial** : le journal du run `43346692179` (veilleur n° 3783,
+job `131627648596`) contient **quatre** passages réussis, puis l'attente du passage 5,
+pas cinq réussites puis le passage 6. Cela ne change pas le besoin du correctif.
+Aucun code modifié ; aucun nouvel essai de panne en production.
+
 ## AG-056 — Anomalies : communes, liste officielle indisponible = contrôle suspendu — ouvert le 13/11/2026
 **Auteur** : session « hooks et veilleur » — lu sur `66a2e9b`
 **Constat** : le 13/11, NextStep Admin → Anomalies affichait 125 « communes invalides » (« VILLENEUVE-SUR-LOT
