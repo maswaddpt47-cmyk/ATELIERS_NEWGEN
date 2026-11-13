@@ -146,6 +146,68 @@ effacement du `#`, sans chiffrement), puis vérification unique de Codex.
 `shared.js:3000-3010` (QR code des avis).
 
 
+### Réponse — Codex — 13/11/2026
+**Auteur** : Codex — NEWGEN `a3a0900`, NextStep `45e9181`.
+**Verdict** : amendé sur la charge, la confirmation et la gestion des tailles ; proposition seulement.
+
+**Choix recommandé** : conserver le QR souhaité, avec une charge **sans nom**, rattachée au conseiller
+connecté ou choisi sur le téléphone. Le nom transmis n'est pas une preuve d'identité : l'import actuel
+ne fait que comparer `olk.conseiller === cons` (`shared.js:5432`). La confirmation doit donc nommer
+le conseiller destinataire choisi sur le téléphone.
+
+**1. Confidentialité et chiffrement.** Le [fragment n'est pas envoyé dans la requête HTTP](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment).
+Cela ne garantit pas l'absence de copie chez un lecteur de QR ; le comportement réel des appareils
+de l'équipe reste non vérifié. Base64url est un encodage. Une clé de chiffrement dans le même QR/lien
+ne protège pas contre le lecteur qui reçoit l'ensemble. Si la confidentialité vis-à-vis de ce lecteur
+est exigée, il faut un secret indépendant transmis autrement, ou un transfert local de fichier.
+Cela ajoute saisie/gestion du secret et code ; ce choix doit être explicite. Je recommande de retirer
+le nom et de ne pas retenir par défaut la variante nommée en clair.
+
+**2. Réception et connexion.** Lire et valider la charge en mémoire, retirer immédiatement `#olk`
+de l'adresse, y compris sur refus ou erreur, puis choisir le destinataire et demander confirmation
+**avant toute écriture**. Si la connexion est nécessaire, garder seulement la charge en mémoire pendant
+celle-ci. Ne pas suivre l'ordre « enregistrer d'abord puis confirmer » envisagé au point 3.
+Annulation ou charge invalide : ancien import intact. `replaceState` n'efface pas les copies que le
+lecteur ou un canal de partage aurait conservées.
+
+**3. Fidélité du transfert.** La charge proposée omet **`ignores`**, pourtant conservé et affiché
+comme « séries non lues » (`shared.js:5436,5485-5486` ; NextStep `5118,5167-5168`).
+Transmettre ce compteur ou un état explicite de lecture partielle ; sinon le téléphone perdrait
+l'avertissement. Conserver la vraie date `le`, sans la remplacer par la date du scan. Définir une
+date de base absolue pour les écarts de jours, indépendante du jour où le téléphone ouvre le lien.
+La couverture transmise doit être l'intersection de la couverture source et de la fenêtre transférée :
+si les jours passés sont retirés, ne pas continuer à les annoncer couverts. Ne jamais inventer une
+couverture source inconnue. Version, types, dates, écarts, doublons et tailles encodée/décodée doivent
+être validés avant de construire l'objet local attendu. La clé commune aux deux applis reste
+`ateliers_dispo_outlook`, volontairement sans préfixe (`shared.js:5419-5428`).
+
+**4. Taille.** Le seuil de 150 n'est pas établi. Essai du générateur embarqué exact, avec URL et
+encodage illustratifs **fictifs**, pas le futur format produit : 150 occupations donnent 309 caractères
+et 69 modules ; 300 donnent 509 caractères et 89 modules. Cela mesure l'encodage, pas la lisibilité
+sur téléphone. Borner l'URL réelle et la densité, puis essayer les appareils visés.
+**Refuser un transfert trop grand plutôt que le tronquer** : les occupations omises deviendraient
+libres dans `creneauxLibres` (`shared.js:5444-5445`). Une fenêtre plus courte doit être choisie
+explicitement et transférée entièrement avec sa couverture réduite ; annoncer le nombre supprimé
+ne corrige pas des disponibilités fausses.
+
+**5. Comparaison des méthodes** :
+
+| Méthode | Gestes pour l'agent | Code et données / risques |
+|---|---|---|
+| QR minimal sans nom — recommandé pour l'usage demandé | Ouvrir le QR sur PC ; scanner, choisir le conseiller et confirmer sur téléphone | Codec et réception à créer ; aucune écriture API, mais le lecteur peut conserver l'URL. |
+| Réimporter le `.ics` déjà exporté | Transférer par un canal professionnel déjà autorisé ; sélectionner le fichier sur téléphone | Import existant (`shared.js:5481-5488`), aucun nouveau format nécessaire. Limiter l'export à « Disponibilité uniquement » ; fichier et canal peuvent conserver davantage d'informations que les demi-journées compactes. |
+| Copier/partager le lien `#olk=` | Copier, transmettre par un canal existant, puis ouvrir et confirmer | Même codec que le QR ; les données restent dans le lien et sa copie dans le canal. Ce n'est pas un lien sans données. |
+| Fichier minimal transmis directement, par exemple USB/Bluetooth si disponible | Télécharger, transférer localement, ouvrir puis confirmer | Codec et import de fichier à créer ; évite l'URL chargée de données et le lecteur QR. Disponibilité sur le poste à vérifier ; copie du fichier à gérer. |
+
+Aucun nouveau stockage dans l'API pour ces variantes ; un canal externe de partage reste toutefois
+un lieu de copie à prendre en compte, même si l'application ne stocke rien sur son serveur.
+Le `.ics` est la solution immédiate avec le code existant ; le fichier minimal local est l'alternative
+à privilégier si la conservation par un lecteur de QR est inacceptable.
+
+**Limites** : aucun code `#olk=` livré au SHA examiné, aucune lecture de données d'usagers, aucun
+essai de scan réel ni garantie sur les lecteurs. L'utilisateur tranche les choix de confidentialité
+et le transport avant de figer ce nouveau format ; cette réponse ne modifie aucun code.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
