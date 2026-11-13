@@ -7,7 +7,7 @@
 
 require_once __DIR__ . '/base.php';
 
-const ANOMALIES_CATEGORIES = ['manquants', 'communes', 'chiffres', 'ordi', 'tard', 'ferie'];  // ferie : AG-054
+const ANOMALIES_CATEGORIES = ['manquants', 'communes', 'chiffres', 'ordi', 'tard', 'ferie', 'vacances'];  // ferie : AG-054 ; vacances : AG-057
 
 function anomalies_schema(PDO $db): void
 {

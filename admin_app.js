@@ -378,6 +378,8 @@ const LOGS_KEY = lsKey('adm_logs');
       if(data.conseiller_colors){applyColors(data.conseiller_colors);}
       if(data.emails){setEmails(data.emails);addLog('Emails chargés','ok');}
       if(data.visibility){setCachedVisibility(data.visibility);}
+      // Vacances scolaires de Bordeaux (AG-057) : utilisées par la saisie et les Anomalies.
+      if(data.vacances)window.VACANCES_SCOLAIRES=data.vacances;
       if(data.stockOrdinateurs){STOCK_ORDINATEURS=parseInt(data.stockOrdinateurs)||STOCK_ORDINATEURS;}
       if(Array.isArray(data.materielsCaches)){MATERIELS_CACHES=data.materielsCaches;}
       addLog(`${incoming.length} ateliers chargés (${annee})`,'ok');

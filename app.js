@@ -422,6 +422,8 @@ function App(){
       }
       if(data.visibility)setVisibility(visibiliteEffective(data.visibility));
       if(data.conseiller_colors) applyColors(data.conseiller_colors);
+      // Vacances scolaires de Bordeaux (AG-057) : utilisées par la saisie et les Anomalies.
+      if(data.vacances)window.VACANCES_SCOLAIRES=data.vacances;
       if(data.stockOrdinateurs) STOCK_ORDINATEURS=parseInt(data.stockOrdinateurs)||STOCK_ORDINATEURS;
       if(Array.isArray(data.materielsCaches)) MATERIELS_CACHES=data.materielsCaches;
       if(Array.isArray(data.conseillers_inactifs)) setInactifsSet(new Set(data.conseillers_inactifs));

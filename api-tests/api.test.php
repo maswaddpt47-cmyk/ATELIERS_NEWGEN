@@ -42,7 +42,7 @@ $dossierMails = sys_get_temp_dir() . '/mails_' . getmypid();
 @mkdir($dossierMails);
 $dossierSauv = sys_get_temp_dir() . '/sauv_api_' . getmypid();
 $cfg = tempnam(sys_get_temp_dir(), 'cfg');
-file_put_contents($cfg, '<?php return ' . var_export(['db_hote' => $hote, 'db_nom' => 'ateliers_test_api', 'db_utilisateur' => $util, 'db_mot_de_passe' => $mdp], true) . ';');
+file_put_contents($cfg, '<?php return ' . var_export(['db_hote' => $hote, 'db_nom' => 'ateliers_test_api', 'db_utilisateur' => $util, 'db_mot_de_passe' => $mdp, 'vacances_source' => __DIR__ . '/vacances-bordeaux.json'], true) . ';');
 
 // ── Serveur ───────────────────────────────────────────────────────────────
 $port = 8700 + random_int(0, 99);
@@ -134,12 +134,28 @@ $r = appel(['action' => 'getAll', 'year' => '2026', 'token' => $admin['token']])
 verifier(($r['ok'] ?? null) === false, 'jeton dans l\'URL : refusé');
 $r = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']]);
 verifier($r['ok'] === true, 'jeton dans le corps : accepté');
-verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'stockOrdinateurs', 'materielsCaches', 'conseillers_inactifs', 'rappelsFiches', 'tickets'], 'clés de la réponse conseiller = GAS NEWGEN sans emails : ' . implode(',', array_keys($r)));
+verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'stockOrdinateurs', 'materielsCaches', 'conseillers_inactifs', 'rappelsFiches', 'vacances', 'tickets'], 'clés de la réponse conseiller = GAS NEWGEN sans emails : ' . implode(',', array_keys($r)));
 // RGPD (25/09/2026) : les adresses mail ne vont qu'à l'Admin.
 verifier(!str_contains(json_encode($r), 'nouveau.venu@example.org'), '[RGPD-15] getAll conseiller : aucune adresse mail');
 $ra = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $admin['token']]);
 verifier(($ra['emails']['Nouveau Venu'] ?? '') === 'nouveau.venu@example.org', 'getAll admin : adresses mail présentes');
 verifier($r['conseillers_inactifs'] === [], 'conseillers_inactifs vide : personne masqué du sélecteur');
+// Vacances scolaires de Bordeaux (AG-057) : lues dans le jeu de test (config vacances_source), jamais sur internet.
+$vc = vacances_periodes((string) file_get_contents(__DIR__ . '/vacances-bordeaux.json'));
+$vp = $vc['periodes'];
+$parDeb = array_column($vp, null, 'debut');
+verifier(($parDeb['2026-10-17']['fin'] ?? '') === '2026-11-01' && ($parDeb['2026-10-17']['libelle'] ?? '') === 'Vacances de la Toussaint', 'vacances : Toussaint 2026 du 17/10 au 01/11 (reprise du 02/11 exclue)');
+verifier(($parDeb['2027-05-07']['fin'] ?? '') === '2027-05-07', 'vacances : pont de l\'Ascension 2027, une seule journée');
+verifier(count(array_filter($vp, fn($p) => $p['debut'] === '2027-07-03')) === 1 && ($parDeb['2027-07-03']['fin'] ?? '') === '2027-09-01', 'vacances : été 2027 des élèves, ligne « Enseignants » ignorée');
+verifier(!isset($parDeb['2028-07-04']) && $vc['au'] === '2028-07-03', 'vacances : « Début des Vacances d\'Été » 2028 n\'est pas une journée ; calendrier connu jusqu\'au 03/07/2028 (Codex)');
+verifier(vacances_periodes('pas du json') === null && vacances_periodes('{"x":1}') === null, 'vacances : réponse illisible refusée');
+verifier(count($r['vacances']['periodes'] ?? []) === 11 && ($r['vacances']['au'] ?? '') === '2028-07-03' && ($r['vacances']['du'] ?? '') === (date('Y') - 1) . '-09-01' && ($r['vacances']['maj'] ?? '') !== '', 'getAll : vacances transmises (11 périodes, couverture du/au) avec leur date de mise à jour');
+// Cadence : un essai récent empêche de relire la source ; le cache (même vide) sert tel quel.
+$db->exec("UPDATE config SET valeur = '{\"maj\":0,\"essai\":" . time() . ",\"periodes\":[]}' WHERE cle = 'vacances_cache'");
+$rv = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']]);
+verifier(($rv['vacances'] ?? null) === ['periodes' => [], 'du' => '', 'au' => '', 'maj' => ''], 'vacances : essai de moins d\'une heure, pas de nouvelle lecture (calendrier vide transmis comme « jamais lu »)');
+$db->exec("UPDATE config SET valeur = '{\"maj\":0,\"essai\":0,\"periodes\":[]}' WHERE cle = 'vacances_cache'");
+verifier(count(appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']])['vacances']['periodes'] ?? []) === 11, 'vacances : cache périmé, source relue');
 verifier(count($r['entries']) === 2, '2026 seule : 2 ateliers');
 $parId = array_column($r['entries'], null, '_id');
 $e1 = $parId['entry_1'];
@@ -1274,13 +1290,13 @@ verifier(count($g) === 1 && $g[0]['empreinte'] === '18:00', 'anomalies : revalid
 $jv = $db->query("SELECT COUNT(*) FROM journal WHERE action = 'validerAnomalie' AND ref = " . $db->quote($idA))->fetchColumn();
 $jl = $db->query("SELECT COUNT(*) FROM journal WHERE action = 'getAnomaliesValidees'")->fetchColumn();
 verifier((int) $jv === 2 && (int) $jl === 0, 'anomalies : les validations sont journalisées au nom de l\'Admin, la lecture ne l\'est pas');
-// Concurrence réelle : six catégories (« ferie » depuis AG-054) validées en même temps sur le même atelier, deux fois la même clé.
+// Concurrence réelle : sept catégories (« ferie » AG-054, « vacances » AG-057) validées en même temps sur le même atelier, deux fois la même clé.
 $par = appels_paralleles(array_merge(
-    array_map(fn($c) => [['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => $c, 'empreinte' => "v-$c"]], ['manquants', 'communes', 'chiffres', 'ordi', 'tard', 'ferie']),
+    array_map(fn($c) => [['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => $c, 'empreinte' => "v-$c"]], ['manquants', 'communes', 'chiffres', 'ordi', 'tard', 'ferie', 'vacances']),
     [[['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard', 'empreinte' => 'v-tard-bis']]]
 ));
-verifier(count(array_filter($par, fn($r) => ($r['ok'] ?? false) === true)) === 7 && (int) $db->query("SELECT COUNT(*) FROM anomalies_validees WHERE atelier_id = " . $db->quote($idA))->fetchColumn() === 6, 'anomalies : sept validations simultanées, aucune perdue, une seule ligne par catégorie');
-verifier(appel(['action' => 'annulerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard'])['ok'] === true && (int) $db->query("SELECT COUNT(*) FROM anomalies_validees WHERE atelier_id = " . $db->quote($idA))->fetchColumn() === 5, 'anomalies : annuler la validation ne retire que cette catégorie');
+verifier(count(array_filter($par, fn($r) => ($r['ok'] ?? false) === true)) === 8 && (int) $db->query("SELECT COUNT(*) FROM anomalies_validees WHERE atelier_id = " . $db->quote($idA))->fetchColumn() === 7, 'anomalies : huit validations simultanées, aucune perdue, une seule ligne par catégorie');
+verifier(appel(['action' => 'annulerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'tard'])['ok'] === true && (int) $db->query("SELECT COUNT(*) FROM anomalies_validees WHERE atelier_id = " . $db->quote($idA))->fetchColumn() === 6, 'anomalies : annuler la validation ne retire que cette catégorie');
 $db->exec("DELETE FROM anomalies_validees");
 
 $db->exec("DELETE FROM ateliers WHERE id LIKE 'ts\\_%'");

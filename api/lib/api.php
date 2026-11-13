@@ -24,6 +24,7 @@ require_once __DIR__ . '/tickets.php';
 require_once __DIR__ . '/avis.php';
 require_once __DIR__ . '/ts.php';
 require_once __DIR__ . '/anomalies.php';
+require_once __DIR__ . '/vacances.php';
 
 const API_JETON_DUREE_S = 6 * 3600;          // comme TOKEN_TTL_SECONDS du GAS
 const API_ECHECS_MAX = 5;                    // 5 échecs → blocage 15 min
@@ -458,6 +459,8 @@ function action_get_all(PDO $db, array $p, array $session): array
         // sélecteur d'Index. Gardée pour ne pas changer la forme de réponse.
         'conseillers_inactifs' => [],
         'rappelsFiches' => api_rappels_fiches($cfg),
+        // Vacances scolaires de Bordeaux (AG-057) : jamais bloquant pour getAll.
+        'vacances' => (function () use ($db) { try { return vacances_scolaires($db); } catch (Throwable) { return ['periodes' => [], 'du' => '', 'au' => '', 'maj' => '']; } })(),
     ];
     // RGPD, minimisation (art. 5.1.c) : les adresses mail ne servent qu'à
     // l'Admin (Listes → Conseillers, rappels). Index les recevait sans s'en
