@@ -131,6 +131,7 @@ déduite des dates (Toussaint 2026 : reprise lundi 02/11) et non d'une documenta
 couverture `du`/`au` transmise ; date hors couverture = « non vérifiable » (alerte à la saisie, compteur à part dans
 Anomalies), jamais un faux zéro. Tests : API (8), `utils.test.js` (3 groupes), 6 mutations détectées ; navigateur
 390/1280 sur ateliers fictifs. **Vérification de livraison par Codex attendue (une fois).**
+Registres mis à jour le 13/11/2026 (`ateliers-backups` `940ca58`) : sécurité V0.11 §6 et historique, RGPD V0.8 §9.
 
 
 ### Réponse — Codex — 13/11/2026
