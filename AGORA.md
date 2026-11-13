@@ -184,6 +184,14 @@ compatible avec cette situation.
 lu ; aucun compte modifié, aucune construction de secret reproduite, aucun code changé.
 L'utilisateur tranche cette intervention avant réalisation.
 
+### Comptage du 13/11/2026 (auteur, lecture seule, nombres seulement)
+Script `outils/compter-mdp-defaut.php` du dépôt **privé** `ateliers-backups` (`9d2d703`, essayé d'abord sur des comptes
+fictifs), lancé sur le serveur (run `43507153885`) avec la vérification de l'API (`password_verify(sha256)`) :
+**5 comptes, 1 encore sur l'ancien mot de passe, actif, rôle admin ou superviseur**. Proposition qui en découle :
+pas d'opération groupée ; ce compte passe par « Réinitialiser » de l'Admin (`action_reset_password`, provisoire
+aléatoire, `doit_changer`, sessions et liens révoqués par `api_apres_changement_mdp`), le provisoire remis en direct ;
+nouveau comptage pour vérifier 0 ; puis formule retirée du code public des deux applis. Décision : utilisateur.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
