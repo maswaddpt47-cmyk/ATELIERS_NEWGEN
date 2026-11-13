@@ -130,6 +130,11 @@ matin/après-midi, base64url) ; jamais de titre, lieu ni participant.
    jeton) puis montrer la confirmation, ou garder la charge jusqu'à la connexion ?
 4. **Taille** : au-delà d'environ 150 demi-journées, le QR code devient difficile à lire (hypothèse non vérifiée) :
    couper (dire combien restent) ou refuser avec un message ?
+5. **Autres méthodes** (demande de l'utilisateur du 13/11/2026) : proposer et comparer toute méthode plus simple ou
+   plus sûre que le QR code pour retrouver sur le téléphone les demi-journées occupées importées sur le PC — par
+   exemple fichier `.ics` partagé (mail, OneDrive) et réimporté, lien de partage, autre — avec ce qu'elle coûte à
+   l'agent (gestes), au projet (code, données, registres) et ses risques. Méthodes déjà écartées et pourquoi :
+   agenda Outlook publié (avis DPO/DSI), stockage serveur (nouvelle donnée personnelle, 12/10/2026).
 **Critère déclencheur** : 2 (options en balance) ; flux de données d'agenda par un nouveau canal (contradicteur
 Codex). **Ce que ça engage** : un format d'adresse `#olk=` qui, une fois diffusé par QR code, doit rester lisible
 (numéro de version dans la charge, règle 40).
