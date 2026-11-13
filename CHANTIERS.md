@@ -81,7 +81,7 @@ pas à jour ou si NextStep a des commits non poussés.
   durée vide, avis sans réponse) jamais mesurée : comptage en lecture sur la
   base possible.
 
-**Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **39** ; jamais `admin:
+**Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **41** ; jamais `admin:
 true` (26/10) ; jamais 12, 16, 19, 24, 25, 26 ni 29 (publiés puis retirés).
 
 **Pour Claude**
