@@ -299,6 +299,64 @@ parcours de connexion passe directement à l'écran de changement, sans autre ap
 cet écran. (b) Pas de reconnexion générale des sessions à l'activation : un compte conforme n'est pas concerné ; le seul
 compte hors règle (superviseure) garde ses sessions jusqu'à sa prochaine connexion — couvert par le risque accepté.
 
+### Réponse — Codex — 13/11/2026 — vérification de livraison
+**Auteur** : Codex — NEWGEN `360f9ff` (code `b1c2e6f`), NextStep `c35d692`.
+**Verdict** : amendé. Le parcours nominal est livré ; deux écarts restent à corriger.
+La levée du préalable d'AG-059, l'absence de reconnexion générale et le protocole
+`auth:true` sont les décisions documentées ci-dessus ; cette vérification ne les rouvre pas.
+
+**Présent dans le code** : règle commune au choix et à la connexion
+(`api/lib/ecriture.php:566-577`, `api/lib/api.php:259`), garde des actions ordinaires
+(`api.php:134-142`), liste publique pour un Admin restreint (`77-85`), refus des nouvelles
+connexions staff TS hors règle (`ts.php:359-366`). Les deux Admin attendent le changement
+puis appellent `selfSetPassword` avant d'ouvrir l'application
+(NEWGEN `admin_app.js:80-81,112` ; NextStep `72-73,105`).
+
+1. **Sécurité — rendre effective la fermeture des anciens jetons au passage 0 → 1.**
+   `api/lib/api.php:260` écrit le drapeau, puis `265` supprime les sessions, sans
+   transaction ni verrou. Entre ces opérations, une requête avec un ancien jeton peut
+   atteindre `selfSetPassword`, exempté de la garde (`136`), et bénéficier de la
+   dispense du secret actuel (`ecriture.php:532-546`). Si la suppression échoue après
+   l'écriture du drapeau, celui-ci reste à 1 et les connexions suivantes ne retentent
+   plus cette fermeture (`api.php:259`). Cela concerne aussi les sessions staff TS.
+   Ce scénario ne nécessite pas de connaître l'ancien secret : il porte sur le jeton
+   que cette livraison promet de révoquer, indépendamment du risque accepté d'AG-059.
+
+   **Correction attendue** : coordonner la validation du jeton, l'état du compte,
+   la révocation et l'émission du nouveau jeton avec les changements de mot de passe.
+   Une transaction limitée aux deux écritures ne suffit pas à une requête ayant déjà
+   passé `api_session` (`api.php:124,329-334`) avant sa clôture : revérifier le jeton
+   sous la même coordination avant de profiter de la dispense. Préparer les schémas
+   avant la transaction si le helper de révocation est réutilisé
+   (`ecriture.php:556-557`). Couvrir concurrence et échec de révocation sur comptes fictifs.
+   Constat statique et scénario d'entrelacement ; aucune concurrence exécutée en production.
+
+2. **Parcours Admin — retrouver la connexion si le jeton du formulaire devient invalide.**
+   Rejeu du composant exact dans V8, avec React simulé et un jeton fictif refusé :
+   la réponse `auth:true` et l'événement d'expiration sont reçus, mais le parent est
+   déjà déconnecté ; `aChanger` reste renseigné. Le formulaire affiche « Non autorisé :
+   jeton manquant ou expiré » et chaque essai reprend le même jeton, avec le seul bouton
+   « Enregistrer et continuer ». Il faut recharger manuellement.
+   Preuves : NEWGEN `admin_app.js:71,80-82,137-146,358-360` ;
+   NextStep `admin_app.js:63,72-74,130-139,353-355`.
+   **Correction attendue** : sur ce refus d'authentification, vider l'état du panneau
+   forcé et ses champs pour revenir à la connexion. Cela applique le protocole retenu.
+   Le défaut analogue d'Index, préexistant, n'est pas compté comme régression d'AG-060.
+
+**Vérifications et limites** : le run API [43520260147](https://github.com/maswaddpt47-cmyk/ATELIERS_NEWGEN/actions/runs/43520260147)
+sur `4e239c5` est terminé en succès ; ses étapes de syntaxe PHP, tests avec MySQL jetable,
+copie du code et vérification HTTP sont en succès. Publications Pages NEWGEN
+[43520260044](https://github.com/maswaddpt47-cmyk/ATELIERS_NEWGEN/actions/runs/43520260044)
+et NextStep [43519910229](https://github.com/maswaddpt47-cmyk/ateliers-cd47_NextStep/actions/runs/43519910229)
+également en succès. PHP absent localement : aucune suite PHP locale ni concurrence MySQL
+revendiquée ; le rejeu V8 ne remplace pas un essai navigateur.
+Aucun compte, sauvegarde ou fichier réel d'usagers consulté ; aucun code modifié.
+Le texte du mail déjà signalé dans `CHANTIERS.md` reste à traiter par l'auteur.
+
+**Suite** : corriger les seuls écarts démontrés et les livrer avec leurs contrôles ciblés ;
+pas de nouveau tour automatique de Codex après ces corrections (règle commune 58).
+
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
