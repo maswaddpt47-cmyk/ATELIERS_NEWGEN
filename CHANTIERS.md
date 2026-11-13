@@ -11,7 +11,7 @@ les actions » ; cause non établie, ne pas les présenter comme supprimées.
 - **AG-059** : comptage nominatif du 13/11 (dépôt privé, run `43515715586`) : **1 compte, la superviseure** ; l'utilisateur
   lui fera changer son mot de passe **à sa prochaine rencontre** (« Mot de passe provisoire » de l'Admin, ou changement
   par elle) ; puis recompter (0 attendu, option `nominatif`).
-- **AG-060 livré le 13/11/2026** (risque accepté par l'utilisateur : livré avant le changement de la superviseure) : règle
+- **AG-060 livré le 13/11/2026, écran vérifié par l'utilisateur sur le compte de la superviseure (marqué « doit changer »)** (risque accepté par l'utilisateur : livré avant le changement de la superviseure) : règle
   du mot de passe imposée à la connexion, toute action refusée tant que `doit_changer`, sessions fermées au passage 0 → 1,
   `getComptes` Admin et page TS refusés à un compte qui doit changer, écran de changement dans l'Admin des deux applis,
   formule retirée du code public. Codex : vérification unique de la livraison à demander. Reste : texte du mail de lien
