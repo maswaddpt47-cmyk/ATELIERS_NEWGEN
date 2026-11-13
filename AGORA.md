@@ -104,7 +104,42 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-Aucun bloc ouvert au 13/11/2026.
+## AG-058 — Disponibilités : envoyer les rendez-vous Outlook du PC au téléphone par QR code — ouvert le 13/11/2026
+**Auteur** : session « hooks et veilleur » — lu sur `75ca072`
+**Contexte** : Planning → Disponibilités garde les demi-journées occupées lues dans un export `.ics` d'Outlook
+**dans le navigateur seulement** (`localStorage` `ateliers_dispo_outlook`, `shared.js:5422-5440` :
+`{conseiller, le, occupees: ['AAAA-MM-JJ|AM'…], couvre}`, aucun titre). Le téléphone ne les voit pas. La
+synchronisation par le serveur a été écartée le 12/10/2026 (nouvelle donnée personnelle, registres).
+**Proposition** (méthode 1, choix de l'utilisateur du 13/11/2026 ; options écartées : agenda Outlook publié,
+stockage serveur) : sur le PC, quand un import est actif, bouton « 📱 Envoyer vers mon téléphone » qui affiche un
+QR code (générateur déjà embarqué, `vendor/qrcode-generator-2.0.4`, comme les avis) d'une adresse de la même
+appli, `…/index.html#olk=<charge>`. Le téléphone qui l'ouvre lit la charge, **demande confirmation**
+(« Enregistrer N demi-journées occupées pour <nom> ? »), l'écrit sous la même clé `ateliers_dispo_outlook`
+(remplace l'import précédent, comme un nouvel import), puis **efface la partie `#` de l'adresse**
+(`history.replaceState`). Aucun appel au serveur, aucune donnée nouvelle côté serveur, NEWGEN et NextStep.
+**Charge proposée** : version, nom du conseiller, date de l'import, période couverte, demi-journées occupées
+**à partir d'aujourd'hui seulement** (les passées ne servent plus), encodées de façon compacte (écarts de jours +
+matin/après-midi, base64url) ; jamais de titre, lieu ni participant.
+**Points à contredire** :
+1. **Fuite par l'adresse** : le `#` n'est pas envoyé au serveur (GitHub Pages), mais l'application de l'appareil
+   photo ou un lecteur de QR peut garder l'adresse complète dans son historique, voire la transmettre (Google Lens).
+   Faut-il chiffrer la charge, ou le contenu (demi-journées occupées d'un agent nommé) est-il assez peu sensible ?
+2. **Nom dans la charge** : utile pour rattacher l'import au bon conseiller sans connexion préalable ; sinon,
+   rattacher au conseiller choisi sur le téléphone (minimisation, mais une étape de plus).
+3. **Connexion** : le téléphone peut ne pas être connecté à l'ouverture ; enregistrer d'abord (stockage local, sans
+   jeton) puis montrer la confirmation, ou garder la charge jusqu'à la connexion ?
+4. **Taille** : au-delà d'environ 150 demi-journées, le QR code devient difficile à lire (hypothèse non vérifiée) :
+   couper (dire combien restent) ou refuser avec un message ?
+**Critère déclencheur** : 2 (options en balance) ; flux de données d'agenda par un nouveau canal (contradicteur
+Codex). **Ce que ça engage** : un format d'adresse `#olk=` qui, une fois diffusé par QR code, doit rester lisible
+(numéro de version dans la charge, règle 40).
+**Non vérifié par l'auteur** : la taille réelle d'un import courant ; le comportement des lecteurs de QR des
+téléphones de l'équipe vis-à-vis de l'historique.
+**Si personne ne répond, je fais quoi ?** — je code la version proposée (nom dans la charge, confirmation,
+effacement du `#`, sans chiffrement), puis vérification unique de Codex.
+**Où regarder** : `shared.js:5418-5445` (Disponibilités), `utils.js:952-988` (`demiJourneesOccupeesICS`),
+`shared.js:3000-3010` (QR code des avis).
+
 
 ## Blocs tranchés — sortis de ce fichier
 
