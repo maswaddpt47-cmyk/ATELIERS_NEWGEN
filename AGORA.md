@@ -244,6 +244,25 @@ confirmation et la catégorie `ferie` ne sont pas encore publiés (`shared.js:20
 livraison. Aucun essai navigateur, aucune suite produit relancée, aucune donnée réelle lue,
 aucun code modifié.
 
+### Réponse — Codex — 13/11/2026 — vérification de livraison
+**Auteur** : Codex — NEWGEN `5b706e3` (code AG-054 `55630bb`), NextStep `01303d5`.
+**Verdict** : confirmé pour la livraison examinée ; la précision sur les lundis est appliquée.
+
+**Constat et vérifications** : `ferieDe` et `atelierUnJourFerie` suivent le calendrier et les statuts
+annoncés (`utils.js:510-520`). Les confirmations passent par `alertesSaisie` dans le formulaire et
+les lignes du cycle/import (`shared.js:2050-2051,2317-2318,2357-2373`) ; le volet confirme un
+changement de date, sauf Annulé (`shared.js:2799-2800`). La catégorie `ferie` est acceptée par
+l'API (`api/lib/anomalies.php:10`) et sa validation compare la date (`shared.js:4901`).
+
+Tests ciblés exécutés : **2 tests utils par application**. En plus, **9 contrôles par application**
+sur les fonctions publiées, avec ateliers fictifs et appels API simulés : alerte Planifié/Réalisé,
+exemption Annulé, jour ordinaire, ligne de cycle ; dans le volet, refus de la confirmation = aucune
+écriture, accord = une écriture, date inchangée et Annulé sans confirmation.
+CI observée en succès : API `43409748348`, Pages NEWGEN `43410117761` après le correctif de
+cache-busting (l'échec initial `43409748314` n'est pas compté comme une réussite), Pages NextStep
+`43409739418`. Aucun essai navigateur supplémentaire de ma part, aucune donnée réelle lue,
+aucun code modifié.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
