@@ -38,6 +38,10 @@ jobs:
         run: |
           $VIA ssh -o StrictHostKeyChecking=accept-new "$COMPTE@ssh-$COMPTE.alwaysdata.net" '
             echo "== php (ligne de commande)"; php -v | head -1
+            # Calendrier scolaire officiel joignable depuis le serveur ? (AG-057, 13/11/2026 ; données publiques)
+            echo "== calendrier scolaire (data.education.gouv.fr, académie de Bordeaux)"
+            curl -sS -m 15 -o /tmp/cal.json -w "HTTP %{http_code}\n" "https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-calendrier-scolaire/records?where=location%3D%22Bordeaux%22%20and%20end_date%3E%3D%222026-09-01%22&order_by=start_date&limit=30&select=description,population,start_date,end_date,zones,annee_scolaire,location"
+            head -c 4000 /tmp/cal.json; echo; rm -f /tmp/cal.json
             # Version servie au web (21/10/2026, faille « PHP2Shell ») : elle peut
             # différer de la ligne de commande. Fichier au nom aléatoire, lu par le
             # serveur lui-même puis supprimé aussitôt.
