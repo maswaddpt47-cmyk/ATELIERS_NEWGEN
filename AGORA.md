@@ -104,7 +104,30 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-Aucun bloc ouvert au 13/11/2026.
+## AG-057 — Vacances scolaires (académie de Bordeaux) contrôlées pour les ateliers de collège — ouvert le 13/11/2026
+**Auteur** : session « hooks et veilleur » — lu sur `081c4c5`
+**Proposition** (demande de l'utilisateur du 13/11/2026 : 1 c, 2 a, 3 oui) :
+- **Source** : calendrier officiel `data.education.gouv.fr` (jeu `fr-en-calendrier-scolaire`, `location = Bordeaux`),
+  lu **par le serveur** (jamais par les navigateurs), gardé en base (`config.vacances_cache`) et transmis dans
+  `getAll` (`vacances: {periodes:[{debut, fin, libelle}], maj}`) : aucun appel de plus au démarrage. Rafraîchi au plus
+  une fois par 24 h, nouvel essai au plus une fois par heure après un échec, délai 3 s ; en échec, l'ancien cache sert.
+  Diagnostic du 13/11 (run `43415909099`) : HTTP 200 depuis Alwaysdata, 13 périodes 2026-2028.
+- **Lecture des dates** : `start_date`/`end_date` en UTC converties en jour de Paris ; `end_date` = jour de la reprise,
+  exclu ; `end_date` = `start_date` = une seule journée (pont de l'Ascension 2027 : 07/05 ; « Début des Vacances d'Été »
+  2028) ; population « Enseignants » ignorée.
+- **Atelier de collège** : public « Collèges » **ou** orienteur contenant « collège(s) » (accents, casse ignorés).
+- **Contrôle** : comme les fériés (AG-054) — confirmation à l'enregistrement (formulaire, cycle, import, date du volet),
+  Annulé exempté ; catégorie d'Anomalies « Vacances scolaires » (Planifié et Réalisé), empreinte = date ; calendrier
+  indisponible = catégorie suspendue (« — », jamais « ✅ »), comme AG-056.
+**Critère déclencheur** : 1 (nouvelle dépendance extérieure, format de `getAll`) et 7 (nouveau compteur). **Contradicteur** : Codex.
+**Ce que ça engage** : un service tiers de plus côté serveur (données publiques, aucune donnée envoyée hors l'URL) ;
+registre de sécurité à compléter (sous-traitants / flux sortants).
+**Non vérifié par l'auteur** : `allow_url_fopen` côté web Alwaysdata ; la sémantique « jour de reprise exclu » est
+déduite des dates (Toussaint 2026 : reprise lundi 02/11) et non d'une documentation du jeu de données.
+**Si personne ne répond, je fais quoi ?** — je livre (règle 58), vérification unique de Codex ensuite.
+**Où regarder** : `api/lib/vacances.php`, `api/lib/api.php` (`action_get_all`), `utils.js` (`vacancesDe`,
+`atelierCollege`), `shared.js` (`alertesSaisie`, volet, `VueAnomalies`).
+
 
 ## Blocs tranchés — sortis de ce fichier
 
