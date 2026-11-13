@@ -104,6 +104,39 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-055 — Veilleur : passer la main avant la limite de 5 h 40 de GitHub — ouvert le 13/11/2026
+**Auteur** : session « hooks et veilleur » — lu sur `66a2e9b`
+**Constat** (journaux GitHub) : le veilleur n° 3783 (13/11) a fait ses 5 contrôles (tous réussis), puis un contrôle
+programmé lancé à 06:38 UTC lui a imposé 59 min d'attente de cadence avant le 6ᵉ passage ; `timeout-minutes: 340`
+l'a tué à 07:20, avant sa relève (« veilleur annulé : pas de relève ») : surveillance arrêtée, tuile rouge. Même
+fin pour le n° 3779 (12/11). Chaque cycle dure déjà ~5 h (le 1ᵉʳ passage attend la cadence du dernier contrôle du
+prédécesseur) : toute attente ajoutée en fin de cycle dépasse la limite.
+**Proposition** : budget `BUDGET` (335 min par défaut, sous les 340 de GitHub). Avant toute attente (cadence,
+passage planifié, fin de cycle), si l'attente plus 30 min de suivi d'un contrôle (5 + 25, plafonds existants) dépasse
+le budget, relève anticipée **sans attente imposée** (le successeur respecte lui-même la cadence) puis sortie 0.
+Rien d'autre ne change (rupture, échecs, cadence, piège d'annulation).
+**Critère déclencheur** : 4 et sécurité (mécanisme de relance, règle 61 : espacement intact) ; contradicteur Codex.
+**Ce que ça engage** : rien d'irréversible ; plus de relèves par jour (un cycle peut s'arrêter à 4 passages).
+**Non vérifié par l'auteur** : la durée réelle maximale d'un contrôle (≈ 30 s observées, 30 min réservées).
+**Si personne ne répond, je fais quoi ?** — je livre (règle 58), vérification unique ensuite.
+**Où regarder** : `.github/workflows/veilleur.yml` (étape « Veille »), `veilleur.test.js`.
+
+## AG-056 — Anomalies : communes, liste officielle indisponible = contrôle suspendu — ouvert le 13/11/2026
+**Auteur** : session « hooks et veilleur » — lu sur `66a2e9b`
+**Constat** : le 13/11, NextStep Admin → Anomalies affichait 125 « communes invalides » (« VILLENEUVE-SUR-LOT
+(47300) », correction proposée « VILLENEUVE SUR LOT »). `loadCommunes47` (`shared.js`) attend 3 s
+`geo.api.gouv.fr`, sinon prend la liste de secours `COMMUNES` (une vingtaine de noms, sans tirets) : presque toute
+commune devient « invalide ». Hypothèse non vérifiée sur la session de l'utilisateur (requête réseau non vue),
+appuyée sur la suggestion affichée, qui ne figure que dans la liste de secours.
+**Proposition** : (1) liste de secours = contrôle des communes **suspendu** (aucune « commune invalide », tuile
+« — » et une ligne « liste officielle indisponible : contrôle des communes suspendu, rechargez ») ; (2) comparaison
+insensible aux tirets et apostrophes (« Villeneuve-sur-Lot » = « VILLENEUVE SUR LOT »), dans les deux applis.
+**Critère déclencheur** : 7 (compteur affiché). **Contradicteur** : Codex.
+**Ce que ça engage** : rien d'irréversible ; les validations « communes » déjà faites gardent leur empreinte.
+**Non vérifié par l'auteur** : fréquence réelle des lenteurs de `geo.api.gouv.fr`.
+**Si personne ne répond, je fais quoi ?** — je livre (règle 58).
+**Où regarder** : `shared.js` (`loadCommunes47`, `VueAnomalies` : `communeInvalide`).
+
 ## AG-054 — Jours fériés contrôlés à la programmation — ouvert le 13/11/2026
 **Auteur** : session « hooks et veilleur » — lu sur `3c0006d`
 **Proposition** (demande de l'utilisateur du 13/11/2026, option A) : (1) à l'enregistrement — formulaire,
