@@ -7,7 +7,7 @@ aucun ancien brouillon à réappliquer. Revues closes (AG-041 à AG-057) : ne pa
 **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue malgré « Autoriser toutes
 les actions » ; cause non établie, ne pas les présenter comme supprimées.
 
-**À reprendre en premier** : rien d'ouvert au 13/11/2026. Essais réels (compte TS, connexion avec
+**À reprendre en premier** : AG-058 (rendez-vous Outlook vers le téléphone par QR code) : réponse de Codex attendue avant le code. Essais réels (compte TS, connexion avec
 code, mail d'un ticket), relecture des registres (sécurité V0.10, RGPD V0.7) et page TS : vérifiés par
 l'utilisateur le 05/11/2026 (déclaré). **Adresse de la page TS toujours non diffusée** (écart RGPD n° 14 :
 avis du DPO avant diffusion, dans le registre).
@@ -15,7 +15,7 @@ avis du DPO avant diffusion, dans le registre).
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
-Contradiction : `AGORA.md` — aucun bloc ouvert au 13/11/2026 (AG-057 clos).
+Contradiction : `AGORA.md` — AG-058 ouvert au 13/11/2026 (avant le code).
 
 ---
 
