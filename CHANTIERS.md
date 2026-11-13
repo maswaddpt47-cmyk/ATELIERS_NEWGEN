@@ -1,13 +1,13 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **13/11/2026 (heure de Paris)**, bases `main` : NEWGEN `05e7081`, NextStep `c491810`
+État au **13/11/2026 (heure de Paris)**, bases `main` : NEWGEN `c0ff79b`, NextStep `1d48d2a` (AG-058 « rendez-vous Outlook au téléphone » livré et clos)
 (AG-054 à AG-056 clos ; AG-057 vacances scolaires livré, vérifié par Codex, écarts corrigés et clos ; flux sortant vers data.education.gouv.fr inscrit aux registres V0.11 sécurité / V0.8 RGPD, `ateliers-backups` `940ca58`).
 Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ;
 aucun ancien brouillon à réappliquer. Revues closes (AG-041 à AG-057) : ne pas les relancer d'office.
 **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue malgré « Autoriser toutes
 les actions » ; cause non établie, ne pas les présenter comme supprimées.
 
-**À reprendre en premier** : AG-059 (ancien mot de passe par défaut public) : réponse de Codex attendue **avant le code**. Essais réels (compte TS, connexion avec
+**À reprendre en premier** : **AG-059 — décision de l'utilisateur attendue.** Codex a répondu (amendé : révoquer sessions et liens, atomicité, récupération préparée) ; comptage en lecture seule du 13/11 : **1 compte sur 5** encore sur l'ancien mot de passe, actif, rôle admin ou superviseur. Proposition : pas d'opération groupée, « Réinitialiser » ce compte depuis l'Admin (provisoire remis en direct), recompter (0 attendu), puis retirer la formule du code public des deux applis. Essais réels (compte TS, connexion avec
 code, mail d'un ticket), relecture des registres (sécurité V0.10, RGPD V0.7) et page TS : vérifiés par
 l'utilisateur le 05/11/2026 (déclaré). **Adresse de la page TS toujours non diffusée** (écart RGPD n° 14 :
 avis du DPO avant diffusion, dans le registre).
@@ -15,7 +15,7 @@ avis du DPO avant diffusion, dans le registre).
 Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
 soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
 
-Contradiction : `AGORA.md` — AG-059 ouvert au 13/11/2026 (avant le code) ; AG-058 livré et clos.
+Contradiction : `AGORA.md` — AG-059 ouvert (réponse de Codex reçue, décision de l'utilisateur attendue) ; AG-058 livré et clos.
 
 ---
 
