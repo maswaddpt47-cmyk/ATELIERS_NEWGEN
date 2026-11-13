@@ -104,6 +104,27 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-054 — Jours fériés contrôlés à la programmation — ouvert le 13/11/2026
+**Auteur** : session « hooks et veilleur » — lu sur `3c0006d`
+**Proposition** (demande de l'utilisateur du 13/11/2026, option A) : (1) à l'enregistrement — formulaire,
+lignes d'un cycle et import Outlook (`alertesSaisie`), changement de date du volet Détail — une date fériée
+demande confirmation (« Le 11/11/2026 est férié (Armistice). Enregistrer quand même ? »), sans blocage ;
+statut « Annulé » exempté. (2) Nouvelle catégorie d'Anomalies « 📅 Jour férié » (`ferie`), validable comme les
+autres (empreinte = date). (3) Planning, vue Semaine : en-tête et colonne d'un férié marqués comme dans la vue
+Mois ; les Disponibilités les excluaient déjà (`creneauxLibres`, `estFerie`, testé).
+**Définition à contredire** : la catégorie compte les ateliers **« Planifié » et « Réalisé »** datés d'un férié
+(ceux qui ont lieu ou ont eu lieu) ; Annulé, Reporté, Non réalisé exclus. Fériés : métropole (`joursFeries`,
+Pâques et Pentecôte comprises ; lundi de Pentecôte compté férié).
+**Critère déclencheur** : 7 (nouveau compteur affiché dans Anomalies).
+**Contradicteur** : Codex
+**Ce que ça engage** : liste `ANOMALIES_CATEGORIES` de l'API élargie (`api/lib/anomalies.php:10`) ; rien
+d'irréversible.
+**Non vérifié par l'auteur** : nombre réel d'ateliers déjà placés un férié (règle 59 : non lu) ; un atelier
+modifié sans changer sa date demande à nouveau confirmation s'il est sur un férié (voulu, à contredire si gênant).
+**Si personne ne répond, je fais quoi ?** — je livre (règle 58), vérification unique de Codex ensuite.
+**Où regarder** : `utils.js` (`ferieDe`, `atelierUnJourFerie`), `shared.js` (`alertesSaisie`, `savePanel`,
+`VueAnomalies`, `VuePlanning`), `api/lib/anomalies.php:10`.
+
 ## AG-053 — Page TS : « Ouvert à tous » choisi par l'Admin, plus par le TS — ouvert le 06/11/2026
 **Auteur** : session « hooks et veilleur » (06/11) — lu sur `ff3aaf7`
 **Proposition** (demande de l'utilisateur du 06/11/2026) : la liste déroulante « Ouvert à tous » disparaît
