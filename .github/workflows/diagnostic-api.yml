@@ -47,7 +47,7 @@ jobs:
             # serveur lui-même puis supprimé aussitôt.
             echo "== php (web, celui qui exécute l API)"
             n="diagnostic-version-$(head -c8 /dev/urandom | od -An -tx1 | tr -d " \n").php"   # nom toléré par integrite-api.yml
-            printf "<?php echo PHP_VERSION, \" \", PHP_SAPI;" > ~/www/api/$n
+            printf "<?php echo PHP_VERSION, \" \", PHP_SAPI, \" allow_url_fopen=\", ini_get(\"allow_url_fopen\"), \" openssl=\", extension_loaded(\"openssl\") ? 1 : 0;" > ~/www/api/$n
             curl -sS -m 15 "https://ateliers-numeriques.alwaysdata.net/api/$n"; echo
             rm -f ~/www/api/$n
             php -m | grep -iE "^(zip|simplexml|pdo_mysql|mbstring|libxml)$" | tr "\n" " "; echo
