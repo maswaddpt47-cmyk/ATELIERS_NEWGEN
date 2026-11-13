@@ -184,7 +184,7 @@ function App(){
   // Lien « mot de passe oublié » reçu par mail (?reinit=…, mode API).
   const[jetonReinit,setJetonReinit]= React.useState(()=>window.jetonReinitUrl());
   const[adminConseiller,setAdminConseiller]= React.useState(()=>localStorage.getItem(lsKey('adm_conseiller'))||'');
-  const[view,setView]           = React.useState('historique');
+  const[view,setView]           = React.useState(()=>window.OLK_RECU?'planning':'historique');   // lien de rendez-vous Outlook reçu (AG-058)
   const controleSaisie=React.useRef(null);
   const navScrollRef=React.useRef(null);
   React.useEffect(()=>{majIndiceNav(navScrollRef.current);});

@@ -16,13 +16,13 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN app.js:256",
-      "NextStep app.js:255",
-      "NEWGEN admin_app.js:180",
-      "NextStep admin_app.js:172"
+      "NEWGEN app.js:260",
+      "NextStep app.js:259",
+      "NEWGEN admin_app.js:182",
+      "NextStep admin_app.js:174"
     ],
-    "newgen": "4460f6adb1/2271f7a4a1",
-    "nextstep": "39aec6ce97/250862020c",
+    "newgen": "aab6ba2c3a/46cd79c424",
+    "nextstep": "433799fe6d/5d12e8334a",
     "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs. Revérifié le 21/10/2026 après le message de maintenance (#36/#37 et NextStep #24/#25) : changement identique dans les deux, seule la navigation diffère. Revérifié le 24/10/2026 après le bandeau Admin sur téléphone : même correctif (titre masqué, nom tronqué, boutons réduits à leur icône), adapté à la coquille de chaque appli. Revérifié le 24/10/2026 après la pastille de 💾 Sauvegardes : même lecture du veilleur, posée sur la barre du bas (NEWGEN) ou le menu latéral (NextStep). Revérifié le 25/10/2026 : même conservation de saisie et mêmes confirmations dans les deux coquilles ; seuls les emplacements de navigation restent propres à chacune. Revérifié le 26/10/2026 après l'icône Planning (🧑‍🤝‍🧑) : même changement dans les deux. Revérifié le 26/10/2026 après AG-032 (« Mes bilans » reçoit les années chargées) : même changement dans les deux."
   },
   "VueHistorique": {
@@ -30,8 +30,8 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:3111",
-      "NextStep shared.js:2927"
+      "NEWGEN shared.js:3112",
+      "NextStep shared.js:2928"
     ],
     "newgen": "c48c548204/c48c548204",
     "nextstep": "cf1d6163a0/cf1d6163a0",

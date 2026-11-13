@@ -259,7 +259,7 @@ function VueLoginIndex({conseillers,onSuccess}){
 
 function App(){
   const[authed,setAuthed]          = React.useState(()=>!!window.authToken.get());
-  const[view,setView]              = React.useState('accueil');
+  const[view,setView]              = React.useState(()=>window.OLK_RECU?'planning':'accueil');   // lien de rendez-vous Outlook reçu (AG-058)
   const controleSaisie=React.useRef(null);
   const navScrollRef=React.useRef(null);
   React.useEffect(()=>{majIndiceNav(navScrollRef.current);});
@@ -521,7 +521,8 @@ function App(){
   function handleChoixConseiller(nom){
     setFiltreConseiller(nom);
     setShowPicker(false);
-    setView(visibility.historique?'historique':visibility.calendrier?'calendrier':visibility.saisie?'saisie':'dashboard');
+    // Lien de rendez-vous Outlook reçu (AG-058) : arrivée sur le Planning, où se trouve la confirmation.
+    setView(window.OLK_RECU&&visibility.planning?'planning':visibility.historique?'historique':visibility.calendrier?'calendrier':visibility.saisie?'saisie':'dashboard');
     if(nom) sessionStorage.setItem('gs_conseiller', nom);
   }
   function handleEdit(id){if(controleSaisie.current&&!controleSaisie.current.demanderRemplacement())return;setEditingId(id);setPrefillData(null);setView('saisie');}
