@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **13/11/2026 (heure de Paris)**, bases `main` : NEWGEN `c0ff79b`, NextStep `1d48d2a` (AG-058 « rendez-vous Outlook au téléphone » livré et clos)
+État au **13/11/2026, fin de session (heure de Paris)**, bases `main` : NEWGEN `91bdc25`, NextStep `96d512e` (AG-058 « rendez-vous Outlook au téléphone » livré et clos)
 (AG-054 à AG-056 clos ; AG-057 vacances scolaires livré, vérifié par Codex, écarts corrigés et clos ; flux sortant vers data.education.gouv.fr inscrit aux registres V0.11 sécurité / V0.8 RGPD, `ateliers-backups` `940ca58`).
 Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ;
 aucun ancien brouillon à réappliquer. Revues closes (AG-041 à AG-057) : ne pas les relancer d'office.
