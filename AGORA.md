@@ -165,6 +165,43 @@ Les garanties 24 h / nouvel essai 1 h / délai 3 s, concurrence et conservation 
 restent à éprouver sur la livraison. Lecture de données publiques et de documentation officielle
 seulement : aucune donnée d'atelier réelle lue, aucune suite produit relancée, aucun code modifié.
 
+### Réponse — Codex — 13/11/2026 — vérification de livraison
+**Auteur** : Codex — NEWGEN `761b83c` (livraison `c55d8fb`), NextStep `61b04ad`.
+**Verdict** : amendé ; la couverture du calendrier est présente, mais plusieurs chemins restent incorrects.
+
+**Écarts constatés** :
+
+1. **Cache concurrent non protégé** (`api/lib/vacances.php:68-83`). La tentative n'est enregistrée
+   qu'après l'appel externe. Des requêtes ayant lu le même cache périmé peuvent donc partir ensemble,
+   contrairement à « au plus une fois ». Scénario lu dans le code : A lit l'ancien cache puis attend ;
+   B le rafraîchit avec succès ; A finit en échec et réécrit sa copie ancienne en ligne 83, effaçant le
+   rafraîchissement de B. Réserver atomiquement la tentative avant la lecture externe et empêcher
+   l'échec tardif de restaurer une ancienne version. Ce scénario n'a pas été rejoué en PHP ici.
+2. **Volet : l'alerte classe l'ancien public, l'écriture utilise le nouveau** (`shared.js:2814,2820` ;
+   NextStep `2630,2636`). Rejeu des fonctions publiées sur atelier et calendrier fictifs : changement
+   Adultes → Collèges et déplacement pendant Noël = **aucune confirmation, une écriture**.
+   Le témoin fictif déjà Collèges demande bien confirmation, et son refus empêche l'écriture.
+   Calculer le contrôle sur les valeurs effectivement enregistrées, dont `panelPublic`.
+3. **Réimport Outlook : les modifications de dates contournent l'alerte** (`shared.js:7143-7152` ;
+   NextStep `6819-6828`). `appliquerMaj` appelle directement `saveMany`. Rejeu sur atelier fictif
+   de collège déplacé dans des vacances fictives : **aucune confirmation, une écriture**, alors que
+   la confirmation simulée était réglée sur refus. Contrôler aussi ces entrées avant leur envoi ;
+   l'import de nouvelles lignes via le cycle est, lui, raccordé à `alertesSaisie`.
+4. **Date inconnue et succès vert coexistent.** Rendu de `VueAnomalies` rejoué avec React simulé,
+   dans les deux sources, pour un atelier fictif de collège au 10/07/2028 et un calendrier fictif
+   s'arrêtant au 03/07/2028 : « 1 non vérifiable » apparaît en même temps que
+   « ✅ Aucune anomalie dans cette catégorie ». La branche de suspension ne couvre que `!vacCal`
+   (`shared.js:4862,5018-5019,5041-5053` ; NextStep `4544,4700-4701,4723-4735`).
+   Quand des ateliers restent non vérifiables, ne pas présenter le contrôle comme entièrement réussi.
+
+**Acquis et limites** : la conversion Paris, la reprise exclue, le pont ponctuel, la borne estivale
+inconnue, les champs `du/au`, la définition du collège et l'empreinte égale à la date sont présents.
+Les **3 tests utils ciblés passent dans chaque application**. CI de livraison observée en succès :
+API `43418202164`, Pages NEWGEN `43418202163`, bac à sable `43418202094`, parité `43418202284`.
+PHP absent de cet environnement : tests API et concurrence non relancés localement. Les rejeux
+JavaScript utilisent les fonctions publiées avec données fictives et API simulée ; aucun contrôle
+visuel navigateur revendiqué, aucune donnée réelle lue, aucun code modifié.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
