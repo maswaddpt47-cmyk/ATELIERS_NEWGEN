@@ -8,9 +8,9 @@
 //   - le verrou LockService devient une transaction SQL : deux écritures
 //     simultanées sur le même _id ne créent jamais de doublon (clé primaire) ;
 //   - resetPassword tire un mot de passe provisoire aléatoire (plus
-//     cd47+prénom, devinable), stocké haché, changement forcé ensuite ;
-//   - saveLists crée les comptes manquants SANS mot de passe (plus
-//     cd47+prénom en clair) : l'admin fait ensuite « réinitialiser » ;
+//     d'ancien mot de passe devinable), stocké haché, changement forcé ensuite ;
+//   - saveLists crée les comptes manquants SANS mot de passe : l'admin
+//     fait ensuite « réinitialiser » ;
 //   - logLogin ne fait plus rien : checkPassword journalise lui-même la
 //     connexion réussie (une ligne de journal ne se forge plus sans jeton) ;
 //   - logAccesIndex exige un jeton, et journalise la personne du jeton.
@@ -561,11 +561,19 @@ function api_apres_changement_mdp(PDO $db, string $nom, ?string $garder): void
     $db->prepare('DELETE FROM sessions WHERE conseiller = ?')->execute(['ts:' . $nom]);
 }
 
+// Règle du mot de passe (API_MDP_POLITIQUE), unique : au choix d'un mot de passe ET à chaque
+// connexion (AG-060, 13/11/2026 : un mot de passe hors règle n'est plus accepté sans changement).
+function api_mdp_conforme(string $mdp): bool
+{
+    return strlen($mdp) >= 12 && preg_match('/[A-Z]/', $mdp) && preg_match('/[a-z]/', $mdp)
+        && preg_match('/[0-9]/', $mdp) && preg_match('/[^A-Za-z0-9]/', $mdp);
+}
+
 function api_changer_mdp(PDO $db, string $nom, string $mdp, ?string $garder = null): array
 {
     $mdp = trim($mdp);
     if ($nom === '' || $mdp === '') return ['ok' => false, 'error' => 'Paramètres manquants'];
-    if (!(strlen($mdp) >= 12 && preg_match('/[A-Z]/', $mdp) && preg_match('/[a-z]/', $mdp) && preg_match('/[0-9]/', $mdp) && preg_match('/[^A-Za-z0-9]/', $mdp))) {
+    if (!api_mdp_conforme($mdp)) {
         return ['ok' => false, 'error' => API_MDP_POLITIQUE];
     }
     $u = $db->prepare('UPDATE comptes SET hash = ?, doit_changer = 0 WHERE conseiller = ?');

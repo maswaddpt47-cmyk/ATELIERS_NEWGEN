@@ -104,28 +104,54 @@ verifier(in_array('Conseiller Test', array_column(appel(['action' => 'getComptes
 $db->exec('USE ateliers_test_api');
 $db->prepare('UPDATE comptes SET role = ? WHERE conseiller = ?')->execute([$roleAvant, 'Conseiller Test']);
 
-$r = appel(['action' => 'checkPassword', 'conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+$r = appel(['action' => 'checkPassword', 'conseiller' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
 verifier($r === ['ok' => false, 'error' => 'Paramètres manquants'], 'mot de passe dans l\'URL ignoré');
 $r = appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'mauvais']);
 verifier($r === ['ok' => false, 'error' => 'Mot de passe incorrect'], 'mauvais mot de passe refusé');
 $r = appel(['action' => 'checkPassword'], ['conseiller' => 'Ancien Collegue', 'password' => 'x', 'source' => 'admin.html']);
 verifier(($r['error'] ?? '') === "Accès à l'Admin non autorisé pour ce compte", 'interrupteur désactivé : Admin refusé');
 $r = appel(['action' => 'checkPassword'], ['conseiller' => 'Ancien Collegue', 'password' => 'x', 'source' => 'index.html']);
-verifier(($r['ok'] ?? false) === true, 'interrupteur désactivé : Index ouvert');
+verifier(($r['ok'] ?? false) === true && ($r['doit_changer'] ?? false) === true, 'interrupteur désactivé : Index ouvert ; mot de passe hors règle (« x ») : changement imposé (AG-060)');
+// AG-060, amendements de Codex : une session ouverte AVANT le passage à « doit changer » tombe ; le raccourci getComptes
+// privilégié est refusé à un compte qui doit changer ; la page TS est refusée à un compte Admin hors règle.
+$db->exec('USE ateliers_test_api');
+$db->exec("UPDATE comptes SET doit_changer = 0 WHERE conseiller = 'Ancien Collegue'");
+$avantDc = $r['token'];
+$r2 = appel(['action' => 'checkPassword'], ['conseiller' => 'Ancien Collegue', 'password' => 'x', 'source' => 'index.html']);
+verifier((int) $db->query("SELECT COUNT(*) FROM sessions WHERE jeton_hash = '" . hash('sha256', $avantDc) . "'")->fetchColumn() === 0
+    && (int) $db->query("SELECT COUNT(*) FROM sessions WHERE jeton_hash = '" . hash('sha256', $r2['token']) . "'")->fetchColumn() === 1,
+    'passage à « doit changer » : la session ouverte avant tombe, seule la nouvelle reste (AG-060, Codex)');
 $db->exec('USE ateliers_test_api');
 $db->exec("INSERT INTO journal (horodatage, action, conseiller) VALUES (NOW() - INTERVAL 13 MONTH, 'login', 'Vieux'), (NOW() - INTERVAL 11 MONTH, 'login', 'Recent')");
-$admin = appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => ' secret-test ']);
+$admin = appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => ' Secret-Test-47! ']);
 verifier($db->query("SELECT GROUP_CONCAT(conseiller) FROM journal WHERE conseiller IN ('Vieux','Recent')")->fetchColumn() === 'Recent', '[RGPD-03] journal : plus de 12 mois purgé à la connexion, 11 mois gardé');
-verifier($admin['ok'] === true && $admin['role'] === 'admin' && preg_match('/^[0-9a-f]{64}$/', $admin['token']), 'bon mot de passe : jeton et rôle');
+verifier($admin['ok'] === true && $admin['role'] === 'admin' && preg_match('/^[0-9a-f]{64}$/', $admin['token']) && !isset($admin['doit_changer']), 'bon mot de passe conforme : jeton et rôle, aucun changement imposé');
 $db->exec('USE ateliers_test_api');
 verifier((int) $db->query("SELECT COUNT(*) FROM sessions WHERE jeton_hash = '" . hash('sha256', $admin['token']) . "'")->fetchColumn() === 1, '[RGPD-05] seule l\'empreinte du jeton est en base');
-$user = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'cd47nouveau']);
+$user = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'ancien-en-clair']);
 verifier($user['ok'] === true && ($user['doit_changer'] ?? false) === true, 'ancien mot de passe en clair : connexion, avec doit_changer');
 
 for ($i = 0; $i < 5; $i++) appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'faux']);
-$r = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'cd47nouveau']);
+$r = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouveau Venu', 'password' => 'ancien-en-clair']);
 verifier(str_starts_with($r['error'] ?? '', 'Trop de tentatives'), '5 échecs : compte bloqué, même avec le bon mot de passe');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'loginFail'")->fetchColumn() === 6, 'échecs journalisés');
+// AG-060 (13/11/2026) : tant que le mot de passe n'est pas changé, le serveur refuse tout sauf ce changement.
+$bloqueDc = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']]);
+verifier(($bloqueDc['ok'] ?? true) === false && ($bloqueDc['doit_changer'] ?? false) === true && ($bloqueDc['auth'] ?? false) === true && !isset($bloqueDc['entries']),
+    'mot de passe à changer : getAll refusé par le serveur, rien n\'est lu (AG-060)');
+verifier((appel(['action' => 'selfSetPassword'], ['token' => $user['token'], 'password' => 'Nouveau-Venu-47!'])['ok'] ?? false) === true,
+    'mot de passe à changer : son propre changement reste permis, sans l\'ancien');
+verifier((appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']])['ok'] ?? false) === true,
+    'mot de passe changé : la même session est rouverte');
+$db->exec('USE ateliers_test_api');
+verifier((int) $db->query("SELECT doit_changer FROM comptes WHERE conseiller = 'Nouveau Venu'")->fetchColumn() === 0, 'mot de passe changé : plus de changement imposé');
+$db->exec("UPDATE comptes SET doit_changer = 1 WHERE conseiller = 'Conseiller Test'");
+$gc = appel(['action' => 'getComptes', 'source' => 'admin'], ['token' => $admin['token']]);
+$tsDc = appel(['action' => 'tsConnexion'], ['identifiant' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
+$db->exec('USE ateliers_test_api');
+$db->exec("UPDATE comptes SET doit_changer = 0 WHERE conseiller = 'Conseiller Test'");
+verifier(($gc['ok'] ?? false) === true && !isset($gc['comptes'][0]['role']), 'compte Admin qui doit changer : getComptes réduit à la liste publique (AG-060, Codex)');
+verifier(str_contains($tsDc['error'] ?? '', 'doit être changé') && empty($tsDc['token']), 'compte Admin qui doit changer : page TS refusée (AG-060, Codex)');
 
 echo "API — getAll\n";
 $r = appel(['action' => 'getAll', 'year' => '2026']);
@@ -301,7 +327,7 @@ appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'lot_1',
 $r = appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'lot_1']);
 verifier(($r['ok'] ?? true) === false && str_contains($r['error'], 'existe déjà') && $lire('lot_1')['date'] === '2026-12-01', 'restauration refusée si l\'atelier a été recréé : jamais d\'écrasement');
 $db->exec("UPDATE ateliers_corbeille SET supprime_le = NOW() - INTERVAL 31 DAY");
-appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
 verifier((int) $db->query('SELECT COUNT(*) FROM ateliers_corbeille')->fetchColumn() === 0, 'corbeille purgée au-delà de 30 jours, dès une connexion');
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'num_a', 'date' => '2026-12-02'])]);
 $nA = $lire('num_a')['_n'];
@@ -402,7 +428,6 @@ $db->exec("DELETE FROM ateliers_corbeille WHERE id = 'pur'");
 appel(['action' => 'saveLists'], $A + ['lists' => json_encode(['statuts' => ['Planifié'], 'conseillers' => ['Conseiller Test', 'Nouvelle Recrue'], 'publics' => [], 'materiels' => ['Ordinateur']])]);
 verifier(appel(['action' => 'getAll'], $A)['lists']['conseillers'] === ['Conseiller Test', 'Nouvelle Recrue'], 'saveLists relu');
 verifier($db->query("SELECT hash IS NULL FROM comptes WHERE conseiller = 'Nouvelle Recrue'")->fetchColumn() == 1, 'compte créé par saveLists, sans mot de passe');
-verifier(appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => 'cd47nouvelle'])['ok'] === false, 'plus de mot de passe cd47+prénom');
 $r = appel(['action' => 'resetPassword'], $A + ['conseiller' => 'Nouvelle Recrue']);
 verifier($r['ok'] === true && strlen($r['newPassword']) === 12, 'resetPassword : mot de passe provisoire aléatoire');
 $nr = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => $r['newPassword']]);
@@ -607,12 +632,12 @@ verifier(($r['ok'] ?? false) && (int) $db->query("SELECT COUNT(*) FROM tickets W
     && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'supprimerTicket' AND ref = 'tk_essai_4'")->fetchColumn() === 1, 'suppression : ticket effacé, renvoi « doublon » vidé, journalisée');
 verifier(isset(appel(['action' => 'getAll'], $A)['tickets']['nouveaux']), 'getAll : résumé des tickets pour les pastilles');
 $db->exec("UPDATE tickets SET statut = 'Résolu', reponse = 'Fait.', repondu_par = 'Conseiller Test', clos_le = '" . date('Y-m-d H:i:s', strtotime('-13 months')) . "' WHERE id = 'tk_essai_1'");
-appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
 $t1 = $db->query("SELECT auteur, repondu_par, description FROM tickets WHERE id = 'tk_essai_1'")->fetch(PDO::FETCH_ASSOC);
 verifier($t1 && $t1['auteur'] === '—' && $t1['repondu_par'] === '' && $t1['description'] !== '', '[RGPD-19] ticket clos depuis 12 mois : anonymisé (auteur, répondant), gardé en archive');
 $db->exec("UPDATE tickets SET clos_le = '" . date('Y-m-d H:i:s', strtotime('-37 months')) . "' WHERE id = 'tk_essai_3'");
 $db->exec("UPDATE tickets SET clos_le = NULL, cree_le = '" . date('Y-m-d H:i:s', strtotime('-25 months')) . "' WHERE id = 'tk_essai_1'");
-appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
 verifier((int) $db->query("SELECT COUNT(*) FROM tickets")->fetchColumn() === 0, '[RGPD-19] tickets supprimés : clos depuis 36 mois, ou jamais clos depuis 24 mois');
 array_map('unlink', glob("$dossierMails/*.txt"));
 
@@ -793,17 +818,17 @@ $db->exec("DELETE FROM avis WHERE atelier_id = 'av_plaf'");
 $db->exec("DELETE FROM ateliers WHERE id = 'av_plaf'");
 // Amendement A : corbeille → avis et jeton gardés ; restauration → rendus ; sortie de corbeille → effacés.
 appel(['action' => 'delete'], $T + ['_id' => 'av_1']);
-appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
 appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'av_1']);
 $apres = appel(['action' => 'jetonAvis'], $T + ['_id' => 'av_1']);
 verifier(($apres['jeton'] ?? '') === $j['jeton'] && $apres['avis']['n'] === 1, 'atelier supprimé puis restauré : même jeton, avis gardés');
 appel(['action' => 'delete'], $T + ['_id' => 'av_1']);
 $db->exec("UPDATE ateliers_corbeille SET supprime_le = NOW() - INTERVAL 40 DAY WHERE id = 'av_1'");
-appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
 verifier((int) $db->query("SELECT COUNT(*) FROM avis WHERE atelier_id = 'av_1'")->fetchColumn() === 0
     && (int) $db->query("SELECT COUNT(*) FROM avis_jetons WHERE atelier_id = 'av_1'")->fetchColumn() === 0, 'atelier sorti de la corbeille : ses avis et son jeton partent avec lui');
 $db->exec("UPDATE avis SET cree_le = '" . date('Y-m-d H:i:s', strtotime('-25 months')) . "'");
-appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'secret-test']);
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
 verifier((int) $db->query('SELECT COUNT(*) FROM avis')->fetchColumn() === 0, '[RGPD-20] avis purgés à 24 mois');
 
 echo "API — mot de passe oublié\n";
@@ -1074,7 +1099,7 @@ verifier(($re['ok'] ?? false) && ts_connexion('ts.un@lotetgaronne.fr', $re['newP
 for ($i = 0; $i < API_ECHECS_MAX; $i++) appel(['action' => 'tsConnexion'], ['identifiant' => 'bloque@example.org', 'password' => 'x']);
 verifier(str_contains(appel(['action' => 'tsConnexion'], ['identifiant' => 'bloque@example.org', 'password' => 'x'])['error'] ?? '', 'Trop de tentatives'), 'blocage après ' . API_ECHECS_MAX . ' échecs, même pour une adresse inconnue');
 
-$adm = appel(['action' => 'tsConnexion'], ['identifiant' => 'Conseiller Test', 'password' => 'secret-test']);
+$adm = appel(['action' => 'tsConnexion'], ['identifiant' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
 verifier(($adm['ok'] ?? false) && !isset($adm['doit_changer']), 'admin : connexion à la page TS avec ses accès');
 verifier(appel(['action' => 'tsAteliers'], ['token' => $adm['token']])['ok'] === true && appel(['action' => 'getAll'], ['token' => $adm['token']])['ok'] === false, 'admin sur la page TS : lecture TS seule, getAll refusé');
 verifier(appel(['action' => 'tsChangerMdp'], ['token' => $adm['token'], 'password' => 'Autre-Social-47!!'])['ok'] === false, 'admin sur la page TS : pas de changement de mot de passe ici');

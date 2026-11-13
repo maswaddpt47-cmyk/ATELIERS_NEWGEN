@@ -356,6 +356,13 @@ function action_ts_connexion(PDO $db, array $p): array
     // Les échecs ne sont remis à zéro qu'à la fin de la connexion complète.
     if ($role === 'ts') return ts_envoyer_defi($db, $id, (string) ($p['userAgent'] ?? ''), (string) $verifiee, $parOubli);
     $db->prepare('DELETE FROM tentatives WHERE conseiller = ?')->execute([$cleTentatives]);
+    // Compte Admin/superviseur (AG-060, Codex) : mot de passe hors règle ou à changer = pas d'accès ici ;
+    // il le change d'abord dans l'Admin (qui pose doit_changer et ferme ses autres sessions).
+    $dc = $db->prepare('SELECT doit_changer FROM comptes WHERE conseiller = ?');
+    $dc->execute([$id]);
+    if ((int) $dc->fetchColumn() === 1 || !api_mdp_conforme($mdp)) {
+        return ['ok' => false, 'error' => 'Votre mot de passe doit être changé : connectez-vous d\'abord à l\'Admin pour en choisir un nouveau.'];
+    }
     return ts_ouvrir_session($db, $id, $role, false, (string) ($p['userAgent'] ?? ''));
 }
 

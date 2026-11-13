@@ -90,8 +90,8 @@ function classeur(array $ateliers, array $modifs = []): array
         'Ateliers_next_step' => array_merge([ENTETE_ATELIERS], $ateliers),
         'Comptes' => [
             ['Conseiller', 'Hash', 'Role', 'Actif', 'FailCount', 'LockUntil'],
-            ['Conseiller Test', hash('sha256', 'secret-test'), 'admin', 'OUI', 0, null],
-            ['Nouveau Venu', 'cd47nouveau', 'user', 'OUI', 0, null],
+            ['Conseiller Test', hash('sha256', 'Secret-Test-47!'), 'admin', 'OUI', 0, null],
+            ['Nouveau Venu', 'ancien-en-clair', 'user', 'OUI', 0, null],
         ],
         // Pas de ligne d'en-tête : comme le vrai classeur.
         'Config' => [

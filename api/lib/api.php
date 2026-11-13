@@ -75,7 +75,14 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
         case 'checkPassword':
             return action_check_password($db, $p);
         case 'getComptes':
-            return action_get_comptes($db, api_session($db, $jeton), str_contains((string) ($p['source'] ?? ''), 'admin'));
+            // Session d'un compte qui doit changer son mot de passe (AG-060) : liste publique seulement.
+            $sg = api_session($db, $jeton);
+            if ($sg !== null) {
+                $dg = $db->prepare('SELECT doit_changer FROM comptes WHERE conseiller = ?');
+                $dg->execute([$sg['conseiller']]);
+                if ((int) $dg->fetchColumn() === 1) $sg = null;
+            }
+            return action_get_comptes($db, $sg, str_contains((string) ($p['source'] ?? ''), 'admin'));
         case 'demanderReinit':
             require_once __DIR__ . '/reinit.php';
             return action_demander_reinit($db, $p);
@@ -123,6 +130,15 @@ function api_traiter(PDO $db, string $action, array $get, array $post): array
     // seulement à lui. Sans cette garde, il ouvrirait getAll.
     if (($session['role'] === 'ts') !== in_array($action, API_ACTIONS_TS, true)) {
         return ['ok' => false, 'error' => 'Non autorisé', 'auth' => $session['role'] === 'ts'];
+    }
+    // Mot de passe à changer (AG-060) : seul le changement de son propre mot de passe est permis. Relu à chaque
+    // appel : une session ouverte avant la règle est arrêtée aussi. auth : l'écran renvoie vers la connexion.
+    if ($session['role'] !== 'ts' && $action !== 'selfSetPassword') {
+        $dc = $db->prepare('SELECT doit_changer FROM comptes WHERE conseiller = ?');
+        $dc->execute([$session['conseiller']]);
+        if ((int) $dc->fetchColumn() === 1) {
+            return ['ok' => false, 'error' => 'Votre mot de passe doit être changé : reconnectez-vous pour en choisir un nouveau.', 'doit_changer' => true, 'auth' => true];
+        }
     }
     // Corbeille (02/10/2026) : ouverte aux conseillers quand l'Admin l'a rendue
     // visible sur Index (Admin → Visibilité) ; fermée sinon, comme avant.
@@ -238,6 +254,16 @@ function action_check_password(PDO $db, array $p): array
     }
 
     $db->prepare('DELETE FROM tentatives WHERE conseiller = ?')->execute([$nom]);
+    // Règle imposée à la connexion (AG-060, 13/11/2026) : un mot de passe hors règle (repris à l'import,
+    // provisoire…) oblige à en choisir un conforme ; le serveur refuse toute autre action d'ici là.
+    if ((int) $compte['doit_changer'] !== 1 && !api_mdp_conforme($mdp)) {
+        $db->prepare('UPDATE comptes SET doit_changer = 1 WHERE conseiller = ?')->execute([$nom]);
+        $compte['doit_changer'] = 1;
+        // Passage à « doit changer » (Codex, AG-060) : les sessions déjà ouvertes du compte (page TS comprise)
+        // tombent avant d'émettre le nouveau jeton, sinon elles profiteraient de la dispense de l'ancien mot
+        // de passe dans selfSetPassword.
+        $db->prepare('DELETE FROM sessions WHERE conseiller = ? OR conseiller = ?')->execute([$nom, 'ts:' . $nom]);
+    }
     if (password_needs_rehash($compte['hash'], PASSWORD_DEFAULT)) {
         $db->prepare('UPDATE comptes SET hash = ? WHERE conseiller = ?')->execute([password_hash($empreinte, PASSWORD_DEFAULT), $nom]);
     }
@@ -256,7 +282,7 @@ function action_check_password(PDO $db, array $p): array
     // Journalisé ici (le GAS attendait un logLogin du client, falsifiable).
     api_journal($db, 'login', $nom, '', $compte['role'], 1, 0, (string) ($p['userAgent'] ?? ''), (string) ($p['source'] ?? ''));
     $r = ['ok' => true, 'role' => $compte['role'], 'token' => $jeton];
-    if ((int) $compte['doit_changer'] === 1) $r['doit_changer'] = true;   // ajout, ignoré par le client actuel
+    if ((int) $compte['doit_changer'] === 1) $r['doit_changer'] = true;   // l'écran de connexion (Index et Admin) impose alors le changement
     return $r;
 }
 
