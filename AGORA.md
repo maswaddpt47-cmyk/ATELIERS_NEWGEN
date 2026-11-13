@@ -104,6 +104,35 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-059 — Ancien mot de passe par défaut (« cd47 » + prénom) : neutraliser les comptes qui l'ont encore — ouvert le 13/11/2026
+**Auteur** : session « hooks et veilleur » — lu sur `66f457b`
+**Constat** : la formule est écrite dans le code **public** des deux applis (`app.js:58-64` `defaultPwdIndex`,
+commentaires `shared.js:1295`, `api/lib/ecriture.php:11-13`, NextStep `e2e/smoke.test.js:112`) ; nouvelle consigne
+`MD-LIB/rgpd-securite.md` (13/11/2026) : aucun indice de construction d'un mot de passe dans un dépôt public. Depuis
+la bascule, le serveur tire les provisoires au hasard, mais les mots de passe repris à l'import (AG-009) n'ont été
+changés que par ceux qui l'ont fait : un compte resté sur « cd47 » + prénom n'a pas `doit_changer = 1`
+(`api/lib/api.php:221,259`) et s'ouvre avec la formule. **Nombre de comptes concernés inconnu** (base non lue, règle 59).
+Forcer le changement ne suffit pas : qui devine le mot de passe choisirait le nouveau à la place de l'agent.
+**Proposition** :
+1. **Neutralisation unique côté serveur** (au premier appel après déploiement, marqueur pris avant, comme
+   `ts_rattrapage_unique`) : pour chaque compte, `password_verify` du mot de passe par défaut ; s'il correspond,
+   hash remplacé par un aléatoire inconnu de tous et `doit_changer = 1`. L'agent concerné passe par « mot de passe
+   oublié » (lien par mail, `envoyerLienReinit`) ou par l'Admin. Journal : **le nombre seulement**, jamais de nom.
+2. **Admin → Admin** : ligne « N compte(s) neutralisé(s) le JJ/MM » (nombre seulement), pour prévenir les agents.
+3. **Formule retirée du code public** une fois la neutralisation faite : `defaultPwdIndex` et sa vérification côté
+   client (`app.js:139` : le serveur dit déjà `doit_changer`), commentaires et test. Elle reste dans l'historique Git :
+   seule la neutralisation protège.
+**Points à contredire** : la neutralisation peut-elle bloquer un agent sans adresse mail (pas de lien possible) —
+prévenir l'Admin avant ? ; ordre de déploiement (le calcul de la formule doit exister côté serveur le temps de la
+neutralisation : il réécrit la formule dans un fichier public, fût-ce brièvement) ; comptes inactifs, superviseur,
+Admin compris ; coût de `password_verify` sur tous les comptes en un appel.
+**Critère déclencheur** : 6 (coût côté usager : agents à réinitialiser) et sécurité (connexion). **Contradicteur** : Codex,
+**avant le code** (changement structurant de la connexion).
+**Non vérifié par l'auteur** : le nombre de comptes concernés ; que chaque agent ait une adresse dans Listes → mails.
+**Si personne ne répond, je fais quoi ?** — rien sur la connexion sans réponse de Codex ou décision de l'utilisateur.
+**Où regarder** : `api/lib/api.php:215-262` (`checkPassword`), `api/lib/ecriture.php:480-575` (provisoires,
+`selfSetPassword`), `app.js:58-64,135-140`, `api/lib/ts.php` (`ts_rattrapage_unique`).
+
 ## AG-058 — Disponibilités : envoyer les rendez-vous Outlook du PC au téléphone par QR code — ouvert le 13/11/2026
 **Auteur** : session « hooks et veilleur » — lu sur `75ca072`
 **Contexte** : Planning → Disponibilités garde les demi-journées occupées lues dans un export `.ics` d'Outlook
@@ -144,6 +173,9 @@ téléphones de l'équipe vis-à-vis de l'historique.
 effacement du `#`, sans chiffrement), puis vérification unique de Codex.
 **Où regarder** : `shared.js:5418-5445` (Disponibilités), `utils.js:952-988` (`demiJourneesOccupeesICS`),
 `shared.js:3000-3010` (QR code des avis).
+**Décision de l'utilisateur (13/11/2026)** : variante « mail préparé » seulement (bouton qui ouvre la messagerie de
+l'agent avec un mail à lui-même contenant le lien `#olk=`), sans QR code ; amendements de Codex retenus (pas de nom,
+confirmation avant écriture, refus si trop grand, `ignores` et `le` transmis, couverture recalculée, validation complète).
 
 
 ### Réponse — Codex — 13/11/2026
