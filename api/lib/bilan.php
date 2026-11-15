@@ -28,6 +28,9 @@ require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/api.php';   // api_config_base, api_json, api_journal
 
 const BILAN_URL_APPLI = 'https://maswaddpt47-cmyk.github.io/ateliers-cd47_NextStep/';
+// Mail de test seulement (demande de l'utilisateur, 15/11/2026) : rappel de
+// la vérification avant l'envoi automatique du 5.
+const BILAN_VERIF_TEST = 'À vérifier avant l\'envoi automatique du 5 : soumettez ce mail à Claude (captures) pour le comparer au recomptage indépendant (dépôt ateliers-backups, Actions, « Bilan mensuel — recomptage indépendant »).';
 const BILAN_MOIS_FR = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
 $test = null;
@@ -199,7 +202,7 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
         ['Inscrits (ateliers réalisés)', $ce['inscrits'], $prec['inscrits']],
         ['Présents (ateliers réalisés)', $ce['presents'], $prec['presents']],
     ];
-    $texte = "Bilan des ateliers numériques — $libelle\n\n";
+    $texte = "Bilan des ateliers numériques — $libelle\n\n" . ($test ? BILAN_VERIF_TEST . "\n\n" : '');
     foreach ($lignesChiffres as [$l, $a, $b]) $texte .= "$l : $a ($libPrec : $b, " . $ecart($a, $b) . ")\n";
     $texte .= 'Taux de présence : ' . bilan_taux($ce['presents_taux'], $ce['inscrits_taux']) . " ($libPrec : " . bilan_taux($prec['presents_taux'], $prec['inscrits_taux']) . ")\n\nPar conseiller (un atelier co-animé compte pour ses deux animateurs) :\n";
     foreach ($parConseiller as $nom => $c) $texte .= "- $nom : " . $s($c, 'Réalisé') . " réalisé(s) sur {$c['total']}, {$c['presents']} présent(s) / {$c['inscrits']} inscrit(s)\n";
@@ -258,6 +261,7 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
           . '<div style="background:#1e3a8a;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0"><h2 style="margin:0;font-size:18px">Bilan des ateliers — ' . $h($libelle) . '</h2>'
           . ($test ? '<p style="margin:6px 0 0;font-size:12px;opacity:.8">— MAIL DE TEST —</p>' : '') . '</div>'
           . '<div style="background:#fff;padding:12px 24px 20px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px">'
+          . ($test ? '<p style="background:#fef3c7;color:#78350f;padding:10px 12px;border-radius:6px;font-size:13px">' . $h(BILAN_VERIF_TEST) . '</p>' : '')
           . $titre('Chiffres du mois') . $tableau(['', ucfirst($libelle), ucfirst($libPrec), 'Écart'], $chiffres)
           . $titre('Par conseiller') . ($cons ? $tableau(['Conseiller', 'Réalisés / total', 'Présents / inscrits', 'Taux'], $cons)
               . '<p style="color:#718096;font-size:12px;margin-top:-10px">Un atelier co-animé compte pour chacun de ses animateurs : les lignes ne s\'additionnent pas.</p>' : '<p style="color:#718096">Aucun atelier ce mois-ci.</p>')

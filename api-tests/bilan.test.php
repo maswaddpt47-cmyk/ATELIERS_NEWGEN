@@ -87,6 +87,7 @@ else {
 }
 verifier(str_contains($t, '1 atelier(s) de septembre 2026 encore « Planifié »') && str_contains($t, '1 atelier(s) planifié(s) en octobre'), 'points d\'attention : retards, mois suivant');
 verifier(!preg_match('/Alice|Sophie|example\.org/', $sortie), 'compte rendu sans nom ni adresse');
+verifier(!str_contains($t, 'soumettez ce mail'), 'envoi réel : pas de rappel de vérification');
 verifier(str_contains($t, 'Fiches bilan remplies : 1 sur 2 atelier(s) réalisé(s)') && str_contains($t, 'Objectif atteint : Oui : 1') && str_contains($t, 'Difficultés rencontrées : Connexion : 1, Autre : 1')
     && str_contains($t, 'Avis des stagiaires : 3 avis sur 1 atelier(s)') && str_contains($t, 'Réponse aux attentes : 4,5/5 — 2 réponses sur 3 avis') && str_contains($t, 'Plus à l\'aise (« oui ») : 1 sur 3 avis (1 sans réponse)'), 'qualité : fiches bilan et avis des seuls ateliers réalisés');
 verifier(!str_contains($t, 'Merci à Alice') && !str_contains($t, 'Salle Martin'), 'qualité : ni remarque d\'avis ni précision libre dans le mail');
@@ -100,7 +101,7 @@ verifier($code === 1 && $mails() === [], 'option inconnue (« test= » oublié) 
 
 [$code, $sortie] = $lancer('--mois=2026-09 --test=moi@example.org');
 $m = $mails();
-verifier($code === 0 && count($m) === 1 && str_contains($m[0], 'A: moi@example.org') && str_contains($m[0], '[TEST]'), 'mode test : un seul mail, à l\'adresse donnée');
+verifier($code === 0 && count($m) === 1 && str_contains($m[0], 'A: moi@example.org') && str_contains($m[0], '[TEST]') && str_contains($m[0], 'soumettez ce mail à Claude'), 'mode test : un seul mail, à l\'adresse donnée, avec le rappel de vérification');
 array_map('unlink', glob("$tmp/mails/*.txt") ?: []);
 [$code, $sortie] = $lancer('--mois=' . date('Y-m') . ' --test=moi@example.org');
 verifier($code === 1 && $mails() === [] && str_contains($sortie, 'pas encore terminé'), 'mois en cours : refusé, aucun envoi (AG-038)');
