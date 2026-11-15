@@ -6,7 +6,10 @@ Revues closes (AG-041 à AG-058, AG-060) : ne pas les relancer d'office. **Autor
 confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
 **Fait le 15/11** : mail de lien « n'est pas modifié » (`86ae860`) ; AG-060 clos ; CI : `e2e` en parallèle de `test`
 dans les deux dépôts (NextStep mesuré 1 min 51 → 1 min 25 sur un passage ; NEWGEN non mesuré).
-**En attente de l'utilisateur** : choix parmi les trois pistes du 15/11 (section « Pistes », réponse par numéros).
+**Pistes 1 et 2 retenues le 15/11** : (2) fuseau lu par `diagnostic-api.yml` (`eaa3d99`) : MySQL `SYSTEM` = heure de Paris,
+`NOW()` = PHP Paris, aucun décalage. (1) comptage en lecture (`ateliers-backups`, `compter-cas-bilan.yml`, nombres seuls, 15/11) :
+**novembre** 32 ateliers dont 6 réalisés, **9 durées vides**, **2 « Planifié » passés** ; **octobre** 21/18, 1 réalisé sans inscrits,
+1 réalisé à présents > inscrits, 1 durée vide. Reste : **audit Codex (règle 33) sur l'export réel avant le 05/12**.
 
 **À reprendre en premier** — AG-059 : comptage nominatif du 13/11 (dépôt privé, run `43515715586`) :
 **1 compte, la superviseure** ; l'utilisateur lui fait changer son mot de passe **à leur prochaine rencontre**
@@ -283,10 +286,7 @@ appel superflu, `sw.js` de désinscription.
 
 Règle 20 du `CLAUDE.md`. Ne pas reproposer une piste écartée sans fait nouveau.
 
-**Proposées, en attente** (15/11/2026) :
-- Chiffres du premier bilan mensuel (05/12) : comptage en lecture des cas AG-032 (nombres seuls) puis audit Codex (règle 33).
-- Fuseau de MySQL jamais lu (`NOW()` des sessions, corbeille, journal) : une ligne dans `diagnostic-api.yml`.
-- Coupure d'urgence jamais essayée sur les pages NextStep du bac à sable (règle 37).
+**Proposées, en attente** : la 3 du 15/11 (coupure d'urgence sur les pages NextStep du bac à sable, règle 37).
 
 **Écartées** (date — piste — raison)
 - 25/10/2026 — Tableaux thématiques × communes et partenaires × conseillers — retirés à la demande de l'utilisateur : alourdissent la page, jugés inutiles. Ne pas les reproposer sans fait nouveau.
