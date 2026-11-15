@@ -261,7 +261,7 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
           . '<div style="background:#1e3a8a;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0"><h2 style="margin:0;font-size:18px">Bilan des ateliers — ' . $h($libelle) . '</h2>'
           . ($test ? '<p style="margin:6px 0 0;font-size:12px;opacity:.8">— MAIL DE TEST —</p>' : '') . '</div>'
           . '<div style="background:#fff;padding:12px 24px 20px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px">'
-          . ($test ? '<p style="background:#fef3c7;color:#78350f;padding:10px 12px;border-radius:6px;font-size:13px">' . $h(BILAN_VERIF_TEST) . '</p>' : '')
+          . ($test ? '<p style="background:#fef3c7;color:#b91c1c;padding:10px 12px;border-radius:6px;font-size:13px">' . $h(BILAN_VERIF_TEST) . '</p>' : '')
           . $titre('Chiffres du mois') . $tableau(['', ucfirst($libelle), ucfirst($libPrec), 'Écart'], $chiffres)
           . $titre('Par conseiller') . ($cons ? $tableau(['Conseiller', 'Réalisés / total', 'Présents / inscrits', 'Taux'], $cons)
               . '<p style="color:#718096;font-size:12px;margin-top:-10px">Un atelier co-animé compte pour chacun de ses animateurs : les lignes ne s\'additionnent pas.</p>' : '<p style="color:#718096">Aucun atelier ce mois-ci.</p>')
