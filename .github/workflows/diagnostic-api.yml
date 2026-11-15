@@ -66,6 +66,10 @@ jobs:
             echo "== traces de la tâche planifiée (lignes « sauvegarde », 48 h)"
             find ~/admin/logs -type f -mmin -2880 2>/dev/null | xargs -r grep -h "sauvegarde" 2>/dev/null | grep -v "GET \|POST " | tail -15
             echo "== heure du serveur"; date
+            # Fuseau de MySQL (piste du 15/11/2026) : NOW() des sessions, de la corbeille et du journal en dépend.
+            # Lit la configuration sans l afficher ; n imprime que des heures.
+            echo "== fuseau MySQL et PHP"
+            php -r '"'"'$c = require getenv("HOME") . "/config-api.php"; date_default_timezone_set("Europe/Paris"); $d = new PDO("mysql:host=" . $c["db_hote"] . ";dbname=" . $c["db_nom"], $c["db_utilisateur"], $c["db_mot_de_passe"]); $r = $d->query("SELECT @@global.time_zone, @@session.time_zone, NOW(), UTC_TIMESTAMP()")->fetch(PDO::FETCH_NUM); echo "mysql global=", $r[0], " session=", $r[1], " NOW()=", $r[2], " UTC=", $r[3], "\n", "php Europe/Paris=", date("Y-m-d H:i:s"), "\n";'"'"'
             echo "== appels à import.php (requête, code, taille — sans IP)"
             cat ~/admin/logs/http/2026/http-2026-09-2*.log 2>/dev/null | grep "import.php" | grep -oE "\[[^]]+\] \"[A-Z]+ [^ ]+ [^\"]+\" [0-9]{3} [0-9-]+" | tail -20
           '
