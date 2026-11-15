@@ -104,8 +104,8 @@ function reinit_envoyer(PDO $db, string $nom, string $retour, string $ua, bool $
         ? "L'administrateur des Ateliers numériques vous envoie un lien pour choisir votre mot de passe."
         : 'Une réinitialisation de votre mot de passe a été demandée.';
     $fin = $parAdmin
-        ? "Votre mot de passe actuel reste valable tant que vous n'avez pas utilisé ce lien."
-        : "Si vous n'êtes pas à l'origine de cette demande, ignorez ce mail : votre mot de passe actuel reste valable.";
+        ? "Tant que vous n'utilisez pas ce lien, votre mot de passe n'est pas modifié."
+        : "Si vous n'êtes pas à l'origine de cette demande, ignorez ce mail : votre mot de passe n'a pas été modifié.";
     mail_envoyer($adresse, 'Réinitialisation de votre mot de passe — Ateliers numériques',
         "Bonjour $nom,\n\n$intro\nPour choisir un nouveau mot de passe, ouvrez ce lien (valable 30 minutes, une seule fois) :\n$lien\n\n$fin",
         '<p>Bonjour ' . $h($nom) . ',</p><p>' . $h($intro) . '</p>'
