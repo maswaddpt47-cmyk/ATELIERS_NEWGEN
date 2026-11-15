@@ -192,6 +192,99 @@ pas d'opération groupée ; ce compte passe par « Réinitialiser » de l'Admin 
 aléatoire, `doit_changer`, sessions et liens révoqués par `api_apres_changement_mdp`), le provisoire remis en direct ;
 nouveau comptage pour vérifier 0 ; puis formule retirée du code public des deux applis. Décision : utilisateur.
 
+## Audit du bilan mensuel — demande utilisateur du 15/11/2026
+
+### Réponse — Codex — 15/11/2026
+**Périmètre** : NEWGEN `146d423`, `api/lib/bilan.php` et ses appels.
+Audit demandé directement par l'utilisateur ; les décisions closes d'AG-032/037/038
+ne sont pas remises en discussion. **Verdict : amendé** sur les points ci-dessous.
+
+**Livraison indépendante** : [`outils/recompter-bilan.php`](https://github.com/maswaddpt47-cmyk/ateliers-backups/blob/9c430cbb3d1fb24a4fbb1c8c076adb1863fd2a3d/outils/recompter-bilan.php),
+publié sur `ateliers-backups/main`, commit `9c430cb`.
+Aucune inclusion de `bilan.php` ni de ses fonctions : agrégats SQL propres, réunis dans
+une seule requête SELECT pour lire un même état InnoDB. Configuration
+`$HOME/config-api.php`, comme `compter-cas-bilan.php` ; commande du workflow conservée :
+`php -- --mois=AAAA-MM < outils/recompter-bilan.php`.
+Aucune écriture ni envoi de mail. Sortie JSON : valeurs numériques ou `null`,
+identités remplacées par C1… et P1…, jamais de texte de fiche ni d'avis.
+
+**Chiffres couverts** : mois demandé/précédent et écarts ; tous les statuts affichés,
+inscrits/présents et bases du taux ; conseillers avec coanimations ; partenaires ;
+planifiés passés et du mois suivant ; fiches, chaque choix objectif/difficultés/suite ;
+avis, ateliers concernés, moyennes et effectifs répondants, oui et non-réponses.
+Les clés du JSON donnent les unités et dénominateurs. Les C/P suivent les tris du mail ;
+un défaut de regroupement modifiant ses lignes doit être corrigé avant leur rapprochement. `null` signifie non calculable.
+Les statuts non canoniques sont comptés dans `statuts_autres`. Un choix inconnu ou
+une difficulté répétée met `couverture_complete=0` et termine avec le code 6 :
+pas de concordance annoncée en ignorant un chiffre. Les partenaires ex æquo ont
+`rang_ambigu=1` : comparer leurs couples réalisés/total, identiques dans le mail,
+plutôt que supposer un départage que son tri ne définit pas (`bilan.php:126`).
+
+**Défauts démontrés, à corriger dans le produit par l'auteur** :
+
+1. **Un compteur de statut peut être perdu après fusion des libellés.**
+   Le SQL groupe les valeurs brutes (`bilan.php:80`), puis PHP les normalise
+   (`84`) et remplace le compteur (`87`), alors que le total s'additionne.
+   Rejeu sur deux ateliers fictifs réalisés, partenaires respectifs vide et « — » :
+   total partenaire **2**, réalisés du mail **1**, recomptage **2**.
+   Ces valeurs sont admissibles dans le champ texte (`ecriture.php:253-263`,
+   `import.php:28`). Additionner les statuts lors de cette fusion, ou grouper
+   sur la même clé normalisée dès SQL. Présence de ce cas en production non vérifiée.
+
+2. **Les comparaisons SQL et les clés PHP ne reconnaissent pas les mêmes statuts.**
+   La collation `utf8mb4_unicode_ci` (`api/lib/schema.sql:40`) accepte une variante
+   de casse dans les comparaisons (`bilan.php:76-79,139,155`), mais le mail lit
+   la clé exacte « Réalisé » (`87,170,179`). Rejeu sur un atelier fictif au statut
+   « réalisé » : réalisés affichés **0**, inscrits **1**, présents **1**.
+   Le validateur laisse ce champ texte sans énumération (`ecriture.php:253-263`).
+   Aligner validation, regroupement et comparaison sur un contrat unique ;
+   ne pas corriger des données historiques sans décision. Aucun tel cas réel vérifié.
+
+3. **Les rubriques ne partagent pas un état de lecture commun.**
+   Lectures successives à `bilan.php:121-124,127-132,139-155`, sans snapshot commun.
+   Scénario sur un atelier fictif : passage Planifié → Réalisé entre le total et
+   la qualité ; le mail peut annoncer 0 réalisé puis une qualité portant sur 1 réalisé.
+   Même problème si l'animateur change entre les deux lectures de `109,111`.
+   Préparer les schémas avant une lecture cohérente : `avis_schema` (`150`) exécute
+   des CREATE/ALTER (`avis.php:32-51`), incompatibles avec un simple enveloppement
+   du fichier dans une transaction. Scénario de concurrence établi par lecture,
+   pas de requêtes concurrentes exécutées sur le serveur réel.
+
+4. **L'absence de second envoi n'est garantie qu'en séquentiel.**
+   `bilan.php:275-285` vérifie le journal, envoie, puis journalise.
+   Deux lancements réels simultanés peuvent lire tous deux zéro avant le premier
+   envoi et chacun envoyer le mail. Le test `api-tests/bilan.test.php:95-97`
+   ne couvre que la relance après un premier envoi terminé.
+   Sérialiser la réservation par mois/destinataire et définir le traitement d'un
+   envoi interrompu ; ne pas relancer aveuglément après une réponse perdue.
+   Scénario concurrent déduit du chemin exact ; aucun mail de test ou réel envoyé ici.
+
+**Questions de définition, séparées des défauts** :
+- « Fiche remplie » signifie actuellement JSON non vide (`bilan.php:144-148`).
+  Une fiche ne contenant que le niveau est donc comptée, sans réponse à l'objectif.
+  À trancher : ce libellé convient-il à une fiche partielle ?
+- Les notes moyennes excluent les non-réponses (`151`), sans annoncer leur
+  effectif dans le mail (`211-212`). À trancher : afficher cette couverture ?
+  Le recomptage donne les sommes et effectifs correspondants.
+Les règles déjà décidées sont conservées : un atelier coanimé compte pour chacun ;
+les lignes conseiller ne s'additionnent pas ; le taux ne porte que sur les réalisés
+avec inscrits positifs et présents saisis ; les réponses oui utilisent tous les avis
+et annoncent les non-réponses. Aucun défaut démontré de ces définitions.
+
+**Vérifications** : PHP 8.4 / MariaDB 11.4 jetables, utilisateur SQL limité à SELECT ;
+fixtures fictives couvrant bornes du mois, février bissextile, mois vide, statuts,
+coanimations y compris même animateur, partenaires, valeurs nulles, fiches partielles,
+choix multiples, avis hors population, notes et non-réponses. Vérification des erreurs,
+du refus des mois non terminés et de l'absence de chaînes issues des données dans
+les sorties ; contre-épreuve de calcul sur une copie mutée effectivement rejetée.
+Les deux premiers défauts ont été rejoués avec les fonctions exactes du produit.
+
+**Limite et suite** : aucune donnée réelle ni sauvegarde lue ; aucun workflow serveur
+déclenché. Seul `AGORA.md` est modifié dans NEWGEN. L'opérateur lance le recomptage
+privé et compare le mail [TEST] dans le tableau affiché / recompté / écart avant
+diffusion ; cette revue ne prétend pas avoir validé les chiffres réels.
+
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
