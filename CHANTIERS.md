@@ -1,26 +1,18 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **15/11/2026 (relu par « pull »)**, bases `main` : NEWGEN `9d1c554`, NextStep `f117aa2` — rien de neuf côté code depuis le 13/11 (NextStep : CHANTIERS seul, piste « CI plus rapide »). AG-058 livré et clos.
-(AG-054 à AG-056 clos ; AG-057 vacances scolaires livré, vérifié par Codex, écarts corrigés et clos ; flux sortant vers data.education.gouv.fr inscrit aux registres V0.11 sécurité / V0.8 RGPD, `ateliers-backups` `940ca58`).
-Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ;
-aucun ancien brouillon à réappliquer. Revues closes (AG-041 à AG-057) : ne pas les relancer d'office.
-**Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue malgré « Autoriser toutes
-les actions » ; cause non établie, ne pas les présenter comme supprimées.
+État au **15/11/2026**, bases `main` : NEWGEN `86ae860`, NextStep `f117aa2`. Reprise : actualiser les deux
+`main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer.
+Revues closes (AG-041 à AG-058) : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
+confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
 
-**À reprendre en premier** :
-- **AG-059** : comptage nominatif du 13/11 (dépôt privé, run `43515715586`) : **1 compte, la superviseure** ; l'utilisateur
-  lui fera changer son mot de passe **à sa prochaine rencontre** (« Mot de passe provisoire » de l'Admin, ou changement
-  par elle) ; puis recompter (0 attendu, option `nominatif`).
-- **AG-060 livré le 13/11/2026, écran vérifié par l'utilisateur sur le compte de la superviseure (marqué « doit changer »)** (risque accepté par l'utilisateur : livré avant le changement de la superviseure) : règle
-  du mot de passe imposée à la connexion, toute action refusée tant que `doit_changer`, sessions fermées au passage 0 → 1,
-  `getComptes` Admin et page TS refusés à un compte qui doit changer, écran de changement dans l'Admin des deux applis,
-  formule retirée du code public. Vérification de Codex (13/11) : deux écarts corrigés le jour même (verrou au passage « doit changer », retour à la connexion si la session expire sur l'écran de changement). Reste : texte du mail de lien
-  (`reinit.php:104-110`, « votre mot de passe actuel reste valable »).
+**À reprendre en premier** — AG-059 : comptage nominatif du 13/11 (dépôt privé, run `43515715586`) :
+**1 compte, la superviseure** ; l'utilisateur lui fait changer son mot de passe **à leur prochaine rencontre**
+(« Mot de passe provisoire » de l'Admin, ou changement par elle) ; puis recompter (`compter-mdp-defaut.yml`
+d'`ateliers-backups`, 0 attendu) et clore AG-059. AG-060 (mot de passe imposé à la connexion) livré, vérifié par
+Codex, écarts corrigés ; dernier reste (mail de lien : « n'est pas modifié » au lieu de « reste valable ») fait le
+15/11 (`86ae860`) : AG-060 peut être clos.
 
-Fichier transitoire, à mettre à jour à chaque avancée et à supprimer une fois
-soldé ; pas de la documentation permanente (`MD-LIB/hygiene-instructions.md`).
-
-Contradiction : `AGORA.md` — AG-059 (changement de la superviseure) et AG-060 (vérification de la livraison par Codex) ouverts.
+Fichier transitoire (`MD-LIB/hygiene-instructions.md`). Contradiction : `AGORA.md`.
 
 ---
 
