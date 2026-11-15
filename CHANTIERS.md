@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **15/11/2026, fin de session**, bases `main` : NEWGEN `a41d8c6`, NextStep `2baa8fd`. Reprise : actualiser les deux
+État au **15/11/2026, fin de session**, bases `main` : NEWGEN `39a84cf`, NextStep `2baa8fd`. Reprise : actualiser les deux
 `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer.
 Revues closes (AG-041 à AG-058, AG-060) : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
 confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
