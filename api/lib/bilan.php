@@ -67,6 +67,17 @@ $suivDebut = date('Y-m-01', strtotime("$debut +1 month"));
 $suivFin = date('Y-m-t', strtotime($suivDebut));
 $aujourdhui = date('Y-m-d');   // heure de Paris (base.php)
 
+// Statut ramené à son libellé officiel, sans tenir compte de la casse ni des
+// espaces autour (l'import Excel accepte un texte libre) ; inconnu : tel quel.
+function bilan_statut(string $statut): string
+{
+    $s = trim($statut);
+    foreach (['Réalisé', 'Planifié', 'Annulé', 'Reporté', 'Non réalisé'] as $officiel) {
+        if (mb_strtolower($s) === mb_strtolower($officiel)) return $officiel;
+    }
+    return $s !== '' ? $s : '—';
+}
+
 // Chiffres d'une période : nombre par statut ; inscrits et présents des
 // ateliers réalisés (même règle que kpiHistorique côté pages).
 function bilan_chiffres(PDO $db, string $de, string $a, string $grouper = ''): array
@@ -84,7 +95,11 @@ function bilan_chiffres(PDO $db, string $de, string $a, string $grouper = ''): a
         $k = trim((string) $l['cle']) !== '' ? trim((string) $l['cle']) : '—';
         $r[$k] ??= ['total' => 0, 'statuts' => [], 'inscrits' => 0, 'presents' => 0, 'inscrits_taux' => 0, 'presents_taux' => 0];
         $r[$k]['total'] += (int) $l['n'];
-        $r[$k]['statuts'][$l['statut'] ?: '—'] = (int) $l['n'];
+        // Clé de statut canonique (audit Codex du 15/11/2026, défauts 1 et 2) : la
+        // collation compare sans casse, la clé doit donc l'ignorer aussi, et deux
+        // lignes fusionnées (partenaire vide et « — ») s'additionnent.
+        $stt = bilan_statut((string) $l['statut']);
+        $r[$k]['statuts'][$stt] = ($r[$k]['statuts'][$stt] ?? 0) + (int) $l['n'];
         $r[$k]['inscrits'] += (int) $l['inscrits'];
         $r[$k]['presents'] += (int) $l['presents'];
         $r[$k]['inscrits_taux'] += (int) $l['inscrits_taux'];
@@ -148,7 +163,7 @@ function bilan_qualite(PDO $db, string $de, string $a): array
         foreach ((array) ($b['difficultes'] ?? []) as $d) if (is_string($d)) $q['difficultes'][$d] = ($q['difficultes'][$d] ?? 0) + 1;
     }
     avis_schema($db);
-    $st = $db->prepare("SELECT COUNT(*) n, COUNT(DISTINCT v.atelier_id) ateliers, AVG(v.attentes) attentes, AVG(v.clarte) clarte,
+    $st = $db->prepare("SELECT COUNT(*) n, COUNT(DISTINCT v.atelier_id) ateliers, AVG(v.attentes) attentes, AVG(v.clarte) clarte, COUNT(v.attentes) attentes_n, COUNT(v.clarte) clarte_n,
                                SUM(v.aise = 'Oui') aise_oui, SUM(v.aise IS NOT NULL) aise_n,
                                SUM(v.autonomie = 'Oui') autonomie_oui, SUM(v.autonomie IS NOT NULL) autonomie_n
                         FROM avis v JOIN ateliers a ON a.id = v.atelier_id
@@ -192,7 +207,7 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
     foreach ($parPartenaire as $nom => $c) $texte .= "- $nom : " . $s($c, 'Réalisé') . " réalisé(s) sur {$c['total']}\n";
     // Qualité (fiches bilan, avis) : ordre des choix comme dans la fiche.
     $q = $qualite + ['realises' => 0, 'fiches' => 0, 'objectif' => [], 'difficultes' => [], 'suite' => [], 'avis' => []];
-    $av = $q['avis'] + ['n' => 0, 'ateliers' => 0, 'attentes' => null, 'clarte' => null, 'aise_oui' => 0, 'aise_n' => 0, 'autonomie_oui' => 0, 'autonomie_n' => 0];
+    $av = $q['avis'] + ['n' => 0, 'ateliers' => 0, 'attentes' => null, 'clarte' => null, 'attentes_n' => 0, 'clarte_n' => 0, 'aise_oui' => 0, 'aise_n' => 0, 'autonomie_oui' => 0, 'autonomie_n' => 0];
     $repart = function (array $compte, string $cle): string {
         $ordre = BILAN_CHOIX[$cle] ?? [];
         $cles = array_merge(array_values(array_filter($ordre, fn($k) => isset($compte[$k]))), array_diff(array_keys($compte), $ordre));
@@ -208,8 +223,9 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
         ['Difficultés rencontrées', $repart($q['difficultes'], 'difficultes')],
         ['Suite à donner', $repart($q['suite'], 'suite')],
         ['Avis des stagiaires', $av['n'] . ' avis sur ' . $av['ateliers'] . ' atelier(s)'],
-        ['Réponse aux attentes', $note($av['attentes'])],
-        ['Clarté', $note($av['clarte'])],
+        // Effectif des notes affiché (choix de l'utilisateur, 15/11/2026).
+        ['Réponse aux attentes', $note($av['attentes']) . ($av['attentes'] === null ? '' : ' (' . $part((int) $av['attentes_n'], (int) $av['attentes_n'], (int) $av['n']) . ')')],
+        ['Clarté', $note($av['clarte']) . ($av['clarte'] === null ? '' : ' (' . $part((int) $av['clarte_n'], (int) $av['clarte_n'], (int) $av['n']) . ')')],
         ['Plus à l\'aise (« oui »)', $part((int) $av['aise_oui'], (int) $av['aise_n'], (int) $av['n'])],
         ['Pourra refaire seul(e) (« oui »)', $part((int) $av['autonomie_oui'], (int) $av['autonomie_n'], (int) $av['n'])],
     ];

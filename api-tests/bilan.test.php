@@ -88,7 +88,7 @@ else {
 verifier(str_contains($t, '1 atelier(s) de septembre 2026 encore « Planifié »') && str_contains($t, '1 atelier(s) planifié(s) en octobre'), 'points d\'attention : retards, mois suivant');
 verifier(!preg_match('/Alice|Sophie|example\.org/', $sortie), 'compte rendu sans nom ni adresse');
 verifier(str_contains($t, 'Fiches bilan remplies : 1 sur 2 atelier(s) réalisé(s)') && str_contains($t, 'Objectif atteint : Oui : 1') && str_contains($t, 'Difficultés rencontrées : Connexion : 1, Autre : 1')
-    && str_contains($t, 'Avis des stagiaires : 3 avis sur 1 atelier(s)') && str_contains($t, 'Réponse aux attentes : 4,5/5') && str_contains($t, 'Plus à l\'aise (« oui ») : 1 sur 3 avis (1 sans réponse)'), 'qualité : fiches bilan et avis des seuls ateliers réalisés');
+    && str_contains($t, 'Avis des stagiaires : 3 avis sur 1 atelier(s)') && str_contains($t, 'Réponse aux attentes : 4,5/5 (2 sur 3 avis (1 sans réponse))') && str_contains($t, 'Plus à l\'aise (« oui ») : 1 sur 3 avis (1 sans réponse)'), 'qualité : fiches bilan et avis des seuls ateliers réalisés');
 verifier(!str_contains($t, 'Merci à Alice') && !str_contains($t, 'Salle Martin'), 'qualité : ni remarque d\'avis ni précision libre dans le mail');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'bilanMensuel' AND ref = '2026-09'")->fetchColumn() === 1, 'envoi journalisé');
 
@@ -120,6 +120,16 @@ array_map('unlink', glob("$tmp/mails/*.txt"));
 $t = ($mails())[0] ?? '';
 verifier($code === 0 && str_contains($t, 'Inscrits (ateliers réalisés) : 12') && str_contains($t, 'Présents (ateliers réalisés) : 6'), 'les lignes Inscrits / Présents restent des totaux');
 verifier(str_contains($t, 'Taux de présence : 75 %'), 'présents non saisis : hors du taux (75 %, pas 50 %)');
+
+// Audit Codex du 15/11/2026 : statut écrit en minuscules (import Excel) et
+// partenaires vide / « — » fusionnés — aucun réalisé perdu.
+echo "Statuts et partenaires fusionnés\n";
+$ins->execute(['u1', 'réalisé', '2026-05-04', 'Alice', '', 3, 3]);
+$ins->execute(['u2', 'Réalisé', '2026-05-11', 'Alice', '—', 2, 1]);
+array_map('unlink', glob("$tmp/mails/*.txt"));
+[$code, $sortie] = $lancer('--mois=2026-05');
+$t = ($mails())[0] ?? '';
+verifier($code === 0 && str_contains($t, 'Réalisés : 2 ') && str_contains($t, '- — : 2 réalisé(s) sur 2') && str_contains($t, 'Alice : 2 réalisé(s) sur 2'), 'statut en minuscules et partenaire vide / « — » : 2 réalisés comptés');
 
 $db->exec('DROP DATABASE ateliers_test_bilan');
 exec('rm -rf ' . escapeshellarg($tmp));
