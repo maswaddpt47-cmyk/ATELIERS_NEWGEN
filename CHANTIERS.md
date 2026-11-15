@@ -8,9 +8,7 @@ confirmation `create_tree` encore vue malgré « Autoriser toutes les actions »
 **À reprendre en premier** — AG-059 : comptage nominatif du 13/11 (dépôt privé, run `43515715586`) :
 **1 compte, la superviseure** ; l'utilisateur lui fait changer son mot de passe **à leur prochaine rencontre**
 (« Mot de passe provisoire » de l'Admin, ou changement par elle) ; puis recompter (`compter-mdp-defaut.yml`
-d'`ateliers-backups`, 0 attendu) et clore AG-059. AG-060 (mot de passe imposé à la connexion) livré, vérifié par
-Codex, écarts corrigés ; dernier reste (mail de lien : « n'est pas modifié » au lieu de « reste valable ») fait le
-15/11 (`86ae860`) : AG-060 peut être clos.
+d'`ateliers-backups`, 0 attendu) et clore AG-059. AG-060 (mot de passe imposé à la connexion) clos le 15/11/2026.
 
 Fichier transitoire (`MD-LIB/hygiene-instructions.md`). Contradiction : `AGORA.md`.
 
