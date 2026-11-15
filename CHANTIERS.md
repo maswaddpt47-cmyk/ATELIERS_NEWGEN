@@ -280,7 +280,10 @@ appel superflu, `sw.js` de désinscription.
 
 Règle 20 du `CLAUDE.md`. Ne pas reproposer une piste écartée sans fait nouveau.
 
-**Proposées, en attente** : aucune (26/10/2026 ; « un bilan par conseiller » retenu et fait).
+**Proposées, en attente** (15/11/2026) :
+- Chiffres du premier bilan mensuel (05/12) : comptage en lecture des cas AG-032 (nombres seuls) puis audit Codex (règle 33).
+- Fuseau de MySQL jamais lu (`NOW()` des sessions, corbeille, journal) : une ligne dans `diagnostic-api.yml`.
+- Coupure d'urgence jamais essayée sur les pages NextStep du bac à sable (règle 37).
 
 **Écartées** (date — piste — raison)
 - 25/10/2026 — Tableaux thématiques × communes et partenaires × conseillers — retirés à la demande de l'utilisateur : alourdissent la page, jugés inutiles. Ne pas les reproposer sans fait nouveau.
