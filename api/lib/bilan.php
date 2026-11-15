@@ -217,6 +217,7 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
     // Base = tous les avis, non-réponses dites (AG-032, 26/10/2026) : même base
     // que le bilan trimestriel, « 1 sur 3 avis (2 sans réponse) ».
     $part = fn($o, $repondu, $total) => $total ? "$o sur $total avis" . ($total > $repondu ? ' (' . ($total - $repondu) . ' sans réponse)' : '') : '—';
+    $effectif = fn($moy, int $rep, int $total) => $moy === null ? '' : " — $rep réponse" . ($rep > 1 ? 's' : '') . " sur $total avis";
     $lignesQualite = [
         ['Fiches bilan remplies', $q['fiches'] . ' sur ' . $q['realises'] . ' atelier(s) réalisé(s)'],
         ['Objectif atteint', $repart($q['objectif'], 'objectif')],
@@ -224,8 +225,8 @@ function bilan_mail(string $mois, array $ce, array $prec, array $parConseiller, 
         ['Suite à donner', $repart($q['suite'], 'suite')],
         ['Avis des stagiaires', $av['n'] . ' avis sur ' . $av['ateliers'] . ' atelier(s)'],
         // Effectif des notes affiché (choix de l'utilisateur, 15/11/2026).
-        ['Réponse aux attentes', $note($av['attentes']) . ($av['attentes'] === null ? '' : ' (' . $part((int) $av['attentes_n'], (int) $av['attentes_n'], (int) $av['n']) . ')')],
-        ['Clarté', $note($av['clarte']) . ($av['clarte'] === null ? '' : ' (' . $part((int) $av['clarte_n'], (int) $av['clarte_n'], (int) $av['n']) . ')')],
+        ['Réponse aux attentes', $note($av['attentes']) . $effectif($av['attentes'], (int) $av['attentes_n'], (int) $av['n'])],
+        ['Clarté', $note($av['clarte']) . $effectif($av['clarte'], (int) $av['clarte_n'], (int) $av['n'])],
         ['Plus à l\'aise (« oui »)', $part((int) $av['aise_oui'], (int) $av['aise_n'], (int) $av['n'])],
         ['Pourra refaire seul(e) (« oui »)', $part((int) $av['autonomie_oui'], (int) $av['autonomie_n'], (int) $av['n'])],
     ];

@@ -88,7 +88,7 @@ else {
 verifier(str_contains($t, '1 atelier(s) de septembre 2026 encore « Planifié »') && str_contains($t, '1 atelier(s) planifié(s) en octobre'), 'points d\'attention : retards, mois suivant');
 verifier(!preg_match('/Alice|Sophie|example\.org/', $sortie), 'compte rendu sans nom ni adresse');
 verifier(str_contains($t, 'Fiches bilan remplies : 1 sur 2 atelier(s) réalisé(s)') && str_contains($t, 'Objectif atteint : Oui : 1') && str_contains($t, 'Difficultés rencontrées : Connexion : 1, Autre : 1')
-    && str_contains($t, 'Avis des stagiaires : 3 avis sur 1 atelier(s)') && str_contains($t, 'Réponse aux attentes : 4,5/5 (2 sur 3 avis (1 sans réponse))') && str_contains($t, 'Plus à l\'aise (« oui ») : 1 sur 3 avis (1 sans réponse)'), 'qualité : fiches bilan et avis des seuls ateliers réalisés');
+    && str_contains($t, 'Avis des stagiaires : 3 avis sur 1 atelier(s)') && str_contains($t, 'Réponse aux attentes : 4,5/5 — 2 réponses sur 3 avis') && str_contains($t, 'Plus à l\'aise (« oui ») : 1 sur 3 avis (1 sans réponse)'), 'qualité : fiches bilan et avis des seuls ateliers réalisés');
 verifier(!str_contains($t, 'Merci à Alice') && !str_contains($t, 'Salle Martin'), 'qualité : ni remarque d\'avis ni précision libre dans le mail');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'bilanMensuel' AND ref = '2026-09'")->fetchColumn() === 1, 'envoi journalisé');
 
