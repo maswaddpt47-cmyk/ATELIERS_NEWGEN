@@ -1,9 +1,12 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **15/11/2026**, bases `main` : NEWGEN `86ae860`, NextStep `f117aa2`. Reprise : actualiser les deux
+État au **15/11/2026, fin de session**, bases `main` : NEWGEN `678eba6`, NextStep `65b12a8`. Reprise : actualiser les deux
 `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer.
-Revues closes (AG-041 à AG-058) : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
+Revues closes (AG-041 à AG-058, AG-060) : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
 confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
+**Fait le 15/11** : mail de lien « n'est pas modifié » (`86ae860`) ; AG-060 clos ; CI : `e2e` en parallèle de `test`
+dans les deux dépôts (NextStep mesuré 1 min 51 → 1 min 25 sur un passage ; NEWGEN non mesuré).
+**En attente de l'utilisateur** : choix parmi les trois pistes du 15/11 (section « Pistes », réponse par numéros).
 
 **À reprendre en premier** — AG-059 : comptage nominatif du 13/11 (dépôt privé, run `43515715586`) :
 **1 compte, la superviseure** ; l'utilisateur lui fait changer son mot de passe **à leur prochaine rencontre**
