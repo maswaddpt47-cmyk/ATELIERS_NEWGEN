@@ -9,7 +9,7 @@ dans les deux dépôts (NextStep mesuré 1 min 51 → 1 min 25 sur un passage ; 
 **Pistes 1 et 2 retenues le 15/11** : (2) fuseau lu par `diagnostic-api.yml` (`eaa3d99`) : MySQL `SYSTEM` = heure de Paris,
 `NOW()` = PHP Paris, aucun décalage. (1) comptage en lecture (`ateliers-backups`, `compter-cas-bilan.yml`, nombres seuls, 15/11) :
 **novembre** 32 ateliers dont 6 réalisés, **9 durées vides** (toutes créées avant le 03/10, jamais modifiées depuis : pas de défaut du code ; comptées 1 h 30, AG-032), **2 « Planifié » passés** ; **octobre** 21/18, 1 réalisé sans inscrits,
-1 réalisé à présents > inscrits, 1 durée vide. Reste : **audit Codex (règle 33) sur l'export réel avant le 05/12**.
+1 réalisé à présents > inscrits, 1 durée vide. Reste : **audit Codex (règle 33) avant le 05/12** : consigne `ateliers-backups/documents/sources/consigne-audit-codex-bilan.md` (dire « pull » à Codex dans ateliers-backups) ; le 04/12, lancer « Bilan mensuel — envoi de test » et « … — recomptage indépendant » (Actions d’ateliers-backups, `067bb28`), puis tableau affiché / recompté / écart.
 
 **À reprendre en premier** — AG-059 : comptage nominatif du 13/11 (dépôt privé, run `43515715586`) :
 **1 compte, la superviseure** ; l'utilisateur lui fait changer son mot de passe **à leur prochaine rencontre**
