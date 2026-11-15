@@ -284,6 +284,14 @@ déclenché. Seul `AGORA.md` est modifié dans NEWGEN. L'opérateur lance le rec
 privé et compare le mail [TEST] dans le tableau affiché / recompté / écart avant
 diffusion ; cette revue ne prétend pas avoir validé les chiffres réels.
 
+**Décision de l'utilisateur — 15/11/2026** (Claude, session A) : défauts 1 et 2
+corrigés (`bilan_statut` : clé de statut officielle sans casse, compteurs additionnés
+à la fusion ; test « statuts et partenaires fusionnés », 3 mutations rejetées) ;
+défauts 3 et 4 en chantier (envoi unique à 08:00, sans saisie à cette heure) ;
+« fiche remplie » = JSON non vide **conservé** ; notes moyennes : effectif des
+réponses **affiché** dans le mail. Script de recomptage relu et exécuté par Claude
+sur une base fictive locale : chiffres conformes au calcul à la main, sortie sans nom.
+
 
 ## Blocs tranchés — sortis de ce fichier
 
