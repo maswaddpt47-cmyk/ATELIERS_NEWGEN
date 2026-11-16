@@ -115,3 +115,28 @@ test('Admin — anomalies : le conseiller dont tout est validé reste choisissab
   await expect(page.locator('.chip', { hasText: 'Alice Martin' })).toBeVisible();
   expect(errs).toEqual([]);
 });
+
+// AG-061, écarts démontrés par Codex (16/11/2026).
+// n° 1 : une durée réellement vide se valide ; l'empreinte envoyée n'est pas vide (l'API refuse '').
+test('Admin — anomalies : une durée vide se valide, avec une empreinte non vide', async ({ page, baseURL }) => {
+  const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('dialog', d => d.accept());
+  const appels = [];
+  await ouvrirAnomalies(page, baseURL, { appels, entries: [atelier({ _id: 'entry_duree', horaire: '10:00', duree: '' })] });
+  await expect(page.getByText(/Durée vide : comptée 1 h 30/)).toBeVisible();
+  await page.getByRole('button', { name: '✅ Valider' }).click();
+  await expect(page.getByText('0 entrée(s) avec anomalie(s)')).toBeVisible();
+  expect(appels).toEqual([{ action: 'validerAnomalie', _id: 'entry_duree', categorie: 'duree', empreinte: '(vide)' }]);
+  expect(errs).toEqual([]);
+});
+
+// n° 2 : « date passée » suit le jour de Paris, pas le fuseau de l'appareil.
+test.describe('appareil réglé sur Honolulu', () => {
+  test.use({ timezoneId: 'Pacific/Honolulu' });
+  test('Admin — anomalies : « Planifié, date passée » suit le jour de Paris', async ({ page, baseURL }) => {
+    const errs = []; page.on('pageerror', e => errs.push(e.message));
+    await page.clock.setFixedTime(new Date('2026-11-15T23:30:00Z'));   // Paris : 16/11 à 00:30 ; appareil : 15/11 à 13:30
+    await ouvrirAnomalies(page, baseURL, { entries: [atelier({ _id: 'entry_retard', horaire: '10:00', date: '2026-11-15' })] });
+    await expect(page.getByText(/Encore « Planifié » le .*15\/11\/2026/)).toBeVisible();
+    expect(errs).toEqual([]);
+  });
+});
