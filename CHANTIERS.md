@@ -2,11 +2,10 @@
 
 État au **16/11/2026, 21:00**, bases `main` : NEWGEN `0a53ef0`, NextStep `b14d9f7` (relu par « pull »). Reprise : actualiser les deux `main`
 (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer. Revues closes jusqu'à
-AG-060 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue
+AG-062 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue
 malgré « Autoriser toutes les actions », cause non établie.
 
-**En attente de l'utilisateur** : clore AG-061 et AG-062 (écarts de Codex corrigés) ; annonce 41 (bandeau « nouvelle
-version ») à publier ou non.
+**AG-061 et AG-062 clos le 16/11** par l'utilisateur ; bandeau « nouvelle version » **non annoncé** (sa décision du 16/11).
 **AG-062 (16/11)** : 168 durées vides sur 339 remplies à 1 h 30 en base (`durees-vides.yml`, recompté 0), à la demande de
 l'utilisateur, qui remplace sa décision du 05/10. Annulable par le mode `annuler` ; table `durees_vides_20261116` à
 supprimer après le 16/12/2026 si rien n'est annulé. La Corbeille n'est pas touchée.
@@ -61,7 +60,7 @@ si la parité n'est pas à jour ou si NextStep a des commits non poussés. **Ne 
 
 ## Reste ouvert
 
-**Nouveautés** : prochain `id` **41** ; jamais `admin: true` ; jamais 12, 16, 19, 24, 25, 26 ni 29 (publiés puis retirés).
+**Nouveautés** : prochain `id` **41** (bandeau « nouvelle version » non annoncé, 16/11) ; jamais `admin: true` ; jamais 12, 16, 19, 24, 25, 26 ni 29 (publiés puis retirés).
 
 1. **Bac à sable NextStep** (AG-033) : à éprouver — pages NextStep dans `coupure-urgence.yml` puis coupure réelle ;
    requêtes vers `api-sandbox` vues au navigateur ; avis fictif par le QR (piste 3 du 15/11, en attente).
