@@ -1,18 +1,24 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **16/11/2026, fin de session**, bases `main` : NEWGEN `7c2340d`, NextStep `2baa8fd`. Reprise : actualiser les deux
+État au **16/11/2026**, bases `main` : NEWGEN `a27af8f`, NextStep `6cac9a8`. Reprise : actualiser les deux
 `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer.
-Revues closes (AG-041 à AG-058, AG-060) : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
-confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
-**Fait le 15/11** : mail de lien « n'est pas modifié » (`86ae860`) ; AG-060 clos ; CI : `e2e` en parallèle de `test`
-dans les deux dépôts (NextStep mesuré 1 min 51 → 1 min 25 sur un passage ; NEWGEN non mesuré).
-**Pistes 1 et 2 retenues le 15/11** : (2) fuseau lu par `diagnostic-api.yml` (`eaa3d99`) : MySQL `SYSTEM` = heure de Paris,
-`NOW()` = PHP Paris, aucun décalage. (1) comptage en lecture (`ateliers-backups`, `compter-cas-bilan.yml`, nombres seuls, 15/11) :
-**novembre** 32 ateliers dont 6 réalisés, **9 durées vides** (toutes créées avant le 03/10, jamais modifiées depuis : pas de défaut du code ; comptées 1 h 30, AG-032), **2 « Planifié » passés** ; **octobre** 21/18, 1 réalisé sans inscrits,
-1 réalisé à présents > inscrits, 1 durée vide. Reste : **audit Codex (règle 33) avant le 05/12** : consigne `ateliers-backups/documents/sources/consigne-audit-codex-bilan.md` (dire « pull » à Codex dans ateliers-backups) ; le 4 de chaque mois à 09:17 (Paris), « Bilan mensuel — envoi de test » et « … — recomptage indépendant » partent seuls (Actions d’ateliers-backups, `83deeed`, secret `BILAN_ADRESSE_TEST` créé) ; recomptage de Codex écrit (`9c430cb`) et relu ; **essai réel octobre (15/11) : mail [TEST] et recomptage identiques, 0 écart** sur toutes les lignes (1 atelier à 13 présents / 4 inscrits, probable faute de saisie, signalé à l’utilisateur) ; défauts 1-2 de son audit corrigés le 15/11 ; rappel programmé le 04/12 à 09:45 pour le tableau affiché / recompté / écart.
-**Chantier — bilan mensuel (audit Codex 15/11, défauts 3 et 4, AGORA)** : rubriques lues sans état commun (`bilan.php:121-155`) ; deux lancements simultanés pourraient envoyer deux fois (`bilan.php:275-285`). Risque faible tant que l'envoi part une fois à 08:00.
+Revues closes jusqu'à AG-060 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
 
-**AG-059 clos le 16/11/2026** : la superviseure a changé son mot de passe, recompté 0 compte sur 5 sur l'ancien mot de passe ; AG-060 clos le 15/11/2026.
+**AG-061 ouvert le 16/11** (Anomalies : « Durée vide » et « Planifié, date passée », livrées dans les deux applis) :
+une seule vérification de livraison par Codex attendue (règle 58), puis clore ; non vérifié sur la base réelle :
+l'onglet doit retrouver les 9 durées vides et 2 « Planifié » passés de novembre (comptage du 15/11), nombres à lire par l'utilisateur.
+**Bandeau « nouvelle version » (16/11)** : `version.json` écrit par `deploy.yml` (Pages) et `deploy-sandbox.yml`, lu hors cache
+par `shared.js` ; **jamais vu en vrai** : à constater sur un téléphone au premier déploiement suivant (page ouverte avant, bandeau après).
+
+**Avant le 05/12 — audit Codex du bilan mensuel (règle 33)** : consigne `ateliers-backups/documents/sources/consigne-audit-codex-bilan.md`
+(dire « pull » à Codex dans ateliers-backups) ; le 4 de chaque mois à 09:17 (Paris), « Bilan mensuel — envoi de test » et
+« … — recomptage indépendant » partent seuls (Actions d'ateliers-backups, secret `BILAN_ADRESSE_TEST`) ; essai réel d'octobre
+(15/11) : mail [TEST] et recomptage identiques, 0 écart ; rappel programmé le 04/12 à 09:45 pour le tableau affiché / recompté / écart.
+Comptage en lecture du 15/11 (`compter-cas-bilan.yml`, nombres seuls) : **novembre** 32 ateliers dont 6 réalisés, 9 durées vides
+(toutes créées avant le 03/10 : pas un défaut du code), 2 « Planifié » passés ; **octobre** 21/18, 1 réalisé sans inscrits,
+1 réalisé à présents > inscrits (13 / 4, probable faute de saisie, signalé), 1 durée vide. Fuseau vérifié par `diagnostic-api.yml`
+(15/11) : MySQL `SYSTEM` = heure de Paris, `NOW()` = PHP Paris, aucun décalage.
+**Chantier — bilan mensuel (audit Codex 15/11, défauts 3 et 4, AGORA)** : rubriques lues sans état commun (`bilan.php:121-155`) ; deux lancements simultanés pourraient envoyer deux fois (`bilan.php:275-285`). Risque faible tant que l'envoi part une fois à 08:00.
 
 Fichier transitoire (`MD-LIB/hygiene-instructions.md`). Contradiction : `AGORA.md`.
 
@@ -71,14 +77,6 @@ pas à jour ou si NextStep a des commits non poussés.
   validés passent de l'une à l'autre.
 
 ## Reste ouvert
-
-### Chiffres métier — contrôle restant
-
-- Audit des chiffres métier sur export réel toujours non réalisé ; les
-  vérifications des livraisons des 25 et 26/10/2026 (AG-032) utilisent des
-  données fictives. Fréquence réelle des cas d'AG-032 (présents non saisis,
-  durée vide, avis sans réponse) jamais mesurée : comptage en lecture sur la
-  base possible.
 
 **Nouveautés** (règle 18 du `CLAUDE.md`) : prochain `id` **41** ; jamais `admin:
 true` (26/10) ; jamais 12, 16, 19, 24, 25, 26 ni 29 (publiés puis retirés).
