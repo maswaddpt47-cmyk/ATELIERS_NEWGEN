@@ -12,10 +12,7 @@ dans les deux dépôts (NextStep mesuré 1 min 51 → 1 min 25 sur un passage ; 
 1 réalisé à présents > inscrits, 1 durée vide. Reste : **audit Codex (règle 33) avant le 05/12** : consigne `ateliers-backups/documents/sources/consigne-audit-codex-bilan.md` (dire « pull » à Codex dans ateliers-backups) ; le 4 de chaque mois à 09:17 (Paris), « Bilan mensuel — envoi de test » et « … — recomptage indépendant » partent seuls (Actions d’ateliers-backups, `83deeed`, secret `BILAN_ADRESSE_TEST` créé) ; recomptage de Codex écrit (`9c430cb`) et relu ; **essai réel octobre (15/11) : mail [TEST] et recomptage identiques, 0 écart** sur toutes les lignes (1 atelier à 13 présents / 4 inscrits, probable faute de saisie, signalé à l’utilisateur) ; défauts 1-2 de son audit corrigés le 15/11 ; rappel programmé le 04/12 à 09:45 pour le tableau affiché / recompté / écart.
 **Chantier — bilan mensuel (audit Codex 15/11, défauts 3 et 4, AGORA)** : rubriques lues sans état commun (`bilan.php:121-155`) ; deux lancements simultanés pourraient envoyer deux fois (`bilan.php:275-285`). Risque faible tant que l'envoi part une fois à 08:00.
 
-**À reprendre en premier** — AG-059 : comptage nominatif du 13/11 (dépôt privé, run `43515715586`) :
-**1 compte, la superviseure** ; l'utilisateur lui fait changer son mot de passe **à leur prochaine rencontre**
-(« Mot de passe provisoire » de l'Admin, ou changement par elle) ; puis recompter (`compter-mdp-defaut.yml`
-d'`ateliers-backups`, 0 attendu) et clore AG-059. AG-060 (mot de passe imposé à la connexion) clos le 15/11/2026.
+**AG-059 clos le 16/11/2026** : la superviseure a changé son mot de passe, recompté 0 compte sur 5 sur l'ancien mot de passe ; AG-060 clos le 15/11/2026.
 
 Fichier transitoire (`MD-LIB/hygiene-instructions.md`). Contradiction : `AGORA.md`.
 

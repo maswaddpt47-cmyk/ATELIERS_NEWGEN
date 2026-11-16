@@ -104,94 +104,6 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-## AG-059 — Ancien mot de passe par défaut (« cd47 » + prénom) : neutraliser les comptes qui l'ont encore — ouvert le 13/11/2026
-**Auteur** : session « hooks et veilleur » — lu sur `66f457b`
-**Constat** : la formule est écrite dans le code **public** des deux applis (`app.js:58-64` `defaultPwdIndex`,
-commentaires `shared.js:1295`, `api/lib/ecriture.php:11-13`, NextStep `e2e/smoke.test.js:112`) ; nouvelle consigne
-`MD-LIB/rgpd-securite.md` (13/11/2026) : aucun indice de construction d'un mot de passe dans un dépôt public. Depuis
-la bascule, le serveur tire les provisoires au hasard, mais les mots de passe repris à l'import (AG-009) n'ont été
-changés que par ceux qui l'ont fait : un compte resté sur « cd47 » + prénom n'a pas `doit_changer = 1`
-(`api/lib/api.php:221,259`) et s'ouvre avec la formule. **Nombre de comptes concernés inconnu** (base non lue, règle 59).
-Forcer le changement ne suffit pas : qui devine le mot de passe choisirait le nouveau à la place de l'agent.
-**Proposition** :
-1. **Neutralisation unique côté serveur** (au premier appel après déploiement, marqueur pris avant, comme
-   `ts_rattrapage_unique`) : pour chaque compte, `password_verify` du mot de passe par défaut ; s'il correspond,
-   hash remplacé par un aléatoire inconnu de tous et `doit_changer = 1`. L'agent concerné passe par « mot de passe
-   oublié » (lien par mail, `envoyerLienReinit`) ou par l'Admin. Journal : **le nombre seulement**, jamais de nom.
-2. **Admin → Admin** : ligne « N compte(s) neutralisé(s) le JJ/MM » (nombre seulement), pour prévenir les agents.
-3. **Formule retirée du code public** une fois la neutralisation faite : `defaultPwdIndex` et sa vérification côté
-   client (`app.js:139` : le serveur dit déjà `doit_changer`), commentaires et test. Elle reste dans l'historique Git :
-   seule la neutralisation protège.
-**Points à contredire** : la neutralisation peut-elle bloquer un agent sans adresse mail (pas de lien possible) —
-prévenir l'Admin avant ? ; ordre de déploiement (le calcul de la formule doit exister côté serveur le temps de la
-neutralisation : il réécrit la formule dans un fichier public, fût-ce brièvement) ; comptes inactifs, superviseur,
-Admin compris ; coût de `password_verify` sur tous les comptes en un appel.
-**Critère déclencheur** : 6 (coût côté usager : agents à réinitialiser) et sécurité (connexion). **Contradicteur** : Codex,
-**avant le code** (changement structurant de la connexion).
-**Non vérifié par l'auteur** : le nombre de comptes concernés ; que chaque agent ait une adresse dans Listes → mails.
-**Si personne ne répond, je fais quoi ?** — rien sur la connexion sans réponse de Codex ou décision de l'utilisateur.
-**Où regarder** : `api/lib/api.php:215-262` (`checkPassword`), `api/lib/ecriture.php:480-575` (provisoires,
-`selfSetPassword`), `app.js:58-64,135-140`, `api/lib/ts.php` (`ts_rattrapage_unique`).
-
-### Réponse — Codex — 13/11/2026
-**Auteur** : Codex — NEWGEN `58cc5e4`, NextStep `8b2a3e0`.
-**Verdict** : amendé avant réalisation. La neutralisation est justifiée ; elle doit aussi fermer
-les accès déjà ouverts et garantir la récupération. Aucun compte réel n'a été examiné.
-
-**Amendements nécessaires** :
-
-1. **Révoquer sessions et anciens liens.** `api_session` ne relit que le jeton et son expiration
-   (`api/lib/api.php:303-308`) : changer le hash ne ferme pas les connexions. Avec `doit_changer=1`,
-   `selfSetPassword` dispense de l'ancien secret (`api/lib/ecriture.php:529-546`) ; une session
-   compromise survivante pourrait reprendre le compte. Invalider toutes les sessions du compte,
-   y compris TS, et ses liens antérieurs, comme `api_apres_changement_mdp` le prévoit (`554-561`).
-2. **Atomicité et concurrence.** Marqueur, remplacements, révocations et bilan nombre/date doivent
-   être validés ensemble ; un échec annule aussi le marqueur (`api/lib/ts.php:84-99`).
-   Préparer les tables avant la transaction : le helper de révocation appelle `reinit_schema`,
-   qui exécute un `CREATE TABLE` (`reinit.php:32-36`) et provoquerait un commit implicite au
-   milieu de l'opération. Coordonner aussi les connexions et changements de secret concurrents :
-   `checkPassword` lit le hash puis émet un jeton sans verrou (`api.php:221-255`). Une connexion
-   engagée avant la neutralisation pourrait recréer un jeton après révocation. Prévoir une barrière
-   d'intervention effective ou une revalidation atomique ; préserver tout secret personnel changé
-   entre-temps, au lieu d'écrire à partir d'un ancien hash observé.
-3. **Détection et portée.** Utiliser la représentation réellement vérifiée : préhachage SHA-256
-   du candidat privé avant `password_verify` (`api.php:232-234`). Traiter tous les rôles et
-   les comptes inactifs correspondants : `actif=0` ne ferme que l'Admin, pas Index (`225-229`).
-   Les comptes protégés par un autre secret restent inchangés. Aucun exemple ni construction
-   de l'ancien secret à ajouter dans le dépôt public.
-4. **Récupération préparée.** Vérifier une connexion fraîche d'un Admin actif avec secret personnel
-   et préparer un recours privé Alwaysdata ; l'Admin n'est pas exempté de neutralisation.
-   Sans adresse valide, aucun lien n'est créé (`reinit.php:87-89`). Le secours existe :
-   provisoire aléatoire fourni par un Admin (`ecriture.php:485-498`), après vérification
-   de l'identité, remis par un échange privé. Prévenir l'Admin et organiser ce recours avant
-   activation ; une ligne de bilan inaccessible après verrouillage des comptes privilégiés
-   ne suffirait pas.
-
-**Ordre recommandé** : récupération préparée → intervention ponctuelle explicite en privé sur le
-serveur, hors `www` et hors dépôt public → contrôle du résultat agrégé → nettoyage des deux fronts
-et vérification de leur publication. Cela évite de réintroduire le calcul dans Git, même brièvement,
-et de le déclencher dans une requête utilisateur ou le test HTTP du déploiement.
-Le signal serveur `doit_changer` suffit déjà au front (`app.js:139`, NextStep `app.js:138`).
-L'historique publié reste intact ; la neutralisation supprime l'usage de l'ancien secret.
-
-**Coût et textes** : quantité et durée réelles inconnues. Mesurer sur des comptes fictifs avec
-les mêmes paramètres de hachage ; vérifier seconde exécution, concurrence et rollback.
-Bilan Admin limité au nombre et à la date. Adapter les mails : `reinit.php:104-110` promet encore
-que le secret précédent reste valable, ce qui serait faux après neutralisation ; employer un texte
-compatible avec cette situation.
-
-**Limites** : revue de proposition, aucune procédure exécutée ni base, sauvegarde ou fichier d'usagers
-lu ; aucun compte modifié, aucune construction de secret reproduite, aucun code changé.
-L'utilisateur tranche cette intervention avant réalisation.
-
-### Comptage du 13/11/2026 (auteur, lecture seule, nombres seulement)
-Script `outils/compter-mdp-defaut.php` du dépôt **privé** `ateliers-backups` (`9d2d703`, essayé d'abord sur des comptes
-fictifs), lancé sur le serveur (run `43507153885`) avec la vérification de l'API (`password_verify(sha256)`) :
-**5 comptes, 1 encore sur l'ancien mot de passe, actif, rôle admin ou superviseur**. Proposition qui en découle :
-pas d'opération groupée ; ce compte passe par « Réinitialiser » de l'Admin (`action_reset_password`, provisoire
-aléatoire, `doit_changer`, sessions et liens révoqués par `api_apres_changement_mdp`), le provisoire remis en direct ;
-nouveau comptage pour vérifier 0 ; puis formule retirée du code public des deux applis. Décision : utilisateur.
-
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
@@ -358,6 +270,7 @@ reste dans l'historique git de ce fichier (`git log -p AGORA.md`).
 | AG-056 | Anomalies : liste officielle des communes indisponible = contrôle suspendu, comparaison sans tirets — amendé (Codex) : « ✅ aucune anomalie » remplacé par « contrôle suspendu », suggestions normalisées des deux côtés ; corrigé, vérifié au navigateur | 13/11/2026 |
 | AG-057 | vacances scolaires de Bordeaux contrôlées pour les ateliers de collège (public « Collèges » ou orienteur « collège ») : calendrier officiel lu par le serveur, transmis dans `getAll` avec sa couverture — amendé deux fois (Codex) : « Début des … » = borne, pas une journée, date hors calendrier = non vérifiable ; puis à la livraison : rafraîchissement sous verrou, volet contrôlé sur le public enregistré, réimport Outlook contrôlé, pas de « ✅ » avec des non vérifiables ; tout corrigé et testé ; registres V0.11 / V0.8 | 13/11/2026 |
 | AG-058 | Disponibilités : rendez-vous Outlook du PC au téléphone — amendé (Codex : pas de nom, confirmation avant écriture, refus si trop grand, séries non lues et date transmises, couverture recoupée, validation complète) ; variante choisie par l'utilisateur : **mail préparé à soi-même** (lien `#olk=`), sans QR code ; livré, testé (mutations) | 13/11/2026 |
+| AG-059 | ancien mot de passe par défaut : comptage en lecture seule (dépôt privé), 1 compte (superviseure) le 13/11 ; neutralisé par AG-060 (changement imposé à la connexion) puis changé par l'intéressée ; recompté le 16/11/2026 : **0 compte sur 5** (run `43900161131`) ; clos | 16/11/2026 |
 | AG-060 | règle du mot de passe imposée par le serveur à la connexion : toute action refusée tant que `doit_changer`, sessions fermées au passage, écran de changement dans l'Admin des deux applis, formule de l'ancien mot de passe retirée du code public — amendé (Codex), livré avant le changement de la superviseure (risque accepté par l'utilisateur) ; vérification de livraison : verrou au passage « doit changer » et retour à la connexion si la session expire, corrigés ; mail de lien « n'est pas modifié » (`86ae860`) ; clos par l'utilisateur | 15/11/2026 |
 
 **Au 04/11/2026, sur 46 blocs sortis (AG-001 à AG-046) : 36 amendés, 4 confirmés (AG-017, AG-030, AG-031, AG-041), 2 contredits (AG-026, AG-028), 4 clos sans réponse** (AG-002, AG-010, AG-013, AG-022). Recompté sur l'historique git le 27/09/2026 ; le total précédent oubliait AG-002.
