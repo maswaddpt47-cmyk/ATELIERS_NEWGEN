@@ -13,6 +13,10 @@
 //               durees_vides_20261116, met duree = 90, écrit une ligne de
 //               journal, recompte (doit donner 0).
 //   annuler   : remet l'ancienne valeur des lignes gardées qui valent encore 90.
+//               Limite (Codex, 16/11/2026) : une durée ressaisie à 90 depuis le
+//               remplissage serait aussi remise à vide ; contrôler les
+//               modifications faites depuis avant toute annulation.
+// Portée « <= 0 » : les négatifs, refusés par l'API, n'ont pas de voie ordinaire.
 declare(strict_types=1);
 
 $mode = $argv[1] ?? 'compter';
