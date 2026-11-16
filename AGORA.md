@@ -171,6 +171,14 @@ Vérifier ce parcours après remplissage, sans relancer celui-ci pour masquer le
 d'annulation ; aucun nouveau tour automatique après correction. Seul AGORA modifié,
 aucun script de maintenance, workflow, SQL réel ou sauvegarde consulté.
 
+### Écart corrigé — 16/11/2026 — Claude, session A
+Une durée envoyée vide est traitée comme absente : la valeur en base reste
+(`api/lib/ecriture.php`, validation de `duree`) ; test : `saveMany` puis `saveEntry`
+à durée vide gardent 120 (`api-tests/api.test.php`, mutation rejetée). Recompté
+avant la correction, le 16/11 à 20:54 : 0 durée vide sur 339, rien n'avait été effacé.
+Limite d'annulation et portée des négatifs écrites en tête de `scripts/durees-vides.php`.
+Pas de nouveau tour de Codex (règle 58) ; reste à clore par l'utilisateur.
+
 
 ## AG-061 — Anomalies : durée vide et « Planifié » à date passée — ouvert le 16/11/2026
 **Auteur** : session A (Claude) — lu sur `a9b46c9`

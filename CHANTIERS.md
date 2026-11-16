@@ -1,18 +1,21 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **16/11/2026**, bases `main` : NEWGEN `863dd73`, NextStep `b14d9f7`. Reprise : actualiser les deux `main`
+État au **16/11/2026, 21:00**, bases `main` : NEWGEN `0a53ef0`, NextStep `b14d9f7` (relu par « pull »). Reprise : actualiser les deux `main`
 (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer. Revues closes jusqu'à
 AG-060 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue
 malgré « Autoriser toutes les actions », cause non établie.
 
-**En attente de l'utilisateur** : clore AG-061 (écarts de Codex corrigés) ; « pull » à Codex pour AG-062 ; annonce 41
-(bandeau « nouvelle version ») à publier ou non.
+**En attente de l'utilisateur** : clore AG-061 et AG-062 (écarts de Codex corrigés) ; annonce 41 (bandeau « nouvelle
+version ») à publier ou non.
 **AG-062 (16/11)** : 168 durées vides sur 339 remplies à 1 h 30 en base (`durees-vides.yml`, recompté 0), à la demande de
 l'utilisateur, qui remplace sa décision du 05/10. Annulable par le mode `annuler` ; table `durees_vides_20261116` à
 supprimer après le 16/12/2026 si rien n'est annulé. La Corbeille n'est pas touchée.
 **Tous les conseillers** : aucun filtre par conseiller (ceux de l'utilisateur l'étaient depuis le 05/10, les 168 sont ceux
-de l'équipe) ; recompté le 16/11 à 20:50 : 0 sur 339. Bac à sable (base fictive) non touché. Une page ouverte avant 20:31
-montre l'ancien état : recharger.
+de l'équipe) ; recompté le 16/11 à 20:50 et 20:54 : 0 sur 339. Bac à sable (base fictive) non touché. Une page ouverte
+avant 20:31 montre l'ancien état : recharger.
+**Écart de Codex corrigé (16/11)** : un onglet d'avant 20:31 renvoyait la durée vide (statut groupé) et l'API effaçait le
+90 ; depuis, une durée vide envoyée garde la valeur en base (`ecriture.php`, test AG-062). « annuler » remettrait à vide une
+durée ressaisie à 90 depuis : contrôler avant.
 **Bandeau « nouvelle version » (16/11)** : `version.json` écrit au déploiement (Pages et bac à sable), lu hors cache par
 `shared.js` ; **jamais vu en vrai** : à constater sur un téléphone (page ouverte avant un déploiement, bandeau après).
 
@@ -163,6 +166,8 @@ superflu, `sw.js` de désinscription.
   passée » sur `jourParis()` (AG-061). Jamais le fuseau de l'appareil.
 - **Anomalies (AG-044, AG-061)** : une validation sort l'anomalie tant que la valeur ne change pas ; durée absente =
   empreinte `(vide)`. Aucun autre calcul n'en tient compte.
+- **Durée (AG-017, AG-062)** : absente ou vide dans un envoi = la valeur en base reste ; aucun écran ne vide une durée.
+- **`check-chantiers.sh`** (copie de référence ici) : alerte au-delà de 300 lignes **ou 30 Ko** (MD-LIB 8ter, 16/11).
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS`) : origine `github.io` partagée. Couche réseau client gardée (4G terrain).
 
 ## Pistes d'amélioration
