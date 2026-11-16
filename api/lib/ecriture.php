@@ -309,11 +309,15 @@ function api_valider_atelier(array $d, ?string &$err): ?array
     }
     // Durée en minutes (AG-017). Absente de l'envoi (client d'avant, en
     // cache) : la colonne n'est pas touchée, la durée déjà saisie reste.
+    // Vide, pareil (AG-062, écart de Codex, 16/11/2026) : un onglet ouvert
+    // avant le remplissage renvoie l'ancienne durée vide (statut groupé, volet)
+    // et effaçait la valeur en base. Aucun écran ne vide une durée (requise
+    // depuis le 03/10) ; une création sans durée reste à NULL.
     if (array_key_exists('duree', $d)) {
         $v = $d['duree'];
         if (is_array($v) || is_object($v)) { $err = 'duree : valeur invalide'; return null; }
         $v = trim((string) $v);
-        if ($v === '') $l['duree'] = null;
+        if ($v === '') { /* vide = non envoyée : la valeur en base reste */ }
         elseif (!preg_match('/^\d+$/', $v) || (int) $v < 30 || (int) $v > 480 || (int) $v % 30) {
             $err = "duree : « $v » n'est pas une durée valide (30 à 480 minutes, par demi-heure)"; return null;
         } else $l['duree'] = (int) $v;

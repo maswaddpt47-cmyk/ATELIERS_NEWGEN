@@ -299,6 +299,10 @@ appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj)]);
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['duree' => 120])]);
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj)]);
 verifier($lire('entry_1')['duree'] === 120, 'durée enregistrée, gardée par un envoi sans durée (client en cache)');
+// AG-062 (Codex) : un onglet ouvert avant le remplissage renvoie l'atelier entier avec duree '' (statut groupé).
+appel(['action' => 'saveMany'], $T + ['entries' => json_encode([$maj + ['duree' => '']])]);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['duree' => ''])]);
+verifier($lire('entry_1')['duree'] === 120, 'durée gardée par un envoi à durée vide (onglet d\'avant le remplissage, AG-062)');
 $r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['duree' => 45])]);
 verifier($r['ok'] === false && str_contains($r['error'], 'duree') && $lire('entry_1')['duree'] === 120, 'durée hors demi-heure : refusée');
 // Fiche bilan (AG-020) : objet validé, gardé par un envoi sans bilan, refus hors liste.
