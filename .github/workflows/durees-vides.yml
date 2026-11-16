@@ -1,0 +1,44 @@
+# Durées vides remplies à 1 h 30 (AG-062, demande de l'utilisateur du 16/11/2026).
+# Lancé à la main (Actions → Run workflow). « compter » par défaut : ne modifie
+# rien. Le script est envoyé par SSH sur l'entrée standard de php, rien n'est
+# déposé sur le serveur. N'affiche que des nombres. Annulable (mode « annuler »).
+name: Durées vides à 1 h 30
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "compter (ne change rien), appliquer, annuler"
+        required: true
+        default: compter
+        type: choice
+        options: [compter, appliquer, annuler]
+
+concurrency:
+  group: durees-vides
+  cancel-in-progress: false
+
+jobs:
+  durees:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Préparer l'accès SSH
+        env:
+          CLE: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          if [ -z "$CLE" ]; then echo "::error::Secret ALWAYSDATA_SSH_KEY absent"; exit 1; fi
+          printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: Lancer le script (${{ inputs.mode }})
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new "$COMPTE@ssh-$COMPTE.alwaysdata.net" "php -- $MODE" < scripts/durees-vides.php

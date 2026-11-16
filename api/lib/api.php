@@ -368,7 +368,8 @@ function ateliers_colonne_duree(PDO $db): void
     // Durée vide des ateliers d'avant le 03/10/2026 : remplie à 1 h 30 pour
     // les seuls ateliers de l'utilisateur (sa demande du 05/10/2026), une fois
     // (repère « migration_duree_utilisateur » dans config), journalisée avec
-    // le nombre de lignes. Ceux de l'équipe restent vides (1 h 30 à l'écran).
+    // le nombre de lignes. Ceux de l'équipe, laissés vides alors, ont été remplis à
+    // 1 h 30 le 16/11/2026 à sa demande (AG-062, scripts/durees-vides.php, annulable).
     if ($db->query("SHOW TABLES LIKE 'config'")->fetch()
         && !$db->query("SELECT COUNT(*) FROM config WHERE cle = 'migration_duree_utilisateur'")->fetchColumn()) {
         $n = $db->exec("UPDATE ateliers SET duree = 90 WHERE duree IS NULL AND conseiller = 'Michel Aswad'");
