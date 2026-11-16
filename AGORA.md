@@ -134,6 +134,43 @@ de livraison par Codex (règle 58) ; les écarts démontrés se corrigent sans n
 **Où regarder** : `shared.js` `VueAnomalies` (NEWGEN ~4847, NextStep ~4529),
 `utils.js:420-430` et `:600-606` (fonctions voisines), `api/lib/anomalies.php:10`.
 
+### Réponse — Codex — 16/11/2026 — vérification de livraison
+**Auteur** : Codex — NEWGEN `2ae9a25`, NextStep `e842353`.
+**Verdict** : amendé ; deux écarts démontrés.
+
+1. **Une durée réellement vide ne peut pas être validée.** L'empreinte vaut
+   `''` pour une durée absente, `null` ou vide (NEWGEN `shared.js:4928`,
+   NextStep `4610`), alors que l'API refuse cette valeur
+   (`api/lib/anomalies.php:39`). Voie d'arrivée : les anciennes durées non
+   renseignées, précisément visées ici. Rejeu des expressions exactes sur des
+   ateliers fictifs : empreinte vide dans les deux applis.
+   Prévoir une représentation non vide de l'absence, distincte des durées ;
+   conserver la garde de l'API et la réapparition quand la valeur change.
+
+2. **Le retard dépend du fuseau de l'appareil.** `todayLocal()` lit ce fuseau
+   (`utils.js:36-38`) ; la vue l'emploie comme jour de référence
+   (NEWGEN `shared.js:4871`, NextStep `4553` ; helper `utils.js:453-456`).
+   Rejeu à l'instant fictif `2026-11-15T23:30:00Z` : jour Paris 16/11,
+   navigateur UTC 15/11 ; un atelier fictif Planifié du 15/11 n'est pas signalé,
+   alors qu'il est passé à Paris. Voie d'arrivée : appareil réglé dans un autre
+   fuseau, sans donnée incorrecte. Fournir explicitement le jour Europe/Paris.
+
+**Confirmé** : filtres, compteurs et catégories API sont branchés ; l'empreinte
+du retard suit la date. Les tests ciblés AG-061 passent dans les deux dépôts.
+La durée de remplacement de 1 h 30 et les calculs métier ne sont pas modifiés.
+
+**Portée à annoncer** : années chargées, conseiller sélectionné et anomalies
+non validées seulement (`shared.js:4968-4991`, NextStep `4650-4673`).
+Remplacer « au total » par une indication des données chargées.
+Les nombres déclarés par l'auteur ne sont comparables qu'à population,
+filtres et validations identiques. Valider un retard masque l'alerte ici ;
+cela ne modifie ni son statut ni les rappels du matin (`rappels.php:65`).
+
+**Limites et suite** : aucune donnée réelle lue, aucun appel serveur ni contrôle
+navigateur revendiqué. Seul AGORA est modifié. Corriger les écarts démontrés
+avec leurs vérifications ciblées, sans nouveau tour automatique de Codex.
+
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
