@@ -104,6 +104,31 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-062 — Durées vides remplies à 1 h 30 en base — ouvert le 16/11/2026
+**Auteur** : session A (Claude) — lu sur `dc8d263`
+**Proposition** : à la demande de l'utilisateur (16/11/2026), écrire `duree = 90`
+pour tout atelier à durée vide (`NULL` ou ≤ 0), tous statuts et toutes années, par
+un workflow manuel (`durees-vides.yml`, script `scripts/durees-vides.php` envoyé par SSH).
+Mode `compter` d'abord (nombres seuls), puis `appliquer` dans une transaction.
+**Critère déclencheur** : 7 (le nombre d'ateliers « durée par défaut » affiché par les
+bilans et l'onglet Anomalies tombe à 0) et 5 (contredit la note du 05/10/2026,
+`api/lib/api.php:368-371` : « ceux de l'équipe restent vides », décision que
+l'utilisateur remplace aujourd'hui).
+**Contradicteur** : Codex.
+**Ce que ça engage** : l'information « durée inconnue » disparaît pour ces ateliers.
+Rendu réversible : identifiant et ancienne valeur gardés dans `durees_vides_20261116`,
+mode `annuler` (ne remet à vide que les lignes qui valent encore 90) ; copie de nuit 30 j.
+Aucun total ne change : une durée vide vaut déjà 90 partout (`logic.js:177`, `:409`,
+`utils.js:154`, `shared.js:5617`). Le recomptage d'ateliers-backups lit la même base.
+**Non vérifié par l'auteur** : (1) nombre réel de lignes : connu seulement après `compter` ;
+(2) un client resté ouvert avec l'ancienne durée vide ne l'efface pas (AG-017, confirmé
+le 03/10) : non revérifié ; (3) la Corbeille (`ateliers_corbeille`, JSON) n'est pas touchée :
+un atelier restauré revient avec sa durée vide, l'onglet Anomalies le montre.
+**Si personne ne répond, je fais quoi ?** — l'utilisateur a tranché : j'applique après
+`compter`, puis une seule vérification par Codex (règle 58).
+**Où regarder** : `scripts/durees-vides.php`, `.github/workflows/durees-vides.yml`,
+`api/lib/api.php:368-376`.
+
 ## AG-061 — Anomalies : durée vide et « Planifié » à date passée — ouvert le 16/11/2026
 **Auteur** : session A (Claude) — lu sur `a9b46c9`
 **Proposition** : deux catégories de plus dans l'onglet Anomalies (Admin, NEWGEN et
@@ -169,6 +194,15 @@ cela ne modifie ni son statut ni les rappels du matin (`rappels.php:65`).
 **Limites et suite** : aucune donnée réelle lue, aucun appel serveur ni contrôle
 navigateur revendiqué. Seul AGORA est modifié. Corriger les écarts démontrés
 avec leurs vérifications ciblées, sans nouveau tour automatique de Codex.
+
+### Écarts corrigés — 16/11/2026 — Claude, session A
+1. Durée absente : empreinte `(vide)`, distincte de toute durée ; garde de l'API inchangée
+   (test navigateur : validation envoyée avec `(vide)`, mutation rejetée).
+2. Jour de référence : `jourParis()` (`utils.js`), passé par l'onglet ; test Node à
+   l'instant `2026-11-15T23:30:00Z` et test navigateur sur un appareil réglé sur Honolulu
+   (mutation `todayLocal()` rejetée).
+Portée : l'en-tête dit « ateliers des années chargées » et le conseiller choisi.
+Pas de nouveau tour de Codex (règle 58) ; reste à clore par l'utilisateur.
 
 
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026

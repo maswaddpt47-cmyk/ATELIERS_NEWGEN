@@ -4,9 +4,11 @@
 `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer.
 Revues closes jusqu'à AG-060 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
 
-**AG-061 ouvert le 16/11** (Anomalies : « Durée vide » et « Planifié, date passée », livrées dans les deux applis) :
-une seule vérification de livraison par Codex attendue (règle 58), puis clore ; non vérifié sur la base réelle :
-l'onglet doit retrouver les 9 durées vides et 2 « Planifié » passés de novembre (comptage du 15/11), nombres à lire par l'utilisateur.
+**AG-061** (Anomalies : « Durée vide » et « Planifié, date passée ») : vérifié par Codex le 16/11, ses deux écarts
+corrigés (empreinte `(vide)`, jour de Paris) ; à clore par l'utilisateur.
+**AG-062 (16/11, demande de l'utilisateur)** : durées vides remplies à 1 h 30 en base, tous statuts et toutes années, par
+`durees-vides.yml` (Actions, modes compter / appliquer / annuler). Remplace la décision du 05/10 (équipe laissée vide).
+Annulable : `durees_vides_20261116` garde identifiants et anciennes valeurs ; à supprimer après le 16/12/2026 si rien n'est annulé.
 **Bandeau « nouvelle version » (16/11)** : `version.json` écrit par `deploy.yml` (Pages) et `deploy-sandbox.yml`, lu hors cache
 par `shared.js` ; **jamais vu en vrai** : à constater sur un téléphone au premier déploiement suivant (page ouverte avant, bandeau après).
 
