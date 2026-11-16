@@ -104,6 +104,36 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-061 — Anomalies : durée vide et « Planifié » à date passée — ouvert le 16/11/2026
+**Auteur** : session A (Claude) — lu sur `a9b46c9`
+**Proposition** : deux catégories de plus dans l'onglet Anomalies (Admin, NEWGEN et
+NextStep), avec compteur, filtre et bouton « Valider » comme les sept existantes :
+**Durée vide** (statut Planifié ou Réalisé, `duree` absente ou non entière positive ;
+les annulés, reportés et non réalisés ne comptent pas d'heures) et **Planifié, date
+passée** (statut « Planifié » et date strictement avant aujourd'hui en heure de
+Paris — la même règle que les rappels du matin, `api/lib/rappels.php:65`). Fonctions
+pures `dureeVide(e)` et `planifiePasse(e, today)` dans `utils.js`, testées ;
+`ANOMALIES_CATEGORIES` de l'API reçoit `duree` et `retard` (validation possible).
+**Critère déclencheur** : 7 — deux compteurs affichés de plus, et le total d'ateliers
+en anomalie change.
+**Contradicteur** : Codex.
+**Ce que ça engage** : les définitions. Une durée vide est comptée 1 h 30 partout
+(AG-032) : l'anomalie rend visible ce qui est compté par défaut, elle ne change
+aucun calcul. Un « Planifié » passé est déjà rappelé par mail chaque matin : ici il
+devient visible à l'Admin, qui peut le passer en statut groupé.
+**Non vérifié par l'auteur** : (1) l'onglet ne voit que les années chargées
+(`entries`) : un « Planifié » d'une année non chargée reste invisible ici alors que
+le mail le rappelle — écart assumé, à dire à l'écran ? (2) comptage réel : le
+recomptage du 15/11 (`ateliers-backups`) donne 9 durées vides et 2 « Planifié »
+passés en novembre ; l'onglet devrait afficher les mêmes nombres sur la même
+population, non vérifié sur la base réelle (règle 59 : nombres à lire par
+l'utilisateur). (3) la validation d'un « Planifié » passé a-t-elle un sens ? Gardée
+pour l'uniformité : empreinte = date, l'anomalie revient si la date change.
+**Si personne ne répond, je fais quoi ?** — je livre, puis une seule vérification
+de livraison par Codex (règle 58) ; les écarts démontrés se corrigent sans nouveau tour.
+**Où regarder** : `shared.js` `VueAnomalies` (NEWGEN ~4847, NextStep ~4529),
+`utils.js:420-430` et `:600-606` (fonctions voisines), `api/lib/anomalies.php:10`.
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
