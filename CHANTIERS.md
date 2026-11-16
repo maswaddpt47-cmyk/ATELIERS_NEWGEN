@@ -10,6 +10,9 @@ malgré « Autoriser toutes les actions », cause non établie.
 **AG-062 (16/11)** : 168 durées vides sur 339 remplies à 1 h 30 en base (`durees-vides.yml`, recompté 0), à la demande de
 l'utilisateur, qui remplace sa décision du 05/10. Annulable par le mode `annuler` ; table `durees_vides_20261116` à
 supprimer après le 16/12/2026 si rien n'est annulé. La Corbeille n'est pas touchée.
+**Tous les conseillers** : aucun filtre par conseiller (ceux de l'utilisateur l'étaient depuis le 05/10, les 168 sont ceux
+de l'équipe) ; recompté le 16/11 à 20:50 : 0 sur 339. Bac à sable (base fictive) non touché. Une page ouverte avant 20:31
+montre l'ancien état : recharger.
 **Bandeau « nouvelle version » (16/11)** : `version.json` écrit au déploiement (Pages et bac à sable), lu hors cache par
 `shared.js` ; **jamais vu en vrai** : à constater sur un téléphone (page ouverte avant un déploiement, bandeau après).
 
