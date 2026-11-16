@@ -4,7 +4,7 @@
 const { test, expect } = require('@playwright/test');
 const atelier = (extra = {}) => ({
   _id: 'entry_tard', _n: 1, statut: 'Planifié', date: '2030-01-15', horaire: '17:30', commune: 'Agen', lieu: 'Salle', thematique: 'Mail',
-  conseiller: 'Alice Martin', orienteur: 'CCAS', public: 'Séniors', inscrits: 5, presents: '', ...extra,
+  conseiller: 'Alice Martin', orienteur: 'CCAS', public: 'Séniors', inscrits: 5, presents: '', duree: 90, ...extra,   // duree : sinon « Durée vide » (AG-061) s'ajoute à l'anomalie testée
 });
 async function ouvrirAnomalies(page, baseURL, { validees = [], appels = [], attendreGet = null, erreurGet = false, repValider = { ok: true }, entries = [atelier()] } = {}) {
   await page.route('**/ateliers-numeriques.alwaysdata.net/**', async route => {

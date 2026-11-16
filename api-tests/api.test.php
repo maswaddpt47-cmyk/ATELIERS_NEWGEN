@@ -1339,6 +1339,7 @@ verifier(count($g) === 1 && $g[0]['empreinte'] === '18:00', 'anomalies : revalid
 $jv = $db->query("SELECT COUNT(*) FROM journal WHERE action = 'validerAnomalie' AND ref = " . $db->quote($idA))->fetchColumn();
 $jl = $db->query("SELECT COUNT(*) FROM journal WHERE action = 'getAnomaliesValidees'")->fetchColumn();
 verifier((int) $jv === 2 && (int) $jl === 0, 'anomalies : les validations sont journalisées au nom de l\'Admin, la lecture ne l\'est pas');
+verifier(appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'duree', 'empreinte' => ''])['ok'] === false && appel(['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'retard', 'empreinte' => '2026-11-15'])['ok'] === true && appel(['action' => 'annulerAnomalie'], $A + ['_id' => $idA, 'categorie' => 'retard'])['ok'] === true, 'anomalies : catégories duree et retard acceptées (AG-061), annulation comprise ; après le comptage du journal');
 // Concurrence réelle : sept catégories (« ferie » AG-054, « vacances » AG-057) validées en même temps sur le même atelier, deux fois la même clé.
 $par = appels_paralleles(array_merge(
     array_map(fn($c) => [['action' => 'validerAnomalie'], $A + ['_id' => $idA, 'categorie' => $c, 'empreinte' => "v-$c"]], ['manquants', 'communes', 'chiffres', 'ordi', 'tard', 'ferie', 'vacances']),
