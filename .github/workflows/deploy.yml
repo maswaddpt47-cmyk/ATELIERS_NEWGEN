@@ -120,6 +120,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Version publiée de chaque page (bandeau « nouvelle version », shared.js
+      # verifierPagePerimee, 16/11/2026) : les scripts ?v= de index.html et
+      # admin.html, lus par la page hors cache. Jamais commité (.gitignore).
+      - name: Écrire version.json
+        run: node scripts/version-json.js > version.json
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
