@@ -129,6 +129,10 @@ un atelier restauré revient avec sa durée vide, l'onglet Anomalies le montre.
 **Où regarder** : `scripts/durees-vides.php`, `.github/workflows/durees-vides.yml`,
 `api/lib/api.php:368-376`.
 
+**Appliqué le 16/11/2026 à 20:31 (heure de Paris)** : `compter` 168 sur 339 (2026 : 118 Réalisé, 25 Annulé,
+19 Planifié, 2 Reporté ; 2027 : 4 Planifié), `appliquer` 168 remplies et gardées, `compter` ensuite 0 sur 339
+(runs `43940088615`, `43940201063`, `43940277478`).
+
 ## AG-061 — Anomalies : durée vide et « Planifié » à date passée — ouvert le 16/11/2026
 **Auteur** : session A (Claude) — lu sur `a9b46c9`
 **Proposition** : deux catégories de plus dans l'onglet Anomalies (Admin, NEWGEN et

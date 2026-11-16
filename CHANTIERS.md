@@ -8,6 +8,8 @@ Revues closes jusqu'à AG-060 : ne pas les relancer d'office. **Autorisations Ch
 corrigés (empreinte `(vide)`, jour de Paris) ; à clore par l'utilisateur.
 **AG-062 (16/11, demande de l'utilisateur)** : durées vides remplies à 1 h 30 en base, tous statuts et toutes années, par
 `durees-vides.yml` (Actions, modes compter / appliquer / annuler). Remplace la décision du 05/10 (équipe laissée vide).
+**Appliqué le 16/11 à 20:31** : 168 sur 339 (2026 : 118 réalisés, 25 annulés, 19 planifiés, 2 reportés ; 2027 : 4 planifiés),
+recompté 0 ensuite (runs 1 à 3 de `durees-vides.yml`). Aucun total d'heures ne change ; « durée par défaut » tombe à 0.
 Annulable : `durees_vides_20261116` garde identifiants et anciennes valeurs ; à supprimer après le 16/12/2026 si rien n'est annulé.
 **Bandeau « nouvelle version » (16/11)** : `version.json` écrit par `deploy.yml` (Pages) et `deploy-sandbox.yml`, lu hors cache
 par `shared.js` ; **jamais vu en vrai** : à constater sur un téléphone au premier déploiement suivant (page ouverte avant, bandeau après).
