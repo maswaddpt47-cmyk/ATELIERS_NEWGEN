@@ -1,9 +1,17 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **16/11/2026, 21:00**, bases `main` : NEWGEN `0a53ef0`, NextStep `b14d9f7` (relu par « pull »). Reprise : actualiser les deux `main`
+État au **16/11/2026 — passation Codex**, bases `main` : NEWGEN `22033c8`, NextStep `a73f5c0`, MD-LIB `aa64abc`. Reprise : actualiser les deux `main`
 (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer. Revues closes jusqu'à
 AG-062 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue
 malgré « Autoriser toutes les actions », cause non établie.
+
+**Passation Codex — 16/11** : aucune nouvelle règle à inscrire ; concision, contrôles proportionnés, revue unique et
+**✅ TÂCHE TERMINÉE** sont déjà couverts par les consignes communes et `AGENTS.md`.
+Les correctifs d'AG-061/062 publiés après les réponses de Codex sont consignés ci-dessous sans nouveau réaudit.
+Aucun test produit relancé pour cette passation documentaire ; ne pas reprendre les scripts temporaires hors Git.
+Le recomptage indépendant du bilan est publié dans le dépôt privé `ateliers-backups` (`9c430cb`) ; ses essais
+PHP/MariaDB sur données fictives et les réserves restent dans AGORA. Les vérifications régulières sont déjà
+programmées : conserver le suivi du bilan ci-dessous et la limite de l'annulation d'AG-062.
 
 **AG-061 et AG-062 clos le 16/11** par l'utilisateur ; bandeau « nouvelle version » **non annoncé** (sa décision du 16/11).
 **AG-062 (16/11)** : 168 durées vides sur 339 remplies à 1 h 30 en base (`durees-vides.yml`, recompté 0), à la demande de
