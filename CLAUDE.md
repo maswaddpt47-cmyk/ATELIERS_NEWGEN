@@ -222,7 +222,8 @@ déclenchement se fait sur des faits constatables dans le diff.
 7. **le changement touche un calcul ou un chiffre affiché** (indicateur, total,
    taux, filtre, définition ; écran, export, impression) — **systématique,
    quelle que soit sa taille** (décision du 26/10/2026, après AG-032).
-   Contradicteur : Codex. Bloc ouvert avant la correction, définitions métier
+   Contradicteur : l'IA de l'autre éditeur (Codex pour un bloc de Claude, Claude pour un bloc de Codex,
+   MD-LIB `agora.md` §12). Bloc ouvert avant la correction, définitions métier
    séparées des défauts démontrés et tranchées par l'utilisateur.
 
 **N'y vont pas :** un changement de rendu pur (règle 17), un correctif
@@ -232,11 +233,11 @@ calcul ou chiffre affiché : critère 7, toujours.**
 **Comment :** écrire le bloc, le committer **sur `main` immédiatement**
 (exception assumée au workflow de branche de la section 1 — c'est du texte,
 ça ne peut rien casser), puis annoncer en une ligne, sur le modèle du
-signalement RGPD, **sur une ligne à part en tête du message, 🔴 et en gras** (MD-LIB `agora.md` §4, 04/11/2026 : un « pull » noyé dans un compte rendu n'a pas été vu) : `🔴 **⚖️ AGORA : critère N — <sujet>. Bloc AG-00N commité. → Dis « pull » à Codex.**`
+signalement RGPD, **sur une ligne à part en tête du message, 🔴 et en gras** (MD-LIB `agora.md` §4, 04/11/2026 : un « pull » noyé dans un compte rendu n'a pas été vu) : `🔴 **⚖️ AGORA : critère N — <sujet>. Bloc AG-00N publié dans maswaddpt47-cmyk/ATELIERS_NEWGEN. → Dis « pull » à <Codex ou Claude>.**`
 (**bloc pour Codex : dire « pull » à Codex suffit**, son `AGENTS.md` le fait
 répondre, décision du 03/11/2026 ; l'annonce reste due) ou, pour une session
 Claude, la phrase à coller dans l'autre session, **libellé de session compris**
-(« …réponds à AG-00N, tu es la session B ») : les deux comptes poussant sous
+(« pull maswaddpt47-cmyk/ATELIERS_NEWGEN, lis son `AGORA.md`, réponds à AG-00N, tu es Claude, session B ») : les deux comptes poussant sous
 la même identité GitHub, c'est la seule chose qui distingue les auteurs. **Soumettre d'office sans
 demander l'autorisation, et ne jamais bloquer dessus** : rien ne garantit
 qu'une réponse arrive. Soumettre **au moment du choix**, pas après
@@ -253,6 +254,6 @@ pas le contradicteur.
 **Une entrée « décision à trancher » dans `CHANTIERS.md` est par définition un
 candidat** : au moment de l'écrire, dire pourquoi on ouvre un bloc ou non.
 
-**Sécurité, mots de passe, données personnelles : contradicteur Codex**
-(OpenAI) au lieu de la session B (06/10/2026, mode d'emploi : `AGORA.md`).
-Sinon deux comptes Claude : canal = ce dépôt, relais par l'utilisateur.
+**Sécurité, mots de passe, données personnelles et chiffres : contradicteur d'un autre éditeur**
+(Codex pour un bloc de Claude, depuis le 06/10/2026 ; Claude pour un bloc de Codex, MD-LIB `agora.md` §12,
+16/11/2026). Canal = ce dépôt, relais par l'utilisateur.

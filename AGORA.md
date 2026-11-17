@@ -13,15 +13,16 @@ justification de la règle : utile à lire, **non requis pour répondre**.)
 
 1. Une session dépose un bloc ci-dessous, le commite **sur `main` tout de
    suite** (sinon l'autre session ne le voit pas), et donne à l'utilisateur la
-   phrase à coller ailleurs : « pull, lis AGORA.md, réponds à AG-00N ».
+   phrase à coller ailleurs : « pull maswaddpt47-cmyk/ATELIERS_NEWGEN, lis son `AGORA.md`, réponds à AG-00N ».
 2. L'autre session pull, lit le bloc **puis le code concerné**, ajoute sa
    réponse sous le bloc, commite sur `main`.
 3. L'utilisateur tranche. Le bloc tranché **sort de ce fichier** ; sa
    conclusion remonte dans `CHANTIERS.md` (« Points à ne pas défaire ») ou
    dans `CLAUDE.md` si elle devient une règle.
 
-**Blocs de sécurité, de mots de passe ou de données personnelles : le
-contradicteur est Codex (OpenAI)**, pas une session Claude (décision du
+**Relecteur d'un autre éditeur** (MD-LIB `agora.md` §12, 16/11/2026) : un bloc ouvert par Codex est contredit par
+Claude, dans une autre session (« pull » à Claude). **Blocs de sécurité, de mots de passe ou de données personnelles
+ouverts par Claude : le contradicteur est Codex (OpenAI)**, pas une session Claude (décision du
 06/10/2026 : 0 « contredit » sur 23 blocs entre Claude, quand Codex a trouvé
 en une passe ce que Claude avait manqué). **Depuis le 03/11/2026 (décision de l'utilisateur), il suffit de dire « pull » à
 Codex** : son `AGENTS.md` lui dit de répondre aux blocs ouverts dont la ligne
@@ -83,7 +84,7 @@ contredire — il rend un service de politesse qui donne une fausse garantie.
 **Auteur** : session <libellé donné par l'utilisateur> — lu sur `<sha court>`
 **Proposition** : trois lignes maximum.
 **Critère déclencheur** : n° et lequel (section 8 du CLAUDE.md).
-**Contradicteur** : Codex | session B
+**Contradicteur** : Codex (bloc de Claude) | Claude (bloc de Codex) — MD-LIB `agora.md` §12
 **Ce que ça engage** : ce qui serait coûteux à défaire.
 **Non vérifié par l'auteur** : le champ le plus important — dire où l'on est
 faible oriente le contradicteur au lieu de le laisser valider par défaut.
