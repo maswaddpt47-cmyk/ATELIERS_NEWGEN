@@ -182,7 +182,10 @@ superflu, `sw.js` de désinscription.
 
 ## Pistes d'amélioration
 
-Règle 22. Ne pas reproposer une piste écartée sans fait nouveau. **En attente** : la 3 du 15/11 (point 1 de « Reste ouvert »).
+Règle 22. Ne pas reproposer une piste écartée sans fait nouveau. **En cours (17/11, accord de l'utilisateur)** : la 3 du 15/11 — `coupure-urgence.yml` contrôle aussi
+`/sandbox/nextstep/index.html` (`835f2ec`). **Reste** : Actions → « Coupure d'urgence », `couper` / `bac-a-sable` /
+confirmation `couper` → les 3 URL en 403 ; puis `rouvrir` / `bac-a-sable` / `rouvrir` → « service opérationnel ».
+Aucun déploiement du bac à sable entre les deux (son rsync efface `sandbox/.htaccess`).
 
 **Écartées** (date — piste — raison)
 - 25/10 — tableaux thématiques × communes et partenaires × conseillers — alourdissent la page, jugés inutiles.
