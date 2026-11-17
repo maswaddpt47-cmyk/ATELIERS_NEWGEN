@@ -69,10 +69,11 @@ jobs:
           echo "HOTE=$COMPTE@ssh-$COMPTE.alwaysdata.net" >> "$GITHUB_ENV"
           b="https://$COMPTE.alwaysdata.net"
           # URL contrôlées : api = point d'entrée PHP (réponse JSON ok:true
-          # attendue à la réouverture), page = page HTML du bac à sable.
+          # attendue à la réouverture), page = pages HTML du bac à sable (NEWGEN et
+          # NextStep, ajoutée le 17/11/2026).
           case "$CIBLE" in
-            tout) echo "VERIFIER=api:$b/api/index.php api:$b/api-sandbox/index.php page:$b/sandbox/index.html" >> "$GITHUB_ENV";;
-            bac-a-sable) echo "VERIFIER=api:$b/api-sandbox/index.php page:$b/sandbox/index.html" >> "$GITHUB_ENV";;
+            tout) echo "VERIFIER=api:$b/api/index.php api:$b/api-sandbox/index.php page:$b/sandbox/index.html page:$b/sandbox/nextstep/index.html" >> "$GITHUB_ENV";;
+            bac-a-sable) echo "VERIFIER=api:$b/api-sandbox/index.php page:$b/sandbox/index.html page:$b/sandbox/nextstep/index.html" >> "$GITHUB_ENV";;
             *) echo "::error::Cible inconnue : $CIBLE"; exit 1;;
           esac
 
