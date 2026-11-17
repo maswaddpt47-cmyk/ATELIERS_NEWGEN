@@ -73,8 +73,8 @@ si la parité n'est pas à jour ou si NextStep a des commits non poussés. **Ne 
 
 **Nouveautés** : prochain `id` **41** (bandeau « nouvelle version » non annoncé, 16/11) ; jamais `admin: true` ; jamais 12, 16, 19, 24, 25, 26 ni 29 (publiés puis retirés).
 
-1. **Bac à sable NextStep** (AG-033) : à éprouver — pages NextStep dans `coupure-urgence.yml` puis coupure réelle ;
-   requêtes vers `api-sandbox` vues au navigateur ; avis fictif par le QR (piste 3 du 15/11, en attente).
+1. **Bac à sable NextStep** (AG-033) : coupure d'urgence éprouvée le 17/11 ; restent à voir au navigateur les
+   requêtes vers `api-sandbox` et un avis fictif par le QR.
 2. **Supports par atelier (pptx, docx) — mis de côté le 04/10** : supports sur un réseau interne, qu'une page https
    n'ouvre pas en `file://` (hypothèse) ; il faudrait SharePoint/OneDrive ou Alwaysdata. Bloc AGORA au choix (critère 1).
 3. **Réimport Outlook** : un rendez-vous simple importé avant le 03/10 puis déplacé n'est pas reconnu (nouveau + supprimé).
@@ -182,10 +182,7 @@ superflu, `sw.js` de désinscription.
 
 ## Pistes d'amélioration
 
-Règle 22. Ne pas reproposer une piste écartée sans fait nouveau. **En cours (17/11, accord de l'utilisateur)** : la 3 du 15/11 — `coupure-urgence.yml` contrôle aussi
-`/sandbox/nextstep/index.html` (`835f2ec`). **Reste** : Actions → « Coupure d'urgence », `couper` / `bac-a-sable` /
-confirmation `couper` → les 3 URL en 403 ; puis `rouvrir` / `bac-a-sable` / `rouvrir` → « service opérationnel ».
-Aucun déploiement du bac à sable entre les deux (son rsync efface `sandbox/.htaccess`).
+Règle 22. Ne pas reproposer une piste écartée sans fait nouveau. **En attente** : aucune. Coupure d'urgence éprouvée sur NextStep du bac à sable le 17/11 (06:21-06:22, runs `44023528386` / `44023579101` : 3 URL en 403 puis 200).
 
 **Écartées** (date — piste — raison)
 - 25/10 — tableaux thématiques × communes et partenaires × conseillers — alourdissent la page, jugés inutiles.
