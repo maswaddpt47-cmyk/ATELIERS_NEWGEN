@@ -225,6 +225,8 @@ déclenchement se fait sur des faits constatables dans le diff.
    Contradicteur : l'IA de l'autre éditeur (Codex pour un bloc de Claude, Claude pour un bloc de Codex,
    MD-LIB `agora.md` §12). Bloc ouvert avant la correction, définitions métier
    séparées des défauts démontrés et tranchées par l'utilisateur.
+   **Précision (décision de l'utilisateur, 19/11/2026)** : une nouvelle présentation de chiffres déjà calculés et
+   vérifiés (impression, autre forme de graphe), sans nouveau calcul, filtre ni définition, n'ouvre pas de bloc.
 
 **N'y vont pas :** un changement de rendu pur (règle 17), un correctif
 localisé appuyé sur une preuve, tout ce qui se défait en un commit — **sauf
