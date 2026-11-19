@@ -7,7 +7,8 @@ confirmation `create_tree` encore vue malgré « Autoriser toutes les actions »
 **AG-063 clos le 19/11** (avis en graphes, période ou atelier ; non annoncé) : règles dans « Points à ne pas défaire ».
 **Impression des graphes (19/11)** : depuis la vue en graphes, « Imprimer / PDF » sort les graphes affichés (SVG, 2 pages A4
 sur un essai fictif) ; liste des ateliers avec l'orienteur. Pas de bloc AGORA : mêmes chiffres, aucun calcul nouveau
-(décision de l'utilisateur ; précision du critère 7 proposée, en attente de son accord).
+(décision de l'utilisateur ; précision du critère 7 proposée, en attente de son accord). **Validé à l'écran par
+l'utilisateur le 19/11** (impression des graphes).
 Le 17/11 : coupure d'urgence éprouvée sur la page NextStep du bac à sable ; annonce AGORA « publiée dans <dépôt> » et
 relecteur de l'autre éditeur dans les consignes.
 
