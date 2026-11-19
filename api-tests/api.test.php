@@ -303,6 +303,22 @@ verifier($lire('entry_1')['duree'] === 120, 'durée enregistrée, gardée par un
 appel(['action' => 'saveMany'], $T + ['entries' => json_encode([$maj + ['duree' => '']])]);
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['duree' => ''])]);
 verifier($lire('entry_1')['duree'] === 120, 'durée gardée par un envoi à durée vide (onglet d\'avant le remplissage, AG-062)');
+// Liens Partage47 (AG-065) : enregistrés et relus en tableau ; absents = gardés ; liste vide = retirés ; hors Partage47 = refusés.
+$lienOk = ['titre' => 'Résultats PIX', 'url' => 'https://partage.lotetgaronne.fr/index.php/s/abc123/download?path=/&files=pix.csv'];
+$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['liens' => [$lienOk]])]);
+verifier(($r['ok'] ?? false) && $lire('entry_1')['liens'] === [$lienOk], 'liens Partage47 enregistrés et relus en tableau');
+appel(['action' => 'saveMany'], $T + ['entries' => json_encode([$maj])]);
+verifier($lire('entry_1')['liens'] === [$lienOk], 'liens gardés par un envoi sans liens (statut groupé, page d\'avant)');
+$refus = array_map(fn($l) => appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['liens' => $l])])['ok'] ?? null, [
+    [['titre' => 'x', 'url' => 'javascript:alert(1)']], [['titre' => 'x', 'url' => 'https://evil.com/partage.lotetgaronne.fr']],
+    [['titre' => 'x', 'url' => 'http://partage.lotetgaronne.fr/s/a']], [['titre' => 'x', 'url' => 'https://partage.lotetgaronne.fr.evil.com/s/a']],
+    array_fill(0, 6, $lienOk), [['titre' => str_repeat('t', 81), 'url' => $lienOk['url']]], ['pas-un-objet'], ['a' => $lienOk]]);
+verifier($refus === array_fill(0, 8, false) && $lire('entry_1')['liens'] === [$lienOk], 'liens hors Partage47, en http, trop nombreux ou mal formés : refusés, base inchangée — ' . json_encode($refus));
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['liens' => []])]);
+verifier($lire('entry_1')['liens'] === [] && $db->query("SELECT liens FROM ateliers WHERE id = 'entry_1'")->fetchColumn() === null, 'liste de liens vide : liens retirés (NULL en base)');
+$db->exec("UPDATE ateliers SET liens = '[{\"titre\":\"vieux\",\"url\":\"https://evil.com/x\"}]' WHERE id = 'entry_1'");
+verifier($lire('entry_1')['liens'] === [], 'relecture : un lien invalide en base ne sort jamais');
+$db->exec("UPDATE ateliers SET liens = NULL WHERE id = 'entry_1'");
 $r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['duree' => 45])]);
 verifier($r['ok'] === false && str_contains($r['error'], 'duree') && $lire('entry_1')['duree'] === 120, 'durée hors demi-heure : refusée');
 // Fiche bilan (AG-020) : objet validé, gardé par un envoi sans bilan, refus hors liste.

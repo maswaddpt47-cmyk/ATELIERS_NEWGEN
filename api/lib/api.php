@@ -55,6 +55,7 @@ const API_CHAMPS_ATELIER = [
     'duree' => 'duree',
     'fiche_bilan' => 'fiche_bilan',
     'ouvert_a_tous' => 'ouvert_a_tous',
+    'liens' => 'liens',
 ];
 
 // Point d'entrée : choisit l'action et applique la règle d'accès.
@@ -389,6 +390,10 @@ function ateliers_colonne_duree(PDO $db): void
     if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'ouvert_a_tous'")->fetch()) {
         $db->exec("ALTER TABLE ateliers ADD COLUMN ouvert_a_tous VARCHAR(3) NOT NULL DEFAULT 'Non'");
     }
+    // Liens Partage47 (AG-065, 19/11/2026) : JSON, NULL par défaut ; aucun fichier stocké ici.
+    if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'liens'")->fetch()) {
+        $db->exec('ALTER TABLE ateliers ADD COLUMN liens TEXT NULL');
+    }
     $ok = true;
 }
 
@@ -560,6 +565,7 @@ function api_ateliers(PDO $db, array $annees): array
         }
         $e['materiel'] = $materiel[$l['id']] ?? [];
         $e['fiche_bilan'] = api_bilan_lu($e['fiche_bilan'] ?? '');
+        $e['liens'] = api_liens_lus($e['liens'] ?? '');
         $entries[] = $e;
     }
     return $entries;

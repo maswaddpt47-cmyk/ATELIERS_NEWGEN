@@ -240,6 +240,27 @@ function api_bilan_lu(mixed $v): array|string
 }
 
 // Convertit un atelier reçu du client en ligne de la table, ou null.
+// Liens Partage47 d'un atelier (AG-065, 19/11/2026) : https et hôte partage.lotetgaronne.fr
+// seulement, sans identifiants ni port ; aucun fichier n'est stocké chez Alwaysdata.
+const API_LIENS_HOTES = ['partage.lotetgaronne.fr'];
+const API_LIENS_MAX = 5;
+function api_lien_partage_valide(string $u): bool
+{
+    if ($u === '' || strlen($u) > 500 || preg_match('/[\s\x00-\x1F\x7F"<>\\\\]/', $u)) return false;
+    $p = parse_url($u);
+    return is_array($p) && strtolower($p['scheme'] ?? '') === 'https' && in_array(strtolower($p['host'] ?? ''), API_LIENS_HOTES, true)
+        && !isset($p['user']) && !isset($p['pass']) && !isset($p['port']);
+}
+// Relecture : seuls les liens encore valides sortent, en tableau [{titre, url}].
+function api_liens_lus(mixed $v): array
+{
+    $l = is_string($v) && $v !== '' ? json_decode($v, true) : (is_array($v) ? $v : []);
+    if (!is_array($l)) return [];
+    $ok = [];
+    foreach ($l as $x) if (is_array($x) && api_lien_partage_valide((string) ($x['url'] ?? ''))) $ok[] = ['titre' => (string) ($x['titre'] ?? ''), 'url' => (string) $x['url']];
+    return array_slice($ok, 0, API_LIENS_MAX);
+}
+
 function api_valider_atelier(array $d, ?string &$err): ?array
 {
     $id = trim((string) ($d['_id'] ?? ''));
@@ -306,6 +327,22 @@ function api_valider_atelier(array $d, ?string &$err): ?array
             $err = 'Ouvert à tous : choisir Oui ou Non'; return null;
         }
         $l['ouvert_a_tous'] = $v;
+    }
+    // Liens Partage47 (AG-065) : absents de l'envoi (page d'avant, statut groupé) = gardés en base ;
+    // liste vide envoyée par le volet = retirés. Refus explicite d'une adresse hors Partage47.
+    if (array_key_exists('liens', $d)) {
+        $v = $d['liens'];
+        if (is_string($v)) $v = trim($v) === '' ? [] : json_decode($v, true);
+        if (!is_array($v) || !array_is_list($v) || count($v) > API_LIENS_MAX) { $err = 'liens : ' . API_LIENS_MAX . ' liens au plus'; return null; }
+        $ok = [];
+        foreach ($v as $x) {
+            $url = is_array($x) && is_string($x['url'] ?? null) ? trim($x['url']) : '';
+            $titre = is_array($x) && is_scalar($x['titre'] ?? '') ? trim((string) ($x['titre'] ?? '')) : '';
+            if (!api_lien_partage_valide($url)) { $err = 'liens : seule une adresse https de partage.lotetgaronne.fr est acceptée'; return null; }
+            if (mb_strlen($titre) > 80 || preg_match('/[\x00-\x1F\x7F]/', $titre)) { $err = 'liens : titre invalide (80 caractères au plus)'; return null; }
+            $ok[] = ['titre' => $titre, 'url' => $url];
+        }
+        $l['liens'] = $ok ? json_encode($ok, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
     }
     // Durée en minutes (AG-017). Absente de l'envoi (client d'avant, en
     // cache) : la colonne n'est pas touchée, la durée déjà saisie reste.
