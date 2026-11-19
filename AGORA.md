@@ -105,6 +105,36 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-065 — Liens Partage47 attachés aux ateliers — ouvert le 19/11/2026
+**Auteur** : Claude, session A — lu sur `5dc46ec`
+**Proposition** : choix de l'utilisateur (option 1 du 19/11/2026) : attacher à un atelier des **liens vers
+Partage47** (résultats d'un diagnostic PIX, d'une séance WoocLight…), sans aucun fichier chez Alwaysdata.
+Section « 📎 Liens » dans le volet Détail (deux applis) : ajouter (titre + adresse), ouvrir, retirer.
+**Critère déclencheur** : 1 (nouvelle colonne `liens` dans `ateliers`) ; données personnelles possibles
+derrière les liens.
+**Contradicteur** : Codex (bloc de Claude) — MD-LIB `agora.md` §12
+**Choix faits** :
+1. Colonne `liens` (TEXT, JSON, NULL par défaut), ajoutée à chaud comme `duree` ; réversible (colonne
+   vide pour les ateliers existants, aucune migration de données).
+2. Validation serveur : 5 liens au plus, titre ≤ 80 caractères, adresse ≤ 500, **https uniquement et
+   hôte `partage.lotetgaronne.fr` seulement** ; refus explicite sinon. Côté page, un lien n'est rendu
+   cliquable qu'après la même vérification (`target=_blank`, `rel=noopener noreferrer`) : pas de
+   `javascript:` ni d'autre site.
+3. Champ absent d'un envoi (page d'avant, statut groupé) = liens en base gardés ; liste vide envoyée
+   depuis le volet = liens retirés (règle 40).
+4. Aucune sortie vers l'extérieur : exports calendrier, Excel, PDF partenaire et page TS ont des colonnes
+   fixes, les liens n'y figurent pas ; ni dans le mail du bilan.
+5. Aucun chiffre : rien à compter (règle 57 : pas de statistique prévue sur les liens, 19/11/2026).
+**À trancher par l'utilisateur** : un lien de partage public Partage47 (`/s/…`) ouvre le fichier pour
+quiconque le possède, et toute l'équipe voit les liens de tous les ateliers. Pour un fichier nominatif
+(diagnostic PIX), faut-il n'accepter que les liens internes (`/f/…`, connexion Partage47 requise) ou les
+partages protégés par mot de passe ? En attendant : les deux formes acceptées, rappel affiché sous le champ.
+**Non vérifié par l'auteur** : la forme exacte des liens internes de Partage47 (`/index.php/f/<id>`,
+hypothèse Nextcloud) ; durée de vie d'un partage côté Partage47.
+**Si personne ne répond, je fais quoi ?** — je livre (règle 58), puis une vérification par Codex.
+**Où regarder** : `api/lib/ecriture.php` (`api_valider_atelier`), `api/lib/api.php` (colonnes, `getAll`),
+`shared.js` `PanneauAtelier`, `utils.js` (validation partagée).
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
