@@ -50,7 +50,7 @@ test('Admin — avis par atelier : vue en graphes à 390 px, sans erreur ni déb
   const det = o => ({ attentes: { ...z(['1','2','3','4','5']), ...o.attentes }, clarte: { ...z(['1','2','3','4','5']), ...o.clarte },
     rythme: { ...z(['Trop lent','Adapté','Trop rapide']), ...o.rythme }, aise: { ...z(['Non','Un peu','Oui']), ...o.aise },
     autonomie: { ...z(['Oui',"Avec de l'aide",'Non']), ...o.autonomie },
-    sujet: { ...z(['Smartphone','Messagerie','Démarches en ligne','Sécurité','Intelligence artificielle','Autre']), ...o.sujet }, sans_sujet: o.sans_sujet || 0 });
+    sujet: { ...z(['Smartphone','Messagerie','Démarches en ligne','Sécurité','Intelligence artificielle','Autre']), ...o.sujet }, sans_sujet: o.sans_sujet || 0, total: o.total });
   const ligne = (id, n, d) => ({ atelier_id: id, n, papier: 0, attentes: null, clarte: null, rythme_ok: 0, rythme_n: 0, aise_oui: 0, aise_n: 0, autonomie_oui: 0, autonomie_n: 0, remarques: [], detail: d });
   await page.route('**/ateliers-numeriques.alwaysdata.net/**', async route => {
     const body = route.request().postData() || ''; const url = route.request().url();
@@ -61,8 +61,8 @@ test('Admin — avis par atelier : vue en graphes à 390 px, sans erreur ni déb
       { _id: 'g2', date: auj, statut: 'Réalisé', thematique: 'Mail', commune: 'NÉRAC', conseiller: 'Alice Martin' }],
       lists: { statuts: ['Réalisé'], conseillers: ['Alice Martin'], publics: [], materiels: [] }, config: {}, role: 'admin', comptes: [], visibility: {}, colors: {} };
     else if (action === 'avisParAtelier') r = { ok: true, ateliers: [
-      ligne('g1', 3, det({ attentes: { '5': 2, '3': 1 }, clarte: { '4': 2 }, rythme: { 'Adapté': 2, 'Trop rapide': 1 }, aise: { 'Oui': 1, 'Un peu': 1 }, autonomie: { 'Oui': 3 }, sujet: { 'Smartphone': 2, 'Sécurité': 2 }, sans_sujet: 1 })),
-      ligne('g2', 2, det({ attentes: { '4': 1 }, rythme: { 'Trop lent': 2 }, aise: { 'Non': 2 }, autonomie: { 'Non': 1 }, sans_sujet: 2 }))] };
+      ligne('g1', 3, det({ attentes: { '5': 2, '3': 1 }, clarte: { '4': 2 }, rythme: { 'Adapté': 2, 'Trop rapide': 1 }, aise: { 'Oui': 1, 'Un peu': 1 }, autonomie: { 'Oui': 3 }, sujet: { 'Smartphone': 2, 'Sécurité': 2 }, sans_sujet: 1, total: 3 })),
+      ligne('g2', 2, det({ attentes: { '4': 1 }, rythme: { 'Trop lent': 2 }, aise: { 'Non': 2 }, autonomie: { 'Non': 1 }, sans_sujet: 2, total: 2 }))] };
     else if (action === 'getComptes') r = { ok: true, comptes: [{ conseiller: 'Alice Martin', role: 'admin', actif: 'OUI' }] };
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(r) });
   });
@@ -78,6 +78,7 @@ test('Admin — avis par atelier : vue en graphes à 390 px, sans erreur ni déb
   await expect(page.getByText('Profil des avis')).toBeVisible();
   await expect(page.getByText(/^5 avis sur 2 ateliers/)).toBeVisible();
   await expect(page.getByText('Attentes — moyenne 4,3/5')).toBeVisible();
+  await expect(page.getByText('3/4 favorables (75 %)').first()).toBeVisible();   // base du radar affichée (Codex, AG-063)
   await page.waitForTimeout(600);
   if (process.env.CAPTURE_GRAPHES) {   // contrôle visuel : faire défiler pour que chaque graphe se dessine
     for (let y = 0; y < 3000; y += 400) { await page.mouse.wheel(0, 400); await page.waitForTimeout(250); }
