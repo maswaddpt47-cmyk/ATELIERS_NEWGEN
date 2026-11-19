@@ -46,6 +46,13 @@ async function preparer(page,entrees=[TEMOIN]){
     else if(action==='getLogs')rep={ok:true,logs:[]};
     else if(action==='saveEntry'){
       etat.ecritures.push({action,entry:JSON.parse(params.get('entry'))});
+    }else if(action==='lienAtelier'){
+      // Liens Partage47 (AG-065) : réponse retenue tant que etat.retenue n'est pas libérée.
+      if(etat.retenue)await etat.retenue;
+      etat.liens=etat.liens||{};const id=params.get('_id');etat.liens[id]=etat.liens[id]||[];
+      if(params.get('op')==='ajouter')etat.liens[id].push({titre:params.get('titre'),url:params.get('url')});
+      else etat.liens[id]=etat.liens[id].filter(l=>l.url!==params.get('url'));
+      rep={ok:true,liens:etat.liens[id]};
     }else if(action==='saveMany'){
       const entries=JSON.parse(params.get('entries'));
       etat.ecritures.push({action,entries});
@@ -276,3 +283,57 @@ test('historique — volet : lieu modifié sur place et enregistré',async({page
   expect(etat.erreurs).toEqual([]);
 });
 
+
+// Vérification de Codex sur AG-065 (19/11/2026) : la réponse tardive d'un lien de A ne remplit pas le
+// volet de B, et ne rétablit pas les autres champs de A modifiés entre-temps.
+test('historique — volet : réponse tardive d\'un lien, autre atelier ouvert et lieu modifié entre-temps',async({page})=>{
+  const B={...TEMOIN,_id:'atelier-b',_n:2,thematique:'Atelier fictif B',lieu:'Salle B'};
+  const etat=await preparer(page,[TEMOIN,B]);
+  await connecter(page,'index.html');
+  await nav(page,'Historique');
+  const volet=page.locator('.side-panel.open');
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  let liberer;etat.retenue=new Promise(r=>{liberer=r;});
+  await volet.getByPlaceholder('Titre (ex. Résultats PIX)').fill('Document fictif A');
+  await volet.getByPlaceholder('https://partage.lotetgaronne.fr/…').fill('https://partage.lotetgaronne.fr/index.php/s/fictifA');
+  await volet.getByRole('button',{name:'+ Ajouter'}).click();
+  await volet.getByPlaceholder('Salle, médiathèque, établissement…').fill('Salle modifiée pendant le lien');
+  await volet.getByRole('button',{name:/Enregistrer/}).click();
+  await expect.poll(()=>etat.ecritures.filter(e=>e.action==='saveEntry').length).toBe(1);
+  await expect(volet).toHaveCount(0);   // « Enregistrer » ferme le volet
+  await page.getByText('Atelier fictif B',{exact:true}).filter({visible:true}).first().click();
+  await expect(volet.getByText('📎 Liens Partage47')).toBeVisible();
+  etat.retenue=null;liberer();
+  await expect(page.getByText('✅ Lien ajouté')).toBeVisible();
+  await expect(volet.getByRole('link',{name:/Document fictif A/})).toHaveCount(0);
+  await volet.locator('button').first().click();
+  await expect(page.getByText('Salle modifiée pendant le lien').filter({visible:true}).first()).toBeVisible();
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await expect(volet.getByRole('link',{name:/Document fictif A/})).toBeVisible();
+  expect(etat.erreurs).toEqual([]);
+});
+
+// Duplication : le doublon part sans les liens de l'atelier source, à l'envoi comme à l'écran.
+test('historique — dupliquer un atelier qui a un lien : le doublon n\'en a aucun',async({page})=>{
+  const SOURCE={...TEMOIN,liens:[{titre:'Document source',url:'https://partage.lotetgaronne.fr/index.php/s/source'}]};
+  const etat=await preparer(page,[SOURCE]);
+  await connecter(page,'index.html');
+  await nav(page,'Historique');
+  const volet=page.locator('.side-panel.open');
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await expect(volet.getByRole('link',{name:/Document source/})).toBeVisible();
+  await volet.getByRole('button',{name:/Dupliquer/}).click();
+  await formulaire(page).locator('input[type="date"]').first().fill('2026-10-28');
+  await formulaire(page).locator('input[type="time"]').first().fill('09:00');
+  await formulaire(page).getByRole('button',{name:/Enregistrer l'atelier/}).click();
+  await expect.poll(()=>etat.ecritures.filter(e=>e.action==='saveEntry').length).toBe(1);
+  const e=etat.ecritures.find(x=>x.action==='saveEntry').entry;
+  expect(e.liens||[]).toEqual([]);
+  // Après création, l'Historique montre le doublon (28/10) mis en évidence : son volet n'a aucun lien.
+  await page.getByText('28',{exact:true}).filter({visible:true}).first().click();
+  await expect(volet.getByText('📎 Liens Partage47')).toBeVisible();
+  await expect(volet.getByPlaceholder('Salle, médiathèque, établissement…')).toHaveValue(TEMOIN.lieu);
+  await expect(volet.getByText('Aucun lien.')).toBeVisible();
+  await expect(volet.getByRole('link',{name:/Document source/})).toHaveCount(0);
+  expect(etat.erreurs).toEqual([]);
+});
