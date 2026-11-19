@@ -5,6 +5,9 @@ Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les c
 réappliquer. Revues closes jusqu'à AG-063 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
 confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
 **AG-063 clos le 19/11** (avis en graphes, période ou atelier ; non annoncé) : règles dans « Points à ne pas défaire ».
+**Impression des graphes (19/11)** : depuis la vue en graphes, « Imprimer / PDF » sort les graphes affichés (SVG, 2 pages A4
+sur un essai fictif) ; liste des ateliers avec l'orienteur. Pas de bloc AGORA : mêmes chiffres, aucun calcul nouveau
+(décision de l'utilisateur ; précision du critère 7 proposée, en attente de son accord).
 Le 17/11 : coupure d'urgence éprouvée sur la page NextStep du bac à sable ; annonce AGORA « publiée dans <dépôt> » et
 relecteur de l'autre éditeur dans les consignes.
 
@@ -179,7 +182,8 @@ superflu, `sw.js` de désinscription.
 - **Avis en graphes (AG-063, 19/11)** : même population que le tableau « Avis par atelier » (tous statuts) ; % sur tous les
   avis, « Sans réponse » à part ; radar = réponses favorables (4-5 étoiles, « Adapté », « Oui », « Oui ») sur les avis qui
   ont répondu, non tracé si une question est vide ; vue restreinte : masquage sous 3 avis sur le plus petit compte, lecture
-  cohérente (`avis_masque_restreint`) ; calcul `resumeAvisAteliers`, total = `detail.total`.
+  cohérente (`avis_masque_restreint`) ; calcul `resumeAvisAteliers`, total = `detail.total`. Écran et impression partagent
+  `optionsGraphesAvis` et `textesGraphesAvis` : ne pas recréer un second jeu d'options pour l'un des deux.
 - **Durée (AG-017, AG-062)** : absente ou vide dans un envoi = la valeur en base reste ; aucun écran ne vide une durée.
 - **`check-chantiers.sh`** (copie de référence ici) : alerte au-delà de 300 lignes **ou 30 Ko** (MD-LIB 8ter, 16/11).
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS`) : origine `github.io` partagée. Couche réseau client gardée (4G terrain).
