@@ -125,8 +125,16 @@ Clarté de 1 à 5, Rythme, Plus à l'aise, Refaire seul, Sujet souhaité), avec 
    Clarté), celle des sujets et le nombre d'avis sans sujet. Ajout seulement : les anciennes pages
    l'ignorent. Moyennes Attentes/Clarté de la vue graphes recalculées sur la répartition (exactes),
    pas sur les moyennes arrondies du tableau.
-5. Calcul dans une fonction pure (`resumeAvisAteliers`, `utils.js`), testée ; barres de
-   `RepartitionBilan`, les mêmes que l'onglet Bilans.
+5. Calcul dans une fonction pure (`resumeAvisAteliers`, `utils.js`), testée.
+6. **Formes** (précision de l'utilisateur, 19/11/2026 : « camembert, donut, radar… ») : Attentes
+   et Clarté en colonnes de 1 à 5 étoiles (échelle ordonnée) ; Rythme, Plus à l'aise, Refaire seul
+   en donuts (une seule réponse par avis, « Sans réponse » en gris) ; Sujet souhaité en barres
+   horizontales (plusieurs choix par avis : un camembert serait faux) ; en tête, un **radar
+   « profil »** à cinq axes en % de réponses favorables.
+7. **Définition à trancher par l'utilisateur — « réponse favorable » du radar** : Attentes et
+   Clarté à 4 ou 5 étoiles, Rythme « Adapté », Plus à l'aise « Oui », Refaire seul « Oui » ; base :
+   les avis qui ont répondu à la question (les « Sans réponse » sortent du radar, ils restent dans
+   les donuts et colonnes). « Un peu » et « Avec de l'aide » ne comptent pas comme favorables.
 **Ce que ça engage** : peu ; enrichissement réversible, aucune donnée ni format de stockage modifié.
 **Non vérifié par l'auteur** : (1) un avis papier ou ancien sans valeur dans une question compte en
 « Sans réponse » ; (2) un atelier passé de « Réalisé » à un autre statut garde ses avis ici mais pas
