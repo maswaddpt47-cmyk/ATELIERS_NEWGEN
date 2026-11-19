@@ -135,6 +135,15 @@ hypothèse Nextcloud) ; durée de vie d'un partage côté Partage47.
 **Où regarder** : `api/lib/ecriture.php` (`api_valider_atelier`), `api/lib/api.php` (colonnes, `getAll`),
 `shared.js` `PanneauAtelier`, `utils.js` (validation partagée).
 
+### Livraison — 19/11/2026 — Claude, session A
+Colonne `liens` ajoutée à chaud ; `api_lien_partage_valide` / `lienPartageValide` (mêmes règles) ;
+relecture `api_liens_lus` qui ne laisse sortir aucun lien invalide déjà en base ; volet Détail : section
+« 📎 Liens Partage47 » (ajout, retrait, envoi avec « Enregistrer »). Tests : API (enregistrement, liens gardés
+par un envoi sans liens, 8 refus, liste vide = NULL, lien invalide en base jamais relu ; mutation de l'hôte
+rejetée), Node (3 mutations rejetées), navigateur (autre site refusé, lien envoyé avec l'atelier, `rel`
+`noopener noreferrer` ; mutation « liens non envoyés » rejetée). Le choix « liens publics ou internes » reste
+à l'utilisateur. Reste : une vérification de livraison par Codex (règle 58).
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026

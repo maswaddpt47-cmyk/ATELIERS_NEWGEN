@@ -86,6 +86,9 @@ si la parité n'est pas à jour ou si NextStep a des commits non poussés. **Ne 
    (b) dépôt de fichiers chez Alwaysdata (données nominatives probables d'un export PIX : registre RGPD, durée, purge,
    contrôle d'accès, quota, sauvegardes ; blocs AGORA critères 1 et 6, Codex sécurité) ; (c) import du CSV dans le
    navigateur pour n'enregistrer que des chiffres agrégés par atelier (règle 57 ; SheetJS 0.18.5 à rouvrir si .xlsx).
+   **Option (a) retenue et livrée le 19/11 (AG-065)** : liens Partage47 dans le volet Détail ; vérification de Codex attendue ;
+   à trancher : liens publics `/s/…` ou seulement protégés / internes. Registre RGPD (ateliers-backups) à compléter au
+   prochain passage : liens vers des fichiers possiblement nominatifs, visibles de toute l'équipe.
 3. **Réimport Outlook** : un rendez-vous simple importé avant le 03/10 puis déplacé n'est pas reconnu (nouveau + supprimé).
    Calendrier publié et Microsoft 365 écartés pour l'instant (DPO / DSI).
 4. **Thématique « TBD »** (sans urgence) : visible dans les statistiques.
