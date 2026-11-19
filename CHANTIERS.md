@@ -12,7 +12,7 @@ bac à sable seulement** (`sandbox` : NEWGEN `268d6ce`, NextStep `c740fb3`, amen
 Bac à sable seul (19/11 soir) : la page Conseillers NextStep sur téléphone était grise, menu au milieu (règle du bandeau qui étirait
 la barre du bas) et le bandeau cachait le haut du volet ; corrigé dans `shared.js` des deux applis (`?v=332` / `?v=305`), à reporter sur `main` avec AG-065.
 Essai du 19/11 (22 h 34, téléphone, sans VPN) : lien ajouté dans le volet puis ouvert vers Partage47, qui répond « Strict Cookie has not
-been found » sur une adresse `public.php/dav/…` ; attendu selon l'utilisateur (VPN). À refaire sur le poste pro.
+been found » sur une adresse `public.php/dav/…` : adresse d'essai, pas censée fonctionner (utilisateur). Ajout et ouverture du lien : OK.
 Codex : réponse du 19/11 appliquée ; une vérification de livraison à demander (« pull »). Lien direct vers un fichier d'un dossier partagé (Nextcloud,
 non essayé) : `…/index.php/s/<code>/download?path=<dossier>&files=<fichier>` ; plus simple : partager le fichier seul.
 **AG-063 clos le 19/11** (avis en graphes, période ou atelier ; non annoncé) : règles dans « Points à ne pas défaire ».
