@@ -44,14 +44,13 @@ test('Admin — avis par atelier : avis un par un, suppression d\'un avis', asyn
 
 // Vue en graphes (AG-063, 19/11/2026) : même population que le tableau, sans
 // erreur ni débordement sur le téléphone de référence (390 px).
-test('Admin — avis par atelier : vue en graphes à 390 px, sans erreur ni débordement', async ({ page, baseURL }) => {
-  const errs = []; page.on('pageerror', e => errs.push(e.message));
-  const z = k => Object.fromEntries(k.map(x => [x, 0]));
-  const det = o => ({ attentes: { ...z(['1','2','3','4','5']), ...o.attentes }, clarte: { ...z(['1','2','3','4','5']), ...o.clarte },
-    rythme: { ...z(['Trop lent','Adapté','Trop rapide']), ...o.rythme }, aise: { ...z(['Non','Un peu','Oui']), ...o.aise },
-    autonomie: { ...z(['Oui',"Avec de l'aide",'Non']), ...o.autonomie },
-    sujet: { ...z(['Smartphone','Messagerie','Démarches en ligne','Sécurité','Intelligence artificielle','Autre']), ...o.sujet }, sans_sujet: o.sans_sujet || 0, total: o.total });
-  const ligne = (id, n, d) => ({ atelier_id: id, n, papier: 0, attentes: null, clarte: null, rythme_ok: 0, rythme_n: 0, aise_oui: 0, aise_n: 0, autonomie_oui: 0, autonomie_n: 0, remarques: [], detail: d });
+const z = k => Object.fromEntries(k.map(x => [x, 0]));
+const det = o => ({ attentes: { ...z(['1','2','3','4','5']), ...o.attentes }, clarte: { ...z(['1','2','3','4','5']), ...o.clarte },
+  rythme: { ...z(['Trop lent','Adapté','Trop rapide']), ...o.rythme }, aise: { ...z(['Non','Un peu','Oui']), ...o.aise },
+  autonomie: { ...z(['Oui',"Avec de l'aide",'Non']), ...o.autonomie },
+  sujet: { ...z(['Smartphone','Messagerie','Démarches en ligne','Sécurité','Intelligence artificielle','Autre']), ...o.sujet }, sans_sujet: o.sans_sujet || 0, total: o.total });
+const ligneAvis = (id, n, d) => ({ atelier_id: id, n, papier: 0, attentes: null, clarte: null, rythme_ok: 0, rythme_n: 0, aise_oui: 0, aise_n: 0, autonomie_oui: 0, autonomie_n: 0, remarques: [], detail: d });
+async function ouvrirGraphes(page, baseURL, ateliers) {
   await page.route('**/ateliers-numeriques.alwaysdata.net/**', async route => {
     const body = route.request().postData() || ''; const url = route.request().url();
     const action = (new URLSearchParams(body).get('action')) || new URL(url).searchParams.get('action');
@@ -60,9 +59,7 @@ test('Admin — avis par atelier : vue en graphes à 390 px, sans erreur ni déb
     else if (action === 'getAll') r = { ok: true, entries: [{ _id: 'g1', date: auj, statut: 'Réalisé', thematique: 'IA', commune: 'AGEN', conseiller: 'Alice Martin' },
       { _id: 'g2', date: auj, statut: 'Réalisé', thematique: 'Mail', commune: 'NÉRAC', conseiller: 'Alice Martin' }],
       lists: { statuts: ['Réalisé'], conseillers: ['Alice Martin'], publics: [], materiels: [] }, config: {}, role: 'admin', comptes: [], visibility: {}, colors: {} };
-    else if (action === 'avisParAtelier') r = { ok: true, ateliers: [
-      ligne('g1', 3, det({ attentes: { '5': 2, '3': 1 }, clarte: { '4': 2 }, rythme: { 'Adapté': 2, 'Trop rapide': 1 }, aise: { 'Oui': 1, 'Un peu': 1 }, autonomie: { 'Oui': 3 }, sujet: { 'Smartphone': 2, 'Sécurité': 2 }, sans_sujet: 1, total: 3 })),
-      ligne('g2', 2, det({ attentes: { '4': 1 }, rythme: { 'Trop lent': 2 }, aise: { 'Non': 2 }, autonomie: { 'Non': 1 }, sans_sujet: 2, total: 2 }))] };
+    else if (action === 'avisParAtelier') r = { ok: true, ateliers };
     else if (action === 'getComptes') r = { ok: true, comptes: [{ conseiller: 'Alice Martin', role: 'admin', actif: 'OUI' }] };
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(r) });
   });
@@ -75,10 +72,20 @@ test('Admin — avis par atelier : vue en graphes à 390 px, sans erreur ni déb
   await page.getByRole('button', { name: '💬 Avis par atelier', exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });   // après la navigation : le toast du harnais couvrait « Dashboard »
   await page.getByRole('button', { name: '📊 Graphes' }).click();
+}
+// Carte « Profil des avis » : plus petit bloc qui contient son titre et le texte de bas de carte.
+const carteProfil = page => page.locator('div', { has: page.getByText('Profil des avis', { exact: true }) }).filter({ hasText: 'Part des réponses favorables' }).last();
+
+test('Admin — avis par atelier : vue en graphes à 390 px, sans erreur ni débordement', async ({ page, baseURL }) => {
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await ouvrirGraphes(page, baseURL, [
+    ligneAvis('g1', 3, det({ attentes: { '5': 2, '3': 1 }, clarte: { '4': 2 }, rythme: { 'Adapté': 2, 'Trop rapide': 1 }, aise: { 'Oui': 1, 'Un peu': 1 }, autonomie: { 'Oui': 3 }, sujet: { 'Smartphone': 2, 'Sécurité': 2 }, sans_sujet: 1, total: 3 })),
+    ligneAvis('g2', 2, det({ attentes: { '4': 1 }, rythme: { 'Trop lent': 2 }, aise: { 'Non': 2 }, autonomie: { 'Non': 1 }, sans_sujet: 2, total: 2 }))]);
   await expect(page.getByText('Profil des avis')).toBeVisible();
   await expect(page.getByText(/^5 avis sur 2 ateliers/)).toBeVisible();
   await expect(page.getByText('Attentes — moyenne 4,3/5')).toBeVisible();
   await expect(page.getByText('3/4 favorables (75 %)').first()).toBeVisible();   // base du radar affichée (Codex, AG-063)
+  await expect(carteProfil(page).locator('canvas')).toHaveCount(1);
   await page.waitForTimeout(600);
   if (process.env.CAPTURE_GRAPHES) {   // contrôle visuel : faire défiler pour que chaque graphe se dessine
     for (let y = 0; y < 3000; y += 400) { await page.mouse.wheel(0, 400); await page.waitForTimeout(250); }
@@ -89,8 +96,19 @@ test('Admin — avis par atelier : vue en graphes à 390 px, sans erreur ni déb
   const deborde = await page.evaluate(() => [...document.querySelectorAll('div')].filter(d => /^(Profil des avis|Rythme|Sujet souhaité)/.test(d.textContent) && d.children.length >= 2)
     .map(d => Math.round(d.getBoundingClientRect().right)).filter(x => x > window.innerWidth));
   expect(deborde).toEqual([]);
-  expect(await page.locator('canvas').count()).toBeGreaterThan(0);
   await page.getByRole('button', { name: '📋 Tableau' }).click();
   await expect(page.locator('td', { hasText: 'AGEN' })).toBeVisible();
+  expect(errs).toEqual([]);
+});
+
+// Vérification de Codex (AG-063) : un axe sans aucune réponse n'est pas tracé au centre comme un 0 ;
+// le radar n'est pas dessiné, les valeurs restent en texte.
+test('Admin — avis par atelier : radar non tracé quand une question n\'a aucune réponse', async ({ page, baseURL }) => {
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await ouvrirGraphes(page, baseURL, [
+    ligneAvis('g1', 3, det({ attentes: { '5': 3 }, rythme: { 'Adapté': 3 }, aise: { 'Oui': 3 }, autonomie: { 'Oui': 3 }, sans_sujet: 3, total: 3 }))]);
+  await expect(page.getByText(/Profil non tracé/)).toBeVisible();
+  await expect(page.getByText(/Clarté : non calculable/)).toBeVisible();
+  await expect(carteProfil(page).locator('canvas')).toHaveCount(0);
   expect(errs).toEqual([]);
 });
