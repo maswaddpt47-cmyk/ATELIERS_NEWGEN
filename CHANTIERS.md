@@ -8,7 +8,8 @@ confirmation `create_tree` encore vue malgré « Autoriser toutes les actions »
 bac à sable seulement** (`sandbox` : NEWGEN `268d6ce`, NextStep `c740fb3`, amendements de Codex compris : action dédiée
 `lienAtelier`, écritures ordinaires sans liens, Corbeille) ; commits aussi sur la branche `claude/pull-3qpzxi`.
 **Ne pas publier sur `main` avant l'essai de l'utilisateur.** En attente de lui : (1) essai dans le bac à sable (volet Détail,
-« 📎 Liens Partage47 ») ; (2) liens publics `/s/…` acceptés ou seulement protégés / internes ; (3) feu vert pour `main`.
+« 📎 Liens Partage47 ») ; (2) liens publics : tranché le 19/11 : l'accès à Partage47 est protégé par mot de passe (déclaré par l'utilisateur,
+non vérifié), aucune restriction de plus ; (3) feu vert pour `main`. Essai sur le poste pro prévu le 20/11.
 Bac à sable seul (19/11 soir) : la page Conseillers NextStep sur téléphone était grise, menu au milieu (règle du bandeau qui étirait
 la barre du bas) et le bandeau cachait le haut du volet ; corrigé dans `shared.js` des deux applis (`?v=332` / `?v=305`), à reporter sur `main` avec AG-065.
 Essai du 19/11 (22 h 34, téléphone, sans VPN) : lien ajouté dans le volet puis ouvert vers Partage47, qui répond « Strict Cookie has not
