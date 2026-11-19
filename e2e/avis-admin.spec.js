@@ -86,6 +86,12 @@ test('Admin — avis par atelier : vue en graphes à 390 px, sans erreur ni déb
   await expect(page.getByText('Attentes — moyenne 4,3/5')).toBeVisible();
   await expect(page.getByText('3/4 favorables (75 %)').first()).toBeVisible();   // base du radar affichée (Codex, AG-063)
   await expect(carteProfil(page).locator('canvas')).toHaveCount(1);
+  // Par atelier (extension d'AG-063) : le calcul porte sur la seule ligne choisie.
+  await page.getByRole('combobox').last().selectOption('g2');
+  await expect(page.getByText(/^2 avis — .*Mail/)).toBeVisible();
+  await expect(page.getByText('Attentes — moyenne 4/5')).toBeVisible();
+  await page.getByRole('combobox').last().selectOption('');
+  await expect(page.getByText(/^5 avis sur 2 ateliers/)).toBeVisible();
   await page.waitForTimeout(600);
   if (process.env.CAPTURE_GRAPHES) {   // contrôle visuel : faire défiler pour que chaque graphe se dessine
     for (let y = 0; y < 3000; y += 400) { await page.mouse.wheel(0, 400); await page.waitForTimeout(250); }
@@ -106,9 +112,12 @@ test('Admin — avis par atelier : vue en graphes à 390 px, sans erreur ni déb
 test('Admin — avis par atelier : radar non tracé quand une question n\'a aucune réponse', async ({ page, baseURL }) => {
   const errs = []; page.on('pageerror', e => errs.push(e.message));
   await ouvrirGraphes(page, baseURL, [
-    ligneAvis('g1', 3, det({ attentes: { '5': 3 }, rythme: { 'Adapté': 3 }, aise: { 'Oui': 3 }, autonomie: { 'Oui': 3 }, sans_sujet: 3, total: 3 }))]);
+    ligneAvis('g1', 3, det({ attentes: { '5': 3 }, rythme: { 'Adapté': 3 }, aise: { 'Oui': 3 }, autonomie: { 'Oui': 3 }, sans_sujet: 3, total: 3 })),
+    { atelier_id: 'g2', n: 2, papier: 0, masque: true, attentes: null, clarte: null, remarques: [], detail: [] }]);
   await expect(page.getByText(/Profil non tracé/)).toBeVisible();
   await expect(page.getByText(/Clarté : non calculable/)).toBeVisible();
   await expect(carteProfil(page).locator('canvas')).toHaveCount(0);
+  // Atelier masqué (moins de 3 avis) : visible dans la liste, non choisissable.
+  expect(await page.locator('option', { hasText: 'moins de 3 avis' }).evaluate(o => o.disabled)).toBe(true);   // toBeDisabled ne lit pas une option
   expect(errs).toEqual([]);
 });
