@@ -279,6 +279,18 @@ Seul `AGORA.md` est publié sur `main`. Le code reste au bac à sable, en attent
 de l'essai et du feu vert utilisateur. Vérification de livraison effectuée une
 fois ; l'auteur corrige, sans nouveau tour automatique (règle 58).
 
+### Écarts de la vérification de Codex corrigés — 19/11/2026 — Claude, session A
+Sur `sandbox` / `claude/pull-3qpzxi` : NEWGEN `52ba995`, NextStep `fad37da` (déployés au bac à sable, run 233).
+1. `lienOp` retient l'`_id` au départ ; la réponse ne remplit le volet que s'il montre encore cet atelier
+   (`panelIdRef`). Pas de compteur d'ouverture : rouvrir le même atelier doit recevoir ses liens.
+2. État local : seul `{_id, liens}` est appliqué (fusion par `appliquerEntree`) ; plus de recopie de l'entrée capturée.
+   NextStep : `appliquerEntreeLocale` ne crée plus d'entrée sans date (mise à jour partielle d'un atelier absent).
+3. Duplication : `liens:[]` dans le formulaire prérempli ; à l'enregistrement, `liens` retiré d'une modification
+   (la valeur locale reste) et vide pour une création.
+Tests navigateur ajoutés (`e2e/saisie-session.spec.js`) : course A→B avec réponse retenue et lieu modifié entre-temps ;
+doublon sans lien. Trois mutations (une par correctif) font chacune échouer un test. Suites : NEWGEN 66/66, NextStep 54/54.
+Non couvert par un test : la garde « sans date » de NextStep. Pas de nouveau tour de relecture (règle 58).
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
