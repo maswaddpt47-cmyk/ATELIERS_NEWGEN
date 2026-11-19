@@ -81,6 +81,11 @@ si la parité n'est pas à jour ou si NextStep a des commits non poussés. **Ne 
    requêtes vers `api-sandbox` et un avis fictif par le QR.
 2. **Supports par atelier (pptx, docx) — mis de côté le 04/10** : supports sur un réseau interne, qu'une page https
    n'ouvre pas en `file://` (hypothèse) ; il faudrait SharePoint/OneDrive ou Alwaysdata. Bloc AGORA au choix (critère 1).
+   **Fait nouveau 19/11** : l'utilisateur demande d'attacher des fichiers (CSV d'un diagnostic PIX, résultats WoocLight).
+   Options exposées, en attente de son choix : (a) lien vers OneDrive/SharePoint du CD47, aucun fichier chez nous ;
+   (b) dépôt de fichiers chez Alwaysdata (données nominatives probables d'un export PIX : registre RGPD, durée, purge,
+   contrôle d'accès, quota, sauvegardes ; blocs AGORA critères 1 et 6, Codex sécurité) ; (c) import du CSV dans le
+   navigateur pour n'enregistrer que des chiffres agrégés par atelier (règle 57 ; SheetJS 0.18.5 à rouvrir si .xlsx).
 3. **Réimport Outlook** : un rendez-vous simple importé avant le 03/10 puis déplacé n'est pas reconnu (nouveau + supprimé).
    Calendrier publié et Microsoft 365 écartés pour l'instant (DPO / DSI).
 4. **Thématique « TBD »** (sans urgence) : visible dans les statistiques.
