@@ -7,7 +7,8 @@ MD-LIB. Le 17/11 : annonce AGORA « publiée dans <dépôt> » et relecteur de l
 applis) : radar « profil », colonnes 1-5 étoiles, donuts, barres des sujets ; même population que le tableau (tous statuts).
 `avisParAtelier` renvoie en plus étoiles, sujets et avis sans sujet. Définition « réponse favorable » du radar **validée par
 l'utilisateur le 19/11** (choix 7 du bloc). Vérification de livraison de Codex faite le 19/11 : ses deux écarts (masquage sur une même lecture, radar non
-tracé si un axe est vide) corrigés ; bloc à clore par l'utilisateur. **Pas d'annonce** (décision de l'utilisateur, 19/11). Reprise : actualiser les deux `main`
+tracé si un axe est vide) corrigés. **Par atelier (19/11, demande de l'utilisateur)** : choix « Tous les ateliers » ou un
+atelier dans la vue en graphes ; atelier masqué grisé, non choisissable. Bloc à clore par l'utilisateur. **Pas d'annonce** (décision de l'utilisateur, 19/11). Reprise : actualiser les deux `main`
 (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer. Revues closes jusqu'à
 AG-062 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue
 malgré « Autoriser toutes les actions », cause non établie.
