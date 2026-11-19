@@ -794,7 +794,7 @@ verifier(($par['av_1']['detail']['rythme'] ?? null) === ['Trop lent' => 0, 'Adap
 // Vue en graphes (AG-063) : étoiles d'Attentes et de Clarté, sujets et avis sans sujet, par atelier.
 $dv = $par['av_vieux']['detail'] ?? [];
 verifier(($par['av_1']['detail']['attentes'] ?? null) === ['1' => 0, '2' => 0, '3' => 0, '4' => 0, '5' => 1]
-    && $par['av_1']['detail']['clarte']['4'] === 1 && $par['av_1']['detail']['sujet']['Autre'] === 1 && $par['av_1']['detail']['sans_sujet'] === 0
+    && $par['av_1']['detail']['clarte']['4'] === 1 && $par['av_1']['detail']['sujet']['Autre'] === 1 && $par['av_1']['detail']['sans_sujet'] === 0 && $par['av_1']['detail']['total'] === 1
     && ($dv['attentes']['3'] ?? null) === 1 && array_sum($dv['clarte'] ?? [9]) === 0 && array_sum($dv['sujet'] ?? [9]) === 0 && ($dv['sans_sujet'] ?? null) === 1,
     'récapitulatif par atelier : étoiles, sujets et avis sans sujet (AG-063) — ' . json_encode([$par['av_1']['detail'] ?? null, $dv]));
 // Avis réservés à l'animateur et au co-animateur (04/10/2026) ; Admin : tout.

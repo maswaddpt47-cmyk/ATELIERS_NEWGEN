@@ -333,6 +333,9 @@ function action_avis_par_atelier(PDO $db, array $p, array $session): array
     $rep = [];
     foreach ($d->fetchAll(PDO::FETCH_ASSOC) as $l) {
         $x = &$rep[$l['atelier_id']];
+        // Nombre d'avis tiré de la même lecture que les répartitions (amendement 3 de
+        // Codex, AG-063) : jamais un total d'une requête et des réponses d'une autre.
+        $x['total'] = ($x['total'] ?? 0) + 1;
         foreach (['rythme', 'aise', 'autonomie'] as $q) {
             $x[$q] ??= array_fill_keys(AVIS_CHOIX[$q], 0);
             if (isset($x[$q][$l[$q] ?? ''])) $x[$q][$l[$q]]++;
