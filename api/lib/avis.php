@@ -324,15 +324,29 @@ function action_avis_par_atelier(PDO $db, array $p, array $session): array
     foreach ($r->fetchAll(PDO::FETCH_ASSOC) as $l) $rem[$l['atelier_id']][] = $l['remarque'];
     // Détail des réponses à choix (06/10/2026) : combien de « Trop lent »,
     // « Un peu », « Avec de l'aide »… et pas seulement le nombre de « Oui ».
-    $d = $db->prepare("SELECT v.atelier_id, v.rythme, v.aise, v.autonomie FROM avis v JOIN ateliers a ON a.id = v.atelier_id
+    // Vue en graphes (AG-063, 19/11/2026) : aussi les étoiles (1 à 5) d'Attentes
+    // et de Clarté, les sujets (chacun une fois par avis) et les avis sans sujet.
+    // Ajout seulement : une page plus ancienne ignore ces clés.
+    $d = $db->prepare("SELECT v.atelier_id, v.rythme, v.aise, v.autonomie, v.attentes, v.clarte, v.sujet FROM avis v JOIN ateliers a ON a.id = v.atelier_id
                        WHERE a.date BETWEEN ? AND ?$f");
     $d->execute(array_merge([$du, $au], $fp));
     $rep = [];
     foreach ($d->fetchAll(PDO::FETCH_ASSOC) as $l) {
+        $x = &$rep[$l['atelier_id']];
         foreach (['rythme', 'aise', 'autonomie'] as $q) {
-            $rep[$l['atelier_id']][$q] ??= array_fill_keys(AVIS_CHOIX[$q], 0);
-            if (isset($rep[$l['atelier_id']][$q][$l[$q] ?? ''])) $rep[$l['atelier_id']][$q][$l[$q]]++;
+            $x[$q] ??= array_fill_keys(AVIS_CHOIX[$q], 0);
+            if (isset($x[$q][$l[$q] ?? ''])) $x[$q][$l[$q]]++;
         }
+        foreach (AVIS_NOTES as $q) {
+            $x[$q] ??= array_fill_keys(['1', '2', '3', '4', '5'], 0);
+            $k = $l[$q] !== null ? (string) (int) $l[$q] : '';
+            if (isset($x[$q][$k])) $x[$q][$k]++;
+        }
+        $x['sujet'] ??= array_fill_keys(AVIS_CHOIX['sujet'], 0);
+        $sujets = array_unique(avis_sujets_lus($l['sujet']));
+        foreach ($sujets as $s1) if (isset($x['sujet'][$s1])) $x['sujet'][$s1]++;
+        $x['sans_sujet'] = ($x['sans_sujet'] ?? 0) + (array_intersect($sujets, AVIS_CHOIX['sujet']) ? 0 : 1);
+        unset($x);
     }
     $moy = fn($v) => $v !== null ? round((float) $v, 1) : null;
     // Sous le seuil, pour un conseiller : le nombre d'avis seulement.

@@ -791,6 +791,12 @@ verifier(count($par) === 2 && $par['av_1']['n'] === 1 && $par['av_1']['attentes'
 verifier(($par['av_1']['detail']['rythme'] ?? null) === ['Trop lent' => 0, 'Adapté' => 1, 'Trop rapide' => 0]
     && $par['av_1']['detail']['autonomie']['Avec de l\'aide'] === 1 && array_sum($par['av_vieux']['detail']['aise']) === 0,
     'récapitulatif par atelier : détail de chaque réponse à choix, non-réponses écartées');
+// Vue en graphes (AG-063) : étoiles d'Attentes et de Clarté, sujets et avis sans sujet, par atelier.
+$dv = $par['av_vieux']['detail'] ?? [];
+verifier(($par['av_1']['detail']['attentes'] ?? null) === ['1' => 0, '2' => 0, '3' => 0, '4' => 0, '5' => 1]
+    && $par['av_1']['detail']['clarte']['4'] === 1 && $par['av_1']['detail']['sujet']['Autre'] === 1 && $par['av_1']['detail']['sans_sujet'] === 0
+    && ($dv['attentes']['3'] ?? null) === 1 && array_sum($dv['clarte'] ?? [9]) === 0 && array_sum($dv['sujet'] ?? [9]) === 0 && ($dv['sans_sujet'] ?? null) === 1,
+    'récapitulatif par atelier : étoiles, sujets et avis sans sujet (AG-063) — ' . json_encode([$par['av_1']['detail'] ?? null, $dv]));
 // Avis réservés à l'animateur et au co-animateur (04/10/2026) ; Admin : tout.
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_autre', 'date' => $auj, 'thematique' => 'X', 'conseiller' => 'Conseiller Test'])]);
 $ja = appel(['action' => 'jetonAvis'], $A + ['_id' => 'av_autre']);
