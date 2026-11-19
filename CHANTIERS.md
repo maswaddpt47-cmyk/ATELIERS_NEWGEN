@@ -1,9 +1,8 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **17/11/2026** (relu par « pull » à 06:00), bases `main` : NEWGEN `0aee1b5`, NextStep `a73f5c0`, MD-LIB `58a61ca`.
-Arrivé depuis : passations Codex (documentation seule) ; refonte de MD-LIB (16/11, règles conservées). Fait à ce pull :
-annonce AGORA « publiée dans <dépôt> » et relecteur de l'autre éditeur (Claude ↔ Codex) dans `CLAUDE.md`, `AGORA.md` et
-`AGENTS.md` des deux projets (MD-LIB `agora.md` §4 et §12). Reprise : actualiser les deux `main`
+État au **19/11/2026** (relu par « pull »), bases `main` : NEWGEN `52189bb`, NextStep `975e9a3`, MD-LIB `41b7f66`.
+Arrivé depuis le 17/11 : coupure d'urgence éprouvée sur la page NextStep du bac à sable (piste 3 faite) ; suivi de
+MD-LIB. Le 17/11 : annonce AGORA « publiée dans <dépôt> » et relecteur de l'autre éditeur dans les consignes. Reprise : actualiser les deux `main`
 (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer. Revues closes jusqu'à
 AG-062 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue
 malgré « Autoriser toutes les actions », cause non établie.
