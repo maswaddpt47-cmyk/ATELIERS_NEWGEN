@@ -56,7 +56,7 @@ async function ouvrirGraphes(page, baseURL, ateliers) {
     const action = (new URLSearchParams(body).get('action')) || new URL(url).searchParams.get('action');
     let r = { ok: true };
     if (action === 'checkPassword') r = { ok: true, role: 'admin', token: 'a'.repeat(64) };
-    else if (action === 'getAll') r = { ok: true, entries: [{ _id: 'g1', date: auj, statut: 'Réalisé', thematique: 'IA', commune: 'AGEN', conseiller: 'Alice Martin' },
+    else if (action === 'getAll') r = { ok: true, entries: [{ _id: 'g1', date: auj, statut: 'Réalisé', thematique: 'IA', commune: 'AGEN', orienteur: 'CCAS Agen', conseiller: 'Alice Martin' },
       { _id: 'g2', date: auj, statut: 'Réalisé', thematique: 'Mail', commune: 'NÉRAC', conseiller: 'Alice Martin' }],
       lists: { statuts: ['Réalisé'], conseillers: ['Alice Martin'], publics: [], materiels: [] }, config: {}, role: 'admin', comptes: [], visibility: {}, colors: {} };
     else if (action === 'avisParAtelier') r = { ok: true, ateliers };
@@ -86,10 +86,21 @@ test('Admin — avis par atelier : vue en graphes à 390 px, sans erreur ni déb
   await expect(page.getByText('Attentes — moyenne 4,3/5')).toBeVisible();
   await expect(page.getByText('3/4 favorables (75 %)').first()).toBeVisible();   // base du radar affichée (Codex, AG-063)
   await expect(carteProfil(page).locator('canvas')).toHaveCount(1);
+  // Impression depuis la vue en graphes (19/11/2026) : les graphes en SVG, pas le tableau.
+  const imprime = async () => { const [w] = await Promise.all([page.waitForEvent('popup'), page.getByRole('button', { name: '🖨️ Imprimer / PDF' }).click()]);
+    await w.waitForLoadState(); const h = await w.content(); await w.close(); return h; };
+  let h = await imprime();
+  if (process.env.CAPTURE_IMPRESSION) require('fs').writeFileSync(process.env.CAPTURE_IMPRESSION, h);   // contrôle visuel du PDF
+  expect(h).toContain('Avis des stagiaires — graphes'); expect(h).toContain('5 avis sur 2 ateliers'); expect(h).toContain('Attentes — moyenne 4,3/5');
+  expect(h).toContain('3/4 favorables (75 %)'); expect((h.match(/<svg/g) || []).length).toBe(7); expect(h).not.toContain('<table');
+  // Liste des ateliers : l'orienteur figure dans le libellé (demande du 19/11/2026).
+  await expect(page.locator('option', { hasText: 'CCAS Agen' })).toHaveCount(1);
   // Par atelier (extension d'AG-063) : le calcul porte sur la seule ligne choisie.
   await page.getByRole('combobox').last().selectOption('g2');
   await expect(page.getByText(/^2 avis — .*Mail/)).toBeVisible();
   await expect(page.getByText('Attentes — moyenne 4/5')).toBeVisible();
+  h = await imprime();
+  expect(h).toMatch(/2 avis — .*Mail/); expect(h).toContain('Attentes — moyenne 4/5');
   await page.getByRole('combobox').last().selectOption('');
   await expect(page.getByText(/^5 avis sur 2 ateliers/)).toBeVisible();
   await page.waitForTimeout(600);
@@ -103,7 +114,7 @@ test('Admin — avis par atelier : vue en graphes à 390 px, sans erreur ni déb
     .map(d => Math.round(d.getBoundingClientRect().right)).filter(x => x > window.innerWidth));
   expect(deborde).toEqual([]);
   await page.getByRole('button', { name: '📋 Tableau' }).click();
-  await expect(page.locator('td', { hasText: 'AGEN' })).toBeVisible();
+  await expect(page.locator('td', { hasText: /^AGEN$/ })).toBeVisible();
   expect(errs).toEqual([]);
 });
 
