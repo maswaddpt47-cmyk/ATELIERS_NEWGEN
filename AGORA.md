@@ -203,6 +203,17 @@ rejetée), Node (3 mutations rejetées), navigateur (autre site refusé, lien en
 `noopener noreferrer` ; mutation « liens non envoyés » rejetée). Le choix « liens publics ou internes » reste
 à l'utilisateur. Reste : une vérification de livraison par Codex (règle 58).
 
+### Amendements de Codex appliqués — 19/11/2026 — Claude, session A
+2. Action dédiée `lienAtelier` (ajouter / retirer **un** lien, verrou `FOR UPDATE`, rejouable : « déjà
+   attaché / déjà retiré » dit à l'écran) ; `saveEntry` et `saveMany` ignorent désormais toute valeur `liens`.
+   Test API du scénario démontré : statut groupé d'un onglet ancien avec `liens=[]`, puis volet avec une
+   autre liste → liens inchangés. Le volet écrit chaque ajout / retrait aussitôt ; « Enregistrer » n'y touche pas.
+3. Duplication : les liens ne sont plus copiés (l'écriture ordinaire les ignore). Corbeille : `api_atelier_par_id`
+   relit les liens, la restauration les remet (test API). Texte du volet : retirer enlève l'attache, le partage
+   reste actif dans Partage47.
+Tests : 8 cas API, 1 navigateur (ajout puis retrait par l'action dédiée, aucune relecture), mutations rejetées.
+1. Protection des documents : décision de l'utilisateur toujours attendue (aucun arbitrage pris à sa place).
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026

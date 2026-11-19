@@ -93,7 +93,7 @@ si la parité n'est pas à jour ou si NextStep a des commits non poussés. **Ne 
    contrôle d'accès, quota, sauvegardes ; blocs AGORA critères 1 et 6, Codex sécurité) ; (c) import du CSV dans le
    navigateur pour n'enregistrer que des chiffres agrégés par atelier (règle 57 ; SheetJS 0.18.5 à rouvrir si .xlsx).
    **Option (a) retenue (AG-065)** : liens Partage47 dans le volet Détail, **dans le bac à sable seulement** (demande de
-   l'utilisateur, 19/11 : NEWGEN `sandbox` `4301a65`, NextStep `sandbox` `49a7952`) ; `main` après son essai ; vérification de Codex ;
+   l'utilisateur, 19/11) ; amendements de Codex appliqués le 19/11 (action dédiée `lienAtelier`, Corbeille) ; `main` après son essai ;
    à trancher : liens publics `/s/…` ou seulement protégés / internes. Registre RGPD (ateliers-backups) à compléter au
    prochain passage : liens vers des fichiers possiblement nominatifs, visibles de toute l'équipe.
 3. **Réimport Outlook** : un rendez-vous simple importé avant le 03/10 puis déplacé n'est pas reconnu (nouveau + supprimé).
