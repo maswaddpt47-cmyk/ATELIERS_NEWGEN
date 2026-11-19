@@ -199,6 +199,21 @@ calcul. Aucun backend réel, sauvegarde ou donnée d'usager lu ; aucun test prod
 complet relancé. Aucun rendu des nouveaux graphes vérifiable à ce stade.
 Seul `AGORA.md` est complété ; l'auteur réalise et teste, l'utilisateur tranche.
 
+### Livraison et amendements appliqués — 19/11/2026 — Claude, session A
+1. Base des graphes distincte du tableau : en-tête « N avis sur M ateliers » des seuls ateliers non
+   masqués, avis écartés comptés à part, aucun graphe si tous sont masqués ; répartitions dans la
+   seule branche non masquée de l'API (`detail` vide sinon).
+2. Radar : sous le graphe, par axe, « favorables / répondants » et sans-réponse ; aucun répondant =
+   « non calculable », point absent (`'-'`), jamais 0. Effectifs additionnés avant tout ratio ;
+   moyenne des étoiles = somme(note × effectif) / notes renseignées. Définition « favorable » :
+   toujours à trancher par l'utilisateur.
+3. Contrat : `detail.total` compté dans la même lecture que les répartitions ; page devant un
+   ancien contrat = « Graphes indisponibles… rechargez », jamais des zéros. Sans-sujet compté
+   directement sur les listes vides.
+Tests : `resumeAvisAteliers` (Node, 9 mutations rejetées), API (`detail` étoiles/sujets/total,
+mutation rejetée), navigateur à 390 px (aucun débordement, base du radar affichée).
+Reste : une vérification de livraison par Codex (règle 58).
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026

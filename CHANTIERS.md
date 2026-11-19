@@ -6,7 +6,8 @@ MD-LIB. Le 17/11 : annonce AGORA « publiée dans <dépôt> » et relecteur de l
 **AG-063 (19/11, demande de l'utilisateur)** : « Avis par atelier » → bouton « 📊 Graphes » (Admin et « Mes bilans », deux
 applis) : radar « profil », colonnes 1-5 étoiles, donuts, barres des sujets ; même population que le tableau (tous statuts).
 `avisParAtelier` renvoie en plus étoiles, sujets et avis sans sujet. **À trancher** : définition « réponse favorable » du radar
-(choix 7 du bloc). Vérification de Codex attendue (une fois, règle 58). Nouveauté : à proposer après validation à l'écran. Reprise : actualiser les deux `main`
+(choix 7 du bloc). Amendements de Codex (relecture de la proposition) appliqués ; reste une vérification de livraison
+(règle 58). Nouveauté : à proposer après validation à l'écran. Reprise : actualiser les deux `main`
 (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer. Revues closes jusqu'à
 AG-062 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue
 malgré « Autoriser toutes les actions », cause non établie.
