@@ -1,13 +1,13 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **19/11/2026, 12:53** (relu par « pull », rien d'arrivé depuis `3edb948`), bases `main` : NEWGEN `52189bb`, NextStep `975e9a3`, MD-LIB `41b7f66`.
+État au **19/11/2026, 13:30** (relu par « pull » : vérification de Codex `58242a1` sur AG-063), bases `main` : NEWGEN `52189bb`, NextStep `975e9a3`, MD-LIB `41b7f66`.
 Arrivé depuis le 17/11 : coupure d'urgence éprouvée sur la page NextStep du bac à sable (piste 3 faite) ; suivi de
 MD-LIB. Le 17/11 : annonce AGORA « publiée dans <dépôt> » et relecteur de l'autre éditeur dans les consignes.
 **AG-063 (19/11, demande de l'utilisateur)** : « Avis par atelier » → bouton « 📊 Graphes » (Admin et « Mes bilans », deux
 applis) : radar « profil », colonnes 1-5 étoiles, donuts, barres des sujets ; même population que le tableau (tous statuts).
 `avisParAtelier` renvoie en plus étoiles, sujets et avis sans sujet. Définition « réponse favorable » du radar **validée par
-l'utilisateur le 19/11** (choix 7 du bloc). Amendements de Codex (relecture de la proposition) appliqués ; reste une vérification de livraison
-(règle 58). **Pas d'annonce** (décision de l'utilisateur, 19/11). Reprise : actualiser les deux `main`
+l'utilisateur le 19/11** (choix 7 du bloc). Vérification de livraison de Codex faite le 19/11 : ses deux écarts (masquage sur une même lecture, radar non
+tracé si un axe est vide) corrigés ; bloc à clore par l'utilisateur. **Pas d'annonce** (décision de l'utilisateur, 19/11). Reprise : actualiser les deux `main`
 (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer. Revues closes jusqu'à
 AG-062 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue
 malgré « Autoriser toutes les actions », cause non établie.

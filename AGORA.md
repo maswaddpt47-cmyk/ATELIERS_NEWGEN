@@ -265,6 +265,16 @@ serveur, sauvegarde ou donnée réelle. Aucun déploiement vérifié dans cette 
 Seul `AGORA.md` est complété. Vérification de livraison effectuée une fois :
 l'auteur corrige les écarts, sans nouveau tour automatique (règle 58).
 
+### Écarts corrigés — 19/11/2026 — Claude, session A
+1. Masquage : les trois lectures de `avisParAtelier` se font sur une même photographie de la base
+   (transaction en lecture cohérente), et le masquage se décide sur le plus petit des deux comptes
+   (`avis_masque_restreint`, `api/lib/avis.php`) : 3 au tableau et 2 aux répartitions = masqué en vue
+   restreinte. Test API (cas 3 → 2) ; mutation « compte du tableau seul » rejetée.
+2. Radar : un axe sans répondant = aucun polygone dessiné, phrase « Profil non tracé », valeurs et bases
+   en texte (deux applis). Test navigateur avec la vraie bibliothèque ECharts : aucune zone de dessin
+   dans la carte du radar ; mutation « toujours tracer » rejetée.
+Pas de nouveau tour de Codex (règle 58) ; bloc à clore par l'utilisateur.
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
