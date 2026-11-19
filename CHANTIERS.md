@@ -5,10 +5,11 @@ Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les c
 réappliquer. Revues closes jusqu'à AG-063 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
 confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
 **⏸ EN PAUSE — AG-065, liens Partage47 (19/11, l'utilisateur n'est plus devant son poste)** : code testé et publié **dans le
-bac à sable seulement** (`sandbox` : NEWGEN `4301a65`, NextStep `49a7952`) ; commits aussi sur la branche `claude/pull-3qpzxi`.
+bac à sable seulement** (`sandbox` : NEWGEN `a28821e`, NextStep `1f661b8`, amendements de Codex compris : action dédiée
+`lienAtelier`, écritures ordinaires sans liens, Corbeille) ; commits aussi sur la branche `claude/pull-3qpzxi`.
 **Ne pas publier sur `main` avant l'essai de l'utilisateur.** En attente de lui : (1) essai dans le bac à sable (volet Détail,
 « 📎 Liens Partage47 ») ; (2) liens publics `/s/…` acceptés ou seulement protégés / internes ; (3) feu vert pour `main`.
-Codex : vérification de livraison à demander (« pull »). Lien direct vers un fichier d'un dossier partagé (Nextcloud,
+Codex : réponse du 19/11 appliquée ; une vérification de livraison à demander (« pull »). Lien direct vers un fichier d'un dossier partagé (Nextcloud,
 non essayé) : `…/index.php/s/<code>/download?path=<dossier>&files=<fichier>` ; plus simple : partager le fichier seul.
 **AG-063 clos le 19/11** (avis en graphes, période ou atelier ; non annoncé) : règles dans « Points à ne pas défaire ».
 **Impression des graphes (19/11)** : depuis la vue en graphes, « Imprimer / PDF » sort les graphes affichés (SVG, 2 pages A4
