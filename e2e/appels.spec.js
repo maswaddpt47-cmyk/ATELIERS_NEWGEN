@@ -88,12 +88,19 @@ async function preparer(browser) {
     else if (action === 'demanderReinit') rep = { ok: true, message: 'Si une adresse mail est enregistrée pour ce compte, un lien vient d\'y être envoyé.' };
     else if (action === 'reinitMotDePasse') rep = { ok: true, conseiller: 'Alice Martin' };
     if (action === 'usageOnglets') p.usage = Object.fromEntries(corps);
-    if (action === 'saveEntry') p.corpsSave = corps.get('entry');   // liens Partage47 (AG-065)
     if (action === 'demanderReinit' || action === 'reinitMotDePasse') p.corpsReinit = Object.fromEntries(corps);
     else if (p.jetonRefuse) rep = { ok: false, error: 'Non autorisé : jeton manquant ou expiré', auth: true };
     else if (action === 'creerTicket') { p.tickets = (p.tickets || 0) + 1; p.corpsTicket = Object.fromEntries(corps); rep = { ok: true, nouveau: true, ticket: { id: corps.get('_id'), cree_le: '2026-10-02 10:00:00', auteur: 'Alice Martin', type: corps.get('type'), titre: corps.get('titre'), description: corps.get('description'), statut: 'Nouveau', reponse: '' } }; }
     else if (action === 'getTickets') rep = { ok: true, tickets: [], moi: 'Alice Martin' };
     else if (action === 'getAll') rep = { ...JSON.parse(MOCK), conseillers_inactifs: [], ...(p.entries ? { entries: p.entries } : {}) };
+    // Liens Partage47 (AG-065) : action dédiée, ajoute ou retire UN lien sur l'état du faux serveur.
+    else if (action === 'lienAtelier') {
+      const o = Object.fromEntries(corps); (p.lienOps = p.lienOps || []).push({ op: o.op, url: o.url, titre: o.titre });
+      p.liens = p.liens || [];
+      if (o.op === 'ajouter' && !p.liens.some(l => l.url === o.url)) p.liens.push({ titre: o.titre, url: o.url });
+      if (o.op === 'retirer') p.liens = p.liens.filter(l => l.url !== o.url);
+      rep = { ok: true, liens: p.liens };
+    }
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rep) });
   });
 
@@ -140,9 +147,9 @@ test('index — ouverture : API seule, sans getConfig dédié', async ({ browser
     await ctx.close();
 });
 
-// Liens Partage47 (AG-065, 19/11/2026) : ajout dans le volet, adresse hors Partage47 refusée,
-// liens envoyés avec l'atelier par « Enregistrer ».
-test('index — volet : lien Partage47 ajouté et envoyé avec l\'atelier, autre site refusé', async ({ browser, baseURL }) => {
+// Liens Partage47 (AG-065, amendements de Codex) : adresse hors Partage47 refusée ; ajout et retrait partent
+// aussitôt par l'action dédiée lienAtelier (un lien précis), jamais avec « Enregistrer ».
+test('index — volet : lien Partage47 ajouté puis retiré par l\'action dédiée, autre site refusé', async ({ browser, baseURL }) => {
     const p = await preparer(browser);
     const { ctx, page } = p;
     await page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
@@ -160,9 +167,11 @@ test('index — volet : lien Partage47 ajouté et envoyé avec l\'atelier, autre
     const lien = page.getByRole('link', { name: '📄 Résultats PIX' });
     await expect(lien).toHaveAttribute('href', 'https://partage.lotetgaronne.fr/index.php/s/abc123');
     await expect(lien).toHaveAttribute('rel', 'noopener noreferrer');
-    await page.getByRole('button', { name: /Enregistrer|Mettre à jour|Valider/ }).first().click();
-    await expect.poll(() => p.corpsSave ? JSON.parse(p.corpsSave).liens : null, { timeout: 5000 })
-      .toEqual([{ titre: 'Résultats PIX', url: 'https://partage.lotetgaronne.fr/index.php/s/abc123' }]);
+    await page.getByRole('button', { name: 'Retirer le lien Résultats PIX' }).click();
+    await expect(lien).toHaveCount(0);
+    expect(p.lienOps).toEqual([{ op: 'ajouter', url: 'https://partage.lotetgaronne.fr/index.php/s/abc123', titre: 'Résultats PIX' },
+      { op: 'retirer', url: 'https://partage.lotetgaronne.fr/index.php/s/abc123', titre: 'Résultats PIX' }]);
+    expect(p.appels.filter(a => a === 'getAll').length).toBe(1);   // aucune relecture après ces écritures
     await ctx.close();
 });
 
