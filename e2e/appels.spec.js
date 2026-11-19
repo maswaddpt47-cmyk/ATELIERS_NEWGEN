@@ -88,6 +88,7 @@ async function preparer(browser) {
     else if (action === 'demanderReinit') rep = { ok: true, message: 'Si une adresse mail est enregistrée pour ce compte, un lien vient d\'y être envoyé.' };
     else if (action === 'reinitMotDePasse') rep = { ok: true, conseiller: 'Alice Martin' };
     if (action === 'usageOnglets') p.usage = Object.fromEntries(corps);
+    if (action === 'saveEntry') p.corpsSave = corps.get('entry');   // liens Partage47 (AG-065)
     if (action === 'demanderReinit' || action === 'reinitMotDePasse') p.corpsReinit = Object.fromEntries(corps);
     else if (p.jetonRefuse) rep = { ok: false, error: 'Non autorisé : jeton manquant ou expiré', auth: true };
     else if (action === 'creerTicket') { p.tickets = (p.tickets || 0) + 1; p.corpsTicket = Object.fromEntries(corps); rep = { ok: true, nouveau: true, ticket: { id: corps.get('_id'), cree_le: '2026-10-02 10:00:00', auteur: 'Alice Martin', type: corps.get('type'), titre: corps.get('titre'), description: corps.get('description'), statut: 'Nouveau', reponse: '' } }; }
@@ -136,6 +137,32 @@ test('index — ouverture : API seule, sans getConfig dédié', async ({ browser
       !appels.includes('getConfig'),
       appels.join(', ') || 'aucun',
     );
+    await ctx.close();
+});
+
+// Liens Partage47 (AG-065, 19/11/2026) : ajout dans le volet, adresse hors Partage47 refusée,
+// liens envoyés avec l'atelier par « Enregistrer ».
+test('index — volet : lien Partage47 ajouté et envoyé avec l\'atelier, autre site refusé', async ({ browser, baseURL }) => {
+    const p = await preparer(browser);
+    const { ctx, page } = p;
+    await page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
+    await connecter(page);
+    await page.waitForTimeout(800);
+    await page.getByText('Démarches en ligne').first().click();
+    await expect(page.getByText('📎 Liens Partage47')).toBeVisible();
+    const url = page.getByPlaceholder('https://partage.lotetgaronne.fr/…');
+    await url.fill('https://evil.example/partage.lotetgaronne.fr');
+    await expect(page.getByRole('button', { name: '+ Ajouter' })).toBeDisabled();
+    await expect(page.getByText('Seule une adresse https de partage.lotetgaronne.fr est acceptée.')).toBeVisible();
+    await page.getByPlaceholder('Titre (ex. Résultats PIX)').fill('Résultats PIX');
+    await url.fill('https://partage.lotetgaronne.fr/index.php/s/abc123');
+    await page.getByRole('button', { name: '+ Ajouter' }).click();
+    const lien = page.getByRole('link', { name: '📄 Résultats PIX' });
+    await expect(lien).toHaveAttribute('href', 'https://partage.lotetgaronne.fr/index.php/s/abc123');
+    await expect(lien).toHaveAttribute('rel', 'noopener noreferrer');
+    await page.getByRole('button', { name: /Enregistrer|Mettre à jour|Valider/ }).first().click();
+    await expect.poll(() => p.corpsSave ? JSON.parse(p.corpsSave).liens : null, { timeout: 5000 })
+      .toEqual([{ titre: 'Résultats PIX', url: 'https://partage.lotetgaronne.fr/index.php/s/abc123' }]);
     await ctx.close();
 });
 
