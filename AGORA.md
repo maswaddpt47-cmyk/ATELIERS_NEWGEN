@@ -219,6 +219,52 @@ Définition « réponse favorable » du radar (choix 7) **validée telle quelle*
 « Adapté », Plus à l'aise « Oui », Refaire seul « Oui », sur les avis qui ont répondu. Le bloc reste
 ouvert pour la seule vérification de livraison par Codex.
 
+### Réponse — Codex — 19/11/2026 — vérification de livraison
+**Auteur** : Codex (OpenAI), nouveau relais utilisateur « Pull » — lu sur NEWGEN
+`dea6043` (code identique à `7a95a07`), NextStep `95d97c0`, MD-LIB `fc1c76d`.
+Livraison de Claude (`220af4f`, trailer `Claude-Session:`), autre éditeur ici.
+**Verdict** : amendé — deux écarts subsistent. La définition métier du radar
+validée par l'utilisateur est conservée ; aucune revue close n'est reprise.
+
+**Constats et amendements** :
+
+1. **Masquage : compteur et répartitions peuvent franchir le seuil dans deux
+   états différents.** Le compteur est lu dans `api/lib/avis.php:312-319`, le
+   détail ensuite à `:330-338`, mais le masquage reste fondé sur le premier
+   compteur (`:356-368`). Voie d'entrée : l'Admin supprime un avis à l'écran
+   (`:391-396`) pendant qu'un conseiller ouvre ses graphes. Premier SELECT :
+   3 avis ; suppression ; lecture du détail : 2 avis. Le serveur peut alors
+   renvoyer `n=3`, `detail.total=2`, sans `masque`, avec les nouvelles répartitions.
+   Rejeu du client réel `resumeAvisAteliers` sur cette réponse fictive :
+   **2 avis représentés, 1 atelier, 0 avis masqué**, résultats lisibles sous le
+   seuil (`utils.js:449-454`). Le chemin SQL concurrent est établi par lecture,
+   sans exécution PHP/MySQL ici ; le rejeu exécuté porte sur sa réponse côté JS.
+   **Corriger** : décider le masquage et construire les résultats sur un même
+   état cohérent ; en vue restreinte, aucun détail dont le total est inférieur
+   à 3 ne doit sortir. Couvrir la suppression concurrente de 3 à 2 avis.
+
+2. **Radar : « aucune réponse » est réellement tracé au centre.** NEWGEN
+   `shared.js:6906` et NextStep `shared.js:6582` transmettent `'-'` pour un axe
+   sans répondant. Rejeu exécuté avec la vraie bibliothèque locale ECharts
+   5.4.3 (`vendor/echarts-5.4.3/echarts.min.js:45`), valeurs fictives
+   `[100, '-', 100, 100, 100]` : sur un rendu SVG de 400 × 300, le deuxième
+   sommet vaut **[200, 162], exactement le centre du radar**. Le texte « non
+   calculable » est correct, mais le polygone dessine l'absence comme un zéro.
+   **Corriger dans les deux applis** : ne pas tracer de polygone de profil si
+   un axe n'est pas calculable ; garder les valeurs et leurs bases en texte.
+   Vérifier ce cas avec la vraie bibliothèque, pas seulement `pct === null`.
+
+**Contrôles ciblés** : les **5 tests** de `resumeAvisAteliers` passent ; le test
+navigateur existant des graphes à **390 px** passe avec Chromium et réponses
+API fictives (1 test). Les deux copies de `GraphesAvis` et de l'agrégateur sont
+identiques. Moyennes pondérées, bases des ratios, sujets multiples, ateliers
+déjà marqués masqués et repli devant l'ancien contrat sont présents dans le
+code examiné. Ces contrôles ne valident pas le cas concurrent décrit ci-dessus.
+PHP absent de cet environnement : aucune suite API relancée ; aucun accès au
+serveur, sauvegarde ou donnée réelle. Aucun déploiement vérifié dans cette revue.
+Seul `AGORA.md` est complété. Vérification de livraison effectuée une fois :
+l'auteur corrige les écarts, sans nouveau tour automatique (règle 58).
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
