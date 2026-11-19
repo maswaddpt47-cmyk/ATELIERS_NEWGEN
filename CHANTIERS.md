@@ -5,10 +5,12 @@ Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les c
 réappliquer. Revues closes jusqu'à AG-063 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
 confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
 **⏸ EN PAUSE — AG-065, liens Partage47 (19/11, l'utilisateur n'est plus devant son poste)** : code testé et publié **dans le
-bac à sable seulement** (`sandbox` : NEWGEN `a28821e`, NextStep `1f661b8`, amendements de Codex compris : action dédiée
+bac à sable seulement** (`sandbox` : NEWGEN `268d6ce`, NextStep `c740fb3`, amendements de Codex compris : action dédiée
 `lienAtelier`, écritures ordinaires sans liens, Corbeille) ; commits aussi sur la branche `claude/pull-3qpzxi`.
 **Ne pas publier sur `main` avant l'essai de l'utilisateur.** En attente de lui : (1) essai dans le bac à sable (volet Détail,
 « 📎 Liens Partage47 ») ; (2) liens publics `/s/…` acceptés ou seulement protégés / internes ; (3) feu vert pour `main`.
+Bac à sable seul (19/11 soir) : la page Conseillers NextStep sur téléphone était grise, menu au milieu (règle du bandeau qui étirait
+la barre du bas) et le bandeau cachait le haut du volet ; corrigé dans `shared.js` des deux applis (`?v=332` / `?v=305`), à reporter sur `main` avec AG-065.
 Codex : réponse du 19/11 appliquée ; une vérification de livraison à demander (« pull »). Lien direct vers un fichier d'un dossier partagé (Nextcloud,
 non essayé) : `…/index.php/s/<code>/download?path=<dossier>&files=<fichier>` ; plus simple : partager le fichier seul.
 **AG-063 clos le 19/11** (avis en graphes, période ou atelier ; non annoncé) : règles dans « Points à ne pas défaire ».
