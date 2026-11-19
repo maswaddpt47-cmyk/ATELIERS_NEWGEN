@@ -303,19 +303,35 @@ verifier($lire('entry_1')['duree'] === 120, 'durée enregistrée, gardée par un
 appel(['action' => 'saveMany'], $T + ['entries' => json_encode([$maj + ['duree' => '']])]);
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['duree' => ''])]);
 verifier($lire('entry_1')['duree'] === 120, 'durée gardée par un envoi à durée vide (onglet d\'avant le remplissage, AG-062)');
-// Liens Partage47 (AG-065) : enregistrés et relus en tableau ; absents = gardés ; liste vide = retirés ; hors Partage47 = refusés.
+// Liens Partage47 (AG-065, amendements de Codex) : action dédiée lienAtelier ; saveEntry / saveMany n'y touchent jamais.
 $lienOk = ['titre' => 'Résultats PIX', 'url' => 'https://partage.lotetgaronne.fr/index.php/s/abc123/download?path=/&files=pix.csv'];
-$r = appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['liens' => [$lienOk]])]);
-verifier(($r['ok'] ?? false) && $lire('entry_1')['liens'] === [$lienOk], 'liens Partage47 enregistrés et relus en tableau');
-appel(['action' => 'saveMany'], $T + ['entries' => json_encode([$maj])]);
-verifier($lire('entry_1')['liens'] === [$lienOk], 'liens gardés par un envoi sans liens (statut groupé, page d\'avant)');
-$refus = array_map(fn($l) => appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['liens' => $l])])['ok'] ?? null, [
-    [['titre' => 'x', 'url' => 'javascript:alert(1)']], [['titre' => 'x', 'url' => 'https://evil.com/partage.lotetgaronne.fr']],
-    [['titre' => 'x', 'url' => 'http://partage.lotetgaronne.fr/s/a']], [['titre' => 'x', 'url' => 'https://partage.lotetgaronne.fr.evil.com/s/a']],
-    array_fill(0, 6, $lienOk), [['titre' => str_repeat('t', 81), 'url' => $lienOk['url']]], ['pas-un-objet'], ['a' => $lienOk]]);
-verifier($refus === array_fill(0, 8, false) && $lire('entry_1')['liens'] === [$lienOk], 'liens hors Partage47, en http, trop nombreux ou mal formés : refusés, base inchangée — ' . json_encode($refus));
-appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['liens' => []])]);
-verifier($lire('entry_1')['liens'] === [] && $db->query("SELECT liens FROM ateliers WHERE id = 'entry_1'")->fetchColumn() === null, 'liste de liens vide : liens retirés (NULL en base)');
+$lien = fn(array $x) => appel(['action' => 'lienAtelier'], $T + $x);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['liens' => [$lienOk]])]);
+verifier(($lire('entry_1')['liens'] ?? null) === [], 'liens : ignorés par saveEntry (seule l\'action dédiée les écrit)');
+$r = $lien(['_id' => 'entry_1', 'op' => 'ajouter'] + $lienOk);
+$r2 = $lien(['_id' => 'entry_1', 'op' => 'ajouter'] + $lienOk);
+verifier(($r['ok'] ?? false) && $r['liens'] === [$lienOk] && ($r2['deja'] ?? false) && $lire('entry_1')['liens'] === [$lienOk], 'liens : ajout par lienAtelier, relu en tableau ; second ajout du même lien = rien de changé, dit (rejeu)');
+// Scénario de Codex : un onglet ancien fait un statut groupé avec liens=[] ou une autre liste : rien ne change.
+appel(['action' => 'saveMany'], $T + ['entries' => json_encode([$maj + ['liens' => []]])]);
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode($maj + ['liens' => [['titre' => 'vieux', 'url' => 'https://partage.lotetgaronne.fr/index.php/s/vieux']]])]);
+verifier($lire('entry_1')['liens'] === [$lienOk], 'liens : un statut groupé ou un volet d\'un onglet ancien ne les efface ni ne les remplace');
+$refus = array_map(fn($x) => $lien($x)['ok'] ?? null, [
+    ['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => 'x', 'url' => 'javascript:alert(1)'],
+    ['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => 'x', 'url' => 'https://evil.com/partage.lotetgaronne.fr'],
+    ['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => 'x', 'url' => 'http://partage.lotetgaronne.fr/s/a'],
+    ['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => 'x', 'url' => 'https://u:p@partage.lotetgaronne.fr/s/a'],
+    ['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => str_repeat('t', 81), 'url' => 'https://partage.lotetgaronne.fr/s/t'],
+    ['_id' => 'entry_1', 'op' => 'remplacer', 'url' => $lienOk['url']],
+    ['_id' => 'absent', 'op' => 'ajouter', 'titre' => 'x', 'url' => 'https://partage.lotetgaronne.fr/s/z']]);
+verifier($refus === array_fill(0, 7, false) && $lire('entry_1')['liens'] === [$lienOk], 'liens : autre site, http, identifiants, titre trop long, opération ou atelier inconnus refusés — ' . json_encode($refus));
+foreach ([2, 3, 4, 5] as $i) $lien(['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => "L$i", 'url' => "https://partage.lotetgaronne.fr/index.php/s/l$i"]);
+$six = $lien(['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => 'L6', 'url' => 'https://partage.lotetgaronne.fr/index.php/s/l6']);
+verifier(count($lire('entry_1')['liens']) === 5 && !($six['ok'] ?? true), 'liens : 5 au plus par atelier');
+$ret = $lien(['_id' => 'entry_1', 'op' => 'retirer', 'url' => $lienOk['url']]);
+$ret2 = $lien(['_id' => 'entry_1', 'op' => 'retirer', 'url' => $lienOk['url']]);
+verifier(($ret['ok'] ?? false) && count($ret['liens']) === 4 && ($ret2['deja'] ?? false) && !in_array($lienOk['url'], array_column($lire('entry_1')['liens'], 'url'), true), 'liens : retrait d\'un lien précis ; second retrait = rien de changé, dit');
+verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'lienAtelier'")->fetchColumn() >= 6
+    && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'lienAtelier' AND ref LIKE '%partage.%'")->fetchColumn() === 0, 'liens : journalisés sans l\'adresse');
 $db->exec("UPDATE ateliers SET liens = '[{\"titre\":\"vieux\",\"url\":\"https://evil.com/x\"}]' WHERE id = 'entry_1'");
 verifier($lire('entry_1')['liens'] === [], 'relecture : un lien invalide en base ne sort jamais');
 $db->exec("UPDATE ateliers SET liens = NULL WHERE id = 'entry_1'");
@@ -344,6 +360,16 @@ verifier($db->query("SELECT conseiller FROM journal WHERE action = 'delete' ORDE
 
 echo "API — administration\n";
 $A = ['token' => $admin['token']];
+$lienOk = ['titre' => 'Résultats PIX', 'url' => 'https://partage.lotetgaronne.fr/index.php/s/abc123/download?path=/&files=pix.csv'];
+// Corbeille (Codex n° 3) : les liens partent avec l'atelier supprimé et reviennent à la restauration.
+appel(['action' => 'saveEntry'], $A + ['entry' => json_encode(['_id' => 'lien_corb', 'statut' => 'Planifié', 'date' => '2026-10-06', 'horaire' => '10:00', 'ouvert_a_tous' => 'Non', 'conseiller' => 'Conseiller Test'])]);
+appel(['action' => 'lienAtelier'], $A + ['_id' => 'lien_corb', 'op' => 'ajouter'] + $lienOk);
+appel(['action' => 'delete'], $A + ['_id' => 'lien_corb']);
+$copie = json_decode((string) $db->query("SELECT donnees FROM ateliers_corbeille WHERE id = 'lien_corb'")->fetchColumn(), true);
+$rest = appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'lien_corb']);
+verifier(($copie['liens'] ?? null) === [$lienOk] && ($rest['ok'] ?? false) && ($lire('lien_corb')['liens'] ?? null) === [$lienOk], 'liens : gardés dans la Corbeille et rendus à la restauration');
+appel(['action' => 'delete'], $A + ['_id' => 'lien_corb']);
+$db->exec("DELETE FROM ateliers_corbeille WHERE id = 'lien_corb'");
 // Corbeille (AG-014) : lot_1, supprimé plus haut, doit y être.
 verifier(str_contains(appel(['action' => 'getCorbeille'], $T)['error'] ?? '', 'administrateurs'), 'corbeille réservée aux administrateurs');
 $cb = appel(['action' => 'getCorbeille'], $A);
