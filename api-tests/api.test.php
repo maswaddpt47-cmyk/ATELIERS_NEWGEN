@@ -797,6 +797,12 @@ verifier(($par['av_1']['detail']['attentes'] ?? null) === ['1' => 0, '2' => 0, '
     && $par['av_1']['detail']['clarte']['4'] === 1 && $par['av_1']['detail']['sujet']['Autre'] === 1 && $par['av_1']['detail']['sans_sujet'] === 0 && $par['av_1']['detail']['total'] === 1
     && ($dv['attentes']['3'] ?? null) === 1 && array_sum($dv['clarte'] ?? [9]) === 0 && array_sum($dv['sujet'] ?? [9]) === 0 && ($dv['sans_sujet'] ?? null) === 1,
     'récapitulatif par atelier : étoiles, sujets et avis sans sujet (AG-063) — ' . json_encode([$par['av_1']['detail'] ?? null, $dv]));
+// Masquage décidé sur le plus petit des deux comptes (Codex, AG-063) : 3 avis au tableau, 2 dans les
+// répartitions (suppression entre les lectures) = masqué pour un conseiller ; l'Admin n'est jamais masqué.
+verifier(avis_masque_restreint(true, 3, 2) && avis_masque_restreint(true, 2, 3) && !avis_masque_restreint(true, 3, 3)
+    && !avis_masque_restreint(false, 1, 1), 'avis par atelier : masquage sur le plus petit des deux comptes (suppression concurrente de 3 à 2 avis)');
+$tx = appel(['action' => 'avisParAtelier'], $A + ['du' => $debut, 'au' => $auj]);
+verifier(($tx['ok'] ?? false) && count($tx['ateliers'] ?? []) > 0, 'avis par atelier : lecture sur une même photographie, réponse inchangée');
 // Avis réservés à l'animateur et au co-animateur (04/10/2026) ; Admin : tout.
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'av_autre', 'date' => $auj, 'thematique' => 'X', 'conseiller' => 'Conseiller Test'])]);
 $ja = appel(['action' => 'jetonAvis'], $A + ['_id' => 'av_autre']);

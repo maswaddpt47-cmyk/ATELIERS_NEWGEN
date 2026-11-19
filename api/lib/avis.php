@@ -301,6 +301,15 @@ function action_bilan_avis(PDO $db, array $p, array $session): array
 // moment, sans attendre le bilan trimestriel : tous statuts, ateliers datés
 // de la période. Mêmes informations que la fenêtre du QR de chaque atelier,
 // réunies dans un tableau. Lecture seule, équipe connectée.
+// Masquage d'un atelier en vue restreinte (conseiller) : sous le seuil, le
+// nombre seul. Décidé sur le plus petit des deux comptes (ligne du tableau et
+// répartitions des graphes) : une suppression entre deux lectures ne laisse
+// jamais sortir des réponses sous le seuil (vérification de Codex, AG-063).
+function avis_masque_restreint(bool $restreint, int $n, int $total): bool
+{
+    return $restreint && min($n, $total) < AVIS_SEUIL;
+}
+
 function action_avis_par_atelier(PDO $db, array $p, array $session): array
 {
     avis_schema($db);
@@ -309,6 +318,10 @@ function action_avis_par_atelier(PDO $db, array $p, array $session): array
     $au = (string) ($p['au'] ?? '');
     $jour = '/^\d{4}-\d{2}-\d{2}$/';
     if (!preg_match($jour, $du) || !preg_match($jour, $au) || $du > $au) return ['ok' => false, 'error' => 'Période invalide'];
+    // Les trois lectures sur une même photographie de la base (Codex, AG-063) :
+    // compteurs, remarques et répartitions ne peuvent pas se contredire.
+    $lecture = !$db->inTransaction();
+    if ($lecture) { $db->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ'); $db->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT'); }
     $s = $db->prepare("SELECT v.atelier_id, COUNT(*) n, SUM(v.source = 'papier') papier,
                               AVG(v.attentes) attentes, AVG(v.clarte) clarte,
                               SUM(v.rythme = 'Adapté') rythme_ok, SUM(v.rythme IS NOT NULL) rythme_n,
@@ -351,9 +364,10 @@ function action_avis_par_atelier(PDO $db, array $p, array $session): array
         $x['sans_sujet'] = ($x['sans_sujet'] ?? 0) + (array_intersect($sujets, AVIS_CHOIX['sujet']) ? 0 : 1);
         unset($x);
     }
+    if ($lecture) $db->exec('COMMIT');
     $moy = fn($v) => $v !== null ? round((float) $v, 1) : null;
     // Sous le seuil, pour un conseiller : le nombre d'avis seulement.
-    $masquer = fn($l) => $f !== '' && (int) $l['n'] < AVIS_SEUIL;
+    $masquer = fn($l) => avis_masque_restreint($f !== '', (int) $l['n'], (int) ($rep[$l['atelier_id']]['total'] ?? 0));
     return ['ok' => true, 'seuil' => AVIS_SEUIL, 'ateliers' => array_map(fn($l) => $masquer($l) ? [
         'atelier_id' => $l['atelier_id'], 'n' => (int) $l['n'], 'papier' => (int) $l['papier'], 'masque' => true,
         'attentes' => null, 'clarte' => null, 'rythme_ok' => 0, 'rythme_n' => 0, 'aise_oui' => 0, 'aise_n' => 0,
