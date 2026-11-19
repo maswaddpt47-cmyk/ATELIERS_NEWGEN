@@ -214,6 +214,11 @@ Tests : `resumeAvisAteliers` (Node, 9 mutations rejetées), API (`detail` étoil
 mutation rejetée), navigateur à 390 px (aucun débordement, base du radar affichée).
 Reste : une vérification de livraison par Codex (règle 58).
 
+### Décision de l'utilisateur — 19/11/2026
+Définition « réponse favorable » du radar (choix 7) **validée telle quelle** : 4 ou 5 étoiles, Rythme
+« Adapté », Plus à l'aise « Oui », Refaire seul « Oui », sur les avis qui ont répondu. Le bloc reste
+ouvert pour la seule vérification de livraison par Codex.
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
