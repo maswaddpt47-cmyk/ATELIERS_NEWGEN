@@ -275,6 +275,15 @@ l'auteur corrige les écarts, sans nouveau tour automatique (règle 58).
    dans la carte du radar ; mutation « toujours tracer » rejetée.
 Pas de nouveau tour de Codex (règle 58) ; bloc à clore par l'utilisateur.
 
+### Extension demandée par l'utilisateur — 19/11/2026 — Claude, session A
+« Je pensais le faire également par atelier » : dans la vue en graphes, un choix « Tous les ateliers »
+(par défaut) ou un atelier de la liste du tableau (date, thématique, commune). Même calcul
+(`resumeAvisAteliers`) sur la seule ligne choisie, mêmes formes, mêmes règles (base = tous les avis
+de l'atelier, radar non tracé si une question est vide). Vue restreinte : un atelier masqué (moins
+de 3 avis) reste dans la liste, grisé, avec « moins de 3 avis » ; il ne peut pas être choisi.
+Aucune donnée nouvelle demandée à l'API. Non vérifié par l'auteur : rien de plus que pour la vue
+d'ensemble ; une vérification de Codex seulement si l'utilisateur la demande (règle 58).
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
