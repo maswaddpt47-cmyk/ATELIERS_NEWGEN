@@ -1,17 +1,12 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **19/11/2026, 13:30** (relu par « pull » : vérification de Codex `58242a1` sur AG-063), bases `main` : NEWGEN `52189bb`, NextStep `975e9a3`, MD-LIB `41b7f66`.
-Arrivé depuis le 17/11 : coupure d'urgence éprouvée sur la page NextStep du bac à sable (piste 3 faite) ; suivi de
-MD-LIB. Le 17/11 : annonce AGORA « publiée dans <dépôt> » et relecteur de l'autre éditeur dans les consignes.
-**AG-063 (19/11, demande de l'utilisateur)** : « Avis par atelier » → bouton « 📊 Graphes » (Admin et « Mes bilans », deux
-applis) : radar « profil », colonnes 1-5 étoiles, donuts, barres des sujets ; même population que le tableau (tous statuts).
-`avisParAtelier` renvoie en plus étoiles, sujets et avis sans sujet. Définition « réponse favorable » du radar **validée par
-l'utilisateur le 19/11** (choix 7 du bloc). Vérification de livraison de Codex faite le 19/11 : ses deux écarts (masquage sur une même lecture, radar non
-tracé si un axe est vide) corrigés. **Par atelier (19/11, demande de l'utilisateur)** : choix « Tous les ateliers » ou un
-atelier dans la vue en graphes ; atelier masqué grisé, non choisissable. Bloc à clore par l'utilisateur. **Pas d'annonce** (décision de l'utilisateur, 19/11). Reprise : actualiser les deux `main`
-(`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer. Revues closes jusqu'à
-AG-062 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue
-malgré « Autoriser toutes les actions », cause non établie.
+État au **19/11/2026, 14:00**, bases `main` : NEWGEN `05f6184`, NextStep `c87f5b2`, MD-LIB `fc1c76d`.
+Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à
+réappliquer. Revues closes jusqu'à AG-063 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
+confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
+**AG-063 clos le 19/11** (avis en graphes, période ou atelier ; non annoncé) : règles dans « Points à ne pas défaire ».
+Le 17/11 : coupure d'urgence éprouvée sur la page NextStep du bac à sable ; annonce AGORA « publiée dans <dépôt> » et
+relecteur de l'autre éditeur dans les consignes.
 
 **Passation Codex — 16/11** : aucune nouvelle règle à inscrire ; concision, contrôles proportionnés, revue unique et
 **✅ TÂCHE TERMINÉE** sont déjà couverts par les consignes communes et `AGENTS.md`.
@@ -181,6 +176,10 @@ superflu, `sw.js` de désinscription.
   passée » sur `jourParis()` (AG-061). Jamais le fuseau de l'appareil.
 - **Anomalies (AG-044, AG-061)** : une validation sort l'anomalie tant que la valeur ne change pas ; durée absente =
   empreinte `(vide)`. Aucun autre calcul n'en tient compte.
+- **Avis en graphes (AG-063, 19/11)** : même population que le tableau « Avis par atelier » (tous statuts) ; % sur tous les
+  avis, « Sans réponse » à part ; radar = réponses favorables (4-5 étoiles, « Adapté », « Oui », « Oui ») sur les avis qui
+  ont répondu, non tracé si une question est vide ; vue restreinte : masquage sous 3 avis sur le plus petit compte, lecture
+  cohérente (`avis_masque_restreint`) ; calcul `resumeAvisAteliers`, total = `detail.total`.
 - **Durée (AG-017, AG-062)** : absente ou vide dans un envoi = la valeur en base reste ; aucun écran ne vide une durée.
 - **`check-chantiers.sh`** (copie de référence ici) : alerte au-delà de 300 lignes **ou 30 Ko** (MD-LIB 8ter, 16/11).
 - **Stockage navigateur préfixé** (`lsKey`, `APP_NS`) : origine `github.io` partagée. Couche réseau client gardée (4G terrain).
