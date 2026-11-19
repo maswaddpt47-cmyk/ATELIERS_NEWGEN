@@ -7,7 +7,7 @@ MD-LIB. Le 17/11 : annonce AGORA « publiée dans <dépôt> » et relecteur de l
 applis) : radar « profil », colonnes 1-5 étoiles, donuts, barres des sujets ; même population que le tableau (tous statuts).
 `avisParAtelier` renvoie en plus étoiles, sujets et avis sans sujet. Définition « réponse favorable » du radar **validée par
 l'utilisateur le 19/11** (choix 7 du bloc). Amendements de Codex (relecture de la proposition) appliqués ; reste une vérification de livraison
-(règle 58). Nouveauté : à proposer après validation à l'écran. Reprise : actualiser les deux `main`
+(règle 58). **Pas d'annonce** (décision de l'utilisateur, 19/11). Reprise : actualiser les deux `main`
 (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à réappliquer. Revues closes jusqu'à
 AG-062 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** : confirmation `create_tree` encore vue
 malgré « Autoriser toutes les actions », cause non établie.
@@ -75,7 +75,7 @@ si la parité n'est pas à jour ou si NextStep a des commits non poussés. **Ne 
 
 ## Reste ouvert
 
-**Nouveautés** : prochain `id` **41** (bandeau « nouvelle version » non annoncé, 16/11) ; jamais `admin: true` ; jamais 12, 16, 19, 24, 25, 26 ni 29 (publiés puis retirés).
+**Nouveautés** : prochain `id` **41** (non annoncés : bandeau « nouvelle version », 16/11 ; avis en graphes, 19/11) ; jamais `admin: true` ; jamais 12, 16, 19, 24, 25, 26 ni 29 (publiés puis retirés).
 
 1. **Bac à sable NextStep** (AG-033) : coupure d'urgence éprouvée le 17/11 ; restent à voir au navigateur les
    requêtes vers `api-sandbox` et un avis fictif par le QR.
