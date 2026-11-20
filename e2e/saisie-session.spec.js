@@ -338,7 +338,10 @@ test('historique — dupliquer un atelier qui a un lien : le doublon n\'en a auc
   const e=etat.ecritures.find(x=>x.action==='saveEntry').entry;
   expect(e.liens||[]).toEqual([]);
   // Après création, l'Historique montre le doublon (28/10) mis en évidence : son volet n'a aucun lien.
-  await page.getByText('28',{exact:true}).filter({visible:true}).first().click();
+  // (Pas de getByText('28') : la pastille des Nouveautés peut afficher « 28 », constaté en CI le 20/11/2026.)
+  const cartes=page.getByText('Atelier témoin',{exact:true}).filter({visible:true});
+  await expect(cartes).toHaveCount(1);
+  await cartes.first().click();
   await expect(volet.getByPlaceholder('Salle, médiathèque, établissement…')).toHaveValue(TEMOIN.lieu);
   await volet.getByRole('tab',{name:'📊 Reporting'}).click();
   await expect(volet.getByText('📎 Liens Partage47')).toBeVisible();
