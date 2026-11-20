@@ -430,3 +430,28 @@ test('historique — volet : 5 liens, maximum atteint dit à l\'écran',async({p
   await expect(volet.getByRole('button',{name:'+ Ajouter'})).toHaveCount(0);
   expect(etat.erreurs).toEqual([]);
 });
+
+// Pastille « nouveaux ateliers » retenue d'une visite à l'autre (20/11/2026) : numéro _n le plus grand déjà vu,
+// par page et par personne, dans le navigateur.
+const AUTRE={...TEMOIN,_id:'atelier-autre',_n:5,conseiller:'Eva Fictive',thematique:'Atelier ajouté par une collègue'};
+const CLE_VUS='ateliers_dernier_n:/:'+NOM;
+test('pastille — atelier ajouté par une collègue depuis la dernière visite signalé, puis retenu comme vu',async({page})=>{
+  await page.addInitScript(cle=>{try{if(!sessionStorage.getItem('init-vus')){localStorage.setItem(cle,'1');sessionStorage.setItem('init-vus','1');}}catch(_){}},CLE_VUS);
+  const etat=await preparer(page,[TEMOIN,AUTRE]);
+  await connecter(page,'index.html');
+  const pastille=page.locator('.topbar-notif-btn');
+  await expect(pastille).toHaveText(/1/);
+  await pastille.click();
+  await expect(pastille).toHaveCount(0);
+  expect(await page.evaluate(cle=>localStorage.getItem(cle),CLE_VUS)).toBe('5');
+  expect(etat.erreurs).toEqual([]);
+});
+test('pastille — première visite : rien de signalé, point de départ noté',async({page})=>{
+  const etat=await preparer(page,[TEMOIN,AUTRE]);
+  await connecter(page,'index.html');
+  await expect(page.getByRole('button',{name:'Nouveau',exact:true})).toBeVisible();
+  await page.waitForTimeout(500);
+  await expect(page.locator('.topbar-notif-btn')).toHaveCount(0);
+  expect(await page.evaluate(cle=>localStorage.getItem(cle),CLE_VUS)).toBe('5');
+  expect(etat.erreurs).toEqual([]);
+});

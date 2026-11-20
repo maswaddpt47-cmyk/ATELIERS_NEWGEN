@@ -418,7 +418,7 @@ const LOGS_KEY = lsKey('adm_logs');
       if(Array.isArray(data.materielsCaches)){MATERIELS_CACHES=data.materielsCaches;}
       addLog(`${incoming.length} ateliers chargés (${annee})`,'ok');
       setLastSync(new Date());
-      setSeenIds(prev=>{if(prev.size===0)return new Set(incoming.map(e=>e._id));const nouvs=incoming.filter(e=>!prev.has(e._id));if(nouvs.length>0)setNewEntries(n=>[...nouvs,...n]);return new Set(incoming.map(e=>e._id));});
+      setSeenIds(prev=>{if(prev.size===0){const nv=nouveauxAuChargement(incoming);setNewEntries(nv);return new Set(incoming.map(e=>e._id));}const nouvs=incoming.filter(e=>!prev.has(e._id));if(nouvs.length>0)setNewEntries(n=>[...nouvs,...n]);return new Set(incoming.map(e=>e._id));});
       setLoading(false);setSyncing(false);
     }catch(err){
       // fetchAll a déjà épuisé ses tentatives : on affiche, sans relancer.
@@ -579,7 +579,7 @@ const LOGS_KEY = lsKey('adm_logs');
         }, darkMode?'☀️':'🌙'),
         newEntries.length>0&&CE('button',{
           className:'topbar-notif-btn',
-          onClick:()=>{setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);}
+          onClick:()=>{setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);noterDernierNVu(entries);}
         },'🔔 ',CE('span',{className:'notif-badge'},newEntries.length)),
         adminConseiller&&adminConseiller!=='admin'&&CE('span',{className:'app-topbar-conseiller',style:{background:accentColor}},adminConseiller),
         CE('button',{

@@ -423,7 +423,7 @@ function App(){
       if(Array.isArray(data.conseillers_inactifs)) setInactifsSet(new Set(data.conseillers_inactifs));
       setLastSync(new Date());
       setSeenIds(prev=>{
-        if(prev.size===0) return new Set(incoming.map(e=>e._id));
+        if(prev.size===0){const nv=nouveauxAuChargement(incoming);setNewEntries(nv);return new Set(incoming.map(e=>e._id));}
         const nouvs=incoming.filter(e=>!prev.has(e._id));
         if(nouvs.length>0) setNewEntries(n=>[...nouvs,...n]);
         return new Set(incoming.map(e=>e._id));
@@ -682,7 +682,7 @@ function App(){
         CE('button',{onClick:()=>setView('nouveautes'),title:'Nouveautés','aria-label':'Nouveautés',style:{position:'relative',background:'none',border:'none',cursor:'pointer',fontSize:18,padding:'2px 10px 2px 4px',lineHeight:1}},'🆕',CE(PastilleNouveautes,{nb:nbNouveautes})),
         newEntries.length>0&&CE('button',{
           className:'topbar-notif-btn',
-          onClick:()=>{setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);}
+          onClick:()=>{setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);noterDernierNVu(entries);}
         },'🔔 ',CE('span',{className:'notif-badge'},newEntries.length)),
         filtreConseiller&&CE('div',{style:{position:'relative'},onMouseDown:e=>e.stopPropagation()},
           CE('button',{
