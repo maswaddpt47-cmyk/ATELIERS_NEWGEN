@@ -1,5 +1,5 @@
 // Anomalies validées (AG-044, 04/11/2026) : « ✅ Valider » sort une anomalie vérifiée de la liste et des
-// compteurs ; « Validées » la montre avec « Annuler la validation » ; si la valeur concernée a changé
+// compteurs ; plus aucune liste « Validées » depuis le 20/11/2026 (demande de l'utilisateur) ; si la valeur concernée a changé
 // depuis la validation (empreinte différente), l'anomalie reste dans la liste. Serveur simulé.
 const { test, expect } = require('@playwright/test');
 const atelier = (extra = {}) => ({
@@ -30,7 +30,7 @@ async function ouvrirAnomalies(page, baseURL, { validees = [], appels = [], atte
   await page.getByRole('button', { name: /Anomalies/ }).first().click();
 }
 
-test('Admin — anomalies : valider sort l\'anomalie de la liste et des compteurs, annuler la remet', async ({ page, baseURL }) => {
+test('Admin — anomalies : valider sort l\'anomalie de la liste et des compteurs, sans liste « Validées »', async ({ page, baseURL }) => {
   const errs = []; page.on('pageerror', e => errs.push(e.message));
   page.on('dialog', d => d.accept());
   const appels = [];
@@ -41,13 +41,8 @@ test('Admin — anomalies : valider sort l\'anomalie de la liste et des compteur
   await expect(page.getByText('Aucune anomalie dans cette catégorie')).toBeVisible();
   await expect(page.getByText('0 entrée(s) avec anomalie(s)')).toBeVisible();
   expect(appels).toEqual([{ action: 'validerAnomalie', _id: 'entry_tard', categorie: 'tard', empreinte: '17:30' }]);
-  const validees = page.getByRole('button', { name: /Validées \(1\)/ });
-  await validees.click();
-  await expect(page.getByText(/Début après 15h30 — validée/)).toBeVisible();
-  await page.getByRole('button', { name: '↩ Annuler la validation' }).click();
-  await expect(page.getByText('1 entrée(s) avec anomalie(s)')).toBeVisible();
-  await expect(page.getByText('Commence à 17:30')).toBeVisible();
-  expect(appels[1]).toEqual({ action: 'annulerAnomalie', _id: 'entry_tard', categorie: 'tard', empreinte: null });
+  await expect(page.getByRole('button', { name: /Validées/ })).toHaveCount(0);
+  await expect(page.getByText(/— validée/)).toHaveCount(0);   // la ligne de liste ; le message « ✅ Anomalie validée » reste
   expect(errs).toEqual([]);
 });
 
@@ -64,8 +59,8 @@ test('Admin — anomalies : une validation dont la valeur est inchangée masque 
   const errs = []; page.on('pageerror', e => errs.push(e.message));
   await ouvrirAnomalies(page, baseURL, { validees: [{ atelier_id: 'entry_tard', categorie: 'tard', empreinte: '17:30', valide_le: '2026-11-01 09:00:00', par: 'Alice Martin' }] });
   await expect(page.getByText('0 entrée(s) avec anomalie(s)')).toBeVisible();
-  await page.getByRole('button', { name: /Validées \(1\)/ }).click();
-  await expect(page.getByText('validée le 01/11/2026 par Alice Martin')).toBeVisible();
+  await expect(page.getByText('Commence à 17:30')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Validées/ })).toHaveCount(0);
   expect(errs).toEqual([]);
 });
 
@@ -79,7 +74,7 @@ test('Admin — anomalies : une lecture initiale tardive ne défait pas une vali
   libere();                                   // la lecture initiale (vide) arrive APRÈS la validation
   await page.waitForTimeout(400);
   await expect(page.getByText('0 entrée(s) avec anomalie(s)')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Validées \(1\)/ })).toBeVisible();
+  await expect(page.getByText('Commence à 17:30')).toHaveCount(0);
   expect(errs).toEqual([]);
 });
 
@@ -95,13 +90,13 @@ test('Admin — anomalies : erreur de lecture dite, comptes non établis, repris
   expect(errs).toEqual([]);
 });
 
-// n° 3 : date et auteur de la validation viennent de l'API, pas du navigateur.
-test('Admin — anomalies : date et auteur de la validation rendus par l\'API', async ({ page, baseURL }) => {
+// n° 3 : la réponse de l'API (date et auteur) est acceptée ; ils ne s'affichent plus depuis le 20/11/2026.
+test('Admin — anomalies : validation acceptée avec la date et l\'auteur rendus par l\'API', async ({ page, baseURL }) => {
   const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('dialog', d => d.accept());
   await ouvrirAnomalies(page, baseURL, { repValider: { ok: true, valide_le: '2026-11-05 00:30:00', par: 'Alice Martin' } });
   await page.getByRole('button', { name: '✅ Valider' }).click();
-  await page.getByRole('button', { name: /Validées \(1\)/ }).click();
-  await expect(page.getByText('validée le 05/11/2026 par Alice Martin')).toBeVisible();
+  await expect(page.getByText('0 entrée(s) avec anomalie(s)')).toBeVisible();
+  await expect(page.getByText(/validée le/)).toHaveCount(0);
   expect(errs).toEqual([]);
 });
 
