@@ -156,6 +156,7 @@ test('index — volet : lien Partage47 ajouté puis retiré par l\'action dédi�
     await connecter(page);
     await page.waitForTimeout(800);
     await page.getByText('Démarches en ligne').first().click();
+    await page.getByRole('tab', { name: '📊 Reporting' }).click();   // liens, bilan et QR dans l'onglet Reporting (20/11/2026)
     await expect(page.getByText('📎 Liens Partage47')).toBeVisible();
     const url = page.getByPlaceholder('https://partage.lotetgaronne.fr/…');
     await url.fill('https://evil.example/partage.lotetgaronne.fr');

@@ -294,14 +294,18 @@ test('historique — volet : réponse tardive d\'un lien, autre atelier ouvert e
   const volet=page.locator('.side-panel.open');
   await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
   let liberer;etat.retenue=new Promise(r=>{liberer=r;});
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
   await volet.getByPlaceholder('Titre (ex. Résultats PIX)').fill('Document fictif A');
   await volet.getByPlaceholder('https://partage.lotetgaronne.fr/…').fill('https://partage.lotetgaronne.fr/index.php/s/fictifA');
   await volet.getByRole('button',{name:'+ Ajouter'}).click();
+  await volet.getByRole('tab',{name:'📋 Détail'}).click();
   await volet.getByPlaceholder('Salle, médiathèque, établissement…').fill('Salle modifiée pendant le lien');
   await volet.getByRole('button',{name:/Enregistrer/}).click();
   await expect.poll(()=>etat.ecritures.filter(e=>e.action==='saveEntry').length).toBe(1);
   await expect(volet).toHaveCount(0);   // « Enregistrer » ferme le volet
   await page.getByText('Atelier fictif B',{exact:true}).filter({visible:true}).first().click();
+  await expect(volet.getByRole('tab',{name:'📋 Détail'})).toHaveAttribute('aria-selected','true');   // chaque atelier ouvre sur Détail
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
   await expect(volet.getByText('📎 Liens Partage47')).toBeVisible();
   etat.retenue=null;liberer();
   await expect(page.getByText('✅ Lien ajouté')).toBeVisible();
@@ -309,6 +313,8 @@ test('historique — volet : réponse tardive d\'un lien, autre atelier ouvert e
   await volet.locator('button').first().click();
   await expect(page.getByText('Salle modifiée pendant le lien').filter({visible:true}).first()).toBeVisible();
   await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await expect(volet.getByRole('tab',{name:'📋 Détail'})).toHaveAttribute('aria-selected','true');   // B fermé sur Reporting
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
   await expect(volet.getByRole('link',{name:/Document fictif A/})).toBeVisible();
   expect(etat.erreurs).toEqual([]);
 });
@@ -321,6 +327,7 @@ test('historique — dupliquer un atelier qui a un lien : le doublon n\'en a auc
   await nav(page,'Historique');
   const volet=page.locator('.side-panel.open');
   await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
   await expect(volet.getByRole('link',{name:/Document source/})).toBeVisible();
   await volet.getByRole('button',{name:/Dupliquer/}).click();
   await formulaire(page).locator('input[type="date"]').first().fill('2026-10-28');
@@ -331,9 +338,52 @@ test('historique — dupliquer un atelier qui a un lien : le doublon n\'en a auc
   expect(e.liens||[]).toEqual([]);
   // Après création, l'Historique montre le doublon (28/10) mis en évidence : son volet n'a aucun lien.
   await page.getByText('28',{exact:true}).filter({visible:true}).first().click();
-  await expect(volet.getByText('📎 Liens Partage47')).toBeVisible();
   await expect(volet.getByPlaceholder('Salle, médiathèque, établissement…')).toHaveValue(TEMOIN.lieu);
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await expect(volet.getByText('📎 Liens Partage47')).toBeVisible();
   await expect(volet.getByText('Aucun lien.')).toBeVisible();
   await expect(volet.getByRole('link',{name:/Document source/})).toHaveCount(0);
+  expect(etat.erreurs).toEqual([]);
+});
+
+// Onglets du volet (20/11/2026) : le passage en « Réalisé » avec « Remplir maintenant » ouvre l'onglet
+// Reporting sur la fiche bilan, sans rien enregistrer ; le QR code des avis y est aussi.
+test('historique — volet : « Remplir maintenant » ouvre l\'onglet Reporting sur la fiche bilan',async({page})=>{
+  const etat=await preparer(page);
+  await connecter(page,'index.html');
+  await nav(page,'Historique');
+  const volet=page.locator('.side-panel.open');
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await expect(volet.getByRole('button',{name:/QR code des avis/})).toHaveCount(0);   // plus dans Détail
+  // Atelier encore « Planifié » : l'onglet Reporting et le QR code sont déjà accessibles (avis pendant l'atelier,
+  // statut souvent changé le lendemain ou plus tard, demande de l'utilisateur du 20/11/2026).
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await expect(volet.getByRole('button',{name:/QR code des avis/})).toBeVisible();
+  await expect(volet.getByText('📝 Bilan de l\'atelier')).toBeVisible();
+  await volet.getByRole('tab',{name:'📋 Détail'}).click();
+  await volet.locator('select').filter({has:page.locator('option[value="Réalisé"]')}).first().selectOption('Réalisé');
+  await volet.getByRole('button',{name:/Enregistrer/}).click();
+  await page.getByRole('button',{name:/Remplir maintenant/}).click();
+  await expect(volet.getByRole('tab',{name:'📊 Reporting'})).toHaveAttribute('aria-selected','true');
+  await expect(volet.getByText('📝 Bilan de l\'atelier')).toBeVisible();
+  await expect(volet.getByRole('button',{name:/QR code des avis/})).toBeVisible();
+  expect(etat.ecritures.filter(e=>e.action==='saveEntry')).toHaveLength(0);
+  expect(etat.erreurs).toEqual([]);
+});
+
+// Fiche bilan remplissable avant « Réalisé » (20/11/2026) : elle part avec l'atelier encore « Planifié ».
+test('historique — volet : fiche bilan remplie sur un atelier « Planifié », enregistrée',async({page})=>{
+  const etat=await preparer(page);
+  await connecter(page,'index.html');
+  await nav(page,'Historique');
+  const volet=page.locator('.side-panel.open');
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await volet.getByRole('button',{name:'Débutant',exact:true}).click();
+  await volet.getByRole('button',{name:/Enregistrer/}).click();
+  await expect.poll(()=>etat.ecritures.filter(e=>e.action==='saveEntry').length).toBe(1);
+  const e=etat.ecritures.find(x=>x.action==='saveEntry').entry;
+  const fiche=typeof e.fiche_bilan==='string'?JSON.parse(e.fiche_bilan||'{}'):e.fiche_bilan;
+  expect([e.statut,fiche&&fiche.niveau]).toEqual(['Planifié','Débutant']);
   expect(etat.erreurs).toEqual([]);
 });
