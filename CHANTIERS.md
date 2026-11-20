@@ -1,13 +1,15 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **19/11/2026, 14:00**, bases `main` : NEWGEN `05f6184`, NextStep `c87f5b2`, MD-LIB `fc1c76d`.
+État au **21/11/2026, 00:50**, bases `main` : NEWGEN `ad75f37`, NextStep `e11d6c1`, MD-LIB `0a71bc1` (clôture de session, règles 74-75).
+Toutes les livraisons du 20/11 sont en production (déploiements ✅) ; rien en attente dans le bac à sable ni sur la branche de session.
+En attente de l'utilisateur : essai de la pastille retenue (atelier créé par une collègue, puis rechargement) ; registre RGPD V0.8 à présenter au DPO (écart n° 15).
 Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à
 réappliquer. Revues closes jusqu'à AG-063 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
 confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
 **AG-065 en production le 20/11** (NEWGEN `4ec17dd`, NextStep `4f5c8d5`, déploiements ✅) : liens Partage47 (5 max, action
 `lienAtelier`), volet en onglets Détail / Reporting (QR en tête, liens, fiche bilan remplissable avant « Réalisé »), QR visible sur
 téléphone (barre du bas sous le volet ouvert ; ne pas remonter le volet au-dessus de 4000). AG-065 clos le 20/11 ;
-annonce 41 publiée, 23 et 28 mises à jour (textes approuvés). Piège : un test ne clique jamais un nombre seul (pastille des Nouveautés).
+annonce 41 publiée, 23 et 28 mises à jour (textes approuvés). Piège : un test ne clique jamais un nombre seul (MD-LIB règle 75).
 Pastille des nouveaux ateliers (20/11) : mémoire par page et par personne (`localStorage`, plus grand `_n` vu) ; 1re visite = point de départ.
 Anomalies : liste « Validées » retirée (20/11) ; l'action `annulerAnomalie` reste dans l'API, sans bouton.
 Liens `/public.php` refusés (20/11, navigateur et API) : ils ne s'ouvrent pas, même connecté ; lien interne (`/index.php/apps/files/…`) ou de partage (`/s/…`) seulement. Registre RGPD V0.8 corrigée sur place (ateliers-backups) : liens Partage47 inscrits, écart n° 15 à présenter au DPO.
