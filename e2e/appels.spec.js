@@ -168,6 +168,7 @@ test('index — volet : lien Partage47 ajouté puis retiré par l\'action dédi�
     const lien = page.getByRole('link', { name: '📄 Résultats PIX' });
     await expect(lien).toHaveAttribute('href', 'https://partage.lotetgaronne.fr/index.php/s/abc123');
     await expect(lien).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(page.getByText('1 lien sur 5 maximum par atelier')).toBeVisible();
     await page.getByRole('button', { name: 'Retirer le lien Résultats PIX' }).click();
     await expect(lien).toHaveCount(0);
     expect(p.lienOps).toEqual([{ op: 'ajouter', url: 'https://partage.lotetgaronne.fr/index.php/s/abc123', titre: 'Résultats PIX' },

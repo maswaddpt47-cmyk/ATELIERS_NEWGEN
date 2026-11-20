@@ -412,3 +412,18 @@ test('téléphone — volet : QR ouvert au-dessus, fermé par un clic dehors, pu
   await expect(volet).toHaveCount(0);
   expect(etat.erreurs).toEqual([]);
 });
+
+// Limite de liens affichée (20/11/2026) : à 5 liens, plus de champ d'ajout et la raison est dite (règle 65).
+test('historique — volet : 5 liens, maximum atteint dit à l\'écran',async({page})=>{
+  const PLEIN={...TEMOIN,liens:[1,2,3,4,5].map(i=>({titre:'Document '+i,url:'https://partage.lotetgaronne.fr/index.php/s/doc'+i}))};
+  const etat=await preparer(page,[PLEIN]);
+  await connecter(page,'index.html');
+  await nav(page,'Historique');
+  const volet=page.locator('.side-panel.open');
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await expect(volet.getByText('5 liens sur 5 maximum par atelier')).toBeVisible();
+  await expect(volet.getByText('Maximum atteint (5 liens) : retirez-en un pour en ajouter un autre.')).toBeVisible();
+  await expect(volet.getByRole('button',{name:'+ Ajouter'})).toHaveCount(0);
+  expect(etat.erreurs).toEqual([]);
+});
