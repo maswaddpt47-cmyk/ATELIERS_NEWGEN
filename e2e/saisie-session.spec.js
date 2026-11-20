@@ -44,6 +44,7 @@ async function preparer(page,entrees=[TEMOIN]){
     else if(action==='getConfig')rep={ok:true,config:{},maintenance:false};
     else if(action==='getTickets')rep={ok:true,tickets:[],moi:NOM};
     else if(action==='getLogs')rep={ok:true,logs:[]};
+    else if(action==='jetonAvis')rep={ok:true,jeton:'b'.repeat(32),avis:{n:0,masque:false,seuil:3,attentes:null,clarte:null,aise_oui:0,autonomie_oui:0,remarques:[]},plafond:8,ouvert_du:JOUR,ouvert_au:'2026-11-09'};
     else if(action==='saveEntry'){
       etat.ecritures.push({action,entry:JSON.parse(params.get('entry'))});
     }else if(action==='lienAtelier'){
@@ -385,5 +386,29 @@ test('historique — volet : fiche bilan remplie sur un atelier « Planifié »,
   const e=etat.ecritures.find(x=>x.action==='saveEntry').entry;
   const fiche=typeof e.fiche_bilan==='string'?JSON.parse(e.fiche_bilan||'{}'):e.fiche_bilan;
   expect([e.statut,fiche&&fiche.niveau]).toEqual(['Planifié','Débutant']);
+  expect(etat.erreurs).toEqual([]);
+});
+
+// Téléphone (20/11/2026) : la fenêtre du QR s'ouvre AU-DESSUS du volet ; un clic dehors la ferme, puis un clic
+// dehors ferme le volet (le volet avait été remonté au premier plan le 19/11 et la cachait).
+test('téléphone — volet : QR ouvert au-dessus, fermé par un clic dehors, puis volet fermé par un clic dehors',async({page})=>{
+  await page.setViewportSize({width:390,height:760});
+  const etat=await preparer(page);
+  await connecter(page,'index.html');
+  // À 390 px, le message d'accueil couvre la barre du bas : clic transmis directement au bouton.
+  await page.getByRole('button',{name:'Historique',exact:true}).dispatchEvent('click');
+  const volet=page.locator('.side-panel.open');
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await volet.getByRole('button',{name:/QR code des avis/}).click();
+  const titre=page.getByText('📱 Avis des stagiaires',{exact:true});
+  await expect(titre).toBeVisible();
+  await expect(volet).toHaveCount(1);
+  expect(await titre.evaluate(t=>{const r=t.getBoundingClientRect();const e=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return e===t||t.contains(e);})).toBe(true);
+  await page.mouse.click(8,300);   // fond de la fenêtre du QR, hors de sa boîte
+  await expect(titre).toHaveCount(0);
+  await expect(volet).toHaveCount(1);
+  await page.mouse.click(20,300);   // voile du volet, à gauche du volet
+  await expect(volet).toHaveCount(0);
   expect(etat.erreurs).toEqual([]);
 });
