@@ -324,6 +324,10 @@ $refus = array_map(fn($x) => $lien($x)['ok'] ?? null, [
     ['_id' => 'entry_1', 'op' => 'remplacer', 'url' => $lienOk['url']],
     ['_id' => 'absent', 'op' => 'ajouter', 'titre' => 'x', 'url' => 'https://partage.lotetgaronne.fr/s/z']]);
 verifier($refus === array_fill(0, 7, false) && $lire('entry_1')['liens'] === [$lienOk], 'liens : autre site, http, identifiants, titre trop long, opération ou atelier inconnus refusés — ' . json_encode($refus));
+$rp = $lien(['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => 'x', 'url' => 'https://partage.lotetgaronne.fr/public.php/dav/files/abc/?accept=zip&files=a.pdf']);
+$rp2 = $lien(['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => 'x', 'url' => 'https://partage.lotetgaronne.fr/%70ublic.php/dav/files/abc']);
+verifier(($rp['ok'] ?? null) === false && str_contains($rp['error'] ?? '', 'lien interne du fichier') && ($rp2['ok'] ?? null) === false
+    && $lire('entry_1')['liens'] === [$lienOk], 'liens : /public.php refusé (même encodé), raison dite, rien d\'écrit');
 foreach ([2, 3, 4, 5] as $i) $lien(['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => "L$i", 'url' => "https://partage.lotetgaronne.fr/index.php/s/l$i"]);
 $six = $lien(['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => 'L6', 'url' => 'https://partage.lotetgaronne.fr/index.php/s/l6']);
 verifier(count($lire('entry_1')['liens']) === 5 && !($six['ok'] ?? true), 'liens : 5 au plus par atelier');

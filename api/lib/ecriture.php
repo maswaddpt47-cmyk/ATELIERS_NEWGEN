@@ -245,12 +245,21 @@ function api_bilan_lu(mixed $v): array|string
 // seulement, sans identifiants ni port ; aucun fichier n'est stocké chez Alwaysdata.
 const API_LIENS_HOTES = ['partage.lotetgaronne.fr'];
 const API_LIENS_MAX = 5;
+// Raison du refus ('' si acceptée), même règle que utils.js (lienPartageRaison). /public.php
+// (lien de téléchargement interne de Partage47) ne s'ouvre pas, même connecté (20/11/2026).
+const API_LIEN_REFUS_SITE = 'Seule une adresse https de partage.lotetgaronne.fr est acceptée';
+const API_LIEN_REFUS_PUBLIC = "Ce lien Partage47 ne s'ouvre pas : copiez le lien interne du fichier (barre d'adresse du fichier ouvert) ou son lien de partage";
+function api_lien_partage_raison(string $u): string
+{
+    if ($u === '' || strlen($u) > 500 || preg_match('/[\s\x00-\x1F\x7F"<>\\\\]/', $u)) return API_LIEN_REFUS_SITE;
+    $p = parse_url($u);
+    if (!(is_array($p) && strtolower($p['scheme'] ?? '') === 'https' && in_array(strtolower($p['host'] ?? ''), API_LIENS_HOTES, true)
+        && !isset($p['user']) && !isset($p['pass']) && !isset($p['port']))) return API_LIEN_REFUS_SITE;
+    return preg_match('#^/public\.php(/|$)#i', rawurldecode((string) ($p['path'] ?? ''))) ? API_LIEN_REFUS_PUBLIC : '';
+}
 function api_lien_partage_valide(string $u): bool
 {
-    if ($u === '' || strlen($u) > 500 || preg_match('/[\s\x00-\x1F\x7F"<>\\\\]/', $u)) return false;
-    $p = parse_url($u);
-    return is_array($p) && strtolower($p['scheme'] ?? '') === 'https' && in_array(strtolower($p['host'] ?? ''), API_LIENS_HOTES, true)
-        && !isset($p['user']) && !isset($p['pass']) && !isset($p['port']);
+    return api_lien_partage_raison($u) === '';
 }
 // Relecture : seuls les liens encore valides sortent, en tableau [{titre, url}].
 function api_liens_lus(mixed $v): array
@@ -742,7 +751,7 @@ function action_lien_atelier(PDO $db, array $p, string $acteur = ''): array
     $url = trim((string) ($p['url'] ?? ''));
     $titre = trim((string) ($p['titre'] ?? ''));
     if ($id === '' || !in_array($op, ['ajouter', 'retirer'], true)) return ['ok' => false, 'error' => 'Demande de lien invalide'];
-    if (!api_lien_partage_valide($url)) return ['ok' => false, 'error' => 'Seule une adresse https de partage.lotetgaronne.fr est acceptée'];
+    if (($raison = api_lien_partage_raison($url)) !== '') return ['ok' => false, 'error' => $raison];
     if ($op === 'ajouter' && (mb_strlen($titre) > 80 || preg_match('/[\x00-\x1F\x7F]/', $titre))) return ['ok' => false, 'error' => 'Titre invalide (80 caractères au plus)'];
     $db->beginTransaction();
     try {
