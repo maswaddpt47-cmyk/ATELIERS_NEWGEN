@@ -7,7 +7,7 @@ confirmation `create_tree` encore vue malgré « Autoriser toutes les actions »
 **AG-065 en production le 20/11** (NEWGEN `4ec17dd`, NextStep `4f5c8d5`, déploiements ✅) : liens Partage47 (5 max, action
 `lienAtelier`), volet en onglets Détail / Reporting (QR en tête, liens, fiche bilan remplissable avant « Réalisé »), QR visible sur
 téléphone (barre du bas sous le volet ouvert ; ne pas remonter le volet au-dessus de 4000). AG-065 clos le 20/11 ;
-annonce 41 publiée, 23 et 28 mises à jour (textes approuvés). Piège : un test ne clique jamais un nombre seul (pastille des Nouveautés). Registre RGPD (ateliers-backups) à compléter pour les liens.
+annonce 41 publiée, 23 et 28 mises à jour (textes approuvés). Piège : un test ne clique jamais un nombre seul (pastille des Nouveautés). Registre RGPD V0.9 (ateliers-backups `c201c91`) : liens Partage47 inscrits, écart n° 15 à présenter au DPO.
 **AG-063 clos le 19/11** (avis en graphes, période ou atelier ; non annoncé) : règles dans « Points à ne pas défaire ».
 **Impression des graphes (19/11)** : depuis la vue en graphes, « Imprimer / PDF » sort les graphes affichés (SVG, 2 pages A4
 sur un essai fictif) ; liste des ateliers avec l'orienteur. Pas de bloc AGORA : mêmes chiffres, aucun calcul nouveau
