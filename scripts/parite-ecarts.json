@@ -16,22 +16,22 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN app.js:260",
-      "NextStep app.js:259",
-      "NEWGEN admin_app.js:182",
-      "NextStep admin_app.js:174"
+      "NEWGEN app.js:250",
+      "NextStep app.js:249",
+      "NEWGEN admin_app.js:214",
+      "NextStep admin_app.js:207"
     ],
     "newgen": "aab6ba2c3a/46cd79c424",
-    "nextstep": "433799fe6d/5d12e8334a",
-    "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs. Revérifié le 21/10/2026 après le message de maintenance (#36/#37 et NextStep #24/#25) : changement identique dans les deux, seule la navigation diffère. Revérifié le 24/10/2026 après le bandeau Admin sur téléphone : même correctif (titre masqué, nom tronqué, boutons réduits à leur icône), adapté à la coquille de chaque appli. Revérifié le 24/10/2026 après la pastille de 💾 Sauvegardes : même lecture du veilleur, posée sur la barre du bas (NEWGEN) ou le menu latéral (NextStep). Revérifié le 25/10/2026 : même conservation de saisie et mêmes confirmations dans les deux coquilles ; seuls les emplacements de navigation restent propres à chacune. Revérifié le 26/10/2026 après l'icône Planning (🧑‍🤝‍🧑) : même changement dans les deux. Revérifié le 26/10/2026 après AG-032 (« Mes bilans » reçoit les années chargées) : même changement dans les deux."
+    "nextstep": "ab74d4150b/8520f7fc18",
+    "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs. Revérifié le 21/10/2026 après le message de maintenance (#36/#37 et NextStep #24/#25) : changement identique dans les deux, seule la navigation diffère. Revérifié le 24/10/2026 après le bandeau Admin sur téléphone : même correctif (titre masqué, nom tronqué, boutons réduits à leur icône), adapté à la coquille de chaque appli. Revérifié le 24/10/2026 après la pastille de 💾 Sauvegardes : même lecture du veilleur, posée sur la barre du bas (NEWGEN) ou le menu latéral (NextStep). Revérifié le 25/10/2026 : même conservation de saisie et mêmes confirmations dans les deux coquilles ; seuls les emplacements de navigation restent propres à chacune. Revérifié le 26/10/2026 après l'icône Planning (🧑‍🤝‍🧑) : même changement dans les deux. Revérifié le 26/10/2026 après AG-032 (« Mes bilans » reçoit les années chargées) : même changement dans les deux. Revérifié le 20/11/2026 : seule NextStep reçoit la garde « mise à jour partielle sans date » dans appliquerEntreeLocale (AG-065, vérification de Codex) ; NEWGEN l'a déjà par anneeIncluse."
   },
   "VueHistorique": {
     "statut": "voulu",
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:3112",
-      "NextStep shared.js:2928"
+      "NEWGEN shared.js:3186",
+      "NextStep shared.js:3002"
     ],
     "newgen": "c48c548204/c48c548204",
     "nextstep": "cf1d6163a0/cf1d6163a0",
@@ -57,8 +57,8 @@
       "NEWGEN shared.js:7",
       "NextStep shared.js:7"
     ],
-    "newgen": "25c27a98fc/25c27a98fc",
-    "nextstep": "3fbdc38ad4/3fbdc38ad4",
-    "note": "Styles propres à chaque design (v2 NEWGEN, menu latéral NextStep) — navigation « touche pas », 26/09/2026. Revérifié le 24/10/2026 : mêmes reflets Liquid Glass dans les deux interfaces ; seule NextStep adapte le décalage du bandeau sandbox à son scroller mobile interne, sans changer la navigation de production. Revérifié le 25/10/2026 : mêmes lignes de cycle réorganisées à 390 px, sans modifier les navigations propres aux deux applications."
+    "newgen": "b80773d828/b80773d828",
+    "nextstep": "c49da6f96b/c49da6f96b",
+    "note": "Styles propres à chaque design (v2 NEWGEN, menu latéral NextStep) — navigation « touche pas », 26/09/2026. Revérifié le 24/10/2026 : mêmes reflets Liquid Glass dans les deux interfaces ; seule NextStep adapte le décalage du bandeau sandbox à son scroller mobile interne, sans changer la navigation de production. Revérifié le 25/10/2026 : mêmes lignes de cycle réorganisées à 390 px, sans modifier les navigations propres aux deux applications. Revérifié le 20/11/2026 : ajouts identiques des deux côtés (onglets du volet, barre du bas sous le volet ouvert, hauteur en dvh)."
   }
 }

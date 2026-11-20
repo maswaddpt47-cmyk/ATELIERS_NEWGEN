@@ -93,6 +93,14 @@ async function preparer(browser) {
     else if (action === 'creerTicket') { p.tickets = (p.tickets || 0) + 1; p.corpsTicket = Object.fromEntries(corps); rep = { ok: true, nouveau: true, ticket: { id: corps.get('_id'), cree_le: '2026-10-02 10:00:00', auteur: 'Alice Martin', type: corps.get('type'), titre: corps.get('titre'), description: corps.get('description'), statut: 'Nouveau', reponse: '' } }; }
     else if (action === 'getTickets') rep = { ok: true, tickets: [], moi: 'Alice Martin' };
     else if (action === 'getAll') rep = { ...JSON.parse(MOCK), conseillers_inactifs: [], ...(p.entries ? { entries: p.entries } : {}) };
+    // Liens Partage47 (AG-065) : action dédiée, ajoute ou retire UN lien sur l'état du faux serveur.
+    else if (action === 'lienAtelier') {
+      const o = Object.fromEntries(corps); (p.lienOps = p.lienOps || []).push({ op: o.op, url: o.url, titre: o.titre });
+      p.liens = p.liens || [];
+      if (o.op === 'ajouter' && !p.liens.some(l => l.url === o.url)) p.liens.push({ titre: o.titre, url: o.url });
+      if (o.op === 'retirer') p.liens = p.liens.filter(l => l.url !== o.url);
+      rep = { ok: true, liens: p.liens };
+    }
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rep) });
   });
 
@@ -136,6 +144,36 @@ test('index — ouverture : API seule, sans getConfig dédié', async ({ browser
       !appels.includes('getConfig'),
       appels.join(', ') || 'aucun',
     );
+    await ctx.close();
+});
+
+// Liens Partage47 (AG-065, amendements de Codex) : adresse hors Partage47 refusée ; ajout et retrait partent
+// aussitôt par l'action dédiée lienAtelier (un lien précis), jamais avec « Enregistrer ».
+test('index — volet : lien Partage47 ajouté puis retiré par l\'action dédiée, autre site refusé', async ({ browser, baseURL }) => {
+    const p = await preparer(browser);
+    const { ctx, page } = p;
+    await page.goto(`${baseURL}/index.html`, { waitUntil:'networkidle', timeout:20000 });
+    await connecter(page);
+    await page.waitForTimeout(800);
+    await page.getByText('Démarches en ligne').first().click();
+    await page.getByRole('tab', { name: '📊 Reporting' }).click();   // liens, bilan et QR dans l'onglet Reporting (20/11/2026)
+    await expect(page.getByText('📎 Liens Partage47')).toBeVisible();
+    const url = page.getByPlaceholder('https://partage.lotetgaronne.fr/…');
+    await url.fill('https://evil.example/partage.lotetgaronne.fr');
+    await expect(page.getByRole('button', { name: '+ Ajouter' })).toBeDisabled();
+    await expect(page.getByText('Seule une adresse https de partage.lotetgaronne.fr est acceptée.')).toBeVisible();
+    await page.getByPlaceholder('Titre (ex. Résultats PIX)').fill('Résultats PIX');
+    await url.fill('https://partage.lotetgaronne.fr/index.php/s/abc123');
+    await page.getByRole('button', { name: '+ Ajouter' }).click();
+    const lien = page.getByRole('link', { name: '📄 Résultats PIX' });
+    await expect(lien).toHaveAttribute('href', 'https://partage.lotetgaronne.fr/index.php/s/abc123');
+    await expect(lien).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(page.getByText('1 lien sur 5 maximum par atelier')).toBeVisible();
+    await page.getByRole('button', { name: 'Retirer le lien Résultats PIX' }).click();
+    await expect(lien).toHaveCount(0);
+    expect(p.lienOps).toEqual([{ op: 'ajouter', url: 'https://partage.lotetgaronne.fr/index.php/s/abc123', titre: 'Résultats PIX' },
+      { op: 'retirer', url: 'https://partage.lotetgaronne.fr/index.php/s/abc123', titre: 'Résultats PIX' }]);
+    expect(p.appels.filter(a => a === 'getAll').length).toBe(1);   // aucune relecture après ces écritures
     await ctx.close();
 });
 

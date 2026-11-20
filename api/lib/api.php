@@ -37,7 +37,7 @@ define('RAPPELS_FICHE_DEPUIS', getenv('ATELIERS_RAPPELS_FICHE_DEPUIS') ?: '2026-
 // 24/09/2026. Purge à chaque connexion réussie (pas besoin de tâche planifiée).
 const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
-const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'modifierTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier', 'bilanAvis', 'avisParAtelier'];
+const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'modifierTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier', 'bilanAvis', 'avisParAtelier', 'lienAtelier'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
 const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'purgerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'envoyerLienReinit', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket', 'avisAtelier', 'supprimerAvis', 'tsListe', 'tsStats', 'tsCreerCompte', 'tsReinitMdp', 'tsActiver', 'tsSupprimer', 'getAnomaliesValidees', 'validerAnomalie', 'annulerAnomalie'];
 // Seules actions d'un jeton 'ts' (page des travailleurs sociaux, AG-042).
@@ -55,6 +55,7 @@ const API_CHAMPS_ATELIER = [
     'duree' => 'duree',
     'fiche_bilan' => 'fiche_bilan',
     'ouvert_a_tous' => 'ouvert_a_tous',
+    'liens' => 'liens',
 ];
 
 // Point d'entrée : choisit l'action et applique la règle d'accès.
@@ -183,6 +184,7 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'getVisibility':   return ['ok' => true, 'visibility' => api_json(api_config_base($db)['visibility'] ?? '', (object) [])];
         case 'saveEntry':       return action_save_entry($db, $p, $session['conseiller']);
         case 'saveMany':        return action_save_many($db, $p, $session['conseiller']);
+        case 'lienAtelier':     return action_lien_atelier($db, $p, $session['conseiller']);
         case 'delete':          return action_delete($db, $p, $session['conseiller']);
         case 'verifierIds':     return action_verifier_ids($db, $p);
         case 'selfSetPassword': return action_self_set_password($db, $p, $session);
@@ -389,6 +391,10 @@ function ateliers_colonne_duree(PDO $db): void
     if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'ouvert_a_tous'")->fetch()) {
         $db->exec("ALTER TABLE ateliers ADD COLUMN ouvert_a_tous VARCHAR(3) NOT NULL DEFAULT 'Non'");
     }
+    // Liens Partage47 (AG-065, 19/11/2026) : JSON, NULL par défaut ; aucun fichier stocké ici.
+    if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'liens'")->fetch()) {
+        $db->exec('ALTER TABLE ateliers ADD COLUMN liens TEXT NULL');
+    }
     $ok = true;
 }
 
@@ -560,6 +566,7 @@ function api_ateliers(PDO $db, array $annees): array
         }
         $e['materiel'] = $materiel[$l['id']] ?? [];
         $e['fiche_bilan'] = api_bilan_lu($e['fiche_bilan'] ?? '');
+        $e['liens'] = api_liens_lus($e['liens'] ?? '');
         $entries[] = $e;
     }
     return $entries;

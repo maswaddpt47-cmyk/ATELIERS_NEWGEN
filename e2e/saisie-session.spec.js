@@ -44,8 +44,16 @@ async function preparer(page,entrees=[TEMOIN]){
     else if(action==='getConfig')rep={ok:true,config:{},maintenance:false};
     else if(action==='getTickets')rep={ok:true,tickets:[],moi:NOM};
     else if(action==='getLogs')rep={ok:true,logs:[]};
+    else if(action==='jetonAvis')rep={ok:true,jeton:'b'.repeat(32),avis:{n:0,masque:false,seuil:3,attentes:null,clarte:null,aise_oui:0,autonomie_oui:0,remarques:[]},plafond:8,ouvert_du:JOUR,ouvert_au:'2026-11-09'};
     else if(action==='saveEntry'){
       etat.ecritures.push({action,entry:JSON.parse(params.get('entry'))});
+    }else if(action==='lienAtelier'){
+      // Liens Partage47 (AG-065) : réponse retenue tant que etat.retenue n'est pas libérée.
+      if(etat.retenue)await etat.retenue;
+      etat.liens=etat.liens||{};const id=params.get('_id');etat.liens[id]=etat.liens[id]||[];
+      if(params.get('op')==='ajouter')etat.liens[id].push({titre:params.get('titre'),url:params.get('url')});
+      else etat.liens[id]=etat.liens[id].filter(l=>l.url!==params.get('url'));
+      rep={ok:true,liens:etat.liens[id]};
     }else if(action==='saveMany'){
       const entries=JSON.parse(params.get('entries'));
       etat.ecritures.push({action,entries});
@@ -276,3 +284,146 @@ test('historique — volet : lieu modifié sur place et enregistré',async({page
   expect(etat.erreurs).toEqual([]);
 });
 
+
+// Vérification de Codex sur AG-065 (19/11/2026) : la réponse tardive d'un lien de A ne remplit pas le
+// volet de B, et ne rétablit pas les autres champs de A modifiés entre-temps.
+test('historique — volet : réponse tardive d\'un lien, autre atelier ouvert et lieu modifié entre-temps',async({page})=>{
+  const B={...TEMOIN,_id:'atelier-b',_n:2,thematique:'Atelier fictif B',lieu:'Salle B'};
+  const etat=await preparer(page,[TEMOIN,B]);
+  await connecter(page,'index.html');
+  await nav(page,'Historique');
+  const volet=page.locator('.side-panel.open');
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  let liberer;etat.retenue=new Promise(r=>{liberer=r;});
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await volet.getByPlaceholder('Titre (ex. Résultats PIX)').fill('Document fictif A');
+  await volet.getByPlaceholder('https://partage.lotetgaronne.fr/…').fill('https://partage.lotetgaronne.fr/index.php/s/fictifA');
+  await volet.getByRole('button',{name:'+ Ajouter'}).click();
+  await volet.getByRole('tab',{name:'📋 Détail'}).click();
+  await volet.getByPlaceholder('Salle, médiathèque, établissement…').fill('Salle modifiée pendant le lien');
+  await volet.getByRole('button',{name:/Enregistrer/}).click();
+  await expect.poll(()=>etat.ecritures.filter(e=>e.action==='saveEntry').length).toBe(1);
+  await expect(volet).toHaveCount(0);   // « Enregistrer » ferme le volet
+  await page.getByText('Atelier fictif B',{exact:true}).filter({visible:true}).first().click();
+  await expect(volet.getByRole('tab',{name:'📋 Détail'})).toHaveAttribute('aria-selected','true');   // chaque atelier ouvre sur Détail
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await expect(volet.getByText('📎 Liens Partage47')).toBeVisible();
+  etat.retenue=null;liberer();
+  await expect(page.getByText('✅ Lien ajouté')).toBeVisible();
+  await expect(volet.getByRole('link',{name:/Document fictif A/})).toHaveCount(0);
+  await volet.locator('button').first().click();
+  await expect(page.getByText('Salle modifiée pendant le lien').filter({visible:true}).first()).toBeVisible();
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await expect(volet.getByRole('tab',{name:'📋 Détail'})).toHaveAttribute('aria-selected','true');   // B fermé sur Reporting
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await expect(volet.getByRole('link',{name:/Document fictif A/})).toBeVisible();
+  expect(etat.erreurs).toEqual([]);
+});
+
+// Duplication : le doublon part sans les liens de l'atelier source, à l'envoi comme à l'écran.
+test('historique — dupliquer un atelier qui a un lien : le doublon n\'en a aucun',async({page})=>{
+  const SOURCE={...TEMOIN,liens:[{titre:'Document source',url:'https://partage.lotetgaronne.fr/index.php/s/source'}]};
+  const etat=await preparer(page,[SOURCE]);
+  await connecter(page,'index.html');
+  await nav(page,'Historique');
+  const volet=page.locator('.side-panel.open');
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await expect(volet.getByRole('link',{name:/Document source/})).toBeVisible();
+  await volet.getByRole('button',{name:/Dupliquer/}).click();
+  await formulaire(page).locator('input[type="date"]').first().fill('2026-10-28');
+  await formulaire(page).locator('input[type="time"]').first().fill('09:00');
+  await formulaire(page).getByRole('button',{name:/Enregistrer l'atelier/}).click();
+  await expect.poll(()=>etat.ecritures.filter(e=>e.action==='saveEntry').length).toBe(1);
+  const e=etat.ecritures.find(x=>x.action==='saveEntry').entry;
+  expect(e.liens||[]).toEqual([]);
+  // Après création, l'Historique montre le doublon (28/10) mis en évidence : son volet n'a aucun lien.
+  await page.getByText('28',{exact:true}).filter({visible:true}).first().click();
+  await expect(volet.getByPlaceholder('Salle, médiathèque, établissement…')).toHaveValue(TEMOIN.lieu);
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await expect(volet.getByText('📎 Liens Partage47')).toBeVisible();
+  await expect(volet.getByText('Aucun lien.')).toBeVisible();
+  await expect(volet.getByRole('link',{name:/Document source/})).toHaveCount(0);
+  expect(etat.erreurs).toEqual([]);
+});
+
+// Onglets du volet (20/11/2026) : le passage en « Réalisé » avec « Remplir maintenant » ouvre l'onglet
+// Reporting sur la fiche bilan, sans rien enregistrer ; le QR code des avis y est aussi.
+test('historique — volet : « Remplir maintenant » ouvre l\'onglet Reporting sur la fiche bilan',async({page})=>{
+  const etat=await preparer(page);
+  await connecter(page,'index.html');
+  await nav(page,'Historique');
+  const volet=page.locator('.side-panel.open');
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await expect(volet.getByRole('button',{name:/QR code des avis/})).toHaveCount(0);   // plus dans Détail
+  // Atelier encore « Planifié » : l'onglet Reporting et le QR code sont déjà accessibles (avis pendant l'atelier,
+  // statut souvent changé le lendemain ou plus tard, demande de l'utilisateur du 20/11/2026).
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await expect(volet.getByRole('button',{name:/QR code des avis/})).toBeVisible();
+  await expect(volet.getByText('📝 Bilan de l\'atelier')).toBeVisible();
+  await volet.getByRole('tab',{name:'📋 Détail'}).click();
+  await volet.locator('select').filter({has:page.locator('option[value="Réalisé"]')}).first().selectOption('Réalisé');
+  await volet.getByRole('button',{name:/Enregistrer/}).click();
+  await page.getByRole('button',{name:/Remplir maintenant/}).click();
+  await expect(volet.getByRole('tab',{name:'📊 Reporting'})).toHaveAttribute('aria-selected','true');
+  await expect(volet.getByText('📝 Bilan de l\'atelier')).toBeVisible();
+  await expect(volet.getByRole('button',{name:/QR code des avis/})).toBeVisible();
+  expect(etat.ecritures.filter(e=>e.action==='saveEntry')).toHaveLength(0);
+  expect(etat.erreurs).toEqual([]);
+});
+
+// Fiche bilan remplissable avant « Réalisé » (20/11/2026) : elle part avec l'atelier encore « Planifié ».
+test('historique — volet : fiche bilan remplie sur un atelier « Planifié », enregistrée',async({page})=>{
+  const etat=await preparer(page);
+  await connecter(page,'index.html');
+  await nav(page,'Historique');
+  const volet=page.locator('.side-panel.open');
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await volet.getByRole('button',{name:'Débutant',exact:true}).click();
+  await volet.getByRole('button',{name:/Enregistrer/}).click();
+  await expect.poll(()=>etat.ecritures.filter(e=>e.action==='saveEntry').length).toBe(1);
+  const e=etat.ecritures.find(x=>x.action==='saveEntry').entry;
+  const fiche=typeof e.fiche_bilan==='string'?JSON.parse(e.fiche_bilan||'{}'):e.fiche_bilan;
+  expect([e.statut,fiche&&fiche.niveau]).toEqual(['Planifié','Débutant']);
+  expect(etat.erreurs).toEqual([]);
+});
+
+// Téléphone (20/11/2026) : la fenêtre du QR s'ouvre AU-DESSUS du volet ; un clic dehors la ferme, puis un clic
+// dehors ferme le volet (le volet avait été remonté au premier plan le 19/11 et la cachait).
+test('téléphone — volet : QR ouvert au-dessus, fermé par un clic dehors, puis volet fermé par un clic dehors',async({page})=>{
+  await page.setViewportSize({width:390,height:760});
+  const etat=await preparer(page);
+  await connecter(page,'index.html');
+  // À 390 px, le message d'accueil couvre la barre du bas : clic transmis directement au bouton.
+  await page.getByRole('button',{name:'Historique',exact:true}).dispatchEvent('click');
+  const volet=page.locator('.side-panel.open');
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await volet.getByRole('button',{name:/QR code des avis/}).click();
+  const titre=page.getByText('📱 Avis des stagiaires',{exact:true});
+  await expect(titre).toBeVisible();
+  await expect(volet).toHaveCount(1);
+  expect(await titre.evaluate(t=>{const r=t.getBoundingClientRect();const e=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return e===t||t.contains(e);})).toBe(true);
+  await page.mouse.click(8,300);   // fond de la fenêtre du QR, hors de sa boîte
+  await expect(titre).toHaveCount(0);
+  await expect(volet).toHaveCount(1);
+  await page.mouse.click(20,300);   // voile du volet, à gauche du volet
+  await expect(volet).toHaveCount(0);
+  expect(etat.erreurs).toEqual([]);
+});
+
+// Limite de liens affichée (20/11/2026) : à 5 liens, plus de champ d'ajout et la raison est dite (règle 65).
+test('historique — volet : 5 liens, maximum atteint dit à l\'écran',async({page})=>{
+  const PLEIN={...TEMOIN,liens:[1,2,3,4,5].map(i=>({titre:'Document '+i,url:'https://partage.lotetgaronne.fr/index.php/s/doc'+i}))};
+  const etat=await preparer(page,[PLEIN]);
+  await connecter(page,'index.html');
+  await nav(page,'Historique');
+  const volet=page.locator('.side-panel.open');
+  await page.getByText('Atelier témoin',{exact:true}).filter({visible:true}).first().click();
+  await volet.getByRole('tab',{name:'📊 Reporting'}).click();
+  await expect(volet.getByText('5 liens sur 5 maximum par atelier')).toBeVisible();
+  await expect(volet.getByText('Maximum atteint (5 liens) : retirez-en un pour en ajouter un autre.')).toBeVisible();
+  await expect(volet.getByRole('button',{name:'+ Ajouter'})).toHaveCount(0);
+  expect(etat.erreurs).toEqual([]);
+});

@@ -78,6 +78,7 @@ function api_atelier_par_id(PDO $db, string $id): ?array
     $m->execute([$id]);
     $e['materiel'] = $m->fetchAll(PDO::FETCH_COLUMN);
     $e['fiche_bilan'] = api_bilan_lu($e['fiche_bilan'] ?? '');
+    $e['liens'] = api_liens_lus($e['liens'] ?? '');   // gardés dans la Corbeille (AG-065, Codex n° 3)
     return $e;
 }
 
@@ -240,6 +241,27 @@ function api_bilan_lu(mixed $v): array|string
 }
 
 // Convertit un atelier reçu du client en ligne de la table, ou null.
+// Liens Partage47 d'un atelier (AG-065, 19/11/2026) : https et hôte partage.lotetgaronne.fr
+// seulement, sans identifiants ni port ; aucun fichier n'est stocké chez Alwaysdata.
+const API_LIENS_HOTES = ['partage.lotetgaronne.fr'];
+const API_LIENS_MAX = 5;
+function api_lien_partage_valide(string $u): bool
+{
+    if ($u === '' || strlen($u) > 500 || preg_match('/[\s\x00-\x1F\x7F"<>\\\\]/', $u)) return false;
+    $p = parse_url($u);
+    return is_array($p) && strtolower($p['scheme'] ?? '') === 'https' && in_array(strtolower($p['host'] ?? ''), API_LIENS_HOTES, true)
+        && !isset($p['user']) && !isset($p['pass']) && !isset($p['port']);
+}
+// Relecture : seuls les liens encore valides sortent, en tableau [{titre, url}].
+function api_liens_lus(mixed $v): array
+{
+    $l = is_string($v) && $v !== '' ? json_decode($v, true) : (is_array($v) ? $v : []);
+    if (!is_array($l)) return [];
+    $ok = [];
+    foreach ($l as $x) if (is_array($x) && api_lien_partage_valide((string) ($x['url'] ?? ''))) $ok[] = ['titre' => (string) ($x['titre'] ?? ''), 'url' => (string) $x['url']];
+    return array_slice($ok, 0, API_LIENS_MAX);
+}
+
 function api_valider_atelier(array $d, ?string &$err): ?array
 {
     $id = trim((string) ($d['_id'] ?? ''));
@@ -307,6 +329,10 @@ function api_valider_atelier(array $d, ?string &$err): ?array
         }
         $l['ouvert_a_tous'] = $v;
     }
+    // Liens Partage47 (AG-065, amendement 2 de Codex) : jamais écrits par saveEntry / saveMany. Le statut
+    // groupé, le volet ou une page ancienne renvoient l'atelier entier : une liste périmée effacerait un lien
+    // ajouté ailleurs, ou en remettrait un retiré. Une valeur reçue ici est ignorée ; seule l'action
+    // lienAtelier (ajouter / retirer un lien précis) les modifie, et la restauration de la Corbeille.
     // Durée en minutes (AG-017). Absente de l'envoi (client d'avant, en
     // cache) : la colonne n'est pas touchée, la durée déjà saisie reste.
     // Vide, pareil (AG-062, écart de Codex, 16/11/2026) : un onglet ouvert
@@ -704,6 +730,46 @@ function action_get_corbeille(PDO $db, ?string $limite = null): array
 
 // Remet l'atelier tel qu'il était. Refusé si un atelier de même _id existe
 // (recréé entre-temps) : jamais d'écrasement silencieux.
+// Liens Partage47 d'un atelier (AG-065, amendement 2 de Codex) : une action dédiée, qui ajoute ou retire
+// UN lien sur la valeur en base (verrou FOR UPDATE), jamais une liste entière recopiée d'une page.
+// Rejouable : ajouter un lien déjà présent ou retirer un lien absent ne change rien et le dit (deja).
+// Journal : identifiant et opération seulement, jamais l'adresse (elle peut ouvrir un document).
+function action_lien_atelier(PDO $db, array $p, string $acteur = ''): array
+{
+    ateliers_colonne_duree($db);
+    $id = trim((string) ($p['_id'] ?? ''));
+    $op = (string) ($p['op'] ?? '');
+    $url = trim((string) ($p['url'] ?? ''));
+    $titre = trim((string) ($p['titre'] ?? ''));
+    if ($id === '' || !in_array($op, ['ajouter', 'retirer'], true)) return ['ok' => false, 'error' => 'Demande de lien invalide'];
+    if (!api_lien_partage_valide($url)) return ['ok' => false, 'error' => 'Seule une adresse https de partage.lotetgaronne.fr est acceptée'];
+    if ($op === 'ajouter' && (mb_strlen($titre) > 80 || preg_match('/[\x00-\x1F\x7F]/', $titre))) return ['ok' => false, 'error' => 'Titre invalide (80 caractères au plus)'];
+    $db->beginTransaction();
+    try {
+        $s = $db->prepare('SELECT liens FROM ateliers WHERE id = ? FOR UPDATE');
+        $s->execute([$id]);
+        $brut = $s->fetchColumn();
+        if ($brut === false) { $db->rollBack(); return ['ok' => false, 'error' => 'Atelier introuvable']; }
+        $liens = api_liens_lus($brut);
+        $present = in_array($url, array_column($liens, 'url'), true);
+        if (($op === 'ajouter' && $present) || ($op === 'retirer' && !$present)) {
+            $db->rollBack();
+            return ['ok' => true, 'liens' => $liens, 'deja' => true];
+        }
+        if ($op === 'ajouter') {
+            if (count($liens) >= API_LIENS_MAX) { $db->rollBack(); return ['ok' => false, 'error' => API_LIENS_MAX . ' liens au plus par atelier']; }
+            $liens[] = ['titre' => $titre, 'url' => $url];
+        } else {
+            $liens = array_values(array_filter($liens, fn($x) => $x['url'] !== $url));
+        }
+        $db->prepare('UPDATE ateliers SET liens = ? WHERE id = ?')
+           ->execute([$liens ? json_encode($liens, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null, $id]);
+        api_journal($db, 'lienAtelier', $acteur, mb_substr("$id $op", 0, 100), '', 1, 0, '', '');
+        $db->commit();
+    } catch (Throwable $e) { $db->rollBack(); throw $e; }
+    return ['ok' => true, 'liens' => $liens];
+}
+
 function action_restaurer_corbeille(PDO $db, array $p, string $acteur, ?string $limite = null): array
 {
     $id = trim((string) ($p['_id'] ?? ''));
@@ -731,6 +797,9 @@ function action_restaurer_corbeille(PDO $db, array $p, string $acteur, ?string $
         elseif (!is_array($d)) $err = 'Données de la corbeille illisibles';
         // Chemin d'écriture normal : validé comme une saisie, numéro d'origine repris.
         elseif (api_ecrire_atelier($db, $d, $err, $acteur, (int) ($d['_n'] ?? 0) ?: null) !== null) {
+            // Liens de la copie (AG-065, Codex n° 3) : remis tels quels, les seuls encore valides.
+            $liens = api_liens_lus($d['liens'] ?? []);
+            if ($liens) $db->prepare('UPDATE ateliers SET liens = ? WHERE id = ?')->execute([json_encode($liens, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $id]);
             $db->prepare('DELETE FROM ateliers_corbeille WHERE id = ?')->execute([$id]);
         }
         if ($err !== null) { $db->rollBack(); return ['ok' => false, 'error' => $err]; }
