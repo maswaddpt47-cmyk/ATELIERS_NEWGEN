@@ -5,7 +5,7 @@ Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les c
 réappliquer. Revues closes jusqu'à AG-063 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
 confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
 **⏸ EN PAUSE — AG-065, liens Partage47 (19/11, l'utilisateur n'est plus devant son poste)** : code testé et publié **dans le
-bac à sable seulement** (`sandbox` : NEWGEN `b2349ec`, NextStep `68c480d`, amendements de Codex compris : action dédiée
+bac à sable seulement** (`sandbox` : NEWGEN `b467aae`, NextStep `3db3281`, amendements de Codex compris : action dédiée
 `lienAtelier`, écritures ordinaires sans liens, Corbeille) ; commits aussi sur la branche `claude/pull-3qpzxi`.
 **Ne pas publier sur `main` avant l'essai de l'utilisateur.** En attente de lui : (1) essai dans le bac à sable (volet Détail,
 « 📎 Liens Partage47 ») ; (2) liens publics : tranché le 19/11 : l'accès à Partage47 est protégé par mot de passe (déclaré par l'utilisateur,
@@ -13,10 +13,11 @@ non vérifié), aucune restriction de plus ; (3) feu vert pour `main`. Essai sur
 Bac à sable seul (19/11 soir) : la page Conseillers NextStep sur téléphone était grise, menu au milieu (règle du bandeau qui étirait
 la barre du bas) et le bandeau cachait le haut du volet ; corrigé dans `shared.js` des deux applis, à reporter sur `main` avec AG-065.
 Aussi à reporter (19/11, accord de l'utilisateur) : bouton « QR code des avis » caché sur téléphone par la barre du bas de NextStep
-(volet au-dessus sous 641 px, hauteur en `dvh`) ; touche aussi la production.
+(sous 641 px, la barre passe sous le volet ouvert, `:has` ; hauteur en `dvh`) ; touche aussi la production.
+Ne pas remonter le volet au-dessus de 4000 : la fenêtre du QR et les messages passeraient dessous (constaté le 20/11).
 Volet en onglets (20/11, demande de l'utilisateur) : « Détail » / « Reporting » (QR en tête, liens, fiche bilan), tout accessible
 quel que soit le statut ; fiche bilan enregistrée même avant « Réalisé » (comptée seulement une fois « Réalisé »).
-`shared.js?v=336` (NEWGEN) / `?v=309` (NextStep). Nouveautés 23 et 28 décrivent l'ancien emplacement : mise à jour à proposer.
+QR en violet, exemples après « Liens Partage47 ». `shared.js?v=337` (NEWGEN) / `?v=310` (NextStep). Nouveautés 23 et 28 décrivent l'ancien emplacement : mise à jour à proposer.
 Essai du 19/11 (22 h 34, téléphone, sans VPN) : lien ajouté dans le volet puis ouvert vers Partage47, qui répond « Strict Cookie has not
 been found » sur une adresse `public.php/dav/…` : adresse d'essai, pas censée fonctionner (utilisateur). Ajout et ouverture du lien : OK.
 Codex : vérification de livraison faite le 19/11 (3 écarts navigateur), corrigés et testés ; cadre bleu pour les liens (demande de l'utilisateur). Lien direct vers un fichier d'un dossier partagé (Nextcloud,
