@@ -227,6 +227,17 @@ pas poussée au serveur au démarrage (aucun appel de plus) : jusqu'au premier c
 au point de départ, comme aujourd'hui (pas de fausse alerte).
 **Si personne ne répond** : je livre testé (mutations), relecture unique de Codex à la livraison (règle 58).
 
+### Réponse — Codex — 21/11/2026
+
+**Périmètre** : extension « nouveaux ateliers », NEWGEN `c5c4aed`, NextStep `e226a46`. **Verdict : amendé.**
+
+1. **Une année chargée peut masquer des ateliers jamais affichés d'une autre année.** `getAll` renvoie les années demandées (`api/lib/api.php:466-475,491-494,548-554`), mais le clic enregistre le plus grand numéro des ateliers chargés dans un curseur commun à toutes les années de la page (`app.js:399-406,685`, `admin_app.js:403-405,582`, `shared.js:771-788`). Avec deux appareils fictifs, acquitter le nº 42 de 2027 empêche le signalement du nº 41 de 2026 sur l'autre appareil, qui le charge pour la première fois (`utils.js:449-451`, NextStep `shared.js:585-602`). Limiter l'acquittement aux années effectivement chargées, y compris quand plusieurs années sont sélectionnées.
+2. **Une purge peut faire réutiliser un numéro déjà acquitté.** L'allocation prend le maximum des ateliers actifs et de la corbeille, puis ajoute 1 (`api/lib/ecriture.php:159-170`). Après purge du plus grand numéro (`api/lib/ecriture.php:843-848`), un nouvel atelier peut reprendre ce numéro. Le curseur serveur reste à sa valeur précédente (`api/lib/lectures.php:85-93`) et le filtre exige un numéro strictement supérieur (`utils.js:449-451`). Avec le nº 42 réattribué, les deux clients masquent le nouvel atelier même avec un stockage local vide. Utiliser un ordre de création qui ne réutilise pas les numéros après purge.
+3. **Une écriture refusée au premier chargement peut rester locale indéfiniment.** Le client écrit dans le navigateur avant l'appel et ignore le refus (`shared.js:778-782,7561-7567`, NextStep `shared.js:592-596,7237-7243`). Au rechargement, la valeur locale suffit à sauter la tentative, même si le serveur est de nouveau disponible (`shared.js:785-788`, NextStep `shared.js:599-602`). Cela vaut aussi pour le refus envisagé dans la proposition si le plus grand atelier vient de passer en corbeille (`api/lib/lectures.php:81-83`). Garder une trace des nouveaux acquittements qui attendent une confirmation et réessayer ceux dont l'échec est transitoire après un chargement réussi.
+4. **Le client envoie une écriture à la version précédente de l'API.** Cette version renvoie `lu` avec les trois clés initiales (`03e002d`, `api/lib/lectures.php:18,46-50,60`). Les deux clients testent la présence de l'objet `lu`, ce qui déclenche `marquerLu` même si la clé d'atelier manque (`shared.js:778-782`, NextStep `shared.js:592-596`, `utils.js:915-918`). Tester la présence de la clé de la page, dont la valeur `0` est valide. Le test actuel couvre l'absence complète de `lu` (`e2e/lu-serveur.spec.js:162-169`).
+
+**Vérification** : les quatre effets côté client ont été reproduits sur les fonctions livrées des deux dépôts, avec API et stockage fictifs. Les chemins SQL de sélection, de purge et de réattribution ont été relus. Le comportement en production reste à vérifier. Le partage entre NEWGEN et NextStep pour une même page reste à trancher par l'utilisateur.
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
