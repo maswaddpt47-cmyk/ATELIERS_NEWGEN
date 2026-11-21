@@ -1,10 +1,13 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **21/11/2026, 10:05**, bases `main` : NEWGEN `d74a118` + AG-066 (bloc `f7e0e1e`, livraison ci-dessous), NextStep `8164798`, MD-LIB `0a71bc1`.
+État au **21/11/2026 à 10:10** (Paris), bases relues avant clôture : NEWGEN `e67bd20` (livraison `7ba83ef`), NextStep `8164798`, MD-LIB `0a71bc1`. Réponse Codex AG-066 : `AGORA.md`, 21/11.
 **AG-066 (21/11)** : la mémoire « déjà lu » des Nouveautés et des tickets passe côté serveur (demande de l'utilisateur : un « hard reset »
 rallumait toutes les annonces). Table `lectures`, action `marquerLu`, champ `lu` dans `getAll` ; valeur jamais diminuée ; le
-`localStorage` reste un secours (la plus haute des deux valeurs). Testé : suite PHP, 10 mutations rejetées, `e2e/lu-serveur.spec.js` sur
-les deux applis. **À faire** : relecture unique de Codex à la livraison (« pull » à Codex) ; mention de la table `lectures` au registre
+`localStorage` reste un secours (la plus haute des deux valeurs). Tests déclarés par l'auteur : suite PHP, 10 mutations rejetées,
+`e2e/lu-serveur.spec.js` sur les deux applis. **Revue Codex effectuée le 21/11** (`AGORA.md`) : secours local encore commun aux comptes,
+acquittement envoyé malgré un échec de chargement des tickets, validation des dates insuffisante. **À faire par l'auteur** :
+corriger ces écarts sans nouveau tour automatique (règle 58) ; porter le client sur NextStep (`8164798` ne contient pas encore
+`marquerLu`, `luFusion` ou `__lu`), puis vérifier la parité ; mention de la table `lectures` au registre
 RGPD (ateliers-backups, hors de cette session) ; annonce Nouveautés non décidée (sujets et texte à faire approuver). **Pas couvert** : la
 pastille des nouveaux ateliers (20/11) garde sa mémoire dans le `localStorage` (1re visite = point de départ, donc pas de fausse alerte
 après un nettoyage, mais un oubli). À constater par l'utilisateur : nettoyer les données du site sur son téléphone, se reconnecter,
@@ -12,7 +15,7 @@ vérifier qu'aucune annonce ne repasse en « Nouveau » (la première ouverture 
 Toutes les livraisons du 20/11 sont en production (déploiements ✅) ; rien en attente dans le bac à sable ni sur la branche de session.
 En attente de l'utilisateur : essai de la pastille retenue (atelier créé par une collègue, puis rechargement) ; registre RGPD V0.8 à présenter au DPO (écart n° 15).
 Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à
-réappliquer. Revues closes jusqu'à AG-063 : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
+réappliquer. Revues closes jusqu'à AG-065 (AG-064 retiré) : ne pas les relancer d'office. **Autorisations ChatGPT non résolues** :
 confirmation `create_tree` encore vue malgré « Autoriser toutes les actions », cause non établie.
 **AG-065 en production le 20/11** (NEWGEN `4ec17dd`, NextStep `4f5c8d5`, déploiements ✅) : liens Partage47 (5 max, action
 `lienAtelier`), volet en onglets Détail / Reporting (QR en tête, liens, fiche bilan remplissable avant « Réalisé »), QR visible sur
@@ -29,13 +32,13 @@ l'utilisateur le 19/11** (impression des graphes).
 Le 17/11 : coupure d'urgence éprouvée sur la page NextStep du bac à sable ; annonce AGORA « publiée dans <dépôt> » et
 relecteur de l'autre éditeur dans les consignes.
 
-**Passation Codex — 16/11** : aucune nouvelle règle à inscrire ; concision, contrôles proportionnés, revue unique et
-**✅ TÂCHE TERMINÉE** sont déjà couverts par les consignes communes et `AGENTS.md`.
-Les correctifs d'AG-061/062 publiés après les réponses de Codex sont consignés ci-dessous sans nouveau réaudit.
-Aucun test produit relancé pour cette passation documentaire ; ne pas reprendre les scripts temporaires hors Git.
-Le recomptage indépendant du bilan est publié dans le dépôt privé `ateliers-backups` (`9c430cb`) ; ses essais
-PHP/MariaDB sur données fictives et les réserves restent dans AGORA. Les vérifications régulières sont déjà
-programmées : conserver le suivi du bilan ci-dessous et la limite de l'annulation d'AG-062.
+**Clôture Codex — 21/11 (règle 32)** : aucune nouvelle règle convenue non écrite ; règles 73 à 75 de MD-LIB relues,
+déjà inscrites. Trois `main` actualisés, sans reprise de brouillons ni réaudit des blocs clos. Vérification AG-066 :
+3 tests unitaires ciblés et 2 parcours navigateur existants passent sur NEWGEN avec API fictive ; deux défauts client
+rejoués sur les fonctions réelles, validateur de date relu. Pas de test SQL, donnée réelle ou déploiement vérifié
+par Codex ce tour. Aucun code modifié : réponse dans AGORA, passations mises à jour séparément.
+Prochaine action : l'auteur corrige AG-066 et livre le portage NextStep ; conserver le suivi du bilan mensuel
+ci-dessous et la limite de l'annulation d'AG-062. Ne pas reprendre les scripts temporaires hors Git.
 
 **AG-061 et AG-062 clos le 16/11** par l'utilisateur ; bandeau « nouvelle version » **non annoncé** (sa décision du 16/11).
 **AG-062 (16/11)** : 168 durées vides sur 339 remplies à 1 h 30 en base (`durees-vides.yml`, recompté 0), à la demande de
