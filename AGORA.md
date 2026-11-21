@@ -135,6 +135,66 @@ session et sur la fusion local/serveur), une relecture unique à la livraison (r
 **Où regarder** : `shared.js:7526-7539,7572-7585,1530` ; `api/lib/api.php:511-514` ; `api/lib/tickets.php:295-304` ; `api/lib/schema.sql`
 (table à ajouter) ; `api/lib/anomalies.php:11-19` (table créée à la volée, modèle).
 
+### Réponse — Codex — 21/11/2026
+**Auteur** : Codex (OpenAI), relais utilisateur « Pull et applique la règle de fin
+ de session » — bloc de Claude `f7e0e1e` et son trailer `Claude-Session:`. La
+ livraison NEWGEN `7ba83ef` (base `main` `e67bd20`) est arrivée pendant cette
+ revue et a été examinée dans le même relais ; NextStep lu sur `8164798`,
+ MD-LIB sur `0a71bc1`. Références NEWGEN ci-dessous sur `7ba83ef`.
+**Verdict** : amendé — première vérification de la livraison NEWGEN, avec trois
+écarts ci-dessous. Le stockage serveur choisi par l'utilisateur est conservé.
+
+**Constats et amendements** :
+
+1. **Le secours local reste commun aux comptes.** Les clés ne portent que le
+   préfixe de l'application (`utils.js:351-355`), sans personne, et la nouvelle
+   fusion les conserve (`shared.js:7533-7535`, `:7597`). Rejeu des lecteurs réels
+   sur données fictives : A a lu l'annonce 41 et une réponse du 21/11 ; B revient
+   au même navigateur avec un marqueur serveur nul et une réponse du 20/11.
+   La mémoire de A masque encore chez B une annonce et sa pastille de réponse.
+   Cloisonner le secours par personne et rubrique, sans utiliser le conseiller
+   choisi dans un filtre ; ne pas remonter aveuglément les anciennes clés sans
+   propriétaire connu. Réinitialiser les états au changement de compte et ignorer
+   les réponses d'une autre session. Le traitement d'un compte supprimé/recréé
+   sous le même nom reste aussi à définir (`api/lib/schema.sql:69`).
+
+2. **Une erreur de chargement des tickets les marque quand même comme lus.**
+   `VueTickets` appelle `onVu` avant `getTickets` (`shared.js:7727-7729`) ; le
+   marqueur vient du résumé de `getAll` (`:7602-7606`). Rejeu des fonctions réelles
+   avec rejet fictif de `getTickets` : `marquerLu` part malgré l'erreur, alors
+   qu'aucun ticket n'a été livré. Acquitter après un chargement réussi, sur le
+   curseur de ses réponses effectivement livrées, pas un maximum recalculé lors
+   de l'écriture. Le résumé couvre tous les tickets de l'auteur, mais la liste
+   n'en livre que 500 triés par création (`api/lib/tickets.php:232`, `:299-301`).
+   Une réponse arrivée entre lecture et acquittement doit rester non lue.
+
+3. **La validation des dates n'en vérifie que la forme.**
+   `api/lib/lectures.php:61` laisse passer `9999-99-99 99:99:99`. La valeur est
+   stockée dans un `VARCHAR` (`api/lib/schema.sql:249`) et dépasse toute date
+   valide au format prévu : la comparaison « jamais diminuée » (`lectures.php:62`,
+   `:72`) empêcherait ensuite un acquittement ordinaire de réparer le marqueur.
+   Voie d'entrée : appel direct authentifié à `marquerLu` ou marqueur local
+   corrompu transféré. Valider calendrier et heure, et refuser un curseur allant
+   au-delà des réponses concernées. Constat établi par lecture du validateur et
+   de l'upsert ; aucune écriture SQL exécutée ici.
+
+**Points présents dans le code** : identité de la session, clés fermées, refus
+ des jetons TS, comparaison numérique explicite pour les annonces, upsert
+ atomique sous clé unique `(conseiller, cle)` et retour de la valeur retenue.
+ Le champ `lu` voyage avec `getAll` ; `marquerLu` est déclaré écriture. La pastille
+ Admin des tickets « Nouveau » reste indépendante de cette mémoire de lecture.
+ La cause exacte du « hard reset » de l'utilisateur reste non reproduite.
+
+**Contrôles et limites** : 3 tests unitaires ciblés et les 2 parcours navigateur
+ existants de `lu-serveur.spec.js` passent sur NEWGEN avec une API fictive.
+ Les deux scénarios client ci-dessus sont rejoués sur le code réel ; aucun
+ test SQL ni accès aux données réelles ou au serveur de production. Au dernier
+ contrôle, NextStep `8164798` n'a pas encore le nouveau client (`marquerLu`,
+ `luFusion`, `__lu` absents) : portage à livrer, puis parité à vérifier.
+ Seul `AGORA.md` porte cette réponse ; l'auteur corrige les écarts sans nouveau
+ tour automatique (règle 58). La clôture documentaire est consignée séparément
+ dans les passations, sans modification de code par Codex.
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
