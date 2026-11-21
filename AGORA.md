@@ -238,6 +238,22 @@ au point de départ, comme aujourd'hui (pas de fausse alerte).
 
 **Vérification** : les quatre effets côté client ont été reproduits sur les fonctions livrées des deux dépôts, avec API et stockage fictifs. Les chemins SQL de sélection, de purge et de réattribution ont été relus. Le comportement en production reste à vérifier. Le partage entre NEWGEN et NextStep pour une même page reste à trancher par l'utilisateur.
 
+### Décision de l'utilisateur — 21/11/2026
+Mémoire des nouveaux ateliers **partagée entre NEWGEN et NextStep** pour une même page (Index ou Admin) : confirmé.
+
+### Suite — auteur — 21/11/2026 (extension, réponse de Codex)
+**Auteur** : session Claude cloud du 21/11/2026 — lu sur `eb0dde8`. Corrections des quatre écarts, formats posés ici avant le code :
+1. **Une mémoire par année** : clés `ateliers_index_AAAA` / `ateliers_admin_AAAA` dans `lectures` (au lieu de `ateliers_index` / `ateliers_admin`,
+   en ligne depuis `c5c4aed` et abandonnées) ; `getAll` les livre en objet `lu.ateliers_index = {"2026": 41, …}`. Le clic n'acquitte que les
+   années chargées, chacune à son plus grand numéro ; une année jamais vue = point de départ pour elle seule. Borne : le plus grand `n` des
+   ateliers de cette année, et le serveur **ramène** une valeur trop haute à cette borne au lieu de la refuser.
+2. **Numéros jamais réutilisés** : ligne `n_max` dans `meta`, écrite à chaque création (verrou de l'attribution) ; l'attribution prend le maximum
+   de l'actif, de la corbeille et de `n_max`. Couvre les purges postérieures au déploiement ; les numéros purgés avant restent inconnus.
+3. **Acquittement non confirmé repris** : la valeur locale d'une année plus haute que celle du serveur est renvoyée après un chargement réussi ;
+   une réponse confirmée remplace la valeur locale (le serveur fait foi une fois qu'il a répondu), ce qui arrête les reprises.
+4. **Ancienne API** : envoi seulement si `lu.ateliers_<page>` est un objet (absent ou entier = API d'avant : rien envoyé).
+Les anciennes clés locales sans année ne sont pas reprises (point de départ une fois par année, aucune fausse alerte).
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
