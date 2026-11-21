@@ -105,6 +105,36 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
+## AG-066 — Mémoire « déjà lu » côté serveur (Nouveautés et tickets) — ouvert le 21/11/2026
+**Auteur** : session Claude cloud du 21/11/2026 — lu sur `d74a118`
+**Proposition** : la mémoire « annonces lues » (`nouveautes_vues`, `shared.js:7526-7539`) et « réponses de tickets lues »
+(`tickets_lu`, `shared.js:7572-7585`) quitte le `localStorage` pour une table serveur, une valeur par personne et par rubrique.
+Elle voyage dans `getAll` (déjà appelé : aucun appel de plus au démarrage) ; une écriture seule, `marquerLu`, à l'ouverture de
+la rubrique. Le `localStorage` reste un secours ; l'appli retient la valeur la plus haute des deux.
+**Cause constatée par l'utilisateur** : « à chaque hard reset », toutes les annonces redeviennent « Nouveau » et la pastille remonte
+au maximum (capture du 21/11 : 9 annonces « Nouveau » d'affilée). **Non reproduit par l'auteur** : l'hypothèse est que ce geste efface
+les données du site, donc le `localStorage`.
+**Critère déclencheur** : 1 (schéma de données : nouvelle table partagée NEWGEN/NextStep) et 2 (deux options envisagées, une seule
+écrite). Le critère 7 ne s'applique pas : `nouveautesNonVues` (`utils.js`) et le nombre de tickets ne changent pas, seule la source de la
+valeur « déjà lu » change.
+**Contradicteur** : Codex — MD-LIB `agora.md` §12
+**Option retenue par l'utilisateur le 21/11** : côté serveur, les deux rubriques (Nouveautés **et** tickets).
+**Autre option écartée** : rester sur le navigateur (consigne d'éviter de vider les données du site) : elle ne protège pas du geste de l'utilisateur.
+**Ce que ça engage** : une table `lectures (conseiller, cle, valeur)`, clés `nouveautes_index`, `nouveautes_admin`, `tickets` ; valeur
+**jamais diminuée** par l'API (entier pour les annonces, date « AAAA-MM-JJ HH:MM:SS » pour les tickets) ; identité prise dans la
+session, jamais dans les paramètres ; nouvelle action `marquerLu` à déclarer écriture (jamais doublée, `GAS_ACTIONS_ECRITURE`).
+Un compte dont le nom change ou qui est supprimé laisserait des lignes orphelines. Pas de migration poussée au démarrage : la valeur
+locale d'un appareil n'est envoyée qu'à la première ouverture de la rubrique.
+**Non vérifié par l'auteur** : (1) que le « hard reset » de l'utilisateur vide bien le `localStorage` ; (2) le comportement de
+`INSERT … ON DUPLICATE KEY UPDATE` avec comparaison sur la base d'Alwaysdata (MySQL, pas seulement MariaDB local) ; (3) ce que devient
+une ligne quand un compte est renommé ou supprimé, et la mention à ajouter au registre RGPD ; (4) deux appareils qui marquent en même
+temps ; (5) l'effet sur les pages ouvertes avant le déploiement (elles ignoreront le champ `lu` de `getAll`) ; (6) NextStep et NEWGEN
+partagent la clé `nouveautes_index` : si leurs numéros d'annonces divergeaient, l'une masquerait l'autre.
+**Si personne ne répond, je fais quoi ?** Je livre testé (mutations sur la comparaison « jamais diminuée », sur l'identité prise dans la
+session et sur la fusion local/serveur), une relecture unique à la livraison (règle 58), et l'utilisateur tranche.
+**Où regarder** : `shared.js:7526-7539,7572-7585,1530` ; `api/lib/api.php:511-514` ; `api/lib/tickets.php:295-304` ; `api/lib/schema.sql`
+(table à ajouter) ; `api/lib/anomalies.php:11-19` (table créée à la volée, modèle).
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
