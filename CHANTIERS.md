@@ -9,9 +9,11 @@ rallumait toutes les annonces). Table `lectures`, action `marquerLu`, champ `lu`
 de la table `lectures` au registre RGPD (ateliers-backups, hors de cette session) ; annonce Nouveautés non décidée (sujets et texte à faire
 approuver) ; AG-066 à clore par l'utilisateur. **À savoir** : après la mise en ligne, les pastilles se rallument une fois pour chacun
 (anciennes clés locales non reprises) jusqu'à la première ouverture de Nouveautés. **Extension (21/11, demande de l'utilisateur)** : la pastille des
-nouveaux ateliers garde aussi sa mémoire au serveur (clés `ateliers_index`/`ateliers_admin` de `lectures`, numéro borné au plus grand `n`) ;
-1re visite (ni navigateur ni serveur) = point de départ, noté au serveur. Mémoire **partagée entre NEWGEN et NextStep** par page : choix
-fait par défaut, à confirmer par l'utilisateur (elle était distincte par appli dans le navigateur). À constater
+nouveaux ateliers garde aussi sa mémoire au serveur, **une par année** (`ateliers_index_AAAA` / `ateliers_admin_AAAA`), **partagée entre
+NEWGEN et NextStep** par page (confirmé par l'utilisateur le 21/11). Revue Codex (4 écarts) corrigée : années séparées, numéros jamais
+réutilisés après purge (`meta.n_max`), acquittement en échec repris au chargement suivant, rien envoyé à une API d'avant. **Pas couvert** :
+les numéros purgés avant le 21/11 restent inconnus de `n_max`.
+À constater
 par l'utilisateur : nettoyer les données du site sur son téléphone, se reconnecter, vérifier qu'aucune annonce ne repasse en « Nouveau ».
 Toutes les livraisons du 20/11 sont en production (déploiements ✅) ; rien en attente dans le bac à sable ni sur la branche de session.
 En attente de l'utilisateur : essai de la pastille retenue (atelier créé par une collègue, puis rechargement) ; registre RGPD V0.8 à présenter au DPO (écart n° 15).

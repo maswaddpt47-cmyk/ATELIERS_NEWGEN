@@ -253,6 +253,9 @@ Mémoire des nouveaux ateliers **partagée entre NEWGEN et NextStep** pour une m
    une réponse confirmée remplace la valeur locale (le serveur fait foi une fois qu'il a répondu), ce qui arrête les reprises.
 4. **Ancienne API** : envoi seulement si `lu.ateliers_<page>` est un objet (absent ou entier = API d'avant : rien envoyé).
 Les anciennes clés locales sans année ne sont pas reprises (point de départ une fois par année, aucune fausse alerte).
+**Preuves** : suite PHP complète verte (`n_max` après purge, plafonnement, année vide, clés refusées), `e2e/lu-serveur.spec.js` à 11 parcours
+sur NEWGEN et NextStep (années, reprise, valeur ramenée, API d'avant), 7 mutations rejetées (une seule année, pas de reprise, confirmation ignorée,
+API d'avant, `n_max` retiré, pas de plafond, année ignorée).
 
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
