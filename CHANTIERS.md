@@ -1,6 +1,14 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **21/11/2026, 00:50**, bases `main` : NEWGEN `ad75f37`, NextStep `e11d6c1`, MD-LIB `0a71bc1` (clôture de session, règles 74-75).
+État au **21/11/2026, 10:05**, bases `main` : NEWGEN `d74a118` + AG-066 (bloc `f7e0e1e`, livraison ci-dessous), NextStep `8164798`, MD-LIB `0a71bc1`.
+**AG-066 (21/11)** : la mémoire « déjà lu » des Nouveautés et des tickets passe côté serveur (demande de l'utilisateur : un « hard reset »
+rallumait toutes les annonces). Table `lectures`, action `marquerLu`, champ `lu` dans `getAll` ; valeur jamais diminuée ; le
+`localStorage` reste un secours (la plus haute des deux valeurs). Testé : suite PHP, 10 mutations rejetées, `e2e/lu-serveur.spec.js` sur
+les deux applis. **À faire** : relecture unique de Codex à la livraison (« pull » à Codex) ; mention de la table `lectures` au registre
+RGPD (ateliers-backups, hors de cette session) ; annonce Nouveautés non décidée (sujets et texte à faire approuver). **Pas couvert** : la
+pastille des nouveaux ateliers (20/11) garde sa mémoire dans le `localStorage` (1re visite = point de départ, donc pas de fausse alerte
+après un nettoyage, mais un oubli). À constater par l'utilisateur : nettoyer les données du site sur son téléphone, se reconnecter,
+vérifier qu'aucune annonce ne repasse en « Nouveau » (la première ouverture de Nouveautés après la mise en ligne les enregistre).
 Toutes les livraisons du 20/11 sont en production (déploiements ✅) ; rien en attente dans le bac à sable ni sur la branche de session.
 En attente de l'utilisateur : essai de la pastille retenue (atelier créé par une collègue, puis rechargement) ; registre RGPD V0.8 à présenter au DPO (écart n° 15).
 Reprise : actualiser les deux `main` (`fetch` + `merge --ff-only`), relire les consignes et ce fichier ; aucun brouillon à
