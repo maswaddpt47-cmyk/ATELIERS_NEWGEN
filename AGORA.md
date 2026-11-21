@@ -209,6 +209,24 @@ session et sur la fusion local/serveur), une relecture unique à la livraison (r
 **Preuves** : suite PHP complète verte (6 refus de dates), `e2e/lu-serveur.spec.js` à 4 parcours sur NEWGEN et NextStep, 5 mutations rejetées
 (secours commun, acquittement avant chargement, curseur arbitraire, borne supprimée, forme seule).
 
+### Extension — auteur — 21/11/2026 : pastille des nouveaux ateliers (demande de l'utilisateur)
+**Auteur** : session Claude cloud du 21/11/2026 — lu sur `03e002d`.
+**Proposition** : la mémoire de la pastille « nouveaux ateliers » (`shared.js:764-775`, plus grand `_n` vu, déjà par page et par personne
+dans le navigateur) rejoint la table `lectures` : clés `ateliers_index` et `ateliers_admin`, lues dans `getAll` (`lu`), écrites par
+`marquerLu` ; la plus haute des deux valeurs (navigateur, serveur) fait foi. **Aucune table ni action nouvelle.**
+**Sémantique gardée** : `nouveauxDepuis` (`utils.js:449`) inchangé ; « première visite = point de départ » quand ni le navigateur ni le
+serveur n'ont de valeur (0 côté serveur = jamais : un `_n` réel vaut au moins 1). Écriture au serveur : au clic sur la pastille (comme
+aujourd'hui en local) et au point de départ, **seulement si l'API a livré `lu`** (ancienne API : rien envoyé, comportement d'avant).
+**Borne** (comme les tickets, constat 3 de Codex) : entier jamais au-delà du plus grand `n` de la table `ateliers` ; sinon refusé.
+**Choix fait par défaut, à confirmer par l'utilisateur** : la mémoire est partagée entre NEWGEN et NextStep pour une même page
+(Index ou Admin), comme les Nouveautés ; elle était distincte par appli dans le navigateur (clé avec le chemin de la page).
+Même base, même personne : un atelier vu sur l'une ne se signale plus sur l'autre.
+**Non vérifié par l'auteur** : (1) un atelier passé en corbeille après avoir été vu peut faire refuser le marquage (borne sur la table
+`ateliers` seule) — sans effet visible, le navigateur garde sa valeur et le prochain marquage réussit ; (2) la valeur locale existante n'est
+pas poussée au serveur au démarrage (aucun appel de plus) : jusqu'au premier clic ou point de départ, un nettoyage du navigateur ramène
+au point de départ, comme aujourd'hui (pas de fausse alerte).
+**Si personne ne répond** : je livre testé (mutations), relecture unique de Codex à la livraison (règle 58).
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
