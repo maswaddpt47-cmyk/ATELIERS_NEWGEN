@@ -24,6 +24,7 @@ require_once __DIR__ . '/tickets.php';
 require_once __DIR__ . '/avis.php';
 require_once __DIR__ . '/ts.php';
 require_once __DIR__ . '/anomalies.php';
+require_once __DIR__ . '/lectures.php';
 require_once __DIR__ . '/vacances.php';
 
 const API_JETON_DUREE_S = 6 * 3600;          // comme TOKEN_TTL_SECONDS du GAS
@@ -37,7 +38,7 @@ define('RAPPELS_FICHE_DEPUIS', getenv('ATELIERS_RAPPELS_FICHE_DEPUIS') ?: '2026-
 // 24/09/2026. Purge à chaque connexion réussie (pas besoin de tâche planifiée).
 const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
-const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'modifierTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier', 'bilanAvis', 'avisParAtelier', 'lienAtelier'];
+const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'modifierTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier', 'bilanAvis', 'avisParAtelier', 'lienAtelier', 'marquerLu'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
 const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'purgerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'envoyerLienReinit', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket', 'avisAtelier', 'supprimerAvis', 'tsListe', 'tsStats', 'tsCreerCompte', 'tsReinitMdp', 'tsActiver', 'tsSupprimer', 'getAnomaliesValidees', 'validerAnomalie', 'annulerAnomalie'];
 // Seules actions d'un jeton 'ts' (page des travailleurs sociaux, AG-042).
@@ -185,6 +186,7 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'saveEntry':       return action_save_entry($db, $p, $session['conseiller']);
         case 'saveMany':        return action_save_many($db, $p, $session['conseiller']);
         case 'lienAtelier':     return action_lien_atelier($db, $p, $session['conseiller']);
+        case 'marquerLu':       return action_marquer_lu($db, $p, $session['conseiller']);
         case 'delete':          return action_delete($db, $p, $session['conseiller']);
         case 'verifierIds':     return action_verifier_ids($db, $p);
         case 'selfSetPassword': return action_self_set_password($db, $p, $session);
@@ -511,6 +513,9 @@ function action_get_all(PDO $db, array $p, array $session): array
     if (isset($p['years'])) $r['years'] = $annees;
     $tk = tickets_resume($db, $session['conseiller']);
     if ($tk !== null) $r['tickets'] = $tk;
+    // Mémoire « déjà lu » de la personne (AG-066) : jamais bloquant pour getAll.
+    $lu = lectures_lire($db, $session['conseiller']);
+    if ($lu !== null) $r['lu'] = $lu;
     return $r;
 }
 

@@ -240,3 +240,13 @@ CREATE TABLE IF NOT EXISTS anomalies_validees (
   par        VARCHAR(100) NOT NULL DEFAULT '',
   PRIMARY KEY (atelier_id, categorie)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Mémoire « déjà lu » par personne (AG-066) : plus grand numéro de Nouveautés lu (nouveautes_index,
+-- nouveautes_admin) et date de la dernière réponse de ticket lue (tickets). Ne diminue jamais.
+CREATE TABLE IF NOT EXISTS lectures (
+  conseiller VARCHAR(100) NOT NULL,
+  cle        VARCHAR(30)  NOT NULL,
+  valeur     VARCHAR(30)  NOT NULL,
+  maj        DATETIME     NOT NULL,
+  PRIMARY KEY (conseiller, cle)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

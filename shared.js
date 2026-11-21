@@ -856,7 +856,9 @@ const GAS_ACTIONS_ECRITURE = new Set([
   // Comptes de la page des travailleurs sociaux (AG-042) : jamais doublés.
   'tsCreerCompte','tsReinitMdp','tsActiver','tsSupprimer',
   // Liens Partage47 (AG-065) : rejouable côté serveur (déjà présent / déjà retiré), jamais doublé en vol.
-  'lienAtelier'
+  'lienAtelier',
+  // Mémoire « déjà lu » (AG-066) : rejouable (ne diminue jamais), mais jamais doublée en vol.
+  'marquerLu'
 ]);
 const GAS_HEDGE_MS            = 7000;   // délai avant de doubler une lecture
 const GAS_TENTATIVES_LECTURE  = 3;
@@ -1528,6 +1530,8 @@ window.authToken = {
       .then(data=>{ entry.inflight=false; entry.ts=Date.now();
         // Pastilles des tickets (AG-016) : le résumé voyage dans getAll.
         if(data && data.tickets){ window.__ticketsResume=data.tickets; try{window.dispatchEvent(new Event('ateliers:tickets'));}catch(_){} }
+        // Mémoire « déjà lu » de la personne (AG-066) : voyage dans getAll, survit au nettoyage du navigateur.
+        if(data && data.lu){ window.__lu=data.lu; try{window.dispatchEvent(new Event('ateliers:lu'));}catch(_){} }
         // Qui recevra le mail de rappel d'une fiche vide (fenêtre « fiche bilan », 27/10/2026).
         if(data && 'rappelsFiches' in data) window.__rappelsFiches=data.rappelsFiches;
         return data; })
@@ -7523,18 +7527,36 @@ function PeriodiciteCycle({entries,ac,acLight,onGenerer,onPreparation}){
   );
 }
 
-function lireNouveautesVues(){try{return parseInt(localStorage.getItem(lsKey('nouveautes_vues')))||0;}catch(_){return 0;}}
+// AG-066 (21/11/2026) : le serveur garde la mémoire par personne (getAll → window.__lu), le navigateur reste
+// un secours ; la valeur la plus haute des deux fait foi. Vider les données du site n'efface plus rien.
+function cleLuNouveautes(){return window.location.pathname.indexOf('admin.html')>-1?'nouveautes_admin':'nouveautes_index';}
+function lireNouveautesVues(){
+  let local=0;try{local=parseInt(localStorage.getItem(lsKey('nouveautes_vues')))||0;}catch(_){}
+  return luFusion(local,window.__lu&&window.__lu[cleLuNouveautes()]);
+}
+// Écrit au serveur seulement ce qu'il ne sait pas déjà ; un échec n'est pas bloquant (le secours local
+// reste), et la prochaine ouverture de la rubrique réessaie puisque la valeur connue n'a pas bougé.
+function envoyerLu(cle,valeur){
+  const connue=window.__lu&&window.__lu[cle];
+  if(!luAEnvoyer(valeur,connue))return;
+  Promise.resolve().then(()=>window.apiFetch('marquerLu',{cle,valeur:String(valeur)})).then(r=>{
+    if(r&&r.ok&&r.lu){window.__lu=r.lu;try{window.dispatchEvent(new Event('ateliers:lu'));}catch(_){}}
+  }).catch(()=>{});
+}
 // Annonces de la page courante : celles marquées `admin` seulement sur admin.html.
 function nouveautesDeLaPage(){return nouveautesPourPage(NOUVEAUTES,window.location.pathname.indexOf('admin.html')>-1);}
 // [nombre non vues, marquer tout comme vu]
 function useNouveautes(){
   const[vu,setVu]=React.useState(lireNouveautesVues);
+  // getAll arrive après le premier rendu : la mémoire du serveur remet la pastille à jour.
+  React.useEffect(()=>{const f=()=>setVu(lireNouveautesVues());window.addEventListener('ateliers:lu',f);return()=>window.removeEventListener('ateliers:lu',f);},[]);
   const marquer=React.useCallback(()=>{
     // Plus grand numéro de CETTE page : une annonce Admin pas encore ouverte
     // reste « non lue » sur l'Admin même si Index a été consulté avant.
     const max=nouveautesDeLaPage().reduce((m,n)=>Math.max(m,n.id),0);
     try{localStorage.setItem(lsKey('nouveautes_vues'),String(max));}catch(_){}
     setVu(max);
+    envoyerLu(cleLuNouveautes(),max);
   },[]);
   return[nouveautesNonVues(nouveautesDeLaPage(),vu),marquer];
 }
@@ -7572,12 +7594,16 @@ const ticketClos=t=>t.statut==='Résolu'||t.statut==='Non retenu';
 function useTicketsPastille(admin){
   const lire=()=>window.__ticketsResume||null;
   const[res,setRes]=React.useState(lire);
-  const[lu,setLu]=React.useState(()=>{try{return localStorage.getItem(lsKey('tickets_lu'))||'';}catch(_){return '';}});
+  const lireLu=()=>{let l='';try{l=localStorage.getItem(lsKey('tickets_lu'))||'';}catch(_){}return luFusionDate(l,window.__lu&&window.__lu.tickets);};
+  const[lu,setLu]=React.useState(lireLu);
   React.useEffect(()=>{const f=()=>setRes(lire());window.addEventListener('ateliers:tickets',f);return()=>window.removeEventListener('ateliers:tickets',f);},[]);
+  // AG-066 : même mémoire serveur que les Nouveautés (la plus récente des deux fait foi).
+  React.useEffect(()=>{const f=()=>setLu(lireLu());window.addEventListener('ateliers:lu',f);return()=>window.removeEventListener('ateliers:lu',f);},[]);
   const marquer=React.useCallback(()=>{
     const d=(window.__ticketsResume&&window.__ticketsResume.derniere_reponse)||'';
     try{localStorage.setItem(lsKey('tickets_lu'),d);}catch(_){}
     setLu(d);
+    envoyerLu('tickets',d);
   },[]);
   if(!res)return[0,marquer];
   if(admin)return[res.nouveaux||0,marquer];

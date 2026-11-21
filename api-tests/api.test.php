@@ -176,7 +176,7 @@ $r = appel(['action' => 'getAll', 'year' => '2026', 'token' => $admin['token']])
 verifier(($r['ok'] ?? null) === false, 'jeton dans l\'URL : refusé');
 $r = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $user['token']]);
 verifier($r['ok'] === true, 'jeton dans le corps : accepté');
-verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'stockOrdinateurs', 'materielsCaches', 'conseillers_inactifs', 'rappelsFiches', 'vacances', 'tickets'], 'clés de la réponse conseiller = GAS NEWGEN sans emails : ' . implode(',', array_keys($r)));
+verifier(array_keys($r) === ['ok', 'entries', 'lists', 'visibility', 'conseiller_colors', 'stockOrdinateurs', 'materielsCaches', 'conseillers_inactifs', 'rappelsFiches', 'vacances', 'tickets', 'lu'], 'clés de la réponse conseiller = GAS NEWGEN sans emails : ' . implode(',', array_keys($r)));
 // RGPD (25/09/2026) : les adresses mail ne vont qu'à l'Admin.
 verifier(!str_contains(json_encode($r), 'nouveau.venu@example.org'), '[RGPD-15] getAll conseiller : aucune adresse mail');
 $ra = appel(['action' => 'getAll', 'year' => '2026'], ['token' => $admin['token']]);
@@ -697,6 +697,44 @@ verifier(($r['ok'] ?? false) && (int) $db->query("SELECT COUNT(*) FROM tickets W
     && $db->query("SELECT doublon_de FROM tickets WHERE id = 'tk_essai_3'")->fetchColumn() === ''
     && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'supprimerTicket' AND ref = 'tk_essai_4'")->fetchColumn() === 1, 'suppression : ticket effacé, renvoi « doublon » vidé, journalisée');
 verifier(isset(appel(['action' => 'getAll'], $A)['tickets']['nouveaux']), 'getAll : résumé des tickets pour les pastilles');
+
+// Mémoire « déjà lu » côté serveur (AG-066) : une valeur par personne et par rubrique, jamais diminuée.
+echo "API — mémoire « déjà lu » (AG-066)\n";
+$U = ['token' => $user['token']];
+$db->exec('DELETE FROM lectures');
+$lu0 = appel(['action' => 'getAll'], $A)['lu'] ?? null;
+verifier($lu0 === ['nouveautes_index' => 0, 'nouveautes_admin' => 0, 'tickets' => ''], 'getAll : mémoire vide au départ (zéros, texte vide)');
+verifier((appel(['action' => 'marquerLu'], ['cle' => 'nouveautes_index', 'valeur' => '9'])['auth'] ?? false) === true, 'marquerLu sans jeton : refusé');
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'nouveautes_index', 'valeur' => '9']);
+verifier(($r['ok'] ?? false) && $r['lu']['nouveautes_index'] === 9, 'marquerLu : valeur enregistrée et renvoyée');
+// 10 > 9 : une comparaison de textes dirait le contraire (« 10 » < « 9 ») ; la comparaison est numérique.
+$db->exec("UPDATE lectures SET maj = '2026-01-01 00:00:00' WHERE cle = 'nouveautes_index'");
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'nouveautes_index', 'valeur' => '10']);
+verifier($r['lu']['nouveautes_index'] === 10 && $db->query("SELECT maj FROM lectures WHERE cle = 'nouveautes_index'")->fetchColumn() !== '2026-01-01 00:00:00', 'valeur plus haute (10 > 9, comparaison numérique) : enregistrée, date mise à jour');
+$db->exec("UPDATE lectures SET maj = '2026-01-01 00:00:00' WHERE cle = 'nouveautes_index'");
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'nouveautes_index', 'valeur' => '4']);
+verifier(($r['ok'] ?? false) && $r['lu']['nouveautes_index'] === 10 && $db->query("SELECT maj FROM lectures WHERE cle = 'nouveautes_index'")->fetchColumn() === '2026-01-01 00:00:00', 'valeur plus basse : ignorée, ni la valeur ni la date ne bougent');
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'nouveautes_index', 'valeur' => '10']);
+verifier(($r['ok'] ?? false) && $r['lu']['nouveautes_index'] === 10, 'valeur égale : rien ne change');
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'tickets', 'valeur' => '2026-11-20 10:00:00']);
+verifier(($r['ok'] ?? false) && $r['lu']['tickets'] === '2026-11-20 10:00:00', 'tickets : date enregistrée');
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'tickets', 'valeur' => '2026-11-19 23:59:59']);
+verifier($r['lu']['tickets'] === '2026-11-20 10:00:00', 'tickets : date plus ancienne ignorée');
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'tickets', 'valeur' => '2026-11-21 08:00:00']);
+verifier($r['lu']['tickets'] === '2026-11-21 08:00:00', 'tickets : date plus récente enregistrée');
+// Une autre personne a sa propre mémoire ; l'identité vient de la session, pas des paramètres.
+$luU = appel(['action' => 'getAll'], $U)['lu'] ?? null;
+verifier($luU === ['nouveautes_index' => 0, 'nouveautes_admin' => 0, 'tickets' => ''], 'une autre personne : sa mémoire est vide, celle de l\'Admin ne la touche pas');
+appel(['action' => 'marquerLu'], $A + ['cle' => 'nouveautes_admin', 'valeur' => '7', 'conseiller' => 'Nouveau Venu']);
+verifier((int) $db->query("SELECT COUNT(*) FROM lectures WHERE conseiller = 'Nouveau Venu'")->fetchColumn() === 0
+    && (int) $db->query("SELECT COUNT(*) FROM lectures WHERE conseiller = 'Conseiller Test' AND cle = 'nouveautes_admin'")->fetchColumn() === 1, 'paramètre « conseiller » ignoré : écrit au nom de la session');
+verifier((appel(['action' => 'marquerLu'], $U + ['cle' => 'nouveautes_index', 'valeur' => '3'])['lu']['nouveautes_index'] ?? null) === 3
+    && (appel(['action' => 'getAll'], $A)['lu']['nouveautes_index'] ?? null) === 10, 'deux personnes : chacune sa valeur');
+foreach ([['inconnue', '5'], ['nouveautes_index', 'abc'], ['nouveautes_index', '-1'], ['nouveautes_index', '1234567'], ['nouveautes_index', ''], ['tickets', '2026-11-21'], ['tickets', '5']] as [$cle, $val]) {
+    $r = appel(['action' => 'marquerLu'], $A + ['cle' => $cle, 'valeur' => $val]);
+    verifier(($r['ok'] ?? null) === false, "marquerLu refusé : $cle = « $val »");
+}
+$db->exec('DELETE FROM lectures');   // hors des comptages qui suivent
 $db->exec("UPDATE tickets SET statut = 'Résolu', reponse = 'Fait.', repondu_par = 'Conseiller Test', clos_le = '" . date('Y-m-d H:i:s', strtotime('-13 months')) . "' WHERE id = 'tk_essai_1'");
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
 $t1 = $db->query("SELECT auteur, repondu_par, description FROM tickets WHERE id = 'tk_essai_1'")->fetch(PDO::FETCH_ASSOC);
