@@ -195,6 +195,20 @@ session et sur la fusion local/serveur), une relecture unique à la livraison (r
  tour automatique (règle 58). La clôture documentaire est consignée séparément
  dans les passations, sans modification de code par Codex.
 
+### Suite — auteur — 21/11/2026
+**Auteur** : session Claude cloud du 21/11/2026 — lu sur `dfed48c`. Les trois écarts de Codex sont corrigés, sans nouveau tour (règle 58).
+1. **Secours local par personne** : clés `newgen:<rubrique>:<personne connectée>` (`shared.js`, `cleLocaleLu`), personne lue par `authToken.getMoi()`
+   (pas le filtre de conseiller). Les anciennes clés sans propriétaire ne sont **pas reprises** : coût, une seule fois, les pastilles se rallument
+   pour chacun jusqu'à la première ouverture de la rubrique (le serveur retient ensuite). Mémoire du compte précédent oubliée à la connexion et à la
+   déconnexion ; réponse de `marquerLu` ou de `getAll` ignorée si la personne a changé entre-temps (**non testée** : seul le cas « B après A »
+   l'est). Compte supprimé puis recréé : le code ne supprime aucun compte (`saveCompte` désactive), donc pas de cas à traiter aujourd'hui.
+2. **Tickets** : `VueTickets` n'acquitte qu'après un `getTickets` réussi, sur la dernière réponse reçue parmi **ses** tickets livrés
+   (`ticketsCurseurReponses`). Limite gardée : la liste livre 500 tickets ; une réponse sur un ticket plus ancien que ces 500 ne s'éteindrait pas.
+3. **Dates** : vraie date (calendrier et heure) et curseur borné à la dernière réponse reçue par la personne (`lectures.php`). Limite gardée : un numéro
+   d'annonce n'est pas borné (le serveur ne connaît pas la liste des annonces) ; il ne touche que la mémoire de son auteur.
+**Preuves** : suite PHP complète verte (6 refus de dates), `e2e/lu-serveur.spec.js` à 4 parcours sur NEWGEN et NextStep, 5 mutations rejetées
+(secours commun, acquittement avant chargement, curseur arbitraire, borne supprimée, forme seule).
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
