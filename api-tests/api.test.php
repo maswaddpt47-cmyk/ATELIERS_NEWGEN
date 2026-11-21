@@ -703,7 +703,7 @@ echo "API — mémoire « déjà lu » (AG-066)\n";
 $U = ['token' => $user['token']];
 $db->exec('DELETE FROM lectures');
 $lu0 = appel(['action' => 'getAll'], $A)['lu'] ?? null;
-verifier($lu0 === ['nouveautes_index' => 0, 'nouveautes_admin' => 0, 'tickets' => ''], 'getAll : mémoire vide au départ (zéros, texte vide)');
+verifier($lu0 === ['nouveautes_index' => 0, 'nouveautes_admin' => 0, 'tickets' => '', 'ateliers_index' => 0, 'ateliers_admin' => 0], 'getAll : mémoire vide au départ (zéros, texte vide)');
 verifier((appel(['action' => 'marquerLu'], ['cle' => 'nouveautes_index', 'valeur' => '9'])['auth'] ?? false) === true, 'marquerLu sans jeton : refusé');
 $r = appel(['action' => 'marquerLu'], $A + ['cle' => 'nouveautes_index', 'valeur' => '9']);
 verifier(($r['ok'] ?? false) && $r['lu']['nouveautes_index'] === 9, 'marquerLu : valeur enregistrée et renvoyée');
@@ -726,12 +726,23 @@ $r = appel(['action' => 'marquerLu'], $A + ['cle' => 'tickets', 'valeur' => '202
 verifier($r['lu']['tickets'] === '2026-11-21 08:00:00', 'tickets : date plus récente enregistrée (égale à la dernière réponse reçue)');
 // Une autre personne a sa propre mémoire ; l'identité vient de la session, pas des paramètres.
 $luU = appel(['action' => 'getAll'], $U)['lu'] ?? null;
-verifier($luU === ['nouveautes_index' => 0, 'nouveautes_admin' => 0, 'tickets' => ''], 'une autre personne : sa mémoire est vide, celle de l\'Admin ne la touche pas');
+verifier($luU === ['nouveautes_index' => 0, 'nouveautes_admin' => 0, 'tickets' => '', 'ateliers_index' => 0, 'ateliers_admin' => 0], 'une autre personne : sa mémoire est vide, celle de l\'Admin ne la touche pas');
 appel(['action' => 'marquerLu'], $A + ['cle' => 'nouveautes_admin', 'valeur' => '7', 'conseiller' => 'Nouveau Venu']);
 verifier((int) $db->query("SELECT COUNT(*) FROM lectures WHERE conseiller = 'Nouveau Venu'")->fetchColumn() === 0
     && (int) $db->query("SELECT COUNT(*) FROM lectures WHERE conseiller = 'Conseiller Test' AND cle = 'nouveautes_admin'")->fetchColumn() === 1, 'paramètre « conseiller » ignoré : écrit au nom de la session');
 verifier((appel(['action' => 'marquerLu'], $U + ['cle' => 'nouveautes_index', 'valeur' => '3'])['lu']['nouveautes_index'] ?? null) === 3
     && (appel(['action' => 'getAll'], $A)['lu']['nouveautes_index'] ?? null) === 10, 'deux personnes : chacune sa valeur');
+// Pastille « nouveaux ateliers » (extension AG-066) : numéro jamais diminué, borné au plus grand n des ateliers.
+$maxN = (int) $db->query('SELECT COALESCE(MAX(n), 0) FROM ateliers')->fetchColumn();
+verifier($maxN >= 2, "ateliers de test numérotés (plus grand n = $maxN)");
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_index', 'valeur' => (string) ($maxN - 1)]);
+verifier(($r['ok'] ?? false) && $r['lu']['ateliers_index'] === $maxN - 1, 'ateliers : numéro existant enregistré');
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_index', 'valeur' => '1']);
+verifier(($r['ok'] ?? false) && $r['lu']['ateliers_index'] === $maxN - 1, 'ateliers : numéro plus bas ignoré');
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_admin', 'valeur' => (string) $maxN]);
+verifier(($r['ok'] ?? false) && $r['lu']['ateliers_admin'] === $maxN && $r['lu']['ateliers_index'] === $maxN - 1, 'ateliers : plus grand numéro accepté, Index et Admin séparés');
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_index', 'valeur' => (string) ($maxN + 1)]);
+verifier(($r['ok'] ?? null) === false && (appel(['action' => 'getAll'], $A)['lu']['ateliers_index'] ?? null) === $maxN - 1, 'ateliers : numéro au-delà du plus grand existant refusé, mémoire intacte');
 // Codex (AG-066) : une vraie date, et jamais au-delà de la dernière réponse reçue par la personne.
 foreach ([['9999-99-99 99:99:99'], ['2026-02-30 10:00:00'], ['2026-11-21 24:00:00'], ['2026-11-21 08:00:01'], ['2099-01-01 00:00:00']] as [$val]) {
     $r = appel(['action' => 'marquerLu'], $A + ['cle' => 'tickets', 'valeur' => $val]);

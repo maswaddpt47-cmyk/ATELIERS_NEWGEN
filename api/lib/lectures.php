@@ -6,6 +6,7 @@
 // effaçait et toutes les annonces redevenaient « Nouveau ». Une ligne par
 // (personne connectée, rubrique), écrite de façon atomique.
 //   nouveautes_index, nouveautes_admin : plus grand numéro d'annonce lu (entier) ;
+//   ateliers_index, ateliers_admin : plus grand numéro d'atelier (_n) signalé (entier, borné aux ateliers existants) ;
 //   tickets : date « AAAA-MM-JJ HH:MM:SS » de la dernière réponse lue (vraie date, jamais au-delà
 //   de la dernière réponse reçue par la personne).
 // La valeur ne diminue JAMAIS : un appareil en retard ou un onglet ancien ne
@@ -15,7 +16,8 @@
 
 require_once __DIR__ . '/base.php';
 
-const LECTURES_CLES = ['nouveautes_index', 'nouveautes_admin', 'tickets'];
+// ateliers_* : plus grand numéro d'atelier (_n) déjà signalé par la pastille « nouveaux ateliers » (extension du 21/11/2026).
+const LECTURES_CLES = ['nouveautes_index', 'nouveautes_admin', 'tickets', 'ateliers_index', 'ateliers_admin'];
 
 function lectures_schema(PDO $db): void
 {
@@ -47,6 +49,8 @@ function lectures_lire(PDO $db, string $conseiller): ?array
             'nouveautes_index' => (int) ($l['nouveautes_index'] ?? 0),
             'nouveautes_admin' => (int) ($l['nouveautes_admin'] ?? 0),
             'tickets' => (string) ($l['tickets'] ?? ''),
+            'ateliers_index' => (int) ($l['ateliers_index'] ?? 0),
+            'ateliers_admin' => (int) ($l['ateliers_admin'] ?? 0),
         ];
     } catch (Throwable) {
         return null;
@@ -73,6 +77,11 @@ function action_marquer_lu(PDO $db, array $p, string $conseiller): array
         $plus = 'VALUES(valeur) > valeur';   // même gabarit : l'ordre des textes est l'ordre des dates
     } else {
         if (!preg_match('/^\d{1,6}$/', $val)) return ['ok' => false, 'error' => 'Numéro invalide'];
+        // Numéro d'atelier : jamais au-delà du plus grand existant, sinon il masquerait tous les ateliers à venir.
+        if (str_starts_with($cle, 'ateliers_')) {
+            $max = (int) $db->query('SELECT COALESCE(MAX(n), 0) FROM ateliers')->fetchColumn();
+            if ((int) $val > $max) return ['ok' => false, 'error' => 'Numéro au-delà des ateliers existants'];
+        }
         $plus = 'CAST(VALUES(valeur) AS UNSIGNED) > CAST(valeur AS UNSIGNED)';
     }
     lectures_schema($db);
