@@ -716,12 +716,14 @@ $r = appel(['action' => 'marquerLu'], $A + ['cle' => 'nouveautes_index', 'valeur
 verifier(($r['ok'] ?? false) && $r['lu']['nouveautes_index'] === 10 && $db->query("SELECT maj FROM lectures WHERE cle = 'nouveautes_index'")->fetchColumn() === '2026-01-01 00:00:00', 'valeur plus basse : ignorée, ni la valeur ni la date ne bougent');
 $r = appel(['action' => 'marquerLu'], $A + ['cle' => 'nouveautes_index', 'valeur' => '10']);
 verifier(($r['ok'] ?? false) && $r['lu']['nouveautes_index'] === 10, 'valeur égale : rien ne change');
+// Un ticket de la personne, avec une réponse reçue le 21/11 à 08:00 : le curseur ne peut pas la dépasser.
+$db->exec("INSERT INTO tickets (id, cree_le, auteur, type, titre, description, statut, reponse, repondu_le, repondu_par) VALUES ('tk_lu_1', '2026-11-10 09:00:00', 'Conseiller Test', 'Question', 'Essai lu', 'x', 'Vu', 'Fait.', '2026-11-21 08:00:00', 'Autre')");
 $r = appel(['action' => 'marquerLu'], $A + ['cle' => 'tickets', 'valeur' => '2026-11-20 10:00:00']);
 verifier(($r['ok'] ?? false) && $r['lu']['tickets'] === '2026-11-20 10:00:00', 'tickets : date enregistrée');
 $r = appel(['action' => 'marquerLu'], $A + ['cle' => 'tickets', 'valeur' => '2026-11-19 23:59:59']);
 verifier($r['lu']['tickets'] === '2026-11-20 10:00:00', 'tickets : date plus ancienne ignorée');
 $r = appel(['action' => 'marquerLu'], $A + ['cle' => 'tickets', 'valeur' => '2026-11-21 08:00:00']);
-verifier($r['lu']['tickets'] === '2026-11-21 08:00:00', 'tickets : date plus récente enregistrée');
+verifier($r['lu']['tickets'] === '2026-11-21 08:00:00', 'tickets : date plus récente enregistrée (égale à la dernière réponse reçue)');
 // Une autre personne a sa propre mémoire ; l'identité vient de la session, pas des paramètres.
 $luU = appel(['action' => 'getAll'], $U)['lu'] ?? null;
 verifier($luU === ['nouveautes_index' => 0, 'nouveautes_admin' => 0, 'tickets' => ''], 'une autre personne : sa mémoire est vide, celle de l\'Admin ne la touche pas');
@@ -730,6 +732,17 @@ verifier((int) $db->query("SELECT COUNT(*) FROM lectures WHERE conseiller = 'Nou
     && (int) $db->query("SELECT COUNT(*) FROM lectures WHERE conseiller = 'Conseiller Test' AND cle = 'nouveautes_admin'")->fetchColumn() === 1, 'paramètre « conseiller » ignoré : écrit au nom de la session');
 verifier((appel(['action' => 'marquerLu'], $U + ['cle' => 'nouveautes_index', 'valeur' => '3'])['lu']['nouveautes_index'] ?? null) === 3
     && (appel(['action' => 'getAll'], $A)['lu']['nouveautes_index'] ?? null) === 10, 'deux personnes : chacune sa valeur');
+// Codex (AG-066) : une vraie date, et jamais au-delà de la dernière réponse reçue par la personne.
+foreach ([['9999-99-99 99:99:99'], ['2026-02-30 10:00:00'], ['2026-11-21 24:00:00'], ['2026-11-21 08:00:01'], ['2099-01-01 00:00:00']] as [$val]) {
+    $r = appel(['action' => 'marquerLu'], $A + ['cle' => 'tickets', 'valeur' => $val]);
+    verifier(($r['ok'] ?? null) === false, "tickets : « $val » refusée (faux calendrier ou au-delà des réponses)");
+}
+verifier((appel(['action' => 'getAll'], $A)['lu']['tickets'] ?? null) === '2026-11-21 08:00:00', 'tickets : après les refus, le curseur reste celui de la dernière réponse reçue');
+$db->exec("DELETE FROM tickets WHERE id = 'tk_lu_1'");
+// Sans aucune réponse reçue (pas de ticket répondu pour la personne), aucun curseur n'est possible.
+$db->exec("UPDATE tickets SET repondu_le = NULL WHERE auteur = 'Conseiller Test'");
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'tickets', 'valeur' => '2026-11-21 08:00:00']);
+verifier(($r['ok'] ?? null) === false, 'tickets : aucune réponse reçue par la personne = aucun curseur possible');
 foreach ([['inconnue', '5'], ['nouveautes_index', 'abc'], ['nouveautes_index', '-1'], ['nouveautes_index', '1234567'], ['nouveautes_index', ''], ['tickets', '2026-11-21'], ['tickets', '5']] as [$cle, $val]) {
     $r = appel(['action' => 'marquerLu'], $A + ['cle' => $cle, 'valeur' => $val]);
     verifier(($r['ok'] ?? null) === false, "marquerLu refusé : $cle = « $val »");

@@ -6,7 +6,8 @@
 // effaçait et toutes les annonces redevenaient « Nouveau ». Une ligne par
 // (personne connectée, rubrique), écrite de façon atomique.
 //   nouveautes_index, nouveautes_admin : plus grand numéro d'annonce lu (entier) ;
-//   tickets : date « AAAA-MM-JJ HH:MM:SS » de la dernière réponse lue.
+//   tickets : date « AAAA-MM-JJ HH:MM:SS » de la dernière réponse lue (vraie date, jamais au-delà
+//   de la dernière réponse reçue par la personne).
 // La valeur ne diminue JAMAIS : un appareil en retard ou un onglet ancien ne
 // rallume pas des pastilles déjà éteintes. L'identité vient de la session, pas
 // des paramètres. Ne change AUCUN calcul : nouveautesNonVues et le nombre de
@@ -58,7 +59,17 @@ function action_marquer_lu(PDO $db, array $p, string $conseiller): array
     $val = (string) ($p['valeur'] ?? '');
     if (!in_array($cle, LECTURES_CLES, true)) return ['ok' => false, 'error' => 'Rubrique inconnue'];
     if ($cle === 'tickets') {
-        if (!preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $val)) return ['ok' => false, 'error' => 'Date invalide'];
+        // Une vraie date (calendrier et heure), pas seulement la forme : « 9999-99-99 99:99:99 » dépasserait
+        // toute date valide et empêcherait ensuite un acquittement ordinaire (Codex, AG-066).
+        $d = DateTime::createFromFormat('!Y-m-d H:i:s', $val);
+        if (!$d || $d->format('Y-m-d H:i:s') !== $val) return ['ok' => false, 'error' => 'Date invalide'];
+        // Un curseur ne dépasse pas la dernière réponse reçue sur les tickets de la personne.
+        try {
+            $m = $db->prepare('SELECT MAX(repondu_le) FROM tickets WHERE auteur = ?');
+            $m->execute([$conseiller]);
+            $max = (string) ($m->fetchColumn() ?: '');
+        } catch (Throwable) { $max = ''; }
+        if ($max === '' || $val > $max) return ['ok' => false, 'error' => 'Date postérieure à vos réponses'];
         $plus = 'VALUES(valeur) > valeur';   // même gabarit : l'ordre des textes est l'ordre des dates
     } else {
         if (!preg_match('/^\d{1,6}$/', $val)) return ['ok' => false, 'error' => 'Numéro invalide'];
