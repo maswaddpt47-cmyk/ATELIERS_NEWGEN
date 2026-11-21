@@ -163,11 +163,16 @@ function api_ecrire_atelier(PDO $db, array $d, ?string &$err, string $acteur = '
             // corbeille compte aussi : sans elle, un atelier créé après une
             // suppression reprenait le numéro d'un atelier restaurable
             // (#252 à #255 en double le 02/10/2026).
+            // n_max (meta, AG-066, 21/11/2026) : plus grand numéro jamais attribué. Sans lui, la purge
+            // définitive du dernier atelier faisait reprendre son numéro, et la pastille « nouveaux
+            // ateliers » taisait le nouveau chez ceux qui avaient vu l'ancien (Codex).
             $n = max(
                 (int) $db->query('SELECT COALESCE(MAX(n), 0) FROM ateliers FOR UPDATE')->fetchColumn(),
                 (int) $db->query("SELECT COALESCE(MAX(CAST(JSON_UNQUOTE(JSON_EXTRACT(donnees, '$._n')) AS UNSIGNED)), 0)
-                                  FROM ateliers_corbeille WHERE JSON_VALID(donnees) FOR UPDATE")->fetchColumn()
+                                  FROM ateliers_corbeille WHERE JSON_VALID(donnees) FOR UPDATE")->fetchColumn(),
+                (int) $db->query("SELECT COALESCE(MAX(CAST(valeur AS UNSIGNED)), 0) FROM meta WHERE cle = 'n_max' FOR UPDATE")->fetchColumn()
             ) + 1;
+            $db->prepare("INSERT INTO meta (cle, valeur) VALUES ('n_max', ?) ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)")->execute([(string) $n]);
         }
         $l['n'] = $n;
         $cols = array_keys($l);

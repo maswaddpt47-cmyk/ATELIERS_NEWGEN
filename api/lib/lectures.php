@@ -6,7 +6,8 @@
 // effaçait et toutes les annonces redevenaient « Nouveau ». Une ligne par
 // (personne connectée, rubrique), écrite de façon atomique.
 //   nouveautes_index, nouveautes_admin : plus grand numéro d'annonce lu (entier) ;
-//   ateliers_index, ateliers_admin : plus grand numéro d'atelier (_n) signalé (entier, borné aux ateliers existants) ;
+//   ateliers_index_AAAA, ateliers_admin_AAAA : plus grand numéro d'atelier (_n) signalé pour l'année AAAA (entier, ramené
+//   au plus grand n des ateliers de cette année) ; livrés dans getAll en objet { "AAAA": n } par page (Codex, AG-066).
 //   tickets : date « AAAA-MM-JJ HH:MM:SS » de la dernière réponse lue (vraie date, jamais au-delà
 //   de la dernière réponse reçue par la personne).
 // La valeur ne diminue JAMAIS : un appareil en retard ou un onglet ancien ne
@@ -16,8 +17,10 @@
 
 require_once __DIR__ . '/base.php';
 
-// ateliers_* : plus grand numéro d'atelier (_n) déjà signalé par la pastille « nouveaux ateliers » (extension du 21/11/2026).
-const LECTURES_CLES = ['nouveautes_index', 'nouveautes_admin', 'tickets', 'ateliers_index', 'ateliers_admin'];
+const LECTURES_CLES = ['nouveautes_index', 'nouveautes_admin', 'tickets'];
+// Pastille « nouveaux ateliers » (extension du 21/11/2026) : une mémoire par page et par année. Une seule année
+// chargée n'acquitte jamais les ateliers d'une autre (Codex, AG-066).
+const LECTURES_CLE_ATELIERS = '/^ateliers_(index|admin)_(20\d\d)$/';
 
 function lectures_schema(PDO $db): void
 {
@@ -45,12 +48,17 @@ function lectures_lire(PDO $db, string $conseiller): ?array
             lectures_schema($db);   // table absente : créée une fois, sur le chemin d'erreur seulement
             $l = $lire();
         }
+        $ateliers = ['index' => [], 'admin' => []];
+        foreach ($l as $cle => $v) {
+            if (preg_match(LECTURES_CLE_ATELIERS, (string) $cle, $m)) $ateliers[$m[1]][$m[2]] = (int) $v;
+        }
         return [
             'nouveautes_index' => (int) ($l['nouveautes_index'] ?? 0),
             'nouveautes_admin' => (int) ($l['nouveautes_admin'] ?? 0),
             'tickets' => (string) ($l['tickets'] ?? ''),
-            'ateliers_index' => (int) ($l['ateliers_index'] ?? 0),
-            'ateliers_admin' => (int) ($l['ateliers_admin'] ?? 0),
+            // Objets, même vides : leur présence dit au client que l'API connaît la mémoire par année.
+            'ateliers_index' => (object) $ateliers['index'],
+            'ateliers_admin' => (object) $ateliers['admin'],
         ];
     } catch (Throwable) {
         return null;
@@ -61,7 +69,8 @@ function action_marquer_lu(PDO $db, array $p, string $conseiller): array
 {
     $cle = (string) ($p['cle'] ?? '');
     $val = (string) ($p['valeur'] ?? '');
-    if (!in_array($cle, LECTURES_CLES, true)) return ['ok' => false, 'error' => 'Rubrique inconnue'];
+    $annee = preg_match(LECTURES_CLE_ATELIERS, $cle, $m) ? (int) $m[2] : 0;
+    if (!$annee && !in_array($cle, LECTURES_CLES, true)) return ['ok' => false, 'error' => 'Rubrique inconnue'];
     if ($cle === 'tickets') {
         // Une vraie date (calendrier et heure), pas seulement la forme : « 9999-99-99 99:99:99 » dépasserait
         // toute date valide et empêcherait ensuite un acquittement ordinaire (Codex, AG-066).
@@ -77,10 +86,15 @@ function action_marquer_lu(PDO $db, array $p, string $conseiller): array
         $plus = 'VALUES(valeur) > valeur';   // même gabarit : l'ordre des textes est l'ordre des dates
     } else {
         if (!preg_match('/^\d{1,6}$/', $val)) return ['ok' => false, 'error' => 'Numéro invalide'];
-        // Numéro d'atelier : jamais au-delà du plus grand existant, sinon il masquerait tous les ateliers à venir.
-        if (str_starts_with($cle, 'ateliers_')) {
-            $max = (int) $db->query('SELECT COALESCE(MAX(n), 0) FROM ateliers')->fetchColumn();
-            if ((int) $val > $max) return ['ok' => false, 'error' => 'Numéro au-delà des ateliers existants'];
+        // Numéro d'atelier : jamais au-delà du plus grand de l'année, sinon il masquerait les ateliers à venir.
+        // Ramené à cette borne plutôt que refusé : un atelier passé en corbeille entre le chargement et le clic
+        // ne doit pas laisser l'acquittement en attente pour toujours (Codex, AG-066).
+        if ($annee) {
+            $s = $db->prepare('SELECT COALESCE(MAX(n), 0) FROM ateliers WHERE date >= ? AND date < ?');
+            $s->execute([$annee . '-01-01', ($annee + 1) . '-01-01']);
+            $max = (int) $s->fetchColumn();
+            if ($max === 0) return ['ok' => false, 'error' => 'Aucun atelier cette année'];
+            $val = (string) min((int) $val, $max);
         }
         $plus = 'CAST(VALUES(valeur) AS UNSIGNED) > CAST(valeur AS UNSIGNED)';
     }

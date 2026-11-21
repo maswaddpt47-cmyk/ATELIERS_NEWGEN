@@ -434,7 +434,7 @@ test('historique — volet : 5 liens, maximum atteint dit à l\'écran',async({p
 // Pastille « nouveaux ateliers » retenue d'une visite à l'autre (20/11/2026) : numéro _n le plus grand déjà vu,
 // par page et par personne, dans le navigateur.
 const AUTRE={...TEMOIN,_id:'atelier-autre',_n:5,conseiller:'Eva Fictive',thematique:'Atelier ajouté par une collègue'};
-const CLE_VUS='ateliers_dernier_n:/:'+NOM;
+const CLE_VUS='ateliers_dernier_n:/:'+NOM+':2026';   // une mémoire par année (AG-066, Codex, 21/11/2026)
 test('pastille — atelier ajouté par une collègue depuis la dernière visite signalé, puis retenu comme vu',async({page})=>{
   await page.addInitScript(cle=>{try{if(!sessionStorage.getItem('init-vus')){localStorage.setItem(cle,'1');sessionStorage.setItem('init-vus','1');}}catch(_){}},CLE_VUS);
   const etat=await preparer(page,[TEMOIN,AUTRE]);

@@ -402,6 +402,11 @@ appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'num_b',
 verifier($lire('num_b')['_n'] === $nA + 1, 'nouvel atelier : ne reprend pas le numéro d\'un atelier de la corbeille');
 appel(['action' => 'delete'], $T + ['_id' => 'num_b']);
 $db->exec("DELETE FROM ateliers_corbeille WHERE id IN ('num_a', 'num_b')");
+// Purge définitive du dernier atelier (Codex, AG-066) : son numéro n'est jamais repris (meta n_max).
+appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['_id' => 'num_c', 'date' => '2026-12-04'])]);
+verifier($lire('num_c')['_n'] === $nA + 2, 'après purge définitive : le numéro du dernier atelier purgé n\'est jamais repris (n_max)');
+appel(['action' => 'delete'], $T + ['_id' => 'num_c']);
+$db->exec("DELETE FROM ateliers_corbeille WHERE id = 'num_c'");
 // Sauvegardes (AG-014) : état en lecture, copie à la demande limitée.
 verifier(str_contains(appel(['action' => 'copieMaintenant'], $T)['error'] ?? '', 'administrateurs'), 'copie à la demande réservée aux administrateurs');
 $r = appel(['action' => 'copieMaintenant'], $A);
@@ -703,7 +708,7 @@ echo "API — mémoire « déjà lu » (AG-066)\n";
 $U = ['token' => $user['token']];
 $db->exec('DELETE FROM lectures');
 $lu0 = appel(['action' => 'getAll'], $A)['lu'] ?? null;
-verifier($lu0 === ['nouveautes_index' => 0, 'nouveautes_admin' => 0, 'tickets' => '', 'ateliers_index' => 0, 'ateliers_admin' => 0], 'getAll : mémoire vide au départ (zéros, texte vide)');
+verifier($lu0 === ['nouveautes_index' => 0, 'nouveautes_admin' => 0, 'tickets' => '', 'ateliers_index' => [], 'ateliers_admin' => []], 'getAll : mémoire vide au départ (zéros, texte vide, ateliers par année vides)');
 verifier((appel(['action' => 'marquerLu'], ['cle' => 'nouveautes_index', 'valeur' => '9'])['auth'] ?? false) === true, 'marquerLu sans jeton : refusé');
 $r = appel(['action' => 'marquerLu'], $A + ['cle' => 'nouveautes_index', 'valeur' => '9']);
 verifier(($r['ok'] ?? false) && $r['lu']['nouveautes_index'] === 9, 'marquerLu : valeur enregistrée et renvoyée');
@@ -726,23 +731,29 @@ $r = appel(['action' => 'marquerLu'], $A + ['cle' => 'tickets', 'valeur' => '202
 verifier($r['lu']['tickets'] === '2026-11-21 08:00:00', 'tickets : date plus récente enregistrée (égale à la dernière réponse reçue)');
 // Une autre personne a sa propre mémoire ; l'identité vient de la session, pas des paramètres.
 $luU = appel(['action' => 'getAll'], $U)['lu'] ?? null;
-verifier($luU === ['nouveautes_index' => 0, 'nouveautes_admin' => 0, 'tickets' => '', 'ateliers_index' => 0, 'ateliers_admin' => 0], 'une autre personne : sa mémoire est vide, celle de l\'Admin ne la touche pas');
+verifier($luU === ['nouveautes_index' => 0, 'nouveautes_admin' => 0, 'tickets' => '', 'ateliers_index' => [], 'ateliers_admin' => []], 'une autre personne : sa mémoire est vide, celle de l\'Admin ne la touche pas');
 appel(['action' => 'marquerLu'], $A + ['cle' => 'nouveautes_admin', 'valeur' => '7', 'conseiller' => 'Nouveau Venu']);
 verifier((int) $db->query("SELECT COUNT(*) FROM lectures WHERE conseiller = 'Nouveau Venu'")->fetchColumn() === 0
     && (int) $db->query("SELECT COUNT(*) FROM lectures WHERE conseiller = 'Conseiller Test' AND cle = 'nouveautes_admin'")->fetchColumn() === 1, 'paramètre « conseiller » ignoré : écrit au nom de la session');
 verifier((appel(['action' => 'marquerLu'], $U + ['cle' => 'nouveautes_index', 'valeur' => '3'])['lu']['nouveautes_index'] ?? null) === 3
     && (appel(['action' => 'getAll'], $A)['lu']['nouveautes_index'] ?? null) === 10, 'deux personnes : chacune sa valeur');
-// Pastille « nouveaux ateliers » (extension AG-066) : numéro jamais diminué, borné au plus grand n des ateliers.
-$maxN = (int) $db->query('SELECT COALESCE(MAX(n), 0) FROM ateliers')->fetchColumn();
-verifier($maxN >= 2, "ateliers de test numérotés (plus grand n = $maxN)");
-$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_index', 'valeur' => (string) ($maxN - 1)]);
-verifier(($r['ok'] ?? false) && $r['lu']['ateliers_index'] === $maxN - 1, 'ateliers : numéro existant enregistré');
-$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_index', 'valeur' => '1']);
-verifier(($r['ok'] ?? false) && $r['lu']['ateliers_index'] === $maxN - 1, 'ateliers : numéro plus bas ignoré');
-$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_admin', 'valeur' => (string) $maxN]);
-verifier(($r['ok'] ?? false) && $r['lu']['ateliers_admin'] === $maxN && $r['lu']['ateliers_index'] === $maxN - 1, 'ateliers : plus grand numéro accepté, Index et Admin séparés');
-$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_index', 'valeur' => (string) ($maxN + 1)]);
-verifier(($r['ok'] ?? null) === false && (appel(['action' => 'getAll'], $A)['lu']['ateliers_index'] ?? null) === $maxN - 1, 'ateliers : numéro au-delà du plus grand existant refusé, mémoire intacte');
+// Pastille « nouveaux ateliers » (extension AG-066) : une mémoire par année, jamais diminuée, ramenée au plus grand n de l'année.
+$maxN = (int) $db->query("SELECT COALESCE(MAX(n), 0) FROM ateliers WHERE date >= '2026-01-01' AND date < '2027-01-01'")->fetchColumn();
+verifier($maxN >= 2, "ateliers de test numérotés en 2026 (plus grand n = $maxN)");
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_index_2026', 'valeur' => (string) ($maxN - 1)]);
+verifier(($r['ok'] ?? false) && ($r['lu']['ateliers_index'][2026] ?? null) === $maxN - 1, 'ateliers 2026 : numéro existant enregistré, livré par année');
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_index_2026', 'valeur' => '1']);
+verifier(($r['ok'] ?? false) && ($r['lu']['ateliers_index'][2026] ?? null) === $maxN - 1, 'ateliers 2026 : numéro plus bas ignoré');
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_admin_2026', 'valeur' => (string) $maxN]);
+verifier(($r['ok'] ?? false) && ($r['lu']['ateliers_admin'][2026] ?? null) === $maxN && ($r['lu']['ateliers_index'][2026] ?? null) === $maxN - 1, 'ateliers : Index et Admin séparés');
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_index_2026', 'valeur' => (string) ($maxN + 50)]);
+verifier(($r['ok'] ?? false) && ($r['lu']['ateliers_index'][2026] ?? null) === $maxN, 'ateliers : numéro au-delà du plus grand de l\'année ramené à ce plus grand (pas refusé)');
+$r = appel(['action' => 'marquerLu'], $A + ['cle' => 'ateliers_index_2031', 'valeur' => '3']);
+verifier(($r['ok'] ?? null) === false && !isset($r['lu']), 'ateliers : année sans atelier refusée');
+foreach (['ateliers_index', 'ateliers_index_1999', 'ateliers_autre_2026', 'ateliers_index_2026x'] as $cle) {
+    verifier((appel(['action' => 'marquerLu'], $A + ['cle' => $cle, 'valeur' => '1'])['ok'] ?? null) === false, "ateliers : clé « $cle » refusée");
+}
+verifier((appel(['action' => 'getAll'], $U)['lu']['ateliers_index'] ?? null) === [], 'ateliers : la mémoire de l\'Admin ne touche pas une autre personne');
 // Codex (AG-066) : une vraie date, et jamais au-delà de la dernière réponse reçue par la personne.
 foreach ([['9999-99-99 99:99:99'], ['2026-02-30 10:00:00'], ['2026-11-21 24:00:00'], ['2026-11-21 08:00:01'], ['2099-01-01 00:00:00']] as [$val]) {
     $r = appel(['action' => 'marquerLu'], $A + ['cle' => 'tickets', 'valeur' => $val]);
