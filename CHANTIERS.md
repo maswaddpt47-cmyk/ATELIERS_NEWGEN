@@ -8,8 +8,10 @@ rallumait toutes les annonces). Table `lectures`, action `marquerLu`, champ `lu`
 « Suite — auteur ». Testé : suite PHP, `e2e/lu-serveur.spec.js` (4 parcours) sur les deux applis, mutations rejetées. **À faire** : mention
 de la table `lectures` au registre RGPD (ateliers-backups, hors de cette session) ; annonce Nouveautés non décidée (sujets et texte à faire
 approuver) ; AG-066 à clore par l'utilisateur. **À savoir** : après la mise en ligne, les pastilles se rallument une fois pour chacun
-(anciennes clés locales non reprises) jusqu'à la première ouverture de Nouveautés. **Pas couvert** : la pastille des nouveaux ateliers (20/11)
-garde sa mémoire dans le `localStorage` (1re visite = point de départ, donc pas de fausse alerte, mais un oubli après nettoyage). À constater
+(anciennes clés locales non reprises) jusqu'à la première ouverture de Nouveautés. **Extension (21/11, demande de l'utilisateur)** : la pastille des
+nouveaux ateliers garde aussi sa mémoire au serveur (clés `ateliers_index`/`ateliers_admin` de `lectures`, numéro borné au plus grand `n`) ;
+1re visite (ni navigateur ni serveur) = point de départ, noté au serveur. Mémoire **partagée entre NEWGEN et NextStep** par page : choix
+fait par défaut, à confirmer par l'utilisateur (elle était distincte par appli dans le navigateur). À constater
 par l'utilisateur : nettoyer les données du site sur son téléphone, se reconnecter, vérifier qu'aucune annonce ne repasse en « Nouveau ».
 Toutes les livraisons du 20/11 sont en production (déploiements ✅) ; rien en attente dans le bac à sable ni sur la branche de session.
 En attente de l'utilisateur : essai de la pastille retenue (atelier créé par une collègue, puis rechargement) ; registre RGPD V0.8 à présenter au DPO (écart n° 15).
@@ -20,7 +22,7 @@ confirmation `create_tree` encore vue malgré « Autoriser toutes les actions »
 `lienAtelier`), volet en onglets Détail / Reporting (QR en tête, liens, fiche bilan remplissable avant « Réalisé »), QR visible sur
 téléphone (barre du bas sous le volet ouvert ; ne pas remonter le volet au-dessus de 4000). AG-065 clos le 20/11 ;
 annonce 41 publiée, 23 et 28 mises à jour (textes approuvés). Piège : un test ne clique jamais un nombre seul (MD-LIB règle 75).
-Pastille des nouveaux ateliers (20/11) : mémoire par page et par personne (`localStorage`, plus grand `_n` vu) ; 1re visite = point de départ.
+Pastille des nouveaux ateliers (20/11, au serveur depuis le 21/11 : AG-066) : mémoire par page et par personne (plus grand `_n` vu) ; 1re visite = point de départ.
 Anomalies : liste « Validées » retirée (20/11) ; l'action `annulerAnomalie` reste dans l'API, sans bouton.
 Liens `/public.php` refusés (20/11, navigateur et API) : ils ne s'ouvrent pas, même connecté ; lien interne (`/index.php/apps/files/…`) ou de partage (`/s/…`) seulement. Registre RGPD V0.8 corrigée sur place (ateliers-backups) : liens Partage47 inscrits, écart n° 15 à présenter au DPO.
 **AG-063 clos le 19/11** (avis en graphes, période ou atelier ; non annoncé) : règles dans « Points à ne pas défaire ».
