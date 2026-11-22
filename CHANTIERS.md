@@ -219,7 +219,7 @@ superflu, `sw.js` de désinscription.
 
 ## Pistes d'amélioration
 
-Règle 22. Ne pas reproposer une piste écartée sans fait nouveau. **En attente** : aucune. Coupure d'urgence éprouvée sur NextStep du bac à sable le 17/11 (06:21-06:22, runs `44023528386` / `44023579101` : 3 URL en 403 puis 200).
+Règle 22. Ne pas reproposer une piste écartée sans fait nouveau. **En attente** : 22/11 — durée de conservation de la table `lectures` (AG-066) : aucune purge aujourd'hui ; proposé : effacer les lignes d'un compte désactivé ou sans mise à jour depuis 13 mois, au passage quotidien de `rappels.php` ; bénéfice : minimisation RGPD et registre complet ; charge : une requête et un test ; hypothèse : comptes jamais supprimés, seulement désactivés (`saveCompte`). Coupure d'urgence éprouvée sur NextStep du bac à sable le 17/11 (06:21-06:22, runs `44023528386` / `44023579101` : 3 URL en 403 puis 200).
 
 **Écartées** (date — piste — raison)
 - 25/10 — tableaux thématiques × communes et partenaires × conseillers — alourdissent la page, jugés inutiles.
