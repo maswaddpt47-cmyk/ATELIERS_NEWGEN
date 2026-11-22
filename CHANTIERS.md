@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **21/11/2026** (Paris), NEWGEN `dfed48c` + corrections AG-066, NextStep `9f04a84` + portage, MD-LIB `0a71bc1`. Réponse Codex AG-066 : `AGORA.md`, 21/11.
+État au **22/11/2026** (Paris), bases relues sur `main` — NEWGEN `29a4b07`, NextStep `1218a18`, MD-LIB `0a71bc1`. Revue Codex d'AG-066 dans `AGORA.md` le 21/11/2026.
 **AG-066 (21/11)** : la mémoire « déjà lu » des Nouveautés et des tickets passe côté serveur (demande de l'utilisateur : un « hard reset »
 rallumait toutes les annonces). Table `lectures`, action `marquerLu`, champ `lu` dans `getAll` ; valeur jamais diminuée ; le
 `localStorage` reste un secours, **propre à chaque personne** (la plus haute des deux valeurs). Revue Codex du 21/11 (`AGORA.md`) : trois
@@ -222,6 +222,9 @@ superflu, `sw.js` de désinscription.
 ## Pistes d'amélioration
 
 Règle 22. Ne pas reproposer une piste écartée sans fait nouveau. **En attente** : aucune (purge de `lectures` faite le 22/11, voir AG-066). Coupure d'urgence éprouvée sur NextStep du bac à sable le 17/11 (06:21-06:22, runs `44023528386` / `44023579101` : 3 URL en 403 puis 200).
+
+1. **Proposée le 22/11/2026 — Ouvrir l'atelier depuis son mail de rappel.** Le mail liste les ateliers en retard et les fiches bilan vides, puis renvoie à l'accueil de NextStep (`api/lib/rappels.php:89-117`). Un lien par atelier éviterait de retrouver la ligne dans l'Historique, notamment sur téléphone. Réutiliser le volet existant après connexion, avec les droits actuels et l'année de l'atelier. Ouvrir sur « Détail » pour un statut à mettre à jour et sur « Reporting » pour une fiche (`shared.js:2874-2876,3038-3066`). Charge estimée de 1 à 2 jours si le chargement existant permet de retrouver l'atelier. Gain à confirmer selon la fréquence à laquelle les destinataires doivent rechercher l'atelier.
+2. **Proposée le 22/11/2026 — Vérifier les deux commits servis par le bac à sable.** Le déploiement journalise le commit NextStep sélectionné et contrôle la présence des ressources, tandis que `version.json` contient les versions des scripts et l'heure de génération (`.github/workflows/deploy-sandbox.yml:123-144`, `scripts/version-json.js:9-16`). Ajouter le SHA de chaque application à son manifeste, comparer les deux manifestes servis aux SHA attendus après la copie et afficher le résultat dans GitHub Actions. Cela permettrait de confirmer la version avant un essai. Charge estimée d'une demi-journée si les deux manifestes sont accessibles sans connexion.
 
 **Écartées** (date — piste — raison)
 - 25/10 — tableaux thématiques × communes et partenaires × conseillers — alourdissent la page, jugés inutiles.
