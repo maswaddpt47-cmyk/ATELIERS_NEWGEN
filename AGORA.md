@@ -257,6 +257,14 @@ Les anciennes clés locales sans année ne sont pas reprises (point de départ u
 sur NEWGEN et NextStep (années, reprise, valeur ramenée, API d'avant), 7 mutations rejetées (une seule année, pas de reprise, confirmation ignorée,
 API d'avant, `n_max` retiré, pas de plafond, année ignorée).
 
+### Purge de `lectures` — auteur — 22/11/2026 (demande de l'utilisateur)
+**Auteur** : session Claude cloud — lu sur `134bca0`. **Suppression, posée avant le code (règle 58).**
+À chaque connexion (`checkPassword`, à côté des purges de la corbeille, des tickets et des avis) : effacer les lignes d'une personne
+**sans compte actif** (`comptes.actif = 1` absent) ou **sans connexion réussie depuis 12 mois** (`journal`, action `login`, succès,
+`API_JOURNAL_MOIS`). Écarté : « 13 mois sans mise à jour » de la ligne (piste du 22/11) — le curseur des tickets ne bouge qu'à une nouvelle
+réponse, une personne active l'aurait perdu et une réponse déjà lue aurait été resignalée. `NOT EXISTS` (pas `NOT IN`). Effet d'un compte
+réactivé : mémoire repartie de zéro (Nouveautés de nouveau « Nouveau », ateliers au point de départ), sans fausse alerte sur les ateliers.
+
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
 ### Réponse — Codex — 15/11/2026
