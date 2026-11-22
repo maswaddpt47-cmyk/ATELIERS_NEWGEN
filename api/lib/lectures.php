@@ -65,6 +65,21 @@ function lectures_lire(PDO $db, string $conseiller): ?array
     }
 }
 
+// RGPD, conservation (AG-066, 22/11/2026) : la mémoire d'une personne est effacée quand elle n'a plus de compte actif
+// ou plus aucune connexion réussie depuis $mois mois (durée du journal). Appelée à chaque connexion, comme les purges
+// de la corbeille, des tickets et des avis. Jamais bloquante pour la connexion.
+function lectures_purger(PDO $db, int $mois): void
+{
+    try {
+        lectures_schema($db);
+        $db->prepare(
+            'DELETE FROM lectures WHERE NOT EXISTS (SELECT 1 FROM comptes c WHERE c.conseiller = lectures.conseiller AND c.actif = 1)'
+            . " OR NOT EXISTS (SELECT 1 FROM journal j WHERE j.conseiller = lectures.conseiller AND j.action = 'login' AND j.succes = 1 AND j.horodatage >= ?)"
+        )->execute([date('Y-m-d H:i:s', strtotime("-$mois months"))]);
+    } catch (Throwable) {
+    }
+}
+
 function action_marquer_lu(PDO $db, array $p, string $conseiller): array
 {
     $cle = (string) ($p['cle'] ?? '');

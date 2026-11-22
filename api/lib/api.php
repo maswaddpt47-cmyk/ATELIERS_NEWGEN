@@ -290,6 +290,7 @@ function action_check_password(PDO $db, array $p): array
     $db->exec('DELETE FROM ateliers_corbeille WHERE supprime_le < NOW() - INTERVAL ' . CORBEILLE_JOURS . ' DAY');
     tickets_purger($db);   // RGPD : 12 mois après clôture, 24 mois si jamais clos (AG-016)
     avis_purger($db);      // RGPD : avis des stagiaires, 24 mois ; ceux d'un atelier sorti de la corbeille (AG-021)
+    lectures_purger($db, API_JOURNAL_MOIS);   // RGPD : mémoire « déjà lu » sans compte actif ou sans connexion depuis 12 mois (AG-066)
     $db->prepare('INSERT INTO sessions (jeton_hash, conseiller, role, expire) VALUES (?, ?, ?, ?)')
        ->execute([hash('sha256', $jeton), $nom, $compte['role'], date('Y-m-d H:i:s', time() + API_JETON_DUREE_S)]);
     // Journalisé ici (le GAS attendait un logLogin du client, falsifiable).

@@ -769,6 +769,26 @@ foreach ([['inconnue', '5'], ['nouveautes_index', 'abc'], ['nouveautes_index', '
     $r = appel(['action' => 'marquerLu'], $A + ['cle' => $cle, 'valeur' => $val]);
     verifier(($r['ok'] ?? null) === false, "marquerLu refusé : $cle = « $val »");
 }
+// Purge (RGPD, AG-066, 22/11/2026) : à la connexion, mémoire effacée sans compte actif ou sans connexion réussie depuis 12 mois.
+$db->exec("INSERT INTO comptes (conseiller, role, actif) VALUES ('Lu Inactif', 'user', 0), ('Lu Absent', 'user', 1), ('Lu Recent', 'user', 1)");
+$db->exec("INSERT INTO journal (horodatage, action, conseiller, succes) VALUES (NOW() - INTERVAL 13 MONTH, 'login', 'Lu Absent', 1),
+           (NOW() - INTERVAL 1 DAY, 'login', 'Lu Recent', 1), (NOW() - INTERVAL 1 DAY, 'login', 'Lu Inactif', 1), (NOW() - INTERVAL 1 DAY, 'login', 'Lu Echec', 0)");
+$db->exec("INSERT INTO comptes (conseiller, role, actif) VALUES ('Lu Echec', 'user', 1)");
+foreach (['Lu Inactif', 'Lu Absent', 'Lu Recent', 'Lu Fantome', 'Lu Echec'] as $nom) {
+    $db->prepare("INSERT INTO lectures (conseiller, cle, valeur, maj) VALUES (?, 'nouveautes_index', '3', NOW())")->execute([$nom]);
+}
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
+$restent = $db->query("SELECT conseiller FROM lectures WHERE conseiller LIKE 'Lu %' ORDER BY conseiller")->fetchAll(PDO::FETCH_COLUMN);
+verifier($restent === ['Lu Recent'], '[RGPD] lectures purgées à la connexion : compte désactivé, absent, sans connexion réussie depuis 12 mois — reste : ' . implode(',', $restent));
+verifier((int) $db->query("SELECT COUNT(*) FROM lectures WHERE conseiller = 'Conseiller Test'")->fetchColumn() > 0, '[RGPD] la mémoire d\'une personne active est gardée');
+// Appel direct, journal non purgé avant : la condition des 12 mois tient seule (la purge du journal ne la masque pas).
+$db->exec("INSERT INTO journal (horodatage, action, conseiller, succes) VALUES (NOW() - INTERVAL 13 MONTH, 'login', 'Lu Absent', 1)");
+$db->exec("INSERT INTO lectures (conseiller, cle, valeur, maj) VALUES ('Lu Absent', 'nouveautes_index', '3', NOW())");
+lectures_purger($db, 12);
+verifier((int) $db->query("SELECT COUNT(*) FROM lectures WHERE conseiller = 'Lu Absent'")->fetchColumn() === 0
+    && (int) $db->query("SELECT COUNT(*) FROM lectures WHERE conseiller = 'Lu Recent'")->fetchColumn() === 1, '[RGPD] dernière connexion réussie il y a 13 mois : mémoire effacée, même si le journal la garde encore');
+$db->exec("DELETE FROM comptes WHERE conseiller IN ('Lu Inactif', 'Lu Absent', 'Lu Recent', 'Lu Echec')");
+$db->exec("DELETE FROM journal WHERE conseiller LIKE 'Lu %'");
 $db->exec('DELETE FROM lectures');   // hors des comptages qui suivent
 $db->exec("UPDATE tickets SET statut = 'Résolu', reponse = 'Fait.', repondu_par = 'Conseiller Test', clos_le = '" . date('Y-m-d H:i:s', strtotime('-13 months')) . "' WHERE id = 'tk_essai_1'");
 appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
