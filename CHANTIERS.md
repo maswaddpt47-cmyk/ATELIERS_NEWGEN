@@ -13,6 +13,8 @@ nouveaux ateliers garde aussi sa mémoire au serveur, **une par année** (`ateli
 NEWGEN et NextStep** par page (confirmé par l'utilisateur le 21/11). Revue Codex (4 écarts) corrigée : années séparées, numéros jamais
 réutilisés après purge (`meta.n_max`), acquittement en échec repris au chargement suivant, rien envoyé à une API d'avant. **Pas couvert** :
 les numéros purgés avant le 21/11 restent inconnus de `n_max`.
+**Purge (22/11, demande de l'utilisateur)** : à chaque connexion, mémoire `lectures` effacée sans compte actif ou sans connexion réussie
+depuis 12 mois (`lectures_purger`, AG-066). Reste à inscrire au registre RGPD avec la table (ateliers-backups).
 À constater
 par l'utilisateur : nettoyer les données du site sur son téléphone, se reconnecter, vérifier qu'aucune annonce ne repasse en « Nouveau ».
 Toutes les livraisons du 20/11 sont en production (déploiements ✅) ; rien en attente dans le bac à sable ni sur la branche de session.
@@ -219,7 +221,7 @@ superflu, `sw.js` de désinscription.
 
 ## Pistes d'amélioration
 
-Règle 22. Ne pas reproposer une piste écartée sans fait nouveau. **En attente** : 22/11 — durée de conservation de la table `lectures` (AG-066) : aucune purge aujourd'hui ; proposé : effacer les lignes d'un compte désactivé ou sans mise à jour depuis 13 mois, au passage quotidien de `rappels.php` ; bénéfice : minimisation RGPD et registre complet ; charge : une requête et un test ; hypothèse : comptes jamais supprimés, seulement désactivés (`saveCompte`). Coupure d'urgence éprouvée sur NextStep du bac à sable le 17/11 (06:21-06:22, runs `44023528386` / `44023579101` : 3 URL en 403 puis 200).
+Règle 22. Ne pas reproposer une piste écartée sans fait nouveau. **En attente** : aucune (purge de `lectures` faite le 22/11, voir AG-066). Coupure d'urgence éprouvée sur NextStep du bac à sable le 17/11 (06:21-06:22, runs `44023528386` / `44023579101` : 3 URL en 403 puis 200).
 
 **Écartées** (date — piste — raison)
 - 25/10 — tableaux thématiques × communes et partenaires × conseillers — alourdissent la page, jugés inutiles.

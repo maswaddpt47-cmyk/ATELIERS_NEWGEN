@@ -264,6 +264,8 @@ API d'avant, `n_max` retiré, pas de plafond, année ignorée).
 `API_JOURNAL_MOIS`). Écarté : « 13 mois sans mise à jour » de la ligne (piste du 22/11) — le curseur des tickets ne bouge qu'à une nouvelle
 réponse, une personne active l'aurait perdu et une réponse déjà lue aurait été resignalée. `NOT EXISTS` (pas `NOT IN`). Effet d'un compte
 réactivé : mémoire repartie de zéro (Nouveautés de nouveau « Nouveau », ateliers au point de départ), sans fausse alerte sur les ateliers.
+**Livré** : suite PHP verte (compte désactivé, absent, connexion échouée seule, dernière connexion à 13 mois même encore au journal) ;
+4 mutations rejetées (condition « actif », « succès », durée de 12 mois, appel retiré de la connexion).
 
 ## Audit du bilan mensuel — demande utilisateur du 15/11/2026
 
