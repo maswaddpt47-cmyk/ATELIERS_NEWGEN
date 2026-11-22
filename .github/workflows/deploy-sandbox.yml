@@ -128,7 +128,7 @@ jobs:
           echo "::notice::NextStep $BR $(git rev-parse --short HEAD)"
           node -e "const u=require('./utils.js').urlApiPour('ateliers-numeriques.alwaysdata.net','/sandbox/nextstep/index.html');if(!u.includes('/api-sandbox/')){console.error('::error::NextStep parlerait à '+u);process.exit(1)}"
           mkdir -p "$RUNNER_TEMP/ns-pages" && cp -r index.html admin.html *.css utils.js logic.js shared.js app.js admin_app.js admin_config.js xlsxstyle.js icons vendor $(ls ts.html 2>/dev/null) "$RUNNER_TEMP/ns-pages/"
-          if [ -f scripts/version-json.js ]; then node scripts/version-json.js > "$RUNNER_TEMP/ns-pages/version.json"; fi
+          node "$GITHUB_WORKSPACE/scripts/version-json.js" "$RUNNER_TEMP/nextstep" > "$RUNNER_TEMP/ns-pages/version.json"
           rsync -az --delete -e "$SSH" "$RUNNER_TEMP/ns-pages/" "$COMPTE@ssh-$COMPTE.alwaysdata.net:www/sandbox/nextstep/"
 
       - name: Vérifier en ligne
@@ -142,3 +142,43 @@ jobs:
           for page in index.html admin.html utils.js; do curl -fsS "https://$COMPTE.alwaysdata.net/sandbox/nextstep/$page" >/dev/null || { echo "::error::NextStep : $page absente"; exit 1; }; done
           curl -fsS "https://$COMPTE.alwaysdata.net/sandbox/nextstep/utils.js" | grep -q 'api-sandbox'
           echo "::notice::Bac à sable : https://$COMPTE.alwaysdata.net/sandbox/ — NextStep : https://$COMPTE.alwaysdata.net/sandbox/nextstep/"
+
+      - name: Vérifier les commits servis par le bac à sable
+        env:
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+        run: |
+          newgen_sha=$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)
+          nextstep_sha=$(git -C "$RUNNER_TEMP/nextstep" rev-parse HEAD)
+          cache_buster="$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          {
+            printf '## Commits servis par le bac à sable\n\n'
+            printf '| Application | Commit attendu | Commit servi | Résultat |\n'
+            printf '| --- | --- | --- | --- |\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          verifier_commit() {
+            local application="$1" chemin="$2" attendu="$3"
+            local manifeste servi resultat
+            if ! manifeste=$(curl -fsS --max-time 15 -H 'Cache-Control: no-cache' \
+                "https://$COMPTE.alwaysdata.net${chemin}version.json?run=$cache_buster"); then
+              servi='—'
+              resultat='Manifeste inaccessible'
+            elif ! servi=$(jq -er '.sha | strings | select(test("^[0-9a-f]{40}$"))' <<< "$manifeste"); then
+              servi='—'
+              resultat='Manifeste invalide ou SHA manquant'
+            elif [ "$servi" != "$attendu" ]; then
+              resultat='Commit différent'
+            else
+              resultat='Vérifié'
+            fi
+            printf '| %s | `%s` | `%s` | %s |\n' "$application" "$attendu" "$servi" "$resultat" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$resultat" != 'Vérifié' ]; then
+              echo "::error::$application — $resultat"
+              return 1
+            fi
+          }
+
+          statut=0
+          verifier_commit NEWGEN /sandbox/ "$newgen_sha" || statut=1
+          verifier_commit NextStep /sandbox/nextstep/ "$nextstep_sha" || statut=1
+          exit "$statut"
