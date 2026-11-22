@@ -61,12 +61,12 @@ $actifs = is_array($actifs) ? $actifs : [];
 // Date du jour à l'heure de Paris (base.php), pas CURDATE() : le serveur MySQL
 // peut être en UTC, et entre minuit et 2 h à Paris les deux dates diffèrent
 // (déploiement du 30/09/2026 à 00:09 refusé par ce test).
-$st = $db->prepare("SELECT date, horaire, thematique, conseiller, commune FROM ateliers
+$st = $db->prepare("SELECT id, date, horaire, thematique, conseiller, commune FROM ateliers
                     WHERE statut = 'Planifié' AND date < ? ORDER BY conseiller, date, horaire");
 $st->execute([date('Y-m-d')]);
 $parConseiller = [];
 foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) $parConseiller[$r['conseiller']][] = $r;
-$st = $db->prepare("SELECT date, horaire, thematique, conseiller, commune FROM ateliers
+$st = $db->prepare("SELECT id, date, horaire, thematique, conseiller, commune FROM ateliers
                     WHERE statut = 'Réalisé' AND date < ? AND date >= ? AND (fiche_bilan IS NULL OR fiche_bilan = '')
                     ORDER BY conseiller, date, horaire");
 $st->execute([date('Y-m-d'), RAPPELS_FICHE_DEPUIS]);
@@ -86,13 +86,24 @@ function rappels_mail(string $nom, array $retards, array $fiches, bool $test): a
     $sujet = ($test ? '[TEST] ' : '') . implode(', ', $parts);
     $td = 'padding:6px 10px;border-bottom:1px solid #e2e8f0';
     $th = 'padding:8px 10px;text-align:left;color:#718096';
-    $section = function (string $intro, string $introHtml, array $liste) use ($h, $date, $td, $th, &$texte): string {
+    $section = function (string $intro, string $introHtml, array $liste, string $volet, string $libelleLien) use ($h, $date, $td, $th, &$texte): string {
         $texte .= $intro . "\n\n";
         $lignes = '';
         foreach ($liste as $r) {
             $texte .= '- ' . $date($r) . ' — ' . ($r['thematique'] ?: '—') . ' — ' . ($r['commune'] ?: '—') . "\n";
+            $id = (string) ($r['id'] ?? '');
+            $annee = substr($r['date'], 0, 4);
+            $lienHtml = '';
+            // Le fragment ne contient que le repère de navigation. Les données
+            // de l'atelier restent chargées dans l'application après connexion.
+            if ($id !== '' && trim($id) === $id && mb_strlen($id) <= 64
+                && !preg_match('/[\x00-\x1F\x7F]/', $id) && preg_match('/^[1-9][0-9]{3}$/D', $annee)) {
+                $lien = RAPPELS_URL_APPLI . '#atelier=' . rawurlencode($id) . '&annee=' . $annee . '&volet=' . $volet;
+                $texte .= '  ' . $libelleLien . ' : ' . $lien . "\n";
+                $lienHtml = '<br><a href="' . $h($lien) . '">' . $h($libelleLien) . '</a>';
+            }
             $lignes .= '<tr><td style="' . $td . '">' . $h($date($r)) . '</td>'
-                     . '<td style="' . $td . ';font-weight:600">' . $h($r['thematique'] ?: '—') . '</td>'
+                     . '<td style="' . $td . ';font-weight:600">' . $h($r['thematique'] ?: '—') . $lienHtml . '</td>'
                      . '<td style="' . $td . '">' . $h($r['conseiller'] ?: '—') . '</td>'
                      . '<td style="' . $td . ';color:#718096">' . $h($r['commune'] ?: '—') . '</td></tr>';
         }
@@ -105,9 +116,9 @@ function rappels_mail(string $nom, array $retards, array $fiches, bool $test): a
     $texte = "Bonjour $nom,\n\n";
     $corps = '';
     if ($retards) $corps .= $section('Ces ateliers ont le statut « Planifié » mais leur date est passée :',
-        'Ces ateliers ont le statut <strong>Planifié</strong> mais leur date est passée :', $retards);
+        'Ces ateliers ont le statut <strong>Planifié</strong> mais leur date est passée :', $retards, 'detail', 'Ouvrir le détail');
     if ($fiches) $corps .= $section('Ces ateliers sont « Réalisé » mais leur fiche bilan est vide :',
-        'Ces ateliers sont <strong>Réalisé</strong> mais leur <strong>fiche bilan</strong> est vide :', $fiches);
+        'Ces ateliers sont <strong>Réalisé</strong> mais leur <strong>fiche bilan</strong> est vide :', $fiches, 'reporting', 'Ouvrir la fiche bilan');
     $texte .= 'Pour les mettre à jour : ' . RAPPELS_URL_APPLI . "\n";
     $html = '<div style="font-family:sans-serif;max-width:640px;margin:0 auto">'
           . '<div style="background:#1e3a8a;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0"><h2 style="margin:0;font-size:18px">Ateliers en attente de mise à jour</h2>'

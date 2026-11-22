@@ -21,9 +21,10 @@ foreach (import_requetes_schema() as $sql) $db->exec($sql);
 
 $hier = date('Y-m-d', strtotime('-1 day'));
 $demain = date('Y-m-d', strtotime('+1 day'));
+$ancienRetard = (date('Y') - 1) . '-01-01';
 $ins = $db->prepare("INSERT INTO ateliers (id, statut, date, horaire, thematique, conseiller, commune, orienteur, lieu, co_animateur, residence, remarques)
                      VALUES (?, ?, ?, '09:00', ?, ?, 'Nérac', '', '', '', '', '')");
-$ins->execute(['a1', 'Planifié', $hier, 'Mails <b>gras</b>', 'Alice']);   // en retard
+$ins->execute(['a1&été#%', 'Planifié', $ancienRetard, 'Mails <b>gras</b>', 'Alice']);   // en retard
 $ins->execute(['a2', 'Réalisé', $hier, 'Déjà fait', 'Alice']);            // réalisé : non
 $ins->execute(['a3', 'Planifié', $demain, 'À venir', 'Alice']);           // futur : non
 $ins->execute(['b1', 'Planifié', $hier, 'Tablette', 'Bruno']);            // rappel coupé
@@ -56,6 +57,10 @@ $denis = implode('', array_filter($m, fn($x) => str_contains($x, 'A: denis@examp
 verifier($code === 0 && count($m) === 2 && $alice !== '' && $denis !== '', "un mail par conseiller concerné, pas plus : $sortie");
 verifier(str_contains($alice, 'Mails <b>gras</b>') && !str_contains($alice, 'Déjà fait') && !str_contains($alice, 'À venir'), 'seuls les ateliers « Planifié » à date passée, ou « Réalisé » sans fiche');
 verifier(str_contains($alice, 'Sans fiche') && !str_contains($alice, 'Trop ancien') && str_contains($alice, 'fiche bilan est vide'), 'fiche bilan vide rappelée dans le même mail, pas avant sa mise en service');
+$url = 'https://maswaddpt47-cmyk.github.io/ateliers-cd47_NextStep/';
+verifier(str_contains($alice, 'Ouvrir le détail : ' . $url . '#atelier=a1%26%C3%A9t%C3%A9%23%25&annee=' . substr($ancienRetard, 0, 4) . '&volet=detail')
+    && str_contains($alice, 'Ouvrir la fiche bilan : ' . $url . '#atelier=a4&annee=' . substr($hier, 0, 4) . '&volet=reporting')
+    && str_contains($alice, 'Pour les mettre à jour : ' . $url . "\n"), 'chaque ligne mène au bon volet, avec son identifiant encodé et son année ; le lien générique reste');
 verifier(str_contains($denis, 'Fiche seule') && !str_contains($denis, 'Planifié » mais'), 'conseiller sans retard mais avec une fiche vide : mail réduit à la fiche');
 verifier(str_contains($sortie, '1 rappel(s) coupé(s)') && str_contains($sortie, '1 conseiller(s) sans adresse'), 'interrupteur de rappel individuel respecté, absence d\'adresse comptée');
 verifier(!preg_match('/Alice|Bruno|Chloé|example\.org/', $sortie), 'compte rendu sans nom ni adresse');
