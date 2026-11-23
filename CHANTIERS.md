@@ -2,7 +2,13 @@
 
 État au **23/11/2026** (relu par « pull », après-midi), bases `main` — NEWGEN `ab6f459`, NextStep `3c25c10`, MD-LIB `8fb44d5`. Rien de neuf depuis le 22/11 hors ce qui suit (liens des mails, versions du bac à sable). Table `lectures` toujours absente du registre RGPD (vérifié le 23/11). Revue Codex d'AG-066 dans `AGORA.md` le 21/11/2026.
 
-**Liens Partage47 renommables (23/11, demande de l'utilisateur)** : bouton ✏️ dans le volet (Reporting), action `lienAtelier` op `renommer` (titre seul, à sa place ; même nom = « déjà » ; test PHP, mutation rejetée). NEWGEN `11ee692`, NextStep `2d04d11`. Annonce Nouveautés non proposée à ce stade.
+**Bandeau « en attente de mise à jour » (23/11, décision de l'utilisateur)** : Index = ses seuls ateliers (animés ou
+co-animés), « N de vos ateliers… », quel que soit le filtre ; Admin = filtre conseiller, bandeau cliquable qui n'affiche que ces
+ateliers. NEWGEN `8c31f49`, NextStep `5023f6c`/`ca0dded`. Bloc AG-068 ouvert puis **retiré : jugé disproportionné par
+l'utilisateur** (compteur d'alerte). Publication NextStep : incident GitHub (« No artifacts named github-pages ») ; relancer
+une tâche échouée crée un doublon d'artefact — relancer le workflow entier (`workflow_dispatch`), fait, ✅ 15:36.
+
+**Liens Partage47 renommables (23/11, demande de l'utilisateur)** : bouton ✏️ dans le volet (Reporting), action `lienAtelier` op `renommer` (titre seul, à sa place ; même nom = « déjà » ; test PHP, mutation rejetée). NEWGEN `11ee692`, NextStep `2d04d11`. **Validé par l'utilisateur le 23/11** ; annonce Nouveautés à proposer.
 
 **AG-067 (23/11, signalé par l'utilisateur)** : pastille Tickets de l'Admin recalculée sur la liste chargée (restait à 1 sans
 ticket « Nouveau ») ; clic « 🔔 nouveaux ateliers » depuis un autre onglet que l'Historique appliqué au montage (ouvrait
