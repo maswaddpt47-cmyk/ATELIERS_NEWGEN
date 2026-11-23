@@ -579,7 +579,7 @@ const LOGS_KEY = lsKey('adm_logs');
         }, darkMode?'☀️':'🌙'),
         newEntries.length>0&&CE('button',{
           className:'topbar-notif-btn',
-          onClick:()=>{setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);noterDernierNVu(entries);}
+          onClick:()=>{if(view!=='historique')window._pendingHighlight=newEntries.map(e=>e._id);setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);noterDernierNVu(entries);}
         },'🔔 ',CE('span',{className:'notif-badge'},newEntries.length)),
         adminConseiller&&adminConseiller!=='admin'&&CE('span',{className:'app-topbar-conseiller',style:{background:accentColor}},adminConseiller),
         CE('button',{
