@@ -401,22 +401,6 @@ sur une base fictive locale : chiffres conformes au calcul à la main, sortie sa
 
 **Vérification** : rejeux ciblés des fonctions et effets livrés dans les deux dépôts, avec API, DOM et état React simulés sur données fictives. Le clic hors Historique applique le filtre au montage quand l'atelier est présent. Après connexion dans NextStep Admin, deux cas ont aussi été reproduits dans le navigateur avec une API fictive. La pastille disparaît quand le seul « Nouveau » est hors d'un lot de 500 tickets « Résolu ». Elle s'éteint au passage confirmé de « Nouveau » à « En cours », puis se rallume au retour d'un ancien `getAll` alors que le ticket affiche encore « En cours ».
 
-## AG-068 — Bandeau « atelier(s) en attente de mise à jour » : Index limité à ses ateliers, Admin cliquable — ouvert le 23/11/2026
-
-**Auteur** : Claude. **Critère** : 7 (chiffre affiché). **Relecteur** : Codex.
-
-**Constat (utilisateur, 23/11)** : dans Index, le bandeau de l'Historique comptait les ateliers « Planifié » à date passée
-de toute l'équipe dès que le filtre conseiller était sur « Tous » (`nRetard`, `shared.js` : `filtConseiller==='Tous'||…`),
-ce qui arrive après la mise en avant d'un atelier créé ; « je ne sais même pas si elle me concerne ». Le bandeau n'était pas cliquable.
-
-**Décision de l'utilisateur (23/11)** : Index = seulement ses ateliers (animés ou co-animés), libellé « de vos ateliers » ;
-Admin = comptage inchangé (filtre conseiller), bandeau cliquable qui n'affiche que ces ateliers.
-
-**Définition retenue** : `isRetard` inchangé ; Index : `conseiller === moi || co_animateur === moi` (moi = identité de la
-session), quel que soit le filtre. Admin : clic = mêmes ateliers que le compte, autres filtres remis à zéro.
-
-**À contredire** : identité utilisée côté Index ; co-animateur compté ; cohérence du clic Admin avec le nombre affiché.
-
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
