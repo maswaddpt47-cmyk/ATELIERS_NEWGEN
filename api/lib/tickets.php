@@ -100,7 +100,7 @@ function action_creer_ticket(PDO $db, array $p, array $session): array
     $s->execute(array_values($t));
     $nouveau = $s->rowCount() === 1;
     $mails = $nouveau ? tickets_prevenir($db, $t) : 0;
-    return ['ok' => true, 'ticket' => ticket_lire($db, $id), 'nouveau' => $nouveau, 'mails' => $mails];
+    return ['ok' => true, 'ticket' => ticket_lire($db, $id), 'nouveau' => $nouveau, 'mails' => $mails, 'nouveaux' => tickets_nb_nouveaux($db)];
 }
 
 // Modification d'un ticket encore « Nouveau » (AG-041). L'écriture est
@@ -129,7 +129,7 @@ function action_modifier_ticket(PDO $db, array $p): array
     if ($apres === null) return ['ok' => false, 'error' => 'Ticket introuvable'];
     $voulu = ['type' => $type, 'gene' => $gene, 'onglet' => $onglet, 'titre' => $titre, 'description' => $description];
     foreach ($voulu as $k => $v) if ((string) $apres[$k] !== $v) return $refus;
-    return ['ok' => true, 'ticket' => $apres];
+    return ['ok' => true, 'ticket' => $apres, 'nouveaux' => tickets_nb_nouveaux($db)];
 }
 
 // Destinataires : comptes admin/superviseur à accès Admin actif, croisés avec
@@ -226,11 +226,23 @@ function ticket_lire(PDO $db, string $id): ?array
     return $r ?: null;
 }
 
+// AG-067 (revue Codex) : nombre global de tickets « Nouveau », renvoyé par chaque lecture et écriture de la
+// rubrique pour que la pastille de l'Admin ne dépende ni du lot chargé (500) ni d'un getAll parti avant l'écriture.
+function tickets_nb_nouveaux(PDO $db): int
+{
+    return (int) $db->query("SELECT COUNT(*) FROM tickets WHERE statut = 'Nouveau'")->fetchColumn();
+}
+
 function action_get_tickets(PDO $db, array $session): array
 {
     tickets_schema($db);
     $l = $db->query('SELECT * FROM tickets ORDER BY cree_le DESC LIMIT 500')->fetchAll(PDO::FETCH_ASSOC);
-    $r = ['ok' => true, 'tickets' => $l, 'moi' => $session['conseiller']];
+    // Un ancien « Nouveau » hors des 500 plus récents reste affiché (AG-067, revue Codex).
+    $vus = array_flip(array_column($l, 'id'));
+    foreach ($db->query("SELECT * FROM tickets WHERE statut = 'Nouveau' ORDER BY cree_le DESC")->fetchAll(PDO::FETCH_ASSOC) as $t) {
+        if (!isset($vus[$t['id']])) $l[] = $t;
+    }
+    $r = ['ok' => true, 'tickets' => $l, 'moi' => $session['conseiller'], 'nouveaux' => tickets_nb_nouveaux($db)];
     if (api_acces_admin($db, $session)) $r['mail_demandeur'] = tickets_mail_actif($db);   // interrupteur affiché à l'Admin seulement
     return $r;
 }
@@ -272,7 +284,7 @@ function action_repondre_ticket(PDO $db, array $p, array $session): array
     // Le mail décrit ce que CET appel a écrit, pas une relecture qui pourrait être plus récente.
     $ecrit = array_merge($t, ['statut' => $statut, 'reponse' => $reponse, 'doublon_de' => $doublon, 'repondu_par' => $reponduPar]);
     $mail = $gagne ? tickets_prevenir_auteur($db, $t, $ecrit, (string) $session['conseiller']) : ($change ? 'deja' : 'inchange');
-    return ['ok' => true, 'ticket' => $ticket, 'mail' => $mail, 'mail_a' => in_array($mail, ['inchange', 'deja'], true) ? '' : (string) $t['auteur']];
+    return ['ok' => true, 'ticket' => $ticket, 'mail' => $mail, 'mail_a' => in_array($mail, ['inchange', 'deja'], true) ? '' : (string) $t['auteur'], 'nouveaux' => tickets_nb_nouveaux($db)];
 }
 
 // Suppression définitive (test, envoi par erreur), réservée à l'admin et à la
@@ -286,7 +298,7 @@ function action_supprimer_ticket(PDO $db, array $p): array
     if ($id === '') return ['ok' => false, 'error' => 'Ticket introuvable'];
     $db->prepare("UPDATE tickets SET doublon_de = '' WHERE doublon_de = ?")->execute([$id]);
     $db->prepare('DELETE FROM tickets WHERE id = ?')->execute([$id]);
-    return ['ok' => true];
+    return ['ok' => true, 'nouveaux' => tickets_nb_nouveaux($db)];
 }
 
 // Pour les pastilles, livré avec getAll (aucun appel de plus au démarrage) :

@@ -701,7 +701,7 @@ function App(){
         CE('button',{onClick:()=>setView('nouveautes'),title:'Nouveautés','aria-label':'Nouveautés',style:{position:'relative',background:'none',border:'none',cursor:'pointer',fontSize:18,padding:'2px 10px 2px 4px',lineHeight:1}},'🆕',CE(PastilleNouveautes,{nb:nbNouveautes})),
         newEntries.length>0&&CE('button',{
           className:'topbar-notif-btn',
-          onClick:()=>{if(view!=='historique')window._pendingHighlight=newEntries.map(e=>e._id);setView('historique');document.dispatchEvent(new CustomEvent('ateliers:highlight',{detail:{ids:newEntries.map(e=>e._id)}}));setNewEntries([]);noterDernierNVu(entries);}
+          onClick:()=>{window._clocheIds=newEntries.map(e=>e._id);setNewEntries([]);noterDernierNVu(entries);setView('historique');try{document.dispatchEvent(new Event('ateliers:cloche'));}catch(_){}}
         },'🔔 ',CE('span',{className:'notif-badge'},newEntries.length)),
         filtreConseiller&&CE('div',{style:{position:'relative'},onMouseDown:e=>e.stopPropagation()},
           CE('button',{

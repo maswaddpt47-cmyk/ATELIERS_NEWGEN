@@ -588,6 +588,17 @@ verifier(str_contains(appel(['action' => 'repondreTicket'], $T + ['_id' => 'tk_e
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_essai_1', 'statut' => 'En cours', 'reponse' => 'Je regarde.']);
 verifier(($r['ok'] ?? false) && $r['ticket']['statut'] === 'En cours' && $r['ticket']['repondu_par'] === 'Conseiller Test' && $r['ticket']['clos_le'] === null, 'réponse : statut, auteur de la réponse, ticket encore ouvert');
 verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'repondreTicket' AND ref = 'tk_essai_1'")->fetchColumn() === 1, 'réponse journalisée avec le numéro du ticket pour cible, jamais le texte');
+// AG-067 (revue Codex) : nombre global de « Nouveau » renvoyé par les Tickets ; un ancien « Nouveau » hors des 500 plus récents reste listé.
+verifier(($l['nouveaux'] ?? null) === 1 && ($r['nouveaux'] ?? null) === 0, 'tickets : total global des « Nouveau » renvoyé par getTickets et par la réponse (AG-067)');
+$modele = $db->query("SELECT * FROM tickets WHERE id = 'tk_essai_1'")->fetch(PDO::FETCH_ASSOC);
+$cols = array_keys($modele);
+$ins = $db->prepare('INSERT INTO tickets (' . implode(',', $cols) . ') VALUES (' . implode(',', array_fill(0, count($cols), '?')) . ')');
+$lot = function (string $id, string $statut, string $cree) use ($ins, $modele) { $t = $modele; $t['id'] = $id; $t['statut'] = $statut; $t['cree_le'] = $cree; $ins->execute(array_values($t)); };
+$lot('tk_ancien_nouveau', 'Nouveau', '2020-01-01 08:00:00');
+for ($k = 0; $k < 500; $k++) $lot("tk_lot_$k", 'Résolu', '2026-11-20 08:00:00');
+$l2 = appel(['action' => 'getTickets'], $A);
+verifier(in_array('tk_ancien_nouveau', array_column($l2['tickets'] ?? [], 'id'), true) && ($l2['nouveaux'] ?? null) === 1, 'tickets : un ancien « Nouveau » hors des 500 plus récents reste listé et compté (AG-067)');
+$db->exec("DELETE FROM tickets WHERE id = 'tk_ancien_nouveau' OR id LIKE 'tk\\_lot\\_%'");
 appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_essai_3', 'type' => 'Amélioration', 'titre' => 'Même chose', 'description' => 'd']);
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_essai_3', 'doublon_de' => 'tk_essai_1']);
 verifier(($r['ok'] ?? false) && $r['ticket']['statut'] === 'Non retenu' && $r['ticket']['clos_le'] !== null && $r['ticket']['doublon_de'] === 'tk_essai_1', 'doublon : clos, rattaché à l\'original');
