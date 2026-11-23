@@ -1,11 +1,11 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **23/11/2026** (relu par « pull »), bases `main` — NEWGEN `9a2907c`, NextStep `3c25c10`, MD-LIB `8fb44d5`. Rien de neuf depuis le 22/11 hors ce qui suit (liens des mails, versions du bac à sable). Table `lectures` toujours absente du registre RGPD (vérifié le 23/11). Revue Codex d'AG-066 dans `AGORA.md` le 21/11/2026.
+État au **23/11/2026** (relu par « pull », après-midi), bases `main` — NEWGEN `ab6f459`, NextStep `3c25c10`, MD-LIB `8fb44d5`. Rien de neuf depuis le 22/11 hors ce qui suit (liens des mails, versions du bac à sable). Table `lectures` toujours absente du registre RGPD (vérifié le 23/11). Revue Codex d'AG-066 dans `AGORA.md` le 21/11/2026.
 
 **AG-067 (23/11, signalé par l'utilisateur)** : pastille Tickets de l'Admin recalculée sur la liste chargée (restait à 1 sans
 ticket « Nouveau ») ; clic « 🔔 nouveaux ateliers » depuis un autre onglet que l'Historique appliqué au montage (ouvrait
 l'Historique filtré sur le conseiller connecté). Poussé : NextStep `fa277d5`, NEWGEN `a1c1c07`/`7c93366` ; tests Node et
-navigateur verts dans les deux. **Reste** : déploiement à confirmer, essai de l'utilisateur, « pull » à Codex (AG-067).
+navigateur verts dans les deux. Déployés ✅ (12:02). **Revue Codex (23/11, `ab6f459`) : amendé, 4 écarts** — total limité aux 500 tickets chargés ; ancien `getAll` qui rallume la pastille ; demande de la cloche perdue ou appliquée en retard ; filtre NextStep qui persiste après la visite. **En cours** : corrections (règle 58), puis essai de l'utilisateur.
 
 **Rappels par mail (22/11/2026)** : chaque atelier renvoie vers son volet NextStep après connexion, sur « Détail » pour un statut à mettre à jour ou « Reporting » pour une fiche bilan. Le lien peut charger l'année de l'atelier dans cet onglet. Le choix d'années mémorisé reste celui de l'utilisateur. Les deux clients comprennent les liens. Le bouton générique reste disponible dans les mails.
 
