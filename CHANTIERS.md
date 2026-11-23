@@ -2,6 +2,11 @@
 
 État au **23/11/2026** (relu par « pull »), bases `main` — NEWGEN `9a2907c`, NextStep `3c25c10`, MD-LIB `8fb44d5`. Rien de neuf depuis le 22/11 hors ce qui suit (liens des mails, versions du bac à sable). Table `lectures` toujours absente du registre RGPD (vérifié le 23/11). Revue Codex d'AG-066 dans `AGORA.md` le 21/11/2026.
 
+**AG-067 (23/11, signalé par l'utilisateur)** : pastille Tickets de l'Admin recalculée sur la liste chargée (restait à 1 sans
+ticket « Nouveau ») ; clic « 🔔 nouveaux ateliers » depuis un autre onglet que l'Historique appliqué au montage (ouvrait
+l'Historique filtré sur le conseiller connecté). Poussé : NextStep `fa277d5`, NEWGEN `a1c1c07`/`7c93366` ; tests Node et
+navigateur verts dans les deux. **Reste** : déploiement à confirmer, essai de l'utilisateur, « pull » à Codex (AG-067).
+
 **Rappels par mail (22/11/2026)** : chaque atelier renvoie vers son volet NextStep après connexion, sur « Détail » pour un statut à mettre à jour ou « Reporting » pour une fiche bilan. Le lien peut charger l'année de l'atelier dans cet onglet. Le choix d'années mémorisé reste celui de l'utilisateur. Les deux clients comprennent les liens. Le bouton générique reste disponible dans les mails.
 
 **Versions du bac à sable (22/11/2026)** : les deux `version.json` indiquent le SHA de leur checkout en plus des versions de scripts. Le workflow « Déploiement du bac à sable » compare les SHA servis aux SHA attendus après la copie et rapporte le résultat pour chaque application dans le résumé GitHub Actions.
