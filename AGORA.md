@@ -368,6 +368,28 @@ réponses **affiché** dans le mail. Script de recomptage relu et exécuté par 
 sur une base fictive locale : chiffres conformes au calcul à la main, sortie sans nom.
 
 
+## AG-067 — Pastille des tickets (Admin) et pastille « nouveaux ateliers » — ouvert le 23/11/2026
+
+**Auteur** : Claude. **Critère** : 7 (chiffre affiché et filtre). **Relecteur** : Codex.
+
+**Constats (signalés par l'utilisateur le 23/11, NextStep Admin)** :
+1. La pastille Tickets reste à 1 alors que la liste ne montre aucun ticket « Nouveau » (un seul ouvert, « En cours »).
+   Lecture du code : le nombre vient de `getAll` (`tickets_resume`, `api/lib/tickets.php:297`) et n'est jamais recalculé
+   quand l'Admin change un statut (`useTicketsPastille`, `shared.js`). Cause probable, **hypothèse non vérifiée** : statut
+   changé après le chargement de la page.
+2. Le clic sur « 🔔 3 » (nouveaux ateliers) depuis un autre onglet que l'Historique ouvre l'Historique avec le filtre du
+   conseiller connecté : l'appel `_filterNewEntries` (NextStep) ou l'événement `ateliers:highlight` (NEWGEN) part avant que
+   l'Historique soit monté, il est perdu.
+
+**Correctifs proposés (définitions inchangées)** :
+1. Quand l'Admin a chargé la liste complète des tickets, la pastille prend le nombre de tickets « Nouveau » de cette liste
+   (même définition que le serveur) et le garde à jour à chaque changement de statut.
+2. Hors Historique, le clic dépose les `_id` dans `window._pendingHighlight`, déjà lu au montage de l'Historique (tous
+   conseillers, tous statuts, seuls ces ateliers).
+
+**À contredire** : liste de plus de 500 tickets (`LIMIT 500`) ; autre chemin qui laisserait la pastille fausse ;
+`_pendingHighlight` resté en attente puis appliqué plus tard.
+
 ## Blocs tranchés — sortis de ce fichier
 
 Leur conclusion vit dans les `CHANTIERS.md` des deux dépôts ; le texte complet
