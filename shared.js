@@ -3413,7 +3413,17 @@ function VueHistorique({ouvertureRappel,onRappelOuvert,onOuvrirGestionOrdi,entri
   // Compteurs des pastilles de statut sur la même base que les tuiles (13/10/2026) :
   // ils comptaient tous les ateliers, sans le filtre conseiller ni les autres.
   const counts=React.useMemo(()=>{const c={Tous:sansStatut.length};STATUTS.forEach(s=>{c[s]=sansStatut.filter(e=>e.statut===s).length;});return c;},[sansStatut]);
-  const nRetard=React.useMemo(()=>entries.filter(e=>isRetard(e)&&(filtConseiller==='Tous'||e.conseiller===filtConseiller)).length,[entries,filtConseiller]);
+  // Décision de l'utilisateur du 23/11/2026 : Index = ses seuls ateliers (animés ou co-animés), quel que soit le
+  // filtre ; Admin = filtre conseiller, bandeau cliquable qui n'affiche que ces ateliers.
+  const retardAdmin=/admin\.html$/.test(window.location.pathname);
+  const retardMoi=(window.authToken&&window.authToken.getMoi&&window.authToken.getMoi())||'';
+  const ateliersRetard=React.useMemo(()=>entries.filter(e=>isRetard(e)&&(retardAdmin?(filtConseiller==='Tous'||e.conseiller===filtConseiller):(!!retardMoi&&(e.conseiller===retardMoi||e.co_animateur===retardMoi)))),[entries,filtConseiller,retardAdmin,retardMoi]);
+  const nRetard=ateliersRetard.length;
+  function voirRetards(){
+    const ids=ateliersRetard.map(e=>e._id);if(!ids.length)return;
+    setFiltStatut('Tous');setFiltMois('Tous');setFiltCommune('Toutes');setFiltPublic([]);setFiltOuvert('Tous');setDateFrom('');setDateTo('');setSearch('');setDSearch('');
+    setNewIdsFilter(new Set(ids));
+  }
 
   function openPanel(e){setOngletInitial('detail');setPanel(e);}
   function closePanel(){setPanel(null);}
@@ -3475,11 +3485,11 @@ function VueHistorique({ouvertureRappel,onRappelOuvert,onOuvrirGestionOrdi,entri
       CE('div',{className:'kpi-mini-v2',style:{'--kc':'var(--warn)'},title:'Présents / inscrits des ateliers réalisés. Taux : ateliers dont les présents sont saisis ('+kpi.presentsTaux+'/'+kpi.inscritsTaux+')'},CE('b',null,CE(NombreAnime,{valeur:kpi.presents}),'/',CE(NombreAnime,{valeur:kpi.inscrits})),CE('span',null,'Présents'),kpi.inscritsTaux?CE('small',null,kpi.tx+'%'):null)
     ),
     // Alerte retards v2
-    nRetard>0&&CE('div',{className:'alerte-retard-v2'},
+    nRetard>0&&CE('div',{className:'alerte-retard-v2',...(retardAdmin?{role:'button',tabIndex:0,title:'Afficher ces ateliers',onClick:voirRetards,onKeyDown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();voirRetards();}},style:{cursor:'pointer'}}:{})},
       CE('span',{style:{fontSize:22}},'⚠️'),
       CE('div',null,
-        CE('div',{className:'ar-title'},`${nRetard} atelier(s) en attente de mise à jour`),
-        CE('div',{className:'ar-sub'},'Statut "Planifié" mais date déjà passée')
+        CE('div',{className:'ar-title'},retardAdmin?`${nRetard} atelier(s) en attente de mise à jour`:`${nRetard} de vos ateliers en attente de mise à jour`),
+        CE('div',{className:'ar-sub'},retardAdmin?'Statut "Planifié" mais date déjà passée — cliquez ici pour les afficher':'Statut "Planifié" mais date déjà passée')
       )
     ),
     // Barre conseiller v2
