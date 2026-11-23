@@ -2,6 +2,8 @@
 
 État au **23/11/2026** (relu par « pull », après-midi), bases `main` — NEWGEN `ab6f459`, NextStep `3c25c10`, MD-LIB `8fb44d5`. Rien de neuf depuis le 22/11 hors ce qui suit (liens des mails, versions du bac à sable). Table `lectures` toujours absente du registre RGPD (vérifié le 23/11). Revue Codex d'AG-066 dans `AGORA.md` le 21/11/2026.
 
+**Liens Partage47 renommables (23/11, demande de l'utilisateur)** : bouton ✏️ dans le volet (Reporting), action `lienAtelier` op `renommer` (titre seul, à sa place ; même nom = « déjà » ; test PHP, mutation rejetée). NEWGEN `11ee692`, NextStep `2d04d11`. Annonce Nouveautés non proposée à ce stade.
+
 **AG-067 (23/11, signalé par l'utilisateur)** : pastille Tickets de l'Admin recalculée sur la liste chargée (restait à 1 sans
 ticket « Nouveau ») ; clic « 🔔 nouveaux ateliers » depuis un autre onglet que l'Historique appliqué au montage (ouvrait
 l'Historique filtré sur le conseiller connecté). Poussé : NextStep `fa277d5`, NEWGEN `a1c1c07`/`7c93366` ; tests Node et
