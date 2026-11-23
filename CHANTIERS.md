@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **22/11/2026** (Paris), bases relues sur `main` — NEWGEN `0165bac`, NextStep `1218a18`, MD-LIB `0a71bc1`. Revue Codex d'AG-066 dans `AGORA.md` le 21/11/2026.
+État au **23/11/2026** (relu par « pull »), bases `main` — NEWGEN `9a2907c`, NextStep `3c25c10`, MD-LIB `8fb44d5`. Rien de neuf depuis le 22/11 hors ce qui suit (liens des mails, versions du bac à sable). Table `lectures` toujours absente du registre RGPD (vérifié le 23/11). Revue Codex d'AG-066 dans `AGORA.md` le 21/11/2026.
 
 **Rappels par mail (22/11/2026)** : chaque atelier renvoie vers son volet NextStep après connexion, sur « Détail » pour un statut à mettre à jour ou « Reporting » pour une fiche bilan. Le lien peut charger l'année de l'atelier dans cet onglet. Le choix d'années mémorisé reste celui de l'utilisateur. Les deux clients comprennent les liens. Le bouton générique reste disponible dans les mails.
 
