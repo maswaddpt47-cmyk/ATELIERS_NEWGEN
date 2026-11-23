@@ -331,6 +331,15 @@ verifier(($rp['ok'] ?? null) === false && str_contains($rp['error'] ?? '', 'lien
 foreach ([2, 3, 4, 5] as $i) $lien(['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => "L$i", 'url' => "https://partage.lotetgaronne.fr/index.php/s/l$i"]);
 $six = $lien(['_id' => 'entry_1', 'op' => 'ajouter', 'titre' => 'L6', 'url' => 'https://partage.lotetgaronne.fr/index.php/s/l6']);
 verifier(count($lire('entry_1')['liens']) === 5 && !($six['ok'] ?? true), 'liens : 5 au plus par atelier');
+// Renommer (23/11/2026, demande de l'utilisateur) : seul le titre change, à sa place ; même nom = rien à faire ; lien absent ou titre trop long refusés.
+$rn = $lien(['_id' => 'entry_1', 'op' => 'renommer', 'titre' => 'Feuille de présence', 'url' => 'https://partage.lotetgaronne.fr/index.php/s/l3']);
+$rn2 = $lien(['_id' => 'entry_1', 'op' => 'renommer', 'titre' => 'Feuille de présence', 'url' => 'https://partage.lotetgaronne.fr/index.php/s/l3']);
+$rnAbs = $lien(['_id' => 'entry_1', 'op' => 'renommer', 'titre' => 'x', 'url' => 'https://partage.lotetgaronne.fr/index.php/s/absent']);
+$rnLong = $lien(['_id' => 'entry_1', 'op' => 'renommer', 'titre' => str_repeat('t', 81), 'url' => 'https://partage.lotetgaronne.fr/index.php/s/l3']);
+$ll = $lire('entry_1')['liens'];
+verifier(($rn['ok'] ?? false) && !($rn['deja'] ?? false) && ($rn2['deja'] ?? false) && ($rnAbs['ok'] ?? null) === false && ($rnLong['ok'] ?? null) === false
+    && count($ll) === 5 && $ll[2] === ['titre' => 'Feuille de présence', 'url' => 'https://partage.lotetgaronne.fr/index.php/s/l3'] && $ll[1]['titre'] === 'L2',
+    'liens : renommer change le seul titre, à sa place ; même nom dit ; lien absent ou titre trop long refusés');
 $ret = $lien(['_id' => 'entry_1', 'op' => 'retirer', 'url' => $lienOk['url']]);
 $ret2 = $lien(['_id' => 'entry_1', 'op' => 'retirer', 'url' => $lienOk['url']]);
 verifier(($ret['ok'] ?? false) && count($ret['liens']) === 4 && ($ret2['deja'] ?? false) && !in_array($lienOk['url'], array_column($lire('entry_1')['liens'], 'url'), true), 'liens : retrait d\'un lien précis ; second retrait = rien de changé, dit');

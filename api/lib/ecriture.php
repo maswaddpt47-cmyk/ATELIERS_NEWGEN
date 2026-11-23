@@ -755,9 +755,9 @@ function action_lien_atelier(PDO $db, array $p, string $acteur = ''): array
     $op = (string) ($p['op'] ?? '');
     $url = trim((string) ($p['url'] ?? ''));
     $titre = trim((string) ($p['titre'] ?? ''));
-    if ($id === '' || !in_array($op, ['ajouter', 'retirer'], true)) return ['ok' => false, 'error' => 'Demande de lien invalide'];
+    if ($id === '' || !in_array($op, ['ajouter', 'retirer', 'renommer'], true)) return ['ok' => false, 'error' => 'Demande de lien invalide'];
     if (($raison = api_lien_partage_raison($url)) !== '') return ['ok' => false, 'error' => $raison];
-    if ($op === 'ajouter' && (mb_strlen($titre) > 80 || preg_match('/[\x00-\x1F\x7F]/', $titre))) return ['ok' => false, 'error' => 'Titre invalide (80 caractères au plus)'];
+    if (($op === 'ajouter' || $op === 'renommer') && (mb_strlen($titre) > 80 || preg_match('/[\x00-\x1F\x7F]/', $titre))) return ['ok' => false, 'error' => 'Titre invalide (80 caractères au plus)'];
     $db->beginTransaction();
     try {
         $s = $db->prepare('SELECT liens FROM ateliers WHERE id = ? FOR UPDATE');
@@ -766,13 +766,18 @@ function action_lien_atelier(PDO $db, array $p, string $acteur = ''): array
         if ($brut === false) { $db->rollBack(); return ['ok' => false, 'error' => 'Atelier introuvable']; }
         $liens = api_liens_lus($brut);
         $present = in_array($url, array_column($liens, 'url'), true);
-        if (($op === 'ajouter' && $present) || ($op === 'retirer' && !$present)) {
+        // Renommer (23/11/2026, demande de l'utilisateur) : seul le titre du lien change ; même titre = rien à faire.
+        if ($op === 'renommer' && !$present) { $db->rollBack(); return ['ok' => false, 'error' => 'Ce lien n\'est plus attaché à l\'atelier']; }
+        $memeTitre = $op === 'renommer' && in_array(['titre' => $titre, 'url' => $url], $liens, true);
+        if (($op === 'ajouter' && $present) || ($op === 'retirer' && !$present) || $memeTitre) {
             $db->rollBack();
             return ['ok' => true, 'liens' => $liens, 'deja' => true];
         }
         if ($op === 'ajouter') {
             if (count($liens) >= API_LIENS_MAX) { $db->rollBack(); return ['ok' => false, 'error' => API_LIENS_MAX . ' liens au plus par atelier']; }
             $liens[] = ['titre' => $titre, 'url' => $url];
+        } elseif ($op === 'renommer') {
+            $liens = array_map(fn($x) => $x['url'] === $url ? ['titre' => $titre, 'url' => $url] : $x, $liens);
         } else {
             $liens = array_values(array_filter($liens, fn($x) => $x['url'] !== $url));
         }
