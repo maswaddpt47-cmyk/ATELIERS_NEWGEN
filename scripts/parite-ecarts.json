@@ -30,12 +30,12 @@
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:3270",
-      "NextStep shared.js:3086"
+      "NEWGEN shared.js:3277",
+      "NextStep shared.js:3093"
     ],
-    "newgen": "7aff0d182e/7aff0d182e",
-    "nextstep": "21c2878f5f/21c2878f5f",
-    "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres). Revérifié le 28/10/2026 après les chiffres animés des tuiles : même composant NombreAnime dans les deux, posé sur le bandeau propre à chaque appli. Revérifié le 04/11/2026 après AG-047 (filtre « Ouvert à tous » et colonne des exports) : même filtre et même portée dans les deux, posé dans les filtres propres à chaque design. Revérifié le 04/11/2026 : badge « Ouvert à tous » sur la tuile, à côté du type de public, dans les deux. Revérifié le 22/11/2026 : les liens de rappel ouvrent le même volet dans les deux applications. Revérifié le 23/11/2026 (AG-067, écarts de Codex) : même correctif des deux côtés."
+    "newgen": "22754cade7/22754cade7",
+    "nextstep": "417a47c27d/417a47c27d",
+    "note": "Design propre à chaque appli (décision de l'utilisateur, 26/09/2026) ; le fonctionnement reste commun (PanneauAtelier, tri, tuiles, filtres). Revérifié le 28/10/2026 après les chiffres animés des tuiles : même composant NombreAnime dans les deux, posé sur le bandeau propre à chaque appli. Revérifié le 04/11/2026 après AG-047 (filtre « Ouvert à tous » et colonne des exports) : même filtre et même portée dans les deux, posé dans les filtres propres à chaque design. Revérifié le 04/11/2026 : badge « Ouvert à tous » sur la tuile, à côté du type de public, dans les deux. Revérifié le 22/11/2026 : les liens de rappel ouvrent le même volet dans les deux applications. Revérifié le 23/11/2026 (AG-067, écarts de Codex) : même correctif des deux côtés. Revérifié le 23/11/2026 (bandeau « en attente de mise à jour ») : même correctif des deux côtés."
   },
   "majIndiceNav": {
     "statut": "voulu",
