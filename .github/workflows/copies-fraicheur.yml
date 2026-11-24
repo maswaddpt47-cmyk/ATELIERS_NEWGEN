@@ -1,0 +1,68 @@
+# Alerte « copie trop vieille » (24/11/2026, demande de l'utilisateur).
+# Avant : seules les tuiles de l'Admin → Sauvegardes passaient au rouge, donc
+# personne n'était prévenu si on n'ouvrait pas l'Admin. Ici : mêmes règles que
+# les tuiles (scripts/fraicheur-copies.sh : copie de nuit 02:00-04:59 et copie
+# chiffrée hors site, seuil 26 h). Un échec rouge déclenche le mail d'échec de
+# GitHub, si les notifications Actions du compte sont actives : à vérifier une
+# fois avec « test_alerte ».
+# Lecture seule : liste les NOMS de fichiers de ~/sauvegardes et lit la date du
+# marqueur .derniere-copie-chiffree. Aucune copie n'est lue ni téléchargée.
+# Trois passages par jour (heures UTC : 05:23, 11:23, 17:23 en hiver) : pas de
+# relance automatique, donc pas de boucle d'échecs (cf. veilleur, 31/10).
+# Arrêt : Disable workflow.
+name: Fraîcheur des copies
+
+permissions:
+  contents: read
+
+on:
+  schedule:
+    - cron: '23 4,10,16 * * *'
+  workflow_dispatch:
+    inputs:
+      test_alerte:
+        description: "Provoquer une fausse alerte pour vérifier la réception du mail"
+        type: boolean
+        default: false
+
+concurrency:
+  group: copies-fraicheur
+  cancel-in-progress: false
+
+jobs:
+  fraicheur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Alerte de test
+        if: ${{ inputs.test_alerte }}
+        run: |
+          echo "::error::ALERTE (TEST) : fausse alerte provoquée à la main, aucune anomalie réelle"
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - name: Préparer l'accès SSH
+        env:
+          CLE: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          COMPTE: ${{ secrets.ALWAYSDATA_COMPTE }}
+        run: |
+          [ -n "$CLE" ] && [ -n "$COMPTE" ] || { echo "::error::IMPOSSIBLE : secret ALWAYSDATA_SSH_KEY ou ALWAYSDATA_COMPTE absent"; exit 1; }
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$CLE" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "HOTE=$COMPTE@ssh-$COMPTE.alwaysdata.net" >> "$GITHUB_ENV"
+
+      - name: Lire l'état des copies et juger
+        run: |
+          set -o pipefail
+          ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 "$HOTE" \
+            'ls ~/sauvegardes/ 2>/dev/null; echo "CHIFFREE=$(cat ~/sauvegardes/.derniere-copie-chiffree 2>/dev/null)"' > etat.txt \
+            || { echo "::error::IMPOSSIBLE : lecture du dossier des copies refusée ou serveur injoignable"; exit 1; }
+          if bash scripts/fraicheur-copies.sh < etat.txt > rapport.txt; then
+            cat rapport.txt
+          else
+            cat rapport.txt
+            echo "::error::$(grep '^ALERTE' rapport.txt | tr '\n' ' ')"
+            exit 1
+          fi

@@ -48,6 +48,10 @@ jobs:
       - name: Tests intégrité
         run: node --test integrite.test.js
 
+      # Alerte « copie trop vieille » (24/11/2026) : script réel, horloge figée, dates fictives.
+      - name: Tests fraîcheur des copies
+        run: node --test fraicheur.test.js
+
       - name: Garde-fou cache-busting
         run: node scripts/check-cache-busting.js "${{ github.event.before }}" "${{ github.sha }}"
 

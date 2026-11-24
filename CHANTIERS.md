@@ -146,6 +146,12 @@ Claude** ; ses commits vont sur des branches `claude/…` à fusionner. **Rappel
   succès, requête-témoin GET `logLogin` (absente = IMPOSSIBLE) ; jour en cours non compté (AG-029) ; `veilleur.test.js` et `integrite.test.js` bloquants. Éprouvé en réel le
   04/11. Un passage par veilleur (24 relèves par jour), laissé tel quel. Jamais vus en vrai : relance par le filet, pastille « ! ». La tuile lit les runs `status=success`
   de GitHub (peut omettre un run récent, hypothèse non vérifiée).
+- **Alerte « copie trop vieille »** (24/11/2026, demande de l'utilisateur) : `copies-fraicheur.yml`, 3 passages par jour
+  (≈05:23, 11:23, 17:23 Paris en hiver), mêmes règles que les tuiles Admin (nuit 02:00-04:59, chiffrée, seuil 26 h) via
+  `scripts/fraicheur-copies.sh` ; échec rouge = mail GitHub. Lecture seule (noms de fichiers + date du marqueur). Test :
+  `fraicheur.test.js` (bloquant, deploy.yml), 5 mutations tuées. **À éprouver en réel par l'utilisateur** : Actions →
+  « Fraîcheur des copies » → Run workflow avec `test_alerte` (le mail arrive-t-il ?), puis un passage normal (vert attendu).
+  Arrêt : Disable workflow. Jamais vu en vrai : le chemin SSH réel et le format du marqueur `.derniere-copie-chiffree`.
 - **Correctif PHP : redémarrer le site** (Web → Sites ; version servie : `diagnostic-api.yml`). **SSH par clé seule**. Un
   secret GitHub ne part qu'au déploiement suivant.
 - Utilisateur MySQL **sensible à la casse** ; `api/lib/` fermé par `.htaccess` (403 vérifié à chaque déploiement).
