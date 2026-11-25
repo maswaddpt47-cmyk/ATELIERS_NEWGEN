@@ -4,9 +4,9 @@
 
 **Structures partenaires co-animatrices (25/11, AG-069, demande de l'utilisateur)** : liste « Structures partenaires » dans Admin → Listes
 (aucun compte) ; proposées dans « Co-animateur » (groupe à part), colonne séparée `structure_partenaire`, **hors de toute statistique** (choix de
-l'utilisateur : l'atelier reste compté pour le conseiller qui l'anime). NEWGEN et NextStep. **Bug existant constaté sur NextStep (pas corrigé, à
-proposer)** : dans le volet, choisir un conseiller dans « Conseiller » ou « Co-animateur » change le filtre de conseiller (écouteur `change` d'`app.js:422-436`,
-qui n'exclut pas `.side-panel`) et ferme le volet ; reproduit avant AG-069.
+l'utilisateur : l'atelier reste compté pour le conseiller qui l'anime). NEWGEN et NextStep. Validé à l'écran par l'utilisateur, annonce 42 publiée (texte approuvé). Bloc AG-069
+**retiré par l'utilisateur** (pas de calcul, colonne défaisable), comme AG-068. **Volet NextStep corrigé (25/11)** : choisir un conseiller dans « Conseiller » ou « Co-animateur » changeait le filtre de
+conseiller et fermait le volet (écouteur `change` d'`app.js`, qui exclut désormais `.side-panel`) ; test `e2e/structures.spec.js`.
 
 **25/11** : (1) **diagnostic temporaire de la cloche** dans l'Admin (ligne sous le menu, numéros seulement : par année,
 dernier vu au chargement → plus grand chargé, « départ » = année sans mémoire, « sans serveur » = mémoire serveur absente au

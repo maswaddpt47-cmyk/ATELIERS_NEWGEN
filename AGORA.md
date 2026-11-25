@@ -105,36 +105,6 @@ bloc n'avait pas lieu d'être.
 
 # Blocs ouverts
 
-## AG-069 — Structures partenaires en co-animation (hors équipe, sans accès) — ouvert le 25/11/2026
-**Auteur** : session Claude cloud du 25/11/2026 — lu sur `91c9a99`
-**Proposition** : l'Admin tient une liste de structures partenaires (ex. France Services Santé) qui animent un atelier avec l'équipe sur invitation.
-Elles sont proposées dans le menu « Co-animateur » (groupe à part), ne créent aucun compte, ne sont jamais animateur principal, et **ne comptent dans aucune
-statistique** (décision de l'utilisateur, 25/11 : chiffres inchangés ; l'atelier reste compté pour le conseiller qui l'anime).
-**Critère déclencheur** : 1 (schéma : nouvelle colonne de `ateliers`, nouvelle liste enregistrée) et 2 (deux options de stockage). Le critère 7 ne s'applique pas
-**si** le choix A est retenu : aucun calcul n'est modifié, c'est précisément ce qu'il garantit.
-**Contradicteur** : Codex — MD-LIB `agora.md` §12
-**Option A (retenue par l'auteur)** : **colonne séparée** `structure_partenaire VARCHAR(100) NOT NULL DEFAULT ''` (ajoutée à chaud, modèle `ouvert_a_tous`,
-`api/lib/api.php:394`) ; `co_animateur` reste réservé aux conseillers. Aucun des ~32 usages de `co_animateur` comme personne (`logic.js:476-591`,
-`shared.js` 4230/4612/4627/4641/4693/5161/6805-6831, `bilan.php:129`, `avis.php:98`, `ecriture.php:722`) n'est touché : une structure ne peut pas apparaître
-comme conseiller, ni dans un filtre, ni dans un conflit d'horaire, ni dans un bilan ou le mail mensuel.
-**Option B (écartée)** : la structure est mise dans `co_animateur` et exclue à la main de chacun de ces ~32 sites par un test « est une structure ». Un
-oubli ferait apparaître la structure comme conseiller dans un tableau ou un mail (visible, hors de tout test existant).
-**Ce que ça engage** : une colonne et une liste (`list_structures` dans `config`, livrée dans `getAll` → `lists.structures`, éditée dans Admin → Listes,
-`saveLists`) ; un seul co-animateur par atelier (conseiller **ou** structure : choisir l'un efface l'autre) ; une valeur **absente** du corps d'une écriture
-garde celle de la base (page ouverte avant le déploiement, règle 40) ; une valeur retirée de la liste reste lisible sur les ateliers déjà enregistrés
-(aucun refus à la modification, comme pour la fiche bilan, AG-020 B). Pas de compte créé par `saveLists` pour une structure.
-**Non vérifié par l'auteur** : (1) restauration depuis la corbeille et duplication d'atelier : le champ doit suivre ; (2) page TS, rappels par mail, exports :
-le champ ne doit y apparaître nulle part (`ts.php:30` liste blanche) ; (3) cohérence NEWGEN / NextStep (`scripts/parite.js`) ; (4) un nom de structure égal à
-celui d'un conseiller (refusé à l'enregistrement de la liste ?) ; (5) `contract.test.js:23` : le test de contrat doit réclamer le champ à l'API.
-**Si personne ne répond, je fais quoi ?** Je livre testé (mutations : valeur absente qui efface, statistiques identiques avec et sans structure, compte créé
-par erreur), une relecture unique de Codex à la livraison (règle 58), et l'utilisateur tranche.
-**Où regarder** : `api/lib/api.php:52-58,364-400,481-490` ; `api/lib/ecriture.php:140,340-345,484-504,813` ; `shared.js:1850-1852,2584-2587,3012-3016` ;
-`contract.test.js:23` ; `logic.js:476-591`.
-**Livré (25/11)** : option A. Suites PHP (API, bilan) et navigateur vertes sur NEWGEN et NextStep ; `e2e/structures.spec.js` (volet, exclusivité,
-onglet Admin) ; 12 mutations rejetées (exclusivité serveur et volet, valeur absente qui efface, nom de conseiller, liste non enregistrée, onglet absent,
-bilan qui compterait la structure, conflit qui la lirait…). Restauration depuis la corbeille vérifiée (champ conservé). L'utilisateur a demandé le 25/11
-pourquoi un bloc sans calcul : critères 1 et 2, à lui de dire s'il le garde pour la relecture de Codex ou le retire comme AG-068.
-
 ## AG-066 — Mémoire « déjà lu » côté serveur (Nouveautés et tickets) — ouvert le 21/11/2026
 **Auteur** : session Claude cloud du 21/11/2026 — lu sur `d74a118`
 **Proposition** : la mémoire « annonces lues » (`nouveautes_vues`, `shared.js:7526-7539`) et « réponses de tickets lues »
