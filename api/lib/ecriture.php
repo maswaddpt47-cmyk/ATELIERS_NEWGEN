@@ -344,6 +344,18 @@ function api_valider_atelier(array $d, ?string &$err): ?array
         }
         $l['ouvert_a_tous'] = $v;
     }
+    // Structure partenaire (AG-069) : absente de l'envoi (page ouverte avant le déploiement) → colonne inchangée ;
+    // jamais en même temps qu'un co-animateur conseiller ; un nom retiré de la liste reste modifiable sur les
+    // ateliers déjà enregistrés (aucune comparaison avec la liste ici).
+    if (array_key_exists('structure_partenaire', $d)) {
+        $v = $d['structure_partenaire'];
+        if (is_array($v) || is_object($v)) { $err = 'structure_partenaire : valeur invalide'; return null; }
+        $v = is_bool($v) || $v === null ? '' : trim((string) $v);
+        if (mb_strlen($v) > 100) { $err = 'structure_partenaire : trop long (maximum 100 caractères)'; return null; }
+        if (preg_match('/[\x00-\x1F\x7F]/', $v)) { $err = 'structure_partenaire : caractères invalides'; return null; }
+        if ($v !== '' && ($l['co_animateur'] ?? '') !== '') { $err = 'Un seul co-animateur : un conseiller ou une structure partenaire, pas les deux.'; return null; }
+        $l['structure_partenaire'] = $v;
+    }
     // Liens Partage47 (AG-065, amendement 2 de Codex) : jamais écrits par saveEntry / saveMany. Le statut
     // groupé, le volet ou une page ancienne renvoient l'atelier entier : une liste périmée effacerait un lien
     // ajouté ailleurs, ou en remettrait un retiré. Une valeur reçue ici est ignorée ; seule l'action
@@ -484,9 +496,16 @@ function action_set_json(PDO $db, string $cle, mixed $v): array
 function action_save_lists(PDO $db, array $p): array
 {
     $lists = api_objet($p['lists'] ?? null) ?? [];
+    // Structures partenaires (AG-069) : jamais un nom de conseiller (casse et accents ignorés), sinon un menu
+    // ambigu ; aucune n'a de compte. Page ancienne sans `structures` : la liste en base est gardée.
+    $nomsC = array_map(fn($n) => mb_strtolower(trim((string) $n)), (array) ($lists['conseillers'] ?? []));
+    foreach ((array) ($lists['structures'] ?? []) as $n) {
+        if (mb_strlen(trim((string) $n)) > 100) return ['ok' => false, 'error' => 'Structure partenaire : nom trop long (maximum 100 caractères)'];
+        if (in_array(mb_strtolower(trim((string) $n)), $nomsC, true)) return ['ok' => false, 'error' => '« ' . trim((string) $n) . ' » est déjà un conseiller : une structure partenaire a un autre nom.'];
+    }
     $db->beginTransaction();
     try {
-        foreach (['statuts', 'conseillers', 'publics', 'materiels'] as $k) {
+        foreach (array_key_exists('structures', $lists) ? ['statuts', 'conseillers', 'publics', 'materiels', 'structures'] : ['statuts', 'conseillers', 'publics', 'materiels'] as $k) {
             $v = is_array($lists[$k] ?? null) ? array_map('strval', $lists[$k]) : [];
             api_set_config($db, "list_$k", implode("\n", $v));
         }

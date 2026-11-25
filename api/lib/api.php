@@ -57,6 +57,7 @@ const API_CHAMPS_ATELIER = [
     'fiche_bilan' => 'fiche_bilan',
     'ouvert_a_tous' => 'ouvert_a_tous',
     'liens' => 'liens',
+    'structure_partenaire' => 'structure_partenaire',   // AG-069 : structure co-animatrice, hors équipe, hors statistiques
 ];
 
 // Point d'entrée : choisit l'action et applique la règle d'accès.
@@ -398,6 +399,11 @@ function ateliers_colonne_duree(PDO $db): void
     if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'liens'")->fetch()) {
         $db->exec('ALTER TABLE ateliers ADD COLUMN liens TEXT NULL');
     }
+    // Structure partenaire co-animatrice (AG-069, 25/11/2026) : colonne séparée de co_animateur, que
+    // les statistiques, filtres et conflits lisent comme une personne de l'équipe. Vide par défaut.
+    if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'structure_partenaire'")->fetch()) {
+        $db->exec("ALTER TABLE ateliers ADD COLUMN structure_partenaire VARCHAR(100) NOT NULL DEFAULT ''");
+    }
     $ok = true;
 }
 
@@ -481,7 +487,7 @@ function action_get_all(PDO $db, array $p, array $session): array
     }
 
     // Même lecture des listes que _actionGetAllFresh (GAS_NEWGEN.js:655-660).
-    $lists = ['statuts' => [], 'conseillers' => [], 'publics' => [], 'materiels' => []];
+    $lists = ['statuts' => [], 'conseillers' => [], 'publics' => [], 'materiels' => [], 'structures' => []];
     if (($cfg['list_statuts'] ?? '') !== '' || ($cfg['list_conseillers'] ?? '') !== '') {
         foreach ($lists as $k => $_) $lists[$k] = api_liste($cfg['list_' . $k] ?? '');
     } elseif (($cfg['lists'] ?? '') !== '') {

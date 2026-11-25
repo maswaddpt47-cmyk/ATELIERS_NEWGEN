@@ -29,6 +29,8 @@ $ins->execute(['s4', 'Planifié', '2026-09-20', 'Bruno', 'MSA <b>', 4, null]);  
 $ins->execute(['a1', 'Réalisé', '2026-08-05', 'Alice', 'CAF', 5, 2]);           // mois précédent
 $ins->execute(['o1', 'Planifié', '2026-10-06', 'Alice', 'CAF', 4, null]);        // mois suivant
 $db->exec("UPDATE ateliers SET co_animateur = 'Alice' WHERE id = 's2'");          // co-animé (AG-037, D1)
+$db->exec("ALTER TABLE ateliers ADD COLUMN IF NOT EXISTS structure_partenaire VARCHAR(100) NOT NULL DEFAULT ''");
+$db->exec("UPDATE ateliers SET structure_partenaire = 'France Services Santé' WHERE id = 's1'");   // structure co-animatrice (AG-069) : hors statistiques
 // Qualité (04/10/2026) : fiches bilan et avis des ateliers réalisés du mois.
 $db->prepare("UPDATE ateliers SET fiche_bilan = ? WHERE id = 's1'")->execute([json_encode(['objectif' => 'Oui', 'difficultes' => ['Connexion', 'Autre'], 'difficultes_autre' => 'Salle Martin', 'suite' => 'Nouvel atelier'], JSON_UNESCAPED_UNICODE)]);
 avis_schema($db);
@@ -87,6 +89,8 @@ else {
 }
 verifier(str_contains($t, '1 atelier(s) de septembre 2026 encore « Planifié »') && str_contains($t, '1 atelier(s) planifié(s) en octobre'), 'points d\'attention : retards, mois suivant');
 verifier(!preg_match('/Alice|Sophie|example\.org/', $sortie), 'compte rendu sans nom ni adresse');
+// Structure partenaire (AG-069) : jamais une ligne « par conseiller », ni dans le mail ni à l'écran ; l'atelier reste compté pour son animateur.
+verifier(!str_contains($t, 'France Services') && (!isset($b['parConseiller']) || !in_array('France Services Santé', array_column($b['parConseiller'], 'conseiller'), true)), '[AG-069] structure co-animatrice : absente du mail mensuel et du tableau par conseiller (chiffres inchangés)');
 verifier(!str_contains($t, 'soumettez ce mail'), 'envoi réel : pas de rappel de vérification');
 verifier(str_contains($t, 'Fiches bilan remplies : 1 sur 2 atelier(s) réalisé(s)') && str_contains($t, 'Objectif atteint : Oui : 1') && str_contains($t, 'Difficultés rencontrées : Connexion : 1, Autre : 1')
     && str_contains($t, 'Avis des stagiaires : 3 avis sur 1 atelier(s)') && str_contains($t, 'Réponse aux attentes : 4,5/5 — 2 réponses sur 3 avis') && str_contains($t, 'Plus à l\'aise (« oui ») : 1 sur 3 avis (1 sans réponse)'), 'qualité : fiches bilan et avis des seuls ateliers réalisés');

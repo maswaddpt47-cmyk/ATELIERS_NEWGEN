@@ -244,7 +244,7 @@ function App(){
   const[cachedVisibility,setCachedVisibility]= React.useState(null);
   const[lists,setLists]    = React.useState({
     statuts:[...STATUTS_DEFAULT],conseillers:[...CONSEILLERS_DEFAULT],
-    publics:[...PUBLICS_DEFAULT],materiels:[...MATERIELS_DEFAULT]
+    publics:[...PUBLICS_DEFAULT],materiels:[...MATERIELS_DEFAULT],structures:[]
   });
   // Chargé avant l'auth pour alimenter le dropdown de login
   const[loginConseillers,setLoginConseillers]=React.useState(CONSEILLERS_DEFAULT);
@@ -408,8 +408,8 @@ const LOGS_KEY = lsKey('adm_logs');
       setEntries(incoming);
       if(data.lists){
         const l=data.lists;
-        const nl={statuts:Array.isArray(l.statuts)?l.statuts:[...STATUTS_DEFAULT],conseillers:Array.isArray(l.conseillers)?l.conseillers:[...CONSEILLERS_DEFAULT],publics:Array.isArray(l.publics)?l.publics:[...PUBLICS_DEFAULT],materiels:Array.isArray(l.materiels)?l.materiels:[...MATERIELS_DEFAULT]};
-        setLists(nl);STATUTS=[...nl.statuts];CONSEILLERS=[...nl.conseillers];PUBLICS=[...nl.publics];MATERIELS=[...nl.materiels];
+        const nl={statuts:Array.isArray(l.statuts)?l.statuts:[...STATUTS_DEFAULT],conseillers:Array.isArray(l.conseillers)?l.conseillers:[...CONSEILLERS_DEFAULT],publics:Array.isArray(l.publics)?l.publics:[...PUBLICS_DEFAULT],materiels:Array.isArray(l.materiels)?l.materiels:[...MATERIELS_DEFAULT],structures:Array.isArray(l.structures)?l.structures:[]};
+        setLists(nl);STATUTS=[...nl.statuts];CONSEILLERS=[...nl.conseillers];PUBLICS=[...nl.publics];MATERIELS=[...nl.materiels];STRUCTURES=[...nl.structures];
         addLog('Listes synchronisées','ok');
       }
       if(data.conseiller_colors){applyColors(data.conseiller_colors);}
@@ -513,7 +513,7 @@ const LOGS_KEY = lsKey('adm_logs');
   }
 
   function handleSaveLists(newLists){
-    setLists(newLists);STATUTS=[...newLists.statuts];CONSEILLERS=[...newLists.conseillers];PUBLICS=[...newLists.publics];MATERIELS=[...newLists.materiels];
+    setLists(newLists);STATUTS=[...newLists.statuts];CONSEILLERS=[...newLists.conseillers];PUBLICS=[...newLists.publics];MATERIELS=[...newLists.materiels];STRUCTURES=[...(newLists.structures||[])];
   }
 
   function handleSaveEmails(newEmails){

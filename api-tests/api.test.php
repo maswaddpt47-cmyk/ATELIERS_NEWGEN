@@ -510,6 +510,14 @@ $db->exec("DELETE FROM ateliers_corbeille WHERE id = 'pur'");
 appel(['action' => 'saveLists'], $A + ['lists' => json_encode(['statuts' => ['Planifié'], 'conseillers' => ['Conseiller Test', 'Nouvelle Recrue'], 'publics' => [], 'materiels' => ['Ordinateur']])]);
 verifier(appel(['action' => 'getAll'], $A)['lists']['conseillers'] === ['Conseiller Test', 'Nouvelle Recrue'], 'saveLists relu');
 verifier($db->query("SELECT hash IS NULL FROM comptes WHERE conseiller = 'Nouvelle Recrue'")->fetchColumn() == 1, 'compte créé par saveLists, sans mot de passe');
+// Structures partenaires (AG-069, 25/11/2026) : liste tenue par l'Admin, aucun compte, jamais un nom de conseiller.
+appel(['action' => 'saveLists'], $A + ['lists' => json_encode(['statuts' => ['Planifié'], 'conseillers' => ['Conseiller Test', 'Nouvelle Recrue'], 'publics' => [], 'materiels' => ['Ordinateur'], 'structures' => ['France Services Santé', 'Mission locale']])]);
+verifier(appel(['action' => 'getAll'], $A)['lists']['structures'] === ['France Services Santé', 'Mission locale'], 'structures partenaires : liste enregistrée et relue');
+verifier((int) $db->query("SELECT COUNT(*) FROM comptes WHERE conseiller IN ('France Services Santé', 'Mission locale')")->fetchColumn() === 0, 'structures partenaires : aucun compte créé');
+$r = appel(['action' => 'saveLists'], $A + ['lists' => json_encode(['statuts' => ['Planifié'], 'conseillers' => ['Conseiller Test', 'Nouvelle Recrue'], 'publics' => [], 'materiels' => ['Ordinateur'], 'structures' => ['NOUVELLE Recrue']])]);
+verifier(($r['ok'] ?? null) === false && appel(['action' => 'getAll'], $A)['lists']['structures'] === ['France Services Santé', 'Mission locale'], 'structure portant le nom d\'un conseiller (casse ignorée) : refusée, liste intacte');
+appel(['action' => 'saveLists'], $A + ['lists' => json_encode(['statuts' => ['Planifié'], 'conseillers' => ['Conseiller Test', 'Nouvelle Recrue'], 'publics' => [], 'materiels' => ['Ordinateur']])]);
+verifier(appel(['action' => 'getAll'], $A)['lists']['structures'] === ['France Services Santé', 'Mission locale'], 'page ancienne sans « structures » : la liste en base est gardée');
 $r = appel(['action' => 'resetPassword'], $A + ['conseiller' => 'Nouvelle Recrue']);
 verifier($r['ok'] === true && strlen($r['newPassword']) === 12, 'resetPassword : mot de passe provisoire aléatoire');
 $nr = appel(['action' => 'checkPassword'], ['conseiller' => 'Nouvelle Recrue', 'password' => $r['newPassword']]);
@@ -836,6 +844,32 @@ $db->exec("UPDATE ateliers SET duree = NULL WHERE id = 'mig_1'");
 appel(['action' => 'getAll'], $T);
 verifier($db->query("SELECT duree FROM ateliers WHERE id = 'mig_1'")->fetchColumn() === null, 'remplissage fait une seule fois (repère dans config)');
 $db->exec("DELETE FROM ateliers WHERE id LIKE 'mig\\_%'");
+
+echo "API — structure partenaire co-animatrice (AG-069)\n";
+$baseS = ['statut' => 'Planifié', 'date' => '2026-12-16', 'horaire' => '10:00', 'thematique' => 'Santé', 'commune' => 'Agen', 'conseiller' => 'Conseiller Test', 'ouvert_a_tous' => 'Non'];
+$struct = fn(string $id) => $db->query("SELECT structure_partenaire FROM ateliers WHERE id = " . $db->quote($id))->fetchColumn();
+$r = appel(['action' => 'saveEntry'], $T + ['_brut' => 1, 'entry' => json_encode(['_id' => 'st_1', 'structure_partenaire' => ' France Services Santé '] + $baseS)]);
+verifier(($r['ok'] ?? false) && $struct('st_1') === 'France Services Santé' && ($lire('st_1')['structure_partenaire'] ?? null) === 'France Services Santé' && ($lire('st_1')['co_animateur'] ?? 'x') === '', 'structure enregistrée (espaces retirés), relue dans getAll, co_animateur vide');
+appel(['action' => 'saveEntry'], $T + ['_brut' => 1, 'entry' => json_encode(['_id' => 'st_1', 'remarques' => 'modifié'] + $baseS)]);
+verifier($struct('st_1') === 'France Services Santé' && $lire('st_1')['remarques'] === 'modifié', 'modification sans le champ (page ouverte avant le déploiement) : structure gardée');
+$r = appel(['action' => 'saveEntry'], $T + ['_brut' => 1, 'entry' => json_encode(['_id' => 'st_1', 'structure_partenaire' => '', 'co_animateur' => 'Nouvelle Recrue'] + $baseS)]);
+verifier(($r['ok'] ?? false) && $struct('st_1') === '' && $lire('st_1')['co_animateur'] === 'Nouvelle Recrue', 'structure → conseiller co-animateur : la structure est effacée');
+$r = appel(['action' => 'saveEntry'], $T + ['_brut' => 1, 'entry' => json_encode(['_id' => 'st_1', 'structure_partenaire' => 'Mission locale', 'co_animateur' => 'Nouvelle Recrue'] + $baseS)]);
+verifier(($r['ok'] ?? true) === false && $struct('st_1') === '' && $lire('st_1')['co_animateur'] === 'Nouvelle Recrue', 'un conseiller ET une structure : refusé, atelier intact');
+foreach ([str_repeat('x', 101), "Mission\nlocale", ['a']] as $i => $mauvais) {
+    $r = appel(['action' => 'saveEntry'], $T + ['_brut' => 1, 'entry' => json_encode(['_id' => 'st_1', 'structure_partenaire' => $mauvais] + $baseS)]);
+    verifier(($r['ok'] ?? true) === false && $struct('st_1') === '', 'structure invalide n° ' . ($i + 1) . ' (trop longue, saut de ligne, tableau) : refusée');
+}
+// Une structure sortie de la liste reste modifiable sur les ateliers déjà enregistrés (aucune comparaison avec la liste).
+appel(['action' => 'saveEntry'], $T + ['_brut' => 1, 'entry' => json_encode(['_id' => 'st_2', 'structure_partenaire' => 'Structure retirée'] + $baseS)]);
+appel(['action' => 'saveEntry'], $T + ['_brut' => 1, 'entry' => json_encode(['_id' => 'st_2', 'structure_partenaire' => 'Structure retirée', 'remarques' => 'maj'] + $baseS)]);
+verifier($struct('st_2') === 'Structure retirée' && $lire('st_2')['remarques'] === 'maj', 'structure absente de la liste : l\'atelier reste modifiable');
+// Corbeille : la structure suit l'atelier supprimé puis restauré.
+appel(['action' => 'delete'], $T + ['_id' => 'st_2']);
+$r = appel(['action' => 'restaurerCorbeille'], $A + ['_id' => 'st_2']);
+verifier(($r['ok'] ?? false) && $struct('st_2') === 'Structure retirée', 'corbeille : structure conservée à la restauration');
+$db->exec("DELETE FROM ateliers WHERE id IN ('st_1', 'st_2')");
+$db->exec("DELETE FROM ateliers_corbeille WHERE id IN ('st_1', 'st_2')");
 
 echo "API — ouvert à tous (AG-047)\n";
 $base = ['statut' => 'Planifié', 'date' => '2026-12-15', 'horaire' => '10:00', 'thematique' => 'Ouvert', 'commune' => 'Agen', 'conseiller' => 'Conseiller Test'];

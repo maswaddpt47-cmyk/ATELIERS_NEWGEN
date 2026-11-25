@@ -21,6 +21,7 @@ function buildEntry(overrides = {}) {
     lieu:         'MFR Agen',
     conseiller:   'Alice',
     co_animateur: '',
+    structure_partenaire: '',
     orienteur:    'CAF',
     public:       'Tous publics',
     materiel:     'Tablette|Imprimante',
