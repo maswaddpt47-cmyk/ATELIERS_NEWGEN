@@ -272,3 +272,20 @@ Règle 22. Ne pas reproposer une piste écartée sans fait nouveau. **En attente
 - 10/10 — progression début → fin de cycle dans les avis — « pour l'instant », à reprendre quand un cycle sera bouclé.
 - 12/10 — synchroniser l'import Outlook PC ↔ téléphone — « trop compliqué » : passerait par le serveur (donnée personnelle).
 - 12/10 — envoi du .ics par mail ou bouton de partage — « reste manuel » : une seule étape gagnée.
+
+## Retest du 25/11/2026 — reprise de l'API et de la base communes (NEWGEN + NextStep)
+
+Version testée : 6ebf0ada7ded73c3c4b876eed902ecfa1f45a7c5
+Données : fictives
+Verdict : partiel
+Preuves :
+- Diff 04095c1 → 6ebf0ad lu : touchent la reprise le schéma (`tickets_messages`, colonne `structure_partenaire`, `schema.sql`), les actions de journal importables (`creerAtelier`, `majAtelier`, `import.php`), l'alerte de fraîcheur des copies (`copies-fraicheur.yml`, `fraicheur-copies.sh`) et `deploy.yml`. `copie.php` / `sauvegarde.php` (export) : inchangés ; l'export est un `mysqldump` de toute la base, la nouvelle table y entre sans liste à tenir à jour.
+- Suites PHP sur MariaDB 10.11 jetable : api 496 ok, sauvegarde 6, import 28, bilan 20, rappels 11, sandbox 9, 0 échec ; Node : fraicheur 7, integrite 12, veilleur 18, 0 échec.
+- Reprise simulée : ancienne version (04095c1, schéma d'époque) crée atelier, ticket et réponse fictifs → export `mysqldump` aux options de `copie.php` (« Dump completed » présent) → restauration dans une base neuve → nouvelle version (6ebf0ad) : colonne et table absentes avant tout appel, créées à l'usage ; atelier restauré relu avec `structure_partenaire` vide ; réponse d'avant le fil reprise comme 1er message ; commentaires auteur et admin ajoutés (statut inchangé) ; structure enregistrée, refusée avec un co-animateur conseiller ; journal `majAtelier`. 14/14. Export de la base migrée : `tickets_messages` incluse, restauration à neuf relue (3 messages, 1 ticket, 1 atelier avec structure).
+- Commun NextStep : même API et même base, un seul jeu de vérifications (voir son CHANTIERS). Déploiements relevés : `deploy-api.yml` ✅ 17:01 UTC sur 9efefbc (code API identique à 6ebf0ad) ; « Fraîcheur des copies » : 2 exécutions ✅ (manuelle 24/11, planifiée 25/11 14:32 UTC).
+Limites :
+- Restauration complète de bout en bout (SSH Alwaysdata, copie chiffrée hors site, clé de déchiffrement) non rejouée : aucun fichier de la chaîne n'a changé, et ces accès exigent des secrets absents d'ici. « Accès et copie hors site à confirmer » reste donc non confirmé.
+- La fraîcheur réelle des copies et la lecture SSH n'ont pas été vérifiées : seul le script est testé, avec horloge figée et dates fictives. Une exécution planifiée est observée sur 1 jour : pas encore une surveillance (règle 36).
+- MariaDB local (10.11), pas le MySQL d'Alwaysdata ni celui de la CI ; la production n'a pas été touchée.
+- Pages github.io inaccessibles depuis cette session (proxy, 403) : l'accès Pages réel et le CORS vers la production n'ont pas été éprouvés ; CORS testé en local seulement (en-tête limité à github.io, suite api).
+- Bac à sable et mail non testés. Aucune « référence validée » : décision de l'utilisateur.
