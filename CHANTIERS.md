@@ -2,6 +2,15 @@
 
 État au **25/11/2026** (relu par « pull », 09:29), bases `main` — NEWGEN `dbad3c8`, NextStep `ca0dded`, MD-LIB `7dfba7a`. Arrivé le 24/11 : alerte « copie trop vieille » (`copies-fraicheur.yml`, ci-dessous) ; publication de `dbad3c8` passée par relance complète (✅). **Aucun passage programmé de `copies-fraicheur.yml` au 25/11 09:29** (attendu 05:23) : un seul passage, manuel, le 24/11 — pas encore une surveillance (règle 36), à recompter. Table `lectures` toujours absente du registre RGPD.
 
+**Fil de discussion des tickets (25/11, demande de l'utilisateur, sans bloc AGORA) — PRÊT, NON PUBLIÉ** : l'Admin et l'auteur du ticket ajoutent
+des commentaires sans changer le statut ; les autres lisent ; table `tickets_messages`, action `commenterTicket`, message facultatif au changement de
+statut, marqueur « 💬 à répondre » côté Admin, mail à l'auteur (Admin écrit) ou aux Admin (auteur écrit), purge et anonymisation RGPD-19 avec le ticket.
+Testé : suite PHP, 8 mutations serveur et 6 mutations client rejetées, suites complètes vertes sur les deux dépôts. **Non publié exprès** (l'utilisateur
+voyageait, consigne : « le site ne doit pas planter ») : branche `ccr-68c7ff8c-0w5fu0`, NEWGEN `f41c7de`, NextStep `976461c`. **Pour publier** : actualiser,
+`git push origin <sha>:main` sur NEWGEN d'abord (l'API ne se déploie que si ses tests passent), vérifier le déploiement de l'API, puis NextStep ; relancer le
+workflow Pages entier (`workflow_dispatch`) en cas d'échec « No artifacts named github-pages » (piste du 25/11). Reste : annonce Nouveautés (texte à faire
+approuver), table `tickets_messages` à inscrire au registre RGPD (ateliers-backups).
+
 **Structures partenaires co-animatrices (25/11, AG-069, demande de l'utilisateur)** : liste « Structures partenaires » dans Admin → Listes
 (aucun compte) ; proposées dans « Co-animateur » (groupe à part), colonne séparée `structure_partenaire`, **hors de toute statistique** (choix de
 l'utilisateur : l'atelier reste compté pour le conseiller qui l'anime). NEWGEN et NextStep. Validé à l'écran par l'utilisateur, annonce 42 publiée (texte approuvé). Bloc AG-069
