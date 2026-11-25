@@ -227,6 +227,7 @@ déclenchement se fait sur des faits constatables dans le diff.
    séparées des défauts démontrés et tranchées par l'utilisateur.
    **Précision (décision de l'utilisateur, 19/11/2026)** : une nouvelle présentation de chiffres déjà calculés et
    vérifiés (impression, autre forme de graphe), sans nouveau calcul, filtre ni définition, n'ouvre pas de bloc.
+   Un compteur d'alerte (pastille, bandeau de rappel) n'en ouvre pas non plus (décision de l'utilisateur, 23/11/2026, AG-068 retiré).
 
 **N'y vont pas :** un changement de rendu pur (règle 17), un correctif
 localisé appuyé sur une preuve, tout ce qui se défait en un commit — **sauf
