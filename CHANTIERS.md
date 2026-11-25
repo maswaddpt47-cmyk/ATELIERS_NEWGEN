@@ -259,7 +259,7 @@ superflu, `sw.js` de désinscription.
 
 ## Pistes d'amélioration
 
-Règle 22. Ne pas reproposer une piste écartée sans fait nouveau. **En attente** : aucune (purge de `lectures` faite le 22/11, voir AG-066). Coupure d'urgence éprouvée sur NextStep du bac à sable le 17/11 (06:21-06:22, runs `44023528386` / `44023579101` : 3 URL en 403 puis 200).
+Règle 22. Ne pas reproposer une piste écartée sans fait nouveau. **En attente** : 25/11 — **échecs intermittents du déploiement GitHub Pages** (« No artifacts named github-pages », étape `deploy-pages`). Relevé NEWGEN : 7 échecs sur les 37 derniers déploiements (15/11 → 25/11), en rafales (20/11 matin, 21/11 matin, 24/11 soir, 25/11 14:40-15:03), jamais liés à un commit. **Fait établi** : dans le run en échec `45640473832`, l'artefact existe (créé à 15:03:25) alors que `deploy-pages` l'a cherché à 15:03:26 et en a trouvé 0. **Hypothèse non vérifiée** : course côté GitHub (artefact visible avec un léger retard), cohérente avec un échec par rafales ; page d'état de GitHub inaccessible depuis cette session. **Proposé** : étape « attendre l'artefact » (interrogation de l'API jusqu'à 60 s) entre l'envoi et `deploy-pages`, dans `deploy.yml` des deux dépôts ; bénéfice : plus de relance manuelle ; charge : un petit script et un essai ; à mesurer sur les prochains déploiements. Relancer le **workflow entier** (`workflow_dispatch`), pas la seule tâche. Purge de `lectures` faite le 22/11, voir AG-066. Coupure d'urgence éprouvée sur NextStep du bac à sable le 17/11 (06:21-06:22, runs `44023528386` / `44023579101` : 3 URL en 403 puis 200).
 
 **Écartées** (date — piste — raison)
 - 25/10 — tableaux thématiques × communes et partenaires × conseillers — alourdissent la page, jugés inutiles.
