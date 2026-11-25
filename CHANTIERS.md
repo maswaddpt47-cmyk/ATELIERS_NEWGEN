@@ -1,6 +1,6 @@
 # Chantiers en cours — ATELIERS_NEWGEN
 
-État au **23/11/2026** (relu par « pull », après-midi), bases `main` — NEWGEN `ab6f459`, NextStep `3c25c10`, MD-LIB `8fb44d5`. Rien de neuf depuis le 22/11 hors ce qui suit (liens des mails, versions du bac à sable). Table `lectures` toujours absente du registre RGPD (vérifié le 23/11). Revue Codex d'AG-066 dans `AGORA.md` le 21/11/2026.
+État au **25/11/2026** (relu par « pull », 09:29), bases `main` — NEWGEN `dbad3c8`, NextStep `ca0dded`, MD-LIB `7dfba7a`. Arrivé le 24/11 : alerte « copie trop vieille » (`copies-fraicheur.yml`, ci-dessous) ; publication de `dbad3c8` passée par relance complète (✅). **Aucun passage programmé de `copies-fraicheur.yml` au 25/11 09:29** (attendu 05:23) : un seul passage, manuel, le 24/11 — pas encore une surveillance (règle 36), à recompter. Table `lectures` toujours absente du registre RGPD.
 
 **Bandeau « en attente de mise à jour » (23/11, décision de l'utilisateur)** : Index = ses seuls ateliers (animés ou
 co-animés), « N de vos ateliers… », quel que soit le filtre ; Admin = filtre conseiller, bandeau cliquable qui n'affiche que ces
