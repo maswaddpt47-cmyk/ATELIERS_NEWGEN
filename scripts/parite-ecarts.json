@@ -21,17 +21,17 @@
       "NEWGEN admin_app.js:214",
       "NextStep admin_app.js:207"
     ],
-    "newgen": "d1b844419e/fb10f6da76",
-    "nextstep": "218003a7dc/5f0d342abb",
-    "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs. Revérifié le 21/10/2026 après le message de maintenance (#36/#37 et NextStep #24/#25) : changement identique dans les deux, seule la navigation diffère. Revérifié le 24/10/2026 après le bandeau Admin sur téléphone : même correctif (titre masqué, nom tronqué, boutons réduits à leur icône), adapté à la coquille de chaque appli. Revérifié le 24/10/2026 après la pastille de 💾 Sauvegardes : même lecture du veilleur, posée sur la barre du bas (NEWGEN) ou le menu latéral (NextStep). Revérifié le 25/10/2026 : même conservation de saisie et mêmes confirmations dans les deux coquilles ; seuls les emplacements de navigation restent propres à chacune. Revérifié le 26/10/2026 après l'icône Planning (🧑‍🤝‍🧑) : même changement dans les deux. Revérifié le 26/10/2026 après AG-032 (« Mes bilans » reçoit les années chargées) : même changement dans les deux. Revérifié le 20/11/2026 : seule NextStep reçoit la garde « mise à jour partielle sans date » dans appliquerEntreeLocale (AG-065, vérification de Codex) ; NEWGEN l'a déjà par anneeIncluse. Revérifié le 20/11/2026 (soir) : ajouts identiques des deux côtés (pastille des nouveaux ateliers retenue d'une visite à l'autre). Revérifié le 22/11/2026 : les liens de rappel ouvrent le même volet dans les deux applications. Revérifié le 23/11/2026 (AG-067) : même correctif du clic « nouveaux ateliers » dans les deux applications. Revérifié le 23/11/2026 (AG-067, écarts de Codex) : même correctif des deux côtés."
+    "newgen": "d1b844419e/109fe28b63",
+    "nextstep": "218003a7dc/226d6d7ada",
+    "note": "Coquille de chaque appli : navigation (barre NEWGEN, menu latéral NextStep), « touche pas » — utilisateur, 26/09/2026. Les écrans qu elle affiche sont communs. Revérifié le 21/10/2026 après le message de maintenance (#36/#37 et NextStep #24/#25) : changement identique dans les deux, seule la navigation diffère. Revérifié le 24/10/2026 après le bandeau Admin sur téléphone : même correctif (titre masqué, nom tronqué, boutons réduits à leur icône), adapté à la coquille de chaque appli. Revérifié le 24/10/2026 après la pastille de 💾 Sauvegardes : même lecture du veilleur, posée sur la barre du bas (NEWGEN) ou le menu latéral (NextStep). Revérifié le 25/10/2026 : même conservation de saisie et mêmes confirmations dans les deux coquilles ; seuls les emplacements de navigation restent propres à chacune. Revérifié le 26/10/2026 après l'icône Planning (🧑‍🤝‍🧑) : même changement dans les deux. Revérifié le 26/10/2026 après AG-032 (« Mes bilans » reçoit les années chargées) : même changement dans les deux. Revérifié le 20/11/2026 : seule NextStep reçoit la garde « mise à jour partielle sans date » dans appliquerEntreeLocale (AG-065, vérification de Codex) ; NEWGEN l'a déjà par anneeIncluse. Revérifié le 20/11/2026 (soir) : ajouts identiques des deux côtés (pastille des nouveaux ateliers retenue d'une visite à l'autre). Revérifié le 22/11/2026 : les liens de rappel ouvrent le même volet dans les deux applications. Revérifié le 23/11/2026 (AG-067) : même correctif du clic « nouveaux ateliers » dans les deux applications. Revérifié le 23/11/2026 (AG-067, écarts de Codex) : même correctif des deux côtés. Revérifié le 25/11/2026 (diagnostic de la cloche) : même ajout des deux côtés."
   },
   "VueHistorique": {
     "statut": "voulu",
     "nature": "différent",
     "pages": "index+admin",
     "lieux": [
-      "NEWGEN shared.js:3277",
-      "NextStep shared.js:3093"
+      "NEWGEN shared.js:3285",
+      "NextStep shared.js:3101"
     ],
     "newgen": "22754cade7/22754cade7",
     "nextstep": "417a47c27d/417a47c27d",
