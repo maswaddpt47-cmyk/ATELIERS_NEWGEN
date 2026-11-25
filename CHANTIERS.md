@@ -289,3 +289,20 @@ Limites :
 - MariaDB local (10.11), pas le MySQL d'Alwaysdata ni celui de la CI ; la production n'a pas été touchée.
 - Pages github.io inaccessibles depuis cette session (proxy, 403) : l'accès Pages réel et le CORS vers la production n'ont pas été éprouvés ; CORS testé en local seulement (en-tête limité à github.io, suite api).
 - Bac à sable et mail non testés. Aucune « référence validée » : décision de l'utilisateur.
+
+## Retest du 25/11/2026 (2ᵉ passage) — reprise de l'API et de la base communes, version 39aee62
+
+Version testée : 39aee620db29c7b8b17be28067979f273aa65898
+Données : fictives
+Verdict : partiel
+Preuves :
+- Diff : depuis 6ebf0ad (1er retest), seul `CHANTIERS.md` change (+17 lignes) ; aucun fichier de code. Le périmètre de reprise de 04095c1 → 39aee62 est donc celui du 1er retest : schéma (`tickets_messages`, `structure_partenaire`), actions de journal importables, alerte de fraîcheur des copies, `deploy.yml` ; `copie.php` / `sauvegarde.php` inchangés.
+- Rejoué à ce SHA, MariaDB 10.11 jetable : suites PHP api 496, sauvegarde 6, import 28, bilan 20, rappels 11, sandbox 9, 0 échec ; Node fraîcheur 7, intégrité 12, veilleur 18, 0 échec.
+- Reprise simulée rejouée de bout en bout : ancienne version 04095c1 (données fictives) → `mysqldump` aux options de `copie.php` (« Dump completed ») → restauration dans une base neuve → code 39aee62 : 14/14 (table et colonne créées à l'usage, atelier et ticket relus, réponse d'avant le fil reprise, commentaires auteur et admin, structure partenaire, journal `majAtelier`).
+- Observation : « Fraîcheur des copies » n'a que 2 exécutions (manuelle 24/11 20:44 UTC, planifiée 25/11 14:32 UTC) ; le passage prévu à 16:23 UTC n'apparaît pas. Hypothèse non vérifiée : planification GitHub retardée ou abandonnée.
+Limites :
+- Restauration complète réelle (SSH Alwaysdata, copie chiffrée hors site, clé de déchiffrement) non rejouée : aucun fichier de la chaîne n'a changé et les secrets sont absents ; « accès et copie hors site à confirmer » reste non confirmé.
+- La fraîcheur réelle des copies n'est pas vérifiée (script testé à horloge figée) ; la planification n'est pas fiable à ce jour (voir observation), donc pas une surveillance (règle 36).
+- MariaDB local, pas le MySQL d'Alwaysdata ni celui de la CI ; production non touchée.
+- `github.io` inaccessible depuis la session (proxy, 403) : accès Pages et CORS réels non éprouvés, CORS testé en local seulement.
+- Aucune « référence validée » : décision de l'utilisateur.
