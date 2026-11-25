@@ -29,7 +29,8 @@ $ins->execute(['s4', 'Planifié', '2026-09-20', 'Bruno', 'MSA <b>', 4, null]);  
 $ins->execute(['a1', 'Réalisé', '2026-08-05', 'Alice', 'CAF', 5, 2]);           // mois précédent
 $ins->execute(['o1', 'Planifié', '2026-10-06', 'Alice', 'CAF', 4, null]);        // mois suivant
 $db->exec("UPDATE ateliers SET co_animateur = 'Alice' WHERE id = 's2'");          // co-animé (AG-037, D1)
-$db->exec("ALTER TABLE ateliers ADD COLUMN IF NOT EXISTS structure_partenaire VARCHAR(100) NOT NULL DEFAULT ''");
+// Même ajout à chaud que l'API (api.php) : SHOW COLUMNS, pas « ADD COLUMN IF NOT EXISTS » (MariaDB seulement, refusé par le MySQL de la CI).
+if (!$db->query("SHOW COLUMNS FROM ateliers LIKE 'structure_partenaire'")->fetch()) $db->exec("ALTER TABLE ateliers ADD COLUMN structure_partenaire VARCHAR(100) NOT NULL DEFAULT ''");
 $db->exec("UPDATE ateliers SET structure_partenaire = 'France Services Santé' WHERE id = 's1'");   // structure co-animatrice (AG-069) : hors statistiques
 // Qualité (04/10/2026) : fiches bilan et avis des ateliers réalisés du mois.
 $db->prepare("UPDATE ateliers SET fiche_bilan = ? WHERE id = 's1'")->execute([json_encode(['objectif' => 'Oui', 'difficultes' => ['Connexion', 'Autre'], 'difficultes_autre' => 'Salle Martin', 'suite' => 'Nouvel atelier'], JSON_UNESCAPED_UNICODE)]);
