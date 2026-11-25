@@ -125,6 +125,7 @@ enregistrement de service worker dans les pages.
   php api-tests/api.test.php` : dans l'environnement « Micky », MariaDB est installé et
   démarré par le script de démarrage (04/11/2026), mot de passe `testmdp` (base locale
   jetable). Suite complète une seule fois avant le push, mutations groupées (règle 55).
+- **SQL portable** (approuvé le 25/11/2026) : un test ou une migration n'emploie que du SQL commun à MariaDB (local) et MySQL (CI, Alwaysdata). Piège : `ADD COLUMN IF NOT EXISTS` passe sous MariaDB, pas sous MySQL (déploiement de l'API bloqué le 25/11) ; tester l'existence par `SHOW COLUMNS`.
 - Google Apps Script est **coupé** et son code retiré du dépôt (30/09/2026) :
   version qui tournait en ligne, `git show 3da2257:gas/GAS_NEWGEN.js` ; banc
   de mesure GAS/Alwaysdata, `git log --diff-filter=D -- banc/` puis
@@ -228,6 +229,8 @@ déclenchement se fait sur des faits constatables dans le diff.
    **Précision (décision de l'utilisateur, 19/11/2026)** : une nouvelle présentation de chiffres déjà calculés et
    vérifiés (impression, autre forme de graphe), sans nouveau calcul, filtre ni définition, n'ouvre pas de bloc.
    Un compteur d'alerte (pastille, bandeau de rappel) n'en ouvre pas non plus (décision de l'utilisateur, 23/11/2026, AG-068 retiré).
+
+**Critère 1 — précision (décision de l'utilisateur, 25/11/2026)** : l'ajout d'une colonne ou d'une table à chaud, sans calcul et défaisable, n'ouvre pas de bloc (AG-069 retiré ; fil des tickets sans bloc).
 
 **N'y vont pas :** un changement de rendu pur (règle 17), un correctif
 localisé appuyé sur une preuve, tout ce qui se défait en un commit — **sauf
