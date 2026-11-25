@@ -38,7 +38,7 @@ define('RAPPELS_FICHE_DEPUIS', getenv('ATELIERS_RAPPELS_FICHE_DEPUIS') ?: '2026-
 // 24/09/2026. Purge à chaque connexion réussie (pas besoin de tâche planifiée).
 const API_JOURNAL_MOIS = 12;
 // Jeton exigé, n'importe quel rôle (lectures protégées et écritures d'ateliers).
-const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'modifierTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier', 'bilanAvis', 'avisParAtelier', 'lienAtelier', 'marquerLu'];
+const API_ACTIONS_CONSEILLER = ['getAll', 'getConfig', 'getVisibility', 'saveEntry', 'saveMany', 'delete', 'verifierIds', 'selfSetPassword', 'logAccesIndex', 'usageOnglets', 'creerTicket', 'modifierTicket', 'getTickets', 'jetonAvis', 'saisirAvisPapier', 'bilanAvis', 'avisParAtelier', 'lienAtelier', 'marquerLu', 'commenterTicket'];
 // Jeton admin ou superviseur (ADMIN_ONLY_ACTIONS de shared.js).
 const API_ACTIONS_ADMIN = ['getCorbeille', 'restaurerCorbeille', 'purgerCorbeille', 'etatSauvegardes', 'copieMaintenant', 'saveLists', 'saveConfig', 'setConfig', 'saveVisibility', 'saveColors', 'saveEmails', 'saveCompte', 'resetPassword', 'envoyerLienReinit', 'setPassword', 'getLogs', 'getUsageOnglets', 'repondreTicket', 'supprimerTicket', 'avisAtelier', 'supprimerAvis', 'tsListe', 'tsStats', 'tsCreerCompte', 'tsReinitMdp', 'tsActiver', 'tsSupprimer', 'getAnomaliesValidees', 'validerAnomalie', 'annulerAnomalie'];
 // Seules actions d'un jeton 'ts' (page des travailleurs sociaux, AG-042).
@@ -201,6 +201,7 @@ function api_action_protegee(PDO $db, string $action, array $p, array $session):
         case 'avisParAtelier':  return action_avis_par_atelier($db, $p, $session);
         case 'getTickets':      return action_get_tickets($db, $session);
         case 'modifierTicket':  return action_modifier_ticket($db, $p);
+        case 'commenterTicket': return action_commenter_ticket($db, $p, $session);
         case 'repondreTicket':  return action_repondre_ticket($db, $p, $session);
         case 'supprimerTicket': return action_supprimer_ticket($db, $p);
         case 'avisAtelier':     return action_avis_atelier($db, $p);

@@ -54,8 +54,50 @@ const TICKET_URL_APP_BAC = [
 function tickets_schema(PDO $db): void
 {
     foreach (import_requetes_schema() as $sql) {
+        // « tickets » et « tickets_messages » (fil de discussion, 25/11/2026)
         if (str_contains($sql, 'CREATE TABLE IF NOT EXISTS tickets')) $db->exec($sql);
     }
+}
+
+const TICKET_MESSAGES_MAX = 200;   // par ticket
+
+// Fil d'un ticket, du plus ancien au plus récent. Un ticket d'avant le fil, avec une réponse de l'Admin et aucun
+// message, la montre comme premier message (id « legacy_… ») : rien n'est perdu à l'affichage.
+function tickets_messages_de(PDO $db, array $tickets): array
+{
+    $ids = array_values(array_unique(array_map(fn($t) => (string) $t['id'], $tickets)));
+    $r = array_fill_keys($ids, []);
+    foreach (array_chunk($ids, 200) as $lot) {
+        $s = $db->prepare('SELECT id, ticket_id, cree_le, auteur, par_admin, texte FROM tickets_messages WHERE ticket_id IN ('
+            . implode(',', array_fill(0, count($lot), '?')) . ') ORDER BY ordre');
+        $s->execute($lot);
+        foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $m) {
+            $r[$m['ticket_id']][] = ['id' => $m['id'], 'cree_le' => $m['cree_le'], 'auteur' => $m['auteur'], 'par_admin' => (int) $m['par_admin'], 'texte' => $m['texte']];
+        }
+    }
+    foreach ($tickets as $t) {
+        if ($r[$t['id']] === [] && (string) $t['reponse'] !== '') {
+            $r[$t['id']][] = ['id' => 'legacy_' . $t['id'], 'cree_le' => (string) ($t['repondu_le'] ?? $t['cree_le']), 'auteur' => (string) $t['repondu_par'], 'par_admin' => 1, 'texte' => (string) $t['reponse']];
+        }
+    }
+    return $r;
+}
+
+// Insère un message. Avant le tout premier message d'un ticket d'avant le fil, sa réponse unique devient le message
+// de départ (INSERT IGNORE sur un id fixe : rejouable). Rend true si CET appel a inséré le message.
+function ticket_message_ajouter(PDO $db, array $ticket, string $id, string $auteur, bool $parAdmin, string $texte): bool
+{
+    if ((string) $ticket['reponse'] !== '') {
+        $n = $db->prepare('SELECT COUNT(*) FROM tickets_messages WHERE ticket_id = ?');
+        $n->execute([$ticket['id']]);
+        if ((int) $n->fetchColumn() === 0) {
+            $db->prepare('INSERT IGNORE INTO tickets_messages (id, ticket_id, cree_le, auteur, par_admin, texte) VALUES (?, ?, ?, ?, 1, ?)')
+               ->execute(['legacy_' . $ticket['id'], $ticket['id'], $ticket['repondu_le'] ?: $ticket['cree_le'], (string) $ticket['repondu_par'], (string) $ticket['reponse']]);
+        }
+    }
+    $s = $db->prepare('INSERT IGNORE INTO tickets_messages (id, ticket_id, cree_le, auteur, par_admin, texte) VALUES (?, ?, ?, ?, ?, ?)');
+    $s->execute([$id, $ticket['id'], date('Y-m-d H:i:s'), $auteur, $parAdmin ? 1 : 0, $texte]);
+    return $s->rowCount() === 1;
 }
 
 // Anonymisation et purge RGPD, appelées à chaque connexion (comme le journal
@@ -70,6 +112,9 @@ function tickets_purger(PDO $db): void
     $ouvert = date('Y-m-d H:i:s', strtotime('-' . TICKET_OUVERT_MOIS . ' months'));
     $db->prepare('DELETE FROM tickets WHERE (clos_le IS NOT NULL AND clos_le < ?) OR (clos_le IS NULL AND cree_le < ?)')
        ->execute([$clos, $ouvert]);
+    // Fil de discussion : auteurs anonymisés avec le ticket, messages supprimés avec lui (RGPD-19).
+    $db->exec("UPDATE tickets_messages m JOIN tickets t ON t.id = m.ticket_id SET m.auteur = '—' WHERE t.auteur = '—' AND m.auteur <> '—'");
+    $db->exec('DELETE FROM tickets_messages WHERE NOT EXISTS (SELECT 1 FROM tickets t WHERE t.id = tickets_messages.ticket_id)');
 }
 
 function ticket_texte(array $p, string $cle, int $max): string
@@ -203,14 +248,15 @@ function tickets_prevenir_auteur(PDO $db, array $avant, array $apres, string $pa
     $url = ($bac ? TICKET_URL_APP_BAC : TICKET_URL_APP)[$apres['site']] ?? ($bac ? TICKET_URL_APP_BAC : TICKET_URL_APP)['nextstep'];
     // « Réponse de » : la personne qui a écrit la réponse, pas forcément celle qui change le statut (Codex, AG-045).
     $repondant = trim((string) ($apres['repondu_par'] ?? '')) !== '' ? (string) $apres['repondu_par'] : $parQui;
-    $sujet = 'Votre contribution « ' . $apres['titre'] . ' » : ' . $apres['statut'];
+    // Statut inchangé (nouveau message du fil seulement, 25/11/2026) : le mail le dit au lieu d'annoncer un statut.
+    $sujet = $statutChange ? 'Votre contribution « ' . $apres['titre'] . ' » : ' . $apres['statut'] : 'Nouveau message sur votre contribution « ' . $apres['titre'] . ' »';
     $doublon = (string) $apres['doublon_de'] !== '' ? "Elle a été rattachée à une contribution déjà existante.
 " : '';
-    $texte = "Bonjour,\n\nVotre contribution « {$apres['titre']} » est maintenant : {$apres['statut']}.\n" . $doublon;
+    $texte = "Bonjour,\n\nVotre contribution « {$apres['titre']} » " . ($statutChange ? "est maintenant : {$apres['statut']}." : "a reçu un nouveau message (statut : {$apres['statut']}).") . "\n" . $doublon;
     if ((string) $apres['reponse'] !== '') $texte .= "\nRéponse de $repondant :\n{$apres['reponse']}\n";
     $texte .= "\nLa retrouver dans l'application, onglet Contribuer : $url\n";
     $html = '<div style="font-family:sans-serif;max-width:640px"><p>Bonjour,</p>'
-          . '<p>Votre contribution <strong>« ' . $h($apres['titre']) . ' »</strong> est maintenant : <strong>' . $h($apres['statut']) . '</strong>.</p>'
+          . '<p>Votre contribution <strong>« ' . $h($apres['titre']) . ' »</strong> ' . ($statutChange ? 'est maintenant : <strong>' . $h($apres['statut']) . '</strong>.' : 'a reçu un nouveau message (statut : <strong>' . $h($apres['statut']) . '</strong>).') . '</p>'
           . ($doublon !== '' ? '<p>' . $h(trim($doublon)) . '</p>' : '')
           . ((string) $apres['reponse'] !== '' ? '<p style="margin:0 0 4px;color:#718096;font-size:13px">Réponse de ' . $h($repondant) . ' :</p>'
               . '<p style="white-space:pre-wrap;background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">' . $h($apres['reponse']) . '</p>' : '')
@@ -242,7 +288,7 @@ function action_get_tickets(PDO $db, array $session): array
     foreach ($db->query("SELECT * FROM tickets WHERE statut = 'Nouveau' ORDER BY cree_le DESC")->fetchAll(PDO::FETCH_ASSOC) as $t) {
         if (!isset($vus[$t['id']])) $l[] = $t;
     }
-    $r = ['ok' => true, 'tickets' => $l, 'moi' => $session['conseiller'], 'nouveaux' => tickets_nb_nouveaux($db)];
+    $r = ['ok' => true, 'tickets' => $l, 'moi' => $session['conseiller'], 'nouveaux' => tickets_nb_nouveaux($db), 'messages' => tickets_messages_de($db, $l)];
     if (api_acces_admin($db, $session)) $r['mail_demandeur'] = tickets_mail_actif($db);   // interrupteur affiché à l'Admin seulement
     return $r;
 }
@@ -273,10 +319,18 @@ function action_repondre_ticket(PDO $db, array $p, array $session): array
     // - comparaison BINAIRE : la collation de la colonne tient « texte » = « Texte », PHP non ; sans BINARY,
     //   deux Admins passant de « texte » à « Texte » gagneraient tous deux le droit d'envoyer.
     $change = $statut !== (string) $t['statut'] || $reponse !== (string) $t['reponse'];
-    $u = $db->prepare('UPDATE tickets SET statut = ?, reponse = ?, repondu_le = ?, repondu_par = ?, doublon_de = ?, clos_le = ?'
-        . ' WHERE id = ? AND BINARY statut = BINARY ? AND BINARY reponse = BINARY ?');
-    $u->execute([$statut, $reponse, $reponduLe, $reponduPar, $doublon, $closLe, $id, (string) $t['statut'], (string) $t['reponse']]);
-    $gagne = $change && $u->rowCount() === 1;
+    // Fil de discussion (25/11/2026) : une NOUVELLE réponse est aussi un message du fil, écrit dans la même transaction
+    // que la mise à jour ; la réponse de départ d'un ticket d'avant le fil y entre d'abord (ticket_message_ajouter).
+    $nouvelleReponse = $reponse !== (string) $t['reponse'] && $reponse !== '';
+    $db->beginTransaction();
+    try {
+        $u = $db->prepare('UPDATE tickets SET statut = ?, reponse = ?, repondu_le = ?, repondu_par = ?, doublon_de = ?, clos_le = ?'
+            . ' WHERE id = ? AND BINARY statut = BINARY ? AND BINARY reponse = BINARY ?');
+        $u->execute([$statut, $reponse, $reponduLe, $reponduPar, $doublon, $closLe, $id, (string) $t['statut'], (string) $t['reponse']]);
+        $gagne = $change && $u->rowCount() === 1;
+        if ($gagne && $nouvelleReponse) ticket_message_ajouter($db, $t, 'm_' . bin2hex(random_bytes(8)), (string) $session['conseiller'], true, $reponse);
+        $db->commit();
+    } catch (Throwable $e) { $db->rollBack(); throw $e; }
     $ticket = ticket_lire($db, $id);
     if (!$gagne && ($ticket['statut'] !== $statut || (string) $ticket['reponse'] !== $reponse)) {
         return ['ok' => false, 'error' => 'Ce ticket vient d\'être modifié par quelqu\'un d\'autre : rechargez la liste.'];
@@ -284,7 +338,63 @@ function action_repondre_ticket(PDO $db, array $p, array $session): array
     // Le mail décrit ce que CET appel a écrit, pas une relecture qui pourrait être plus récente.
     $ecrit = array_merge($t, ['statut' => $statut, 'reponse' => $reponse, 'doublon_de' => $doublon, 'repondu_par' => $reponduPar]);
     $mail = $gagne ? tickets_prevenir_auteur($db, $t, $ecrit, (string) $session['conseiller']) : ($change ? 'deja' : 'inchange');
-    return ['ok' => true, 'ticket' => $ticket, 'mail' => $mail, 'mail_a' => in_array($mail, ['inchange', 'deja'], true) ? '' : (string) $t['auteur'], 'nouveaux' => tickets_nb_nouveaux($db)];
+    return ['ok' => true, 'ticket' => $ticket, 'mail' => $mail, 'mail_a' => in_array($mail, ['inchange', 'deja'], true) ? '' : (string) $t['auteur'], 'nouveaux' => tickets_nb_nouveaux($db),
+        'messages' => tickets_messages_de($db, [$ticket])[$id] ?? []];
+}
+
+// Prévient les Admin qu'un auteur a écrit dans le fil de son ticket (comme tickets_prevenir pour un nouveau ticket).
+function tickets_prevenir_commentaire(PDO $db, array $t, string $auteur, string $texte): int
+{
+    $h = fn($x) => htmlspecialchars((string) $x, ENT_QUOTES, 'UTF-8');
+    $url = TICKET_URL_ADMIN[$t['site']] ?? TICKET_URL_ADMIN['nextstep'];
+    $sujet = 'Nouveau message sur le ticket — ' . $t['titre'];
+    $txt = "$auteur a écrit sur le ticket « {$t['titre']} » :\n\n$texte\n\nRépondre dans l'Admin, onglet Tickets : $url\n";
+    $html = '<div style="font-family:sans-serif;max-width:640px"><p><strong>' . $h($auteur) . '</strong> a écrit sur le ticket <strong>« ' . $h($t['titre']) . ' »</strong> :</p>'
+          . '<p style="white-space:pre-wrap;background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px">' . $h($texte) . '</p>'
+          . '<p><a href="' . $h($url) . '" style="color:#1e3a8a;font-weight:700">Répondre dans l\'Admin, onglet Tickets</a></p></div>';
+    $n = 0;
+    foreach (tickets_destinataires($db) as $a) {
+        try { if (mail_envoyer($a, $sujet, $txt, $html)) $n++; } catch (Throwable $e) { /* le message reste enregistré */ }
+    }
+    return $n;
+}
+
+// Commentaire dans le fil d'un ticket, sans changement de statut (25/11/2026). Seuls l'Admin (admin / superviseur à accès
+// actif) et l'AUTEUR du ticket écrivent ; les autres membres de l'équipe lisent. L'identité vient de la session.
+// L'identifiant du message vient du client : un envoi rejoué ne crée ni second message ni second mail.
+// Admin : `reponse` / `repondu_le` / `repondu_par` prennent ce message (pastille et mail de l'auteur, comme une réponse).
+function action_commenter_ticket(PDO $db, array $p, array $session): array
+{
+    tickets_schema($db);
+    $id = (string) ($p['_id'] ?? '');
+    $t = ticket_lire($db, $id);
+    if ($t === null) return ['ok' => false, 'error' => 'Ticket introuvable'];
+    $moi = (string) $session['conseiller'];
+    $admin = api_acces_admin($db, $session);
+    if (!$admin && ($moi === '' || $t['auteur'] !== $moi)) return ['ok' => false, 'error' => 'Non autorisé : seuls l\'auteur du ticket et l\'administrateur peuvent y écrire.'];
+    $mid = (string) ($p['_mid'] ?? '');
+    if (!preg_match('/^[A-Za-z0-9_-]{6,64}$/', $mid) || str_starts_with($mid, 'legacy_')) return ['ok' => false, 'error' => 'Identifiant de message invalide'];
+    $texte = ticket_texte($p, 'texte', 2000);
+    if ($texte === '') return ['ok' => false, 'error' => 'Message vide'];
+    $n = $db->prepare('SELECT COUNT(*) FROM tickets_messages WHERE ticket_id = ?');
+    $n->execute([$id]);
+    if ((int) $n->fetchColumn() >= TICKET_MESSAGES_MAX) return ['ok' => false, 'error' => 'Ce ticket a atteint ' . TICKET_MESSAGES_MAX . ' messages.'];
+    $db->beginTransaction();
+    try {
+        $nouveau = ticket_message_ajouter($db, $t, $mid, $moi, $admin, $texte);
+        if ($nouveau && $admin) {
+            $db->prepare('UPDATE tickets SET reponse = ?, repondu_le = ?, repondu_par = ? WHERE id = ?')->execute([$texte, date('Y-m-d H:i:s'), $moi, $id]);
+        }
+        $db->commit();
+    } catch (Throwable $e) { $db->rollBack(); throw $e; }
+    $mail = 'inchange';
+    if ($nouveau) {
+        if ($admin) $mail = tickets_prevenir_auteur($db, $t, array_merge($t, ['reponse' => $texte, 'repondu_par' => $moi]), $moi);
+        else $mail = tickets_prevenir_commentaire($db, $t, $moi, $texte) > 0 ? 'envoye' : 'sans_adresse';
+    }
+    $ticket = ticket_lire($db, $id);
+    return ['ok' => true, 'ticket' => $ticket, 'nouveau' => $nouveau, 'mail' => $mail, 'nouveaux' => tickets_nb_nouveaux($db),
+        'messages' => tickets_messages_de($db, [$ticket])[$id] ?? []];
 }
 
 // Suppression définitive (test, envoi par erreur), réservée à l'admin et à la
@@ -298,6 +408,7 @@ function action_supprimer_ticket(PDO $db, array $p): array
     if ($id === '') return ['ok' => false, 'error' => 'Ticket introuvable'];
     $db->prepare("UPDATE tickets SET doublon_de = '' WHERE doublon_de = ?")->execute([$id]);
     $db->prepare('DELETE FROM tickets WHERE id = ?')->execute([$id]);
+    $db->prepare('DELETE FROM tickets_messages WHERE ticket_id = ?')->execute([$id]);
     return ['ok' => true, 'nouveaux' => tickets_nb_nouveaux($db)];
 }
 

@@ -250,3 +250,19 @@ CREATE TABLE IF NOT EXISTS lectures (
   maj        DATETIME     NOT NULL,
   PRIMARY KEY (conseiller, cle)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Fil de discussion d'un ticket (25/11/2026) : un message par ligne, de l'Admin ou de l'auteur du ticket, avec ou
+-- sans changement de statut. `reponse` / `repondu_le` / `repondu_par` de `tickets` gardent le DERNIER message de
+-- l'Admin (pastille et mail de l'auteur, purge). Supprimé avec le ticket ; auteur anonymisé avec lui (RGPD-19).
+CREATE TABLE IF NOT EXISTS tickets_messages (
+  id        VARCHAR(64)  NOT NULL,
+  ticket_id VARCHAR(64)  NOT NULL,
+  ordre     BIGINT       NOT NULL AUTO_INCREMENT,
+  cree_le   DATETIME     NOT NULL,
+  auteur    VARCHAR(100) NOT NULL DEFAULT '',
+  par_admin TINYINT(1)   NOT NULL DEFAULT 0,
+  texte     TEXT         NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY idx_ordre (ordre),
+  KEY idx_ticket (ticket_id, ordre)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
