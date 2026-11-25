@@ -288,7 +288,9 @@ verifier(appel(['action' => 'verifierIds'], $T + ['ids' => 'lot_1,absent,lot_3']
 verifier(appel(['action' => 'delete'], $T + ['_id' => 'lot_1']) === ['ok' => true] && $lire('lot_1') === null, 'suppression');
 verifier(appel(['action' => 'delete'], $T + ['_id' => 'lot_1'])['error'] === 'Entrée introuvable', 'suppression rejouée : introuvable');
 verifier((int) $db->query("SELECT COUNT(*) FROM ateliers_materiel WHERE atelier_id = 'lot_1'")->fetchColumn() === 0, 'matériel supprimé avec l\'atelier');
-verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'saveEntry' AND ref = 'entry_1'")->fetchColumn() === 2, 'écritures journalisées');
+verifier((int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'majAtelier' AND ref = 'entry_1'")->fetchColumn() === 2
+    && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'creerAtelier' AND ref = 'entry_1'")->fetchColumn() === 0
+    && (int) $db->query("SELECT COUNT(*) FROM journal WHERE action = 'creerAtelier' AND ref = 'lot_3'")->fetchColumn() === 1, 'écritures journalisées : création puis mise à jour distinguées (25/11/2026)');
 // AM/PM (AG-018) : écrit d'après l'heure de début, quoi qu'envoie le client.
 appel(['action' => 'saveEntry'], $T + ['entry' => json_encode(['horaire' => '12:00', 'ampm' => 'AM'] + $maj)]);
 $a = $lire('entry_1')['ampm'];
@@ -442,7 +444,7 @@ appel(['action' => 'logAccesIndex'], $T + ['site' => 'pirate']);
 $sites = $db->query("SELECT site FROM journal WHERE action = 'accesIndex' ORDER BY id DESC LIMIT 2")->fetchAll(PDO::FETCH_COLUMN);
 verifier($sites === ['', 'nextstep'], 'journal : site d\'origine noté, valeur inconnue ignorée (' . implode(',', $sites) . ')');
 verifier(array_key_exists('site', appel(['action' => 'getLogs'], $A)['logs'][0] ?? []), 'getLogs : champ site rendu');
-$roles = $db->query("SELECT DISTINCT role FROM journal WHERE action IN ('saveEntry', 'delete') AND conseiller = 'Conseiller Test'")->fetchAll(PDO::FETCH_COLUMN);
+$roles = $db->query("SELECT DISTINCT role FROM journal WHERE action IN ('creerAtelier', 'majAtelier', 'delete') AND conseiller = 'Conseiller Test'")->fetchAll(PDO::FETCH_COLUMN);
 verifier($roles === ['admin'], 'journal : écritures d\'ateliers avec le rôle du compte (' . implode(',', $roles) . ')');
 verifier(str_contains(appel(['action' => 'setConfig'], $T + ['key' => 'stock_ordinateurs', 'value' => '20'])['error'] ?? '', 'administrateurs'), 'action admin refusée à un conseiller');
 appel(['action' => 'setConfig'], $A + ['key' => 'stock_ordinateurs', 'value' => '20']);

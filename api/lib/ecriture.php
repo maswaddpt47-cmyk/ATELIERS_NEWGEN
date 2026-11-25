@@ -148,6 +148,7 @@ function api_ecrire_atelier(PDO $db, array $d, ?string &$err, string $acteur = '
         $s = $db->prepare('SELECT n FROM ateliers WHERE id = ? FOR UPDATE');
         $s->execute([$l['id']]);
         $n = $s->fetchColumn();
+        $creation = $n === false;   // journal : création ou mise à jour (demande de l'utilisateur, 25/11/2026)
         // Ouvert à tous (AG-047) : une création doit le porter. Sans lui, la
         // page est d'avant le 04/11/2026 (règle 40) : refus, jamais un « Non »
         // posé en silence. Une modification sans lui garde la valeur en base.
@@ -183,7 +184,7 @@ function api_ecrire_atelier(PDO $db, array $d, ?string &$err, string $acteur = '
         $db->prepare('DELETE FROM ateliers_materiel WHERE atelier_id = ?')->execute([$l['id']]);
         $ins = $db->prepare('INSERT INTO ateliers_materiel (atelier_id, materiel) VALUES (?, ?)');
         foreach ($materiel as $m) $ins->execute([$l['id'], $m]);
-        api_journal($db, 'saveEntry', $acteur !== '' ? $acteur : (string) $l['conseiller'], $l['id'], '', 1, 0, '', '');
+        api_journal($db, $creation ? 'creerAtelier' : 'majAtelier', $acteur !== '' ? $acteur : (string) $l['conseiller'], $l['id'], '', 1, 0, '', '');
         if ($propre) $db->commit();
     } catch (Throwable $e) {
         if ($propre) $db->rollBack();

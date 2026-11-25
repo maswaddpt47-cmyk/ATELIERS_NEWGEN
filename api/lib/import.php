@@ -69,7 +69,7 @@ const IMPORT_CONFIG_MORTES = [
 const IMPORT_CONFIG_MORTES_PREFIXE = 'lock_';
 
 // Actions du format récent du journal (GAS_NEXTSTEP.js:958).
-const IMPORT_ACTIONS_JOURNAL = ['login', 'loginFail', 'saveEntry', 'delete', 'accesIndex', 'alertesRetard'];
+const IMPORT_ACTIONS_JOURNAL = ['login', 'loginFail', 'saveEntry', 'creerAtelier', 'majAtelier', 'delete', 'accesIndex', 'alertesRetard'];
 
 // Analyse le fichier. Renvoie :
 //   erreurs, avertissements : listes de phrases à afficher ;
