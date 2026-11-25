@@ -2,6 +2,14 @@
 
 État au **25/11/2026** (relu par « pull », 09:29), bases `main` — NEWGEN `dbad3c8`, NextStep `ca0dded`, MD-LIB `7dfba7a`. Arrivé le 24/11 : alerte « copie trop vieille » (`copies-fraicheur.yml`, ci-dessous) ; publication de `dbad3c8` passée par relance complète (✅). **Aucun passage programmé de `copies-fraicheur.yml` au 25/11 09:29** (attendu 05:23) : un seul passage, manuel, le 24/11 — pas encore une surveillance (règle 36), à recompter. Table `lectures` toujours absente du registre RGPD.
 
+**25/11** : (1) **diagnostic temporaire de la cloche** dans l'Admin (ligne sous le menu, numéros seulement : par année,
+dernier vu au chargement → plus grand chargé, « départ » = année sans mémoire, « sans serveur » = mémoire serveur absente au
+calcul) — à lire par l'utilisateur au prochain atelier ajouté par une collègue, puis **retirer** ; hypothèses non vérifiées :
+année sans mémoire (2027), mémoire serveur arrivée après le calcul, ou simples mises à jour. (2) Journal : `creerAtelier` /
+`majAtelier` au lieu de `saveEntry` (ancien, ambigu) ; Admin : « Création », « Mise à jour », « Enregistrement », « Suppression ».
+(3) Nouveauté 41 complétée (renommer un lien ✏️ ; pas de nouvelle pastille pour qui l'a déjà lue). (4) Critère 7 : un compteur
+d'alerte n'ouvre pas de bloc (consignes des deux projets). NEWGEN `94a4491`, NextStep `cd87937`, ✅ 09:55.
+
 **Bandeau « en attente de mise à jour » (23/11, décision de l'utilisateur)** : Index = ses seuls ateliers (animés ou
 co-animés), « N de vos ateliers… », quel que soit le filtre ; Admin = filtre conseiller, bandeau cliquable qui n'affiche que ces
 ateliers. NEWGEN `8c31f49`, NextStep `5023f6c`/`ca0dded`. Bloc AG-068 ouvert puis **retiré : jugé disproportionné par
