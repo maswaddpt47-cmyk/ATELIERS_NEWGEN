@@ -2,6 +2,12 @@
 
 État au **25/11/2026** (relu par « pull », 09:29), bases `main` — NEWGEN `dbad3c8`, NextStep `ca0dded`, MD-LIB `7dfba7a`. Arrivé le 24/11 : alerte « copie trop vieille » (`copies-fraicheur.yml`, ci-dessous) ; publication de `dbad3c8` passée par relance complète (✅). **Aucun passage programmé de `copies-fraicheur.yml` au 25/11 09:29** (attendu 05:23) : un seul passage, manuel, le 24/11 — pas encore une surveillance (règle 36), à recompter. Table `lectures` toujours absente du registre RGPD.
 
+**Structures partenaires co-animatrices (25/11, AG-069, demande de l'utilisateur)** : liste « Structures partenaires » dans Admin → Listes
+(aucun compte) ; proposées dans « Co-animateur » (groupe à part), colonne séparée `structure_partenaire`, **hors de toute statistique** (choix de
+l'utilisateur : l'atelier reste compté pour le conseiller qui l'anime). NEWGEN et NextStep. **Bug existant constaté sur NextStep (pas corrigé, à
+proposer)** : dans le volet, choisir un conseiller dans « Conseiller » ou « Co-animateur » change le filtre de conseiller (écouteur `change` d'`app.js:422-436`,
+qui n'exclut pas `.side-panel`) et ferme le volet ; reproduit avant AG-069.
+
 **25/11** : (1) **diagnostic temporaire de la cloche** dans l'Admin (ligne sous le menu, numéros seulement : par année,
 dernier vu au chargement → plus grand chargé, « départ » = année sans mémoire, « sans serveur » = mémoire serveur absente au
 calcul) — à lire par l'utilisateur au prochain atelier ajouté par une collègue, puis **retirer** ; hypothèses non vérifiées :

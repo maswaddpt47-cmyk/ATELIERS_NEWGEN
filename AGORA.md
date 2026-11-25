@@ -130,6 +130,10 @@ celui d'un conseiller (refusé à l'enregistrement de la liste ?) ; (5) `contrac
 par erreur), une relecture unique de Codex à la livraison (règle 58), et l'utilisateur tranche.
 **Où regarder** : `api/lib/api.php:52-58,364-400,481-490` ; `api/lib/ecriture.php:140,340-345,484-504,813` ; `shared.js:1850-1852,2584-2587,3012-3016` ;
 `contract.test.js:23` ; `logic.js:476-591`.
+**Livré (25/11)** : option A. Suites PHP (API, bilan) et navigateur vertes sur NEWGEN et NextStep ; `e2e/structures.spec.js` (volet, exclusivité,
+onglet Admin) ; 12 mutations rejetées (exclusivité serveur et volet, valeur absente qui efface, nom de conseiller, liste non enregistrée, onglet absent,
+bilan qui compterait la structure, conflit qui la lirait…). Restauration depuis la corbeille vérifiée (champ conservé). L'utilisateur a demandé le 25/11
+pourquoi un bloc sans calcul : critères 1 et 2, à lui de dire s'il le garde pour la relecture de Codex ou le retire comme AG-068.
 
 ## AG-066 — Mémoire « déjà lu » côté serveur (Nouveautés et tickets) — ouvert le 21/11/2026
 **Auteur** : session Claude cloud du 21/11/2026 — lu sur `d74a118`
