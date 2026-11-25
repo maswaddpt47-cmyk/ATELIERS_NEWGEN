@@ -698,6 +698,78 @@ verifier(($r['mail'] ?? '') === 'envoye' && str_contains($dernierMail(), 'rattac
 $db->exec("UPDATE tickets SET auteur = '—' WHERE id = 'tk_mail_3'");
 $avant3 = $nbMails();
 verifier((appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_3', 'statut' => 'Vu'])['mail'] ?? '') === 'anonyme' && $nbMails() === $avant3, 'ticket : auteur anonymisé, pas de mail, la raison est dite');
+
+// Fil de discussion des tickets (25/11/2026) : l'Admin et l'auteur écrivent, avec ou sans changement de statut.
+echo "API — fil de discussion des tickets\n";
+$jetonTiers = bin2hex(random_bytes(32));
+$db->prepare('INSERT INTO sessions (jeton_hash, conseiller, role, expire) VALUES (?, ?, ?, ?)')->execute([hash('sha256', $jetonTiers), 'Tiers Fictif', 'user', date('Y-m-d H:i:s', time() + 3600)]);
+$TIERS = ['token' => $jetonTiers];
+appel(['action' => 'creerTicket'], $T + ['_id' => 'tk_fil_1', 'type' => 'Question', 'titre' => 'Où voir mes ateliers ?', 'description' => 'Je ne les trouve pas.']);
+$msgs = fn(string $id) => $db->query("SELECT auteur, par_admin, texte FROM tickets_messages WHERE ticket_id = " . $db->quote($id) . " ORDER BY ordre")->fetchAll(PDO::FETCH_ASSOC);
+$fil = fn(string $id, array $jeton) => appel(['action' => 'getTickets'], $jeton)['messages'][$id] ?? null;
+verifier($fil('tk_fil_1', $T) === [], 'ticket neuf : fil vide, livré avec getTickets');
+// Admin : commentaire sans changement de statut
+$avant = $nbMails();
+$r = appel(['action' => 'commenterTicket'], $A + ['_id' => 'tk_fil_1', '_mid' => 'msg_fil_a1', 'texte' => 'Regardez dans Historique.']);
+verifier(($r['ok'] ?? false) && ($r['nouveau'] ?? false) && ($r['ticket']['statut'] ?? '') === 'Nouveau' && ($r['ticket']['reponse'] ?? '') === 'Regardez dans Historique.'
+    && ($r['ticket']['repondu_par'] ?? '') === 'Conseiller Test' && count($r['messages'] ?? []) === 1 && ($r['mail'] ?? '') === 'envoye' && $nbMails() === $avant + 1,
+    'Admin : commentaire sans changer le statut, message au fil, dernière réponse mise à jour, mail à l\'auteur (' . json_encode($r) . ')');
+verifier(str_contains($dernierMail(), 'Nouveau message sur votre contribution') && !str_contains($dernierMail(), 'est maintenant'), 'mail de commentaire : dit « nouveau message », n\'annonce aucun statut');
+$r = appel(['action' => 'commenterTicket'], $A + ['_id' => 'tk_fil_1', '_mid' => 'msg_fil_a1', 'texte' => 'Regardez dans Historique.']);
+verifier(($r['ok'] ?? false) && ($r['nouveau'] ?? true) === false && count($msgs('tk_fil_1')) === 1 && $nbMails() === $avant + 1, 'commentaire rejoué (réponse perdue) : ni second message ni second mail');
+// Auteur : réponse dans le fil, Admin prévenu, statut intact
+$avant = $nbMails();
+$r = appel(['action' => 'commenterTicket'], $T + ['_id' => 'tk_fil_1', '_mid' => 'msg_fil_u1', 'texte' => 'Merci, trouvé !']);
+verifier(($r['ok'] ?? false) && count($r['messages'] ?? []) === 2 && $r['messages'][1]['par_admin'] === 0 && $r['messages'][1]['auteur'] === 'Nouveau Venu'
+    && ($r['ticket']['reponse'] ?? '') === 'Regardez dans Historique.' && ($r['ticket']['statut'] ?? '') === 'Nouveau' && $nbMails() === $avant + 1,
+    'auteur : message au fil (non admin), dernière réponse de l\'Admin intacte, mail aux Admin (' . json_encode($r) . ')');
+verifier(str_contains($dernierMail(), 'Nouveau Venu a écrit sur le ticket'), 'mail aux Admin : nomme l\'auteur du message');
+verifier(array_column($fil('tk_fil_1', $T), 'texte') === ['Regardez dans Historique.', 'Merci, trouvé !'], 'fil relu dans l\'ordre, par l\'auteur');
+verifier(array_column($fil('tk_fil_1', $TIERS), 'texte') === ['Regardez dans Historique.', 'Merci, trouvé !'], 'un tiers LIT le fil (toute l\'équipe voit les tickets)');
+// Droits : un tiers n'écrit pas
+$avant = $nbMails();
+$r = appel(['action' => 'commenterTicket'], $TIERS + ['_id' => 'tk_fil_1', '_mid' => 'msg_fil_t1', 'texte' => 'Je me mêle.']);
+verifier(($r['ok'] ?? true) === false && count($msgs('tk_fil_1')) === 2 && $nbMails() === $avant, 'un tiers (ni auteur ni Admin) : refusé, rien d\'écrit, aucun mail');
+verifier((appel(['action' => 'commenterTicket'], ['_id' => 'tk_fil_1', '_mid' => 'msg_fil_x1', 'texte' => 'x'])['auth'] ?? false) === true, 'sans jeton : refusé');
+foreach ([['msg_fil_v1', '   '], ['x', 'court'], ['legacy_tk_fil_1', 'faux départ'], ['msg fil espace', 'espace']] as [$mid, $txt]) {
+    $r = appel(['action' => 'commenterTicket'], $A + ['_id' => 'tk_fil_1', '_mid' => $mid, 'texte' => $txt]);
+    verifier(($r['ok'] ?? true) === false && count($msgs('tk_fil_1')) === 2, "commentaire refusé : message « $txt », identifiant « $mid »");
+}
+verifier((appel(['action' => 'commenterTicket'], $A + ['_id' => 'tk_inconnu', '_mid' => 'msg_fil_i1', 'texte' => 'x'])['ok'] ?? true) === false, 'ticket introuvable : refusé');
+// Plafond de messages par ticket
+$ins = $db->prepare("INSERT INTO tickets_messages (id, ticket_id, cree_le, auteur, par_admin, texte) VALUES (?, 'tk_fil_1', NOW(), 'x', 0, 'x')");
+for ($i = 3; $i <= TICKET_MESSAGES_MAX; $i++) $ins->execute(["bulk_$i"]);
+verifier((appel(['action' => 'commenterTicket'], $A + ['_id' => 'tk_fil_1', '_mid' => 'msg_fil_max', 'texte' => 'trop'])['ok'] ?? true) === false, 'plafond de ' . TICKET_MESSAGES_MAX . ' messages par ticket : le suivant est refusé');
+$db->exec("DELETE FROM tickets_messages WHERE id LIKE 'bulk\\_%'");
+// repondreTicket : une nouvelle réponse entre dans le fil, une réponse inchangée n'en crée pas
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_fil_1', 'statut' => 'En cours', 'reponse' => 'Pris en compte.']);
+verifier(($r['ok'] ?? false) && count($r['messages'] ?? []) === 3 && end($r['messages'])['texte'] === 'Pris en compte.' && end($r['messages'])['par_admin'] === 1 && $r['ticket']['statut'] === 'En cours', 'changement de statut avec message : le message entre dans le fil');
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_fil_1', 'statut' => 'Résolu']);
+verifier(($r['ok'] ?? false) && count($msgs('tk_fil_1')) === 3 && $r['ticket']['statut'] === 'Résolu', 'changement de statut sans message (champ absent) : aucun message ajouté');
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_fil_1', 'statut' => 'Résolu', 'reponse' => 'Pris en compte.']);
+verifier(count($msgs('tk_fil_1')) === 3, 'réponse identique renvoyée : aucun doublon dans le fil');
+// Ticket d'avant le fil : sa réponse unique devient le premier message, sans rien perdre
+$db->exec("INSERT INTO tickets (id, cree_le, auteur, type, titre, description, statut, reponse, repondu_le, repondu_par) VALUES ('tk_fil_old', '2026-10-01 09:00:00', 'Nouveau Venu', 'Question', 'Ancien', 'd', 'Vu', 'Ancienne réponse.', '2026-10-02 10:00:00', 'Admin Ancien')");
+$vue = $fil('tk_fil_old', $T);
+verifier(count($vue ?? []) === 1 && $vue[0]['texte'] === 'Ancienne réponse.' && $vue[0]['auteur'] === 'Admin Ancien' && $vue[0]['par_admin'] === 1 && $msgs('tk_fil_old') === [], 'ticket d\'avant le fil : sa réponse est livrée comme premier message (rien en base, rien perdu)');
+$r = appel(['action' => 'commenterTicket'], $T + ['_id' => 'tk_fil_old', '_mid' => 'msg_fil_o1', 'texte' => 'Une question de plus.']);
+verifier(array_column($r['messages'] ?? [], 'texte') === ['Ancienne réponse.', 'Une question de plus.'] && count($msgs('tk_fil_old')) === 2, 'premier commentaire sur un ticket d\'avant le fil : l\'ancienne réponse entre d\'abord, puis le message');
+$db->exec("INSERT INTO tickets (id, cree_le, auteur, type, titre, description, statut, reponse, repondu_le, repondu_par) VALUES ('tk_fil_old2', '2026-10-01 09:00:00', 'Nouveau Venu', 'Question', 'Ancien 2', 'd', 'Vu', 'Première réponse.', '2026-10-02 10:00:00', 'Admin Ancien')");
+$r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_fil_old2', 'statut' => 'Vu', 'reponse' => 'Seconde réponse.']);
+verifier(array_column($r['messages'] ?? [], 'texte') === ['Première réponse.', 'Seconde réponse.'], 'repondreTicket sur un ticket d\'avant le fil : la première réponse n\'est pas écrasée sans trace');
+// RGPD : anonymisation et suppression suivent le ticket
+$db->exec("UPDATE tickets SET auteur = '—', clos_le = '" . date('Y-m-d H:i:s', strtotime('-13 months')) . "', statut = 'Résolu' WHERE id = 'tk_fil_old'");
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
+verifier(array_unique(array_column($msgs('tk_fil_old'), 'auteur')) !== [] && !in_array('Nouveau Venu', array_column($msgs('tk_fil_old'), 'auteur'), true), '[RGPD-19] ticket anonymisé : l\'auteur de ses messages l\'est aussi');
+$r = appel(['action' => 'supprimerTicket'], $A + ['_id' => 'tk_fil_old2']);
+verifier(($r['ok'] ?? false) && $msgs('tk_fil_old2') === [], '[RGPD-19] ticket supprimé : son fil l\'est aussi');
+$db->exec("DELETE FROM tickets WHERE id = 'tk_fil_1'");
+appel(['action' => 'checkPassword'], ['conseiller' => 'Conseiller Test', 'password' => 'Secret-Test-47!']);
+verifier($msgs('tk_fil_1') === [], '[RGPD-19] messages orphelins (ticket disparu) purgés à la connexion');
+$db->exec("DELETE FROM tickets WHERE id IN ('tk_fil_old', 'tk_fil_old2')");
+$db->exec("DELETE FROM tickets_messages WHERE ticket_id LIKE 'tk\\_fil\\_%'");
+$db->exec("DELETE FROM sessions WHERE conseiller = 'Tiers Fictif'");
+
 // Échec d'envoi : l'enregistrement reste.
 rename($dossierMails, "$dossierMails.sav");
 $r = appel(['action' => 'repondreTicket'], $A + ['_id' => 'tk_mail_1', 'statut' => 'Vu']);
