@@ -317,3 +317,16 @@ Preuves :
 - [V] Chromium a ouvert NextStep `238e3ac` et utilisé l'API PHP NEWGEN `39aee62`, servie sur la même origine locale. Le parcours Admin a lu le ticket restauré et sa réponse d'avant sauvegarde, puis ajouté un commentaire. L'application a affiché le commentaire. Une requête MariaDB a confirmé une seule ligne correspondante dans la cible et l'absence de la table de messages dans la base source.
 Limites :
 - La reprise fonctionnelle commune est vérifiée en local pour ce parcours Admin. La récupération de la copie chiffrée hors site et la bascule sur l'hébergement de secours, dont CORS si les origines diffèrent, restent à vérifier. Les URL de test sont locales. La production et les références techniques sont conservées.
+
+## Retest du 26/11/2026 — NEWGEN `067d0a8`, reprise commune sur deux origines (D-016)
+
+Version testée : 067d0a858cae0dd396202fed634067538c4b5823
+Données : fictives
+Verdict : partiel
+Preuves :
+- Diff `04095c1` → `067d0a8` : colonne `structure_partenaire`, table `tickets_messages`, actions `creerAtelier` et `majAtelier` acceptées à l'import, contrôle de fraîcheur et attente de l'artefact Pages. Les générateurs de copie et d'export existants sont inchangés. Depuis le code déjà essayé à `39aee62`, seul `CHANTIERS.md` évolue. Le contrôle ciblé reprend donc l'état d'un schéma ancien, sans répéter le cycle de copie et de restauration.
+- Une base MariaDB 11.8 jetable créée à partir du schéma `04095c1` contenait un atelier et un ticket fictifs, sans la colonne ni la table nouvelles. Avec Chromium, origine Pages et origine de l'API distinctes, routées exclusivement vers localhost, le conseiller NEWGEN a relu l'atelier et enregistré une structure. L'Admin a lu la réponse historique et ajouté un commentaire en gardant le statut « En cours ». MariaDB confirme la structure, le journal `majAtelier` et les deux messages. NextStep a ensuite utilisé cette même API et cette même base. Le contrôle final compte un atelier, un ticket et trois messages distincts, avec des connexions des deux applications.
+- Sur données fictives, import XLSX des deux actions de journal réussi, 7/7 contrôles de fraîcheur réussis à horloge figée, attente Pages vérifiée avec artefact visible au 3e appel et absent après 12 appels. La boucle d'attente est commune à NextStep.
+- En lecture seule, Pages Index et Admin répondent HTTP 200. L'API actuelle annonce `Access-Control-Allow-Origin: https://maswaddpt47-cmyk.github.io`. Sur l'API PHP locale, 11 requêtes de Chromium depuis cette origine ont été acceptées. Le navigateur a bloqué la lecture depuis une autre origine fictive. L'exécution planifiée listée le 26/11/2026 à 01 h 29 (Paris) a réussi ses étapes SSH et contrôle de fraîcheur. Seuls les états d'exécution ont été consultés. [Exécution GitHub Actions](https://github.com/maswaddpt47-cmyk/ATELIERS_NEWGEN/actions/runs/45729140773)
+Limites :
+- Le verdict de la routine planifiée ne donne ni l'horodatage exact du point de reprise hors site ni la preuve de sa récupération ou de son déchiffrement. Les accès de secours d'une personne habilitée, le MySQL d'Alwaysdata et la reprise effective sous un jour restent à éprouver. Première étape : confirmer les accès de secours et relever la date du dernier point hors site utilisable auprès du responsable habilité, sans ouvrir les données.
