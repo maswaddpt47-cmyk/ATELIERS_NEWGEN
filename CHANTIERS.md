@@ -350,5 +350,5 @@ Preuves :
 Limites :
 - Ce retest ne prouve que ce que l'utilisateur déclare : sauf l'étape 4 (vérifiable par Codex), rien n'a été constaté par une session.
 - La bascule sur l'hébergement de secours n'est pas essayée, seulement préparée (étape 8). La planification de « Fraîcheur des copies » reste non vérifiée (voir le retest du 25/11, passage à 16:23 UTC manquant).
-- Risque ouvert : aucune personne habilitée autre que l'utilisateur pour la reprise (étape 9) ; à traiter ou à accepter par lui.
+- Risque ouvert : aucune personne habilitée autre que l'utilisateur pour la reprise (étape 9). **Risque accepté par l'utilisateur le 26/11/2026** (sa décision) ; à réexaminer s'il désigne quelqu'un.
 - Aucune « référence validée » : décision de l'utilisateur.
