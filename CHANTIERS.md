@@ -330,3 +330,25 @@ Preuves :
 - En lecture seule, Pages Index et Admin répondent HTTP 200. L'API actuelle annonce `Access-Control-Allow-Origin: https://maswaddpt47-cmyk.github.io`. Sur l'API PHP locale, 11 requêtes de Chromium depuis cette origine ont été acceptées. Le navigateur a bloqué la lecture depuis une autre origine fictive. L'exécution planifiée listée le 26/11/2026 à 01 h 29 (Paris) a réussi ses étapes SSH et contrôle de fraîcheur. Seuls les états d'exécution ont été consultés. [Exécution GitHub Actions](https://github.com/maswaddpt47-cmyk/ATELIERS_NEWGEN/actions/runs/45729140773)
 Limites :
 - Le verdict de la routine planifiée ne donne ni l'horodatage exact du point de reprise hors site ni la preuve de sa récupération ou de son déchiffrement. Les accès de secours d'une personne habilitée, le MySQL d'Alwaysdata et la reprise effective sous un jour restent à éprouver. Première étape : confirmer les accès de secours et relever la date du dernier point hors site utilisable auprès du responsable habilité, sans ouvrir les données.
+
+## Retest du 26/11/2026 — exercice de secours NEWGEN et NextStep (résultats de l'utilisateur)
+
+Version testée : 01b859c73a5bc3887743ad9e57da3bea049a7543
+Données : fictives
+Verdict : partiel
+Preuves :
+- Source : document « Exercice de secours NEWGEN et NextStep » rempli par l'utilisateur, le 26/11/2026 (case « date » vide dans le document ; date déduite des relevés). **Tout est déclaré, non vérifié par Claude** (règle 54) : aucun accès SSH, phpMyAdmin, coffre ni secret côté session ; aucun contenu de copie lu.
+- Étape 1 — connexion Alwaysdata avec 2FA, codes de secours dans le gestionnaire de mots de passe : OK (déclaré).
+- Étape 2 — SSH, `ls ~/sauvegardes/` et lecture du marqueur : OK. Copie de nuit relevée `ateliers-2026-11-26_030041.sql.gz` ; marqueur de la copie chiffrée daté 2026-11-26 11:56:10 (fuseau non précisé), soit moins de 26 h (déclaré).
+- Étape 3 — phpMyAdmin en lecture seule : base chargée, tables visibles dont `tickets_messages` : OK (déclaré).
+- Étape 4 — dépôt privé `ateliers-backups`, branche `copies` : « 91 fichiers, 90 jours au plus / 1 hour ago » au 2026-11-26 : OK. Seule ligne que Codex peut vérifier (métadonnées).
+- Étape 5 — clé de déchiffrement `age` rangée hors GitHub et hors Alwaysdata (coffre + copie hors ligne), test réussi sur un fichier fictif : OK (déclaré).
+- Étape 6 — `age -d … | gzip -t` sur une copie réelle, sans lecture : « OK » : déclaré.
+- Étape 7 — secrets GitHub `ALWAYSDATA_SSH_KEY` et `ALWAYSDATA_COMPTE` présents de NEWGEN (noms seulement) : OK (déclaré).
+- Étape 8 — hébergement de secours : nom retenu, accès créés d'avance ; bascule = changer `API_PROD_URL` (`utils.js` de NextStep) et l'origine autorisée de la nouvelle API : OK (déclaré).
+- Étape 9 — personne habilitée autre que l'utilisateur : **aucune**. Seule étape qui n'est pas un « oui ».
+Limites :
+- Ce retest ne prouve que ce que l'utilisateur déclare : sauf l'étape 4 (vérifiable par Codex), rien n'a été constaté par une session.
+- La bascule sur l'hébergement de secours n'est pas essayée, seulement préparée (étape 8). La planification de « Fraîcheur des copies » reste non vérifiée (voir le retest du 25/11, passage à 16:23 UTC manquant).
+- Risque ouvert : aucune personne habilitée autre que l'utilisateur pour la reprise (étape 9) ; à traiter ou à accepter par lui.
+- Aucune « référence validée » : décision de l'utilisateur.
